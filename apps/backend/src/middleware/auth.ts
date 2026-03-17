@@ -35,7 +35,7 @@ export function authenticate(req: Request, _res: Response, next: NextFunction) {
 }
 
 export function requireAdmin(req: Request, _res: Response, next: NextFunction) {
-  if (req.user?.role !== 'admin') {
+  if (req.user?.role?.toUpperCase() !== 'ADMIN') {
     throw new AppError(403, 'Admin access required', 'FORBIDDEN');
   }
   next();
