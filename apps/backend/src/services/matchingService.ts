@@ -10,27 +10,9 @@ export class MatchingService {
   private ai = createAIService();
 
   async findMatchesForUser(userId: string, limit = 10) {
-    const existingMatches = await prisma.match.findMany({
-      where: {
-        OR: [{ userAId: userId }, { userBId: userId }],
-      },
-      select: { userAId: true, userBId: true },
-    });
+    const results = await vectorMatchingService.findMatches(userId, limit);
 
-    const matchedIds = new Set(
-      existingMatches.flatMap((m) => [m.userAId, m.userBId])
-    );
-
-    await vectorMatchingService.ensureEmbedding(userId);
-
-    const hybridResults = await vectorMatchingService.hybridMatch(userId, {
-      limit: limit * 2,
-      vectorCandidatePool: 50,
-      minScore: 0.30,
-      excludeUserIds: Array.from(matchedIds),
-    });
-
-    return hybridResults.slice(0, limit).map((r) => ({
+    return results.map((r) => ({
       profile: r.profile,
       score: {
         total: r.hybridScore,

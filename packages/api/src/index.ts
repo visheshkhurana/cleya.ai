@@ -1,6 +1,7 @@
 export {
   generateEmbedding,
   generateAndStoreEmbedding,
+  findMatches,
   findSimilarByVector,
   findSimilarByText,
   hybridMatch,

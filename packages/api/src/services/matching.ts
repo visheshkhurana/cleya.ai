@@ -237,6 +237,31 @@ export async function ensureEmbedding(userId: string): Promise<boolean> {
   }
 }
 
+export async function findMatches(
+  userId: string,
+  limit = 10
+): Promise<HybridMatchResult[]> {
+  await ensureEmbedding(userId);
+
+  const existingMatches = await prisma.match.findMany({
+    where: {
+      OR: [{ userAId: userId }, { userBId: userId }],
+    },
+    select: { userAId: true, userBId: true },
+  });
+
+  const alreadyMatchedIds = Array.from(
+    new Set(existingMatches.flatMap((m) => [m.userAId, m.userBId]))
+  );
+
+  return hybridMatch(userId, {
+    limit,
+    vectorCandidatePool: Math.max(limit * 5, 50),
+    minScore: 0.30,
+    excludeUserIds: alreadyMatchedIds,
+  });
+}
+
 export async function hybridMatch(
   userId: string,
   options: { limit?: number; vectorCandidatePool?: number; minScore?: number; excludeUserIds?: string[] } = {}

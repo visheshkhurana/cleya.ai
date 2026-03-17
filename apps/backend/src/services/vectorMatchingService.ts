@@ -1,4 +1,5 @@
 import {
+  findMatches,
   findSimilarByVector,
   findSimilarByText,
   hybridMatch,
@@ -13,6 +14,7 @@ import {
 } from '@boardy/api';
 
 export class VectorMatchingService {
+  findMatches = findMatches;
   findSimilarByVector = findSimilarByVector;
   findSimilarByText = findSimilarByText;
   hybridMatch = hybridMatch;
