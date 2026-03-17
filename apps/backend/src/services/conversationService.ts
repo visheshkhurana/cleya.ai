@@ -5,6 +5,7 @@ import { createAIService, AIService } from '@boardy/ai';
 import { FlowNode } from '@boardy/types';
 import { sendToUser } from '../websocket/server';
 import { profileService } from './profileService';
+import { automationService } from './automationService';
 
 export class ConversationService {
   private engine: ConversationEngine;
@@ -196,9 +197,11 @@ export class ConversationService {
         break;
 
       case 'complete_onboarding':
-        // Update profile with collected data
         await profileService.updateFromConversation(userId, context);
-        console.log(`✅ Onboarding complete for user ${userId}`);
+        console.log(`Onboarding complete for user ${userId}`);
+        automationService.onOnboardingComplete(userId, context).catch((err) => {
+          console.error(`Post-onboarding automation failed for ${userId}:`, err);
+        });
         break;
     }
   }

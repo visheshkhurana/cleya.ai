@@ -134,6 +134,24 @@ class ApiClient {
   async getAdminFunnel() {
     return this.fetch('/admin/funnel');
   }
+
+  async getAdminCommunications() {
+    return this.fetch('/admin/communications');
+  }
+
+  async adminTriggerCall(userId: string, phoneNumber: string) {
+    return this.fetch(`/admin/trigger/call/${userId}`, {
+      method: 'POST',
+      body: JSON.stringify({ phoneNumber }),
+    });
+  }
+
+  async adminTriggerMessage(userId: string, phoneNumber: string, channel: 'SMS' | 'WHATSAPP', message: string) {
+    return this.fetch(`/admin/trigger/message/${userId}`, {
+      method: 'POST',
+      body: JSON.stringify({ phoneNumber, channel, message }),
+    });
+  }
 }
 
 export const api = new ApiClient();

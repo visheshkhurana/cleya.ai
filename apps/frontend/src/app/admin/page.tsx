@@ -12,6 +12,7 @@ interface Stats {
   acceptedMatches: number;
   matchAcceptRate: number;
   totalCalls: number;
+  totalMessages: number;
 }
 
 interface FunnelStep {
@@ -19,12 +20,28 @@ interface FunnelStep {
   count: number;
 }
 
+interface CommData {
+  calls: any[];
+  messages: any[];
+  callStats: { total: number; completed: number; failed: number; inProgress: number };
+  messageStats: { totalSMS: number; totalWhatsApp: number; delivered: number; failed: number; total: number };
+}
+
+type Tab = 'overview' | 'communications';
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [funnel, setFunnel] = useState<FunnelStep[]>([]);
   const [users, setUsers] = useState<any[]>([]);
+  const [commData, setCommData] = useState<CommData | null>(null);
+  const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [triggerModal, setTriggerModal] = useState<{ type: 'call' | 'message'; user: any } | null>(null);
+  const [triggerPhone, setTriggerPhone] = useState('');
+  const [triggerMessage, setTriggerMessage] = useState('');
+  const [triggerChannel, setTriggerChannel] = useState<'SMS' | 'WHATSAPP'>('WHATSAPP');
+  const [triggerLoading, setTriggerLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -50,6 +67,41 @@ export default function AdminDashboard() {
       setError(err.message || 'Failed to load dashboard');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadComms = async () => {
+    try {
+      const data = await api.getAdminCommunications();
+      setCommData(data);
+    } catch (err: any) {
+      console.error('Failed to load communications:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'communications' && !commData) {
+      loadComms();
+    }
+  }, [activeTab]);
+
+  const handleTrigger = async () => {
+    if (!triggerModal || !triggerPhone) return;
+    setTriggerLoading(true);
+    try {
+      if (triggerModal.type === 'call') {
+        await api.adminTriggerCall(triggerModal.user.id, triggerPhone);
+      } else {
+        await api.adminTriggerMessage(triggerModal.user.id, triggerPhone, triggerChannel, triggerMessage);
+      }
+      setTriggerModal(null);
+      setTriggerPhone('');
+      setTriggerMessage('');
+      loadComms();
+    } catch (err: any) {
+      alert(err.message || 'Failed to trigger');
+    } finally {
+      setTriggerLoading(false);
     }
   };
 
@@ -82,6 +134,25 @@ export default function AdminDashboard() {
 
   const maxFunnel = funnel.length > 0 ? Math.max(...funnel.map((f) => f.count), 1) : 1;
 
+  const formatDate = (d: string) => {
+    const date = new Date(d);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const statusColor = (status: string) => {
+    const map: Record<string, string> = {
+      COMPLETED: 'text-green-400 bg-green-500/10 border-green-500/20',
+      SENT: 'text-green-400 bg-green-500/10 border-green-500/20',
+      DELIVERED: 'text-green-400 bg-green-500/10 border-green-500/20',
+      IN_PROGRESS: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20',
+      QUEUED: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20',
+      SCHEDULED: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+      FAILED: 'text-red-400 bg-red-500/10 border-red-500/20',
+      NO_ANSWER: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
+    };
+    return map[status] || 'text-purple-300 bg-purple-500/10 border-purple-500/20';
+  };
+
   return (
     <div className="min-h-screen bg-[#0f0a1e]">
       <header className="bg-[#1a1230]/80 backdrop-blur-sm border-b border-purple-500/10 px-6 py-4">
@@ -101,108 +172,340 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-        {stats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { label: 'Total Users', value: stats.totalUsers, icon: '👥' },
-              { label: 'Complete Profiles', value: stats.completedProfiles, icon: '✅' },
-              { label: 'Total Matches', value: stats.totalMatches, icon: '🤝' },
-              { label: 'Accept Rate', value: `${stats.matchAcceptRate}%`, icon: '📈' },
-              { label: 'Active Chats', value: stats.activeConversations, icon: '💬' },
-              { label: 'Accepted Matches', value: stats.acceptedMatches, icon: '🎉' },
-              { label: 'Total Calls', value: stats.totalCalls, icon: '📞' },
-            ].map((stat) => (
-              <div
-                key={stat.label}
-                className="bg-[#1a1230]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 p-5 hover:border-purple-500/20 transition"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">{stat.icon}</span>
-                  <p className="text-xs font-medium text-purple-300/60 uppercase tracking-wider">{stat.label}</p>
-                </div>
-                <p className="text-3xl font-bold text-white">{stat.value}</p>
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        <div className="flex gap-1 mb-6 p-1 rounded-xl bg-purple-900/20 border border-purple-500/10 w-fit">
+          {[
+            { id: 'overview' as Tab, label: 'Overview', icon: '📊' },
+            { id: 'communications' as Tab, label: 'Communications', icon: '📞' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === tab.id
+                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/20'
+                  : 'text-purple-300/60 hover:text-purple-200'
+              }`}
+            >
+              {tab.icon} {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === 'overview' && (
+          <div className="space-y-8">
+            {stats && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { label: 'Total Users', value: stats.totalUsers, icon: '👥' },
+                  { label: 'Complete Profiles', value: stats.completedProfiles, icon: '✅' },
+                  { label: 'Total Matches', value: stats.totalMatches, icon: '🤝' },
+                  { label: 'Accept Rate', value: `${stats.matchAcceptRate}%`, icon: '📈' },
+                  { label: 'Active Chats', value: stats.activeConversations, icon: '💬' },
+                  { label: 'Accepted Matches', value: stats.acceptedMatches, icon: '🎉' },
+                  { label: 'Total Calls', value: stats.totalCalls, icon: '📞' },
+                  { label: 'Total Messages', value: stats.totalMessages, icon: '💬' },
+                ].map((stat) => (
+                  <div
+                    key={stat.label}
+                    className="bg-[#1a1230]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 p-5 hover:border-purple-500/20 transition"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-lg">{stat.icon}</span>
+                      <p className="text-xs font-medium text-purple-300/60 uppercase tracking-wider">{stat.label}</p>
+                    </div>
+                    <p className="text-3xl font-bold text-white">{stat.value}</p>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
+
+            <div className="bg-[#1a1230]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 p-6">
+              <h2 className="text-sm font-semibold text-white mb-6">Conversion Funnel</h2>
+              <div className="space-y-3">
+                {funnel.map((step, i) => (
+                  <div key={step.stage} className="flex items-center gap-4">
+                    <div className="w-44 text-xs font-medium text-purple-300/70 text-right">{step.stage}</div>
+                    <div className="flex-1 bg-purple-900/20 rounded-full h-8 overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-purple-600 to-indigo-500 rounded-full flex items-center justify-end pr-3 transition-all duration-700"
+                        style={{ width: `${Math.max((step.count / maxFunnel) * 100, 8)}%` }}
+                      >
+                        <span className="text-xs font-bold text-white">{step.count}</span>
+                      </div>
+                    </div>
+                    {i > 0 && funnel[i - 1].count > 0 && (
+                      <div className="w-16 text-xs text-purple-400/50">
+                        {Math.round((step.count / funnel[i - 1].count) * 100)}%
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-[#1a1230]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 overflow-hidden">
+              <div className="px-6 py-4 border-b border-purple-500/10 flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-white">Users ({users.length})</h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-purple-900/10">
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Email</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Persona</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Company</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Completeness</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-purple-500/5">
+                    {users.map((user) => (
+                      <tr key={user.id} className="hover:bg-purple-900/10 transition">
+                        <td className="px-6 py-3 font-medium text-white">{user.email}</td>
+                        <td className="px-6 py-3">
+                          {user.profile?.persona ? (
+                            <span className="px-2.5 py-1 rounded-full text-xs bg-purple-500/15 text-purple-300 border border-purple-500/20">
+                              {user.profile.persona}
+                            </span>
+                          ) : (
+                            <span className="text-purple-400/30">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-3 text-purple-200/70">{user.profile?.companyName || '-'}</td>
+                        <td className="px-6 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-20 bg-purple-900/20 rounded-full h-1.5">
+                              <div
+                                className="bg-gradient-to-r from-purple-500 to-indigo-400 rounded-full h-1.5 transition-all"
+                                style={{ width: `${(user.profile?.completenessScore || 0) * 100}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-purple-300/50">
+                              {Math.round((user.profile?.completenessScore || 0) * 100)}%
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-3">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => { setTriggerModal({ type: 'call', user }); setTriggerPhone(user.phone || ''); }}
+                              className="px-2 py-1 text-xs rounded-md bg-purple-600/20 text-purple-300 hover:bg-purple-600/40 transition border border-purple-500/20"
+                            >
+                              Call
+                            </button>
+                            <button
+                              onClick={() => { setTriggerModal({ type: 'message', user }); setTriggerPhone(user.phone || ''); setTriggerMessage(''); }}
+                              className="px-2 py-1 text-xs rounded-md bg-purple-600/20 text-purple-300 hover:bg-purple-600/40 transition border border-purple-500/20"
+                            >
+                              Message
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         )}
 
-        <div className="bg-[#1a1230]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 p-6">
-          <h2 className="text-sm font-semibold text-white mb-6">Conversion Funnel</h2>
-          <div className="space-y-3">
-            {funnel.map((step, i) => (
-              <div key={step.stage} className="flex items-center gap-4">
-                <div className="w-44 text-xs font-medium text-purple-300/70 text-right">{step.stage}</div>
-                <div className="flex-1 bg-purple-900/20 rounded-full h-8 overflow-hidden">
+        {activeTab === 'communications' && (
+          <div className="space-y-6">
+            {commData && (
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                {[
+                  { label: 'Total Calls', value: commData.callStats.total, icon: '📞' },
+                  { label: 'Completed Calls', value: commData.callStats.completed, icon: '✅' },
+                  { label: 'Failed Calls', value: commData.callStats.failed, icon: '❌' },
+                  { label: 'SMS Sent', value: commData.messageStats.totalSMS, icon: '💬' },
+                  { label: 'WhatsApp Sent', value: commData.messageStats.totalWhatsApp, icon: '📱' },
+                ].map((stat) => (
                   <div
-                    className="h-full bg-gradient-to-r from-purple-600 to-indigo-500 rounded-full flex items-center justify-end pr-3 transition-all duration-700"
-                    style={{ width: `${Math.max((step.count / maxFunnel) * 100, 8)}%` }}
+                    key={stat.label}
+                    className="bg-[#1a1230]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 p-5"
                   >
-                    <span className="text-xs font-bold text-white">{step.count}</span>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-lg">{stat.icon}</span>
+                      <p className="text-xs font-medium text-purple-300/60 uppercase tracking-wider">{stat.label}</p>
+                    </div>
+                    <p className="text-2xl font-bold text-white">{stat.value}</p>
                   </div>
-                </div>
-                {i > 0 && funnel[i - 1].count > 0 && (
-                  <div className="w-16 text-xs text-purple-400/50">
-                    {Math.round((step.count / funnel[i - 1].count) * 100)}%
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-[#1a1230]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 overflow-hidden">
-          <div className="px-6 py-4 border-b border-purple-500/10">
-            <h2 className="text-sm font-semibold text-white">Users ({users.length})</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-purple-900/10">
-                  <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Email</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Persona</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Company</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Completeness</th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Joined</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-purple-500/5">
-                {users.map((user) => (
-                  <tr key={user.id} className="hover:bg-purple-900/10 transition">
-                    <td className="px-6 py-3 font-medium text-white">{user.email}</td>
-                    <td className="px-6 py-3">
-                      {user.profile?.persona ? (
-                        <span className="px-2.5 py-1 rounded-full text-xs bg-purple-500/15 text-purple-300 border border-purple-500/20">
-                          {user.profile.persona}
-                        </span>
-                      ) : (
-                        <span className="text-purple-400/30">-</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-3 text-purple-200/70">{user.profile?.companyName || '-'}</td>
-                    <td className="px-6 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-20 bg-purple-900/20 rounded-full h-1.5">
-                          <div
-                            className="bg-gradient-to-r from-purple-500 to-indigo-400 rounded-full h-1.5 transition-all"
-                            style={{ width: `${(user.profile?.completenessScore || 0) * 100}%` }}
-                          />
-                        </div>
-                        <span className="text-xs text-purple-300/50">
-                          {Math.round((user.profile?.completenessScore || 0) * 100)}%
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-3 text-purple-300/40">
-                      {new Date(user.createdAt).toLocaleDateString()}
-                    </td>
-                  </tr>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            )}
+
+            <div className="bg-[#1a1230]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 overflow-hidden">
+              <div className="px-6 py-4 border-b border-purple-500/10">
+                <h2 className="text-sm font-semibold text-white">Recent Calls</h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-purple-900/10">
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">User</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Phone</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Direction</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Status</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Duration</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-purple-500/5">
+                    {(commData?.calls || []).map((call: any) => (
+                      <tr key={call.id} className="hover:bg-purple-900/10 transition">
+                        <td className="px-6 py-3 text-white">{call.user?.email || '-'}</td>
+                        <td className="px-6 py-3 text-purple-200/70">{call.phoneNumber}</td>
+                        <td className="px-6 py-3">
+                          <span className={`text-xs ${call.direction === 'INBOUND' ? 'text-blue-400' : 'text-purple-300'}`}>
+                            {call.direction === 'INBOUND' ? '← In' : '→ Out'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-3">
+                          <span className={`px-2 py-0.5 rounded-full text-xs border ${statusColor(call.status)}`}>
+                            {call.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-3 text-purple-200/70">
+                          {call.duration ? `${Math.floor(call.duration / 60)}m ${call.duration % 60}s` : '-'}
+                        </td>
+                        <td className="px-6 py-3 text-purple-300/40 text-xs">{formatDate(call.createdAt)}</td>
+                      </tr>
+                    ))}
+                    {(!commData?.calls || commData.calls.length === 0) && (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-8 text-center text-purple-400/40">No call records yet</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="bg-[#1a1230]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 overflow-hidden">
+              <div className="px-6 py-4 border-b border-purple-500/10">
+                <h2 className="text-sm font-semibold text-white">Recent Messages (WhatsApp + SMS)</h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-purple-900/10">
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">User</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Phone</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Channel</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Content</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Status</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-purple-500/5">
+                    {(commData?.messages || []).map((msg: any) => (
+                      <tr key={msg.id} className="hover:bg-purple-900/10 transition">
+                        <td className="px-6 py-3 text-white">{msg.user?.email || '-'}</td>
+                        <td className="px-6 py-3 text-purple-200/70">{msg.recipientPhone}</td>
+                        <td className="px-6 py-3">
+                          <span className={`px-2 py-0.5 rounded-full text-xs border ${
+                            msg.channel === 'WHATSAPP'
+                              ? 'text-green-400 bg-green-500/10 border-green-500/20'
+                              : 'text-blue-400 bg-blue-500/10 border-blue-500/20'
+                          }`}>
+                            {msg.channel}
+                          </span>
+                        </td>
+                        <td className="px-6 py-3 text-purple-200/70 max-w-xs truncate">{msg.content}</td>
+                        <td className="px-6 py-3">
+                          <span className={`px-2 py-0.5 rounded-full text-xs border ${statusColor(msg.status)}`}>
+                            {msg.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-3 text-purple-300/40 text-xs">{formatDate(msg.createdAt)}</td>
+                      </tr>
+                    ))}
+                    {(!commData?.messages || commData.messages.length === 0) && (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-8 text-center text-purple-400/40">No message records yet</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {triggerModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#1a1230] border border-purple-500/20 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="text-white font-semibold mb-4">
+              {triggerModal.type === 'call' ? 'Trigger Call' : 'Send Message'} — {triggerModal.user.email}
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-purple-300/60 uppercase mb-1.5">Phone Number</label>
+                <input
+                  type="tel"
+                  value={triggerPhone}
+                  onChange={(e) => setTriggerPhone(e.target.value)}
+                  placeholder="+1 555 123 4567"
+                  className="w-full px-3 py-2.5 rounded-xl border border-purple-500/20 bg-purple-900/20 text-white placeholder-purple-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              {triggerModal.type === 'message' && (
+                <>
+                  <div>
+                    <label className="block text-xs font-medium text-purple-300/60 uppercase mb-1.5">Channel</label>
+                    <div className="flex gap-2">
+                      {(['WHATSAPP', 'SMS'] as const).map((ch) => (
+                        <button
+                          key={ch}
+                          onClick={() => setTriggerChannel(ch)}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${
+                            triggerChannel === ch
+                              ? 'bg-purple-600 text-white border-purple-500'
+                              : 'border-purple-500/20 text-purple-300/60 hover:text-purple-200'
+                          }`}
+                        >
+                          {ch === 'WHATSAPP' ? '📱 WhatsApp' : '💬 SMS'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-purple-300/60 uppercase mb-1.5">Message</label>
+                    <textarea
+                      value={triggerMessage}
+                      onChange={(e) => setTriggerMessage(e.target.value)}
+                      placeholder="Type your message..."
+                      rows={3}
+                      className="w-full px-3 py-2.5 rounded-xl border border-purple-500/20 bg-purple-900/20 text-white placeholder-purple-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setTriggerModal(null)}
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-purple-300/60 border border-purple-500/20 hover:text-purple-200 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleTrigger}
+                disabled={triggerLoading || !triggerPhone || (triggerModal.type === 'message' && !triggerMessage)}
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium bg-purple-600 text-white hover:bg-purple-500 transition disabled:opacity-40"
+              >
+                {triggerLoading ? 'Sending...' : triggerModal.type === 'call' ? 'Call Now' : 'Send'}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

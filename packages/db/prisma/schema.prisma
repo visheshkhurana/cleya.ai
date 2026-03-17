@@ -37,6 +37,7 @@ model User {
   calls         Call[]
   notifications Notification[]
   embeddings    UserEmbedding[]
+  messageRecords MessageRecord[]
 
   @@index([email])
   @@index([phone])
@@ -370,4 +371,42 @@ enum NotificationEvent {
   PROFILE_COMPLETE
   CALL_SCHEDULED
   CALL_REMINDER
+}
+
+// ─────────────────────────────────────────────
+// MESSAGE RECORDS (SMS, WhatsApp, Email)
+// ─────────────────────────────────────────────
+
+model MessageRecord {
+  id              String           @id @default(cuid())
+  userId          String
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipientPhone  String
+  channel         MessageChannel
+  content         String
+  status          MessageStatus    @default(QUEUED)
+  messageSid      String?
+  errorMessage    String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([channel])
+  @@index([status])
+  @@index([createdAt])
+  @@map("message_records")
+}
+
+enum MessageChannel {
+  SMS
+  WHATSAPP
+  EMAIL
+}
+
+enum MessageStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+  READ
 }

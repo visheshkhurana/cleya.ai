@@ -13,6 +13,8 @@ import { matchRouter } from './routes/match';
 import { callRouter } from './routes/call';
 import { adminRouter } from './routes/admin';
 import { notificationRouter } from './routes/notification';
+import { messagingRouter } from './routes/messaging';
+import { twilioRouter } from './routes/twilio';
 
 const app = express();
 const server = createServer(app);
@@ -21,6 +23,7 @@ app.use(helmet());
 app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
 app.use(morgan('dev'));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', env: env.NODE_ENV });
@@ -33,13 +36,15 @@ app.use('/api/matches', matchRouter);
 app.use('/api/calls', callRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/notifications', notificationRouter);
+app.use('/api/messaging', messagingRouter);
+app.use('/api/twilio', twilioRouter);
 
 app.use(errorHandler);
 
 setupWebSocket(server);
 
 server.listen(env.PORT, () => {
-  console.log(`🚀 Cleo.ai Backend running on port ${env.PORT}`);
-  console.log(`🔌 WebSocket ready`);
-  console.log(`📡 Environment: ${env.NODE_ENV}`);
+  console.log(`Cleo.ai Backend running on port ${env.PORT}`);
+  console.log(`WebSocket ready`);
+  console.log(`Environment: ${env.NODE_ENV}`);
 });
