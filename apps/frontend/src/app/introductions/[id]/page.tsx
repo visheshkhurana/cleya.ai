@@ -8,6 +8,8 @@ import MobileNav from '@/components/MobileNav';
 interface IntroDetail {
   id: string;
   matchId: string;
+  userAId: string;
+  userBId: string;
   status: string;
   talkingPoints: string[];
   scheduledAt?: string;

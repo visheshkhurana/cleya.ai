@@ -135,7 +135,7 @@ matchRouter.get('/embeddings/stats', authenticate, async (req: Request, res: Res
 
 matchRouter.post('/embeddings/backfill', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (req.user!.role !== 'ADMIN') {
+    if (req.user!.role !== 'admin') {
       return res.status(403).json({ success: false, error: 'Admin access required' });
     }
     const batchSize = Math.min(Math.max(parseInt(req.body.batchSize) || 10, 1), 50);

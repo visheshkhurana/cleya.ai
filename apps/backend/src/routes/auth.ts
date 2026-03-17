@@ -104,7 +104,7 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: tokenBody.toString(),
     });
-    const tokenData = await tokenRes.json();
+    const tokenData: any = await tokenRes.json();
     if (!tokenData.access_token) {
       res.redirect(`${env.FRONTEND_URL}/?error=google_token_failed`);
       return;
@@ -112,7 +112,7 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
     const profileRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
       headers: { Authorization: `Bearer ${tokenData.access_token}` },
     });
-    const profile = await profileRes.json();
+    const profile: any = await profileRes.json();
     if (!profile.email || !profile.verified_email) {
       res.redirect(`${env.FRONTEND_URL}/?error=google_no_verified_email`);
       return;
@@ -126,7 +126,7 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
       emailService.sendWelcome(profile.email).catch(() => {});
     }
     const profileComplete = result.user.profile?.isComplete;
-    const dest = result.user.role === 'ADMIN' ? '/admin' : profileComplete ? '/dashboard' : '/chat';
+    const dest = (result.user.role as string).toLowerCase() === 'admin' ? '/admin' : profileComplete ? '/dashboard' : '/chat';
     res.redirect(`${env.FRONTEND_URL}${dest}?token=${result.token}`);
   } catch (err) {
     console.error('Google OAuth error:', err);
