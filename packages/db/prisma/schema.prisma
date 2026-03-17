@@ -499,14 +499,19 @@ enum EventStatus {
 }
 
 model EventParticipant {
-  id        String                  @id @default(cuid())
-  eventId   String
-  event     Event                   @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  status    EventParticipantStatus  @default(REGISTERED)
-  checkedIn Boolean                 @default(false)
-  notes     String?
+  id               String                  @id @default(cuid())
+  eventId          String
+  event            Event                   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status           EventParticipantStatus  @default(REGISTERED)
+  checkedIn        Boolean                 @default(false)
+  notes            String?
+  eventCode        String?
+  eventName        String?
+  pitchTopic       String?
+  preferredMentors String[]                @default([])
+  registeredAt     DateTime                @default(now())
 
   createdAt DateTime                @default(now())
   updatedAt DateTime                @updatedAt

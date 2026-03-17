@@ -25,6 +25,9 @@ export class AutomationService {
       this.scheduleDealPartnerScout(userId);
     } else if (persona === 'VENTURE_PARTNER') {
       this.scheduleVenturePartnerMatch(userId);
+    } else if (persona === 'EVENT_PARTICIPANT') {
+      this.scheduleEventRegistration(userId, context);
+      this.scheduleAutoMatch(userId);
     } else {
       this.scheduleAutoMatch(userId);
     }
@@ -72,6 +75,51 @@ export class AutomationService {
         console.error(`[VPFlow] Auto-match failed for venture partner ${userId}:`, error);
       }
     }, 5000);
+  }
+
+  private scheduleEventRegistration(userId: string, context: Record<string, any>) {
+    setTimeout(async () => {
+      try {
+        console.log(`[EventFlow] Auto-registering EVENT_PARTICIPANT ${userId} for upcoming Pitch by Deel`);
+
+        const upcomingEvent = await prisma.event.findFirst({
+          where: {
+            status: 'UPCOMING',
+            date: { gte: new Date() },
+          },
+          orderBy: { date: 'asc' },
+          include: { _count: { select: { participants: true } } },
+        });
+
+        if (!upcomingEvent) {
+          console.log(`[EventFlow] No upcoming events found for auto-registration`);
+          return;
+        }
+
+        const isAtCapacity = upcomingEvent.maxCapacity && upcomingEvent._count.participants >= upcomingEvent.maxCapacity;
+
+        const participant = await prisma.eventParticipant.create({
+          data: {
+            eventId: upcomingEvent.id,
+            userId,
+            status: isAtCapacity ? 'WAITLISTED' : 'REGISTERED',
+            eventCode: 'PITCH_BY_DEEL',
+            eventName: upcomingEvent.name,
+            pitchTopic: context.businessDescription || context.pitchTopic || null,
+            preferredMentors: context.preferredMentors || [],
+            registeredAt: new Date(),
+          },
+        });
+
+        console.log(`[EventFlow] Auto-registered ${userId} for event ${upcomingEvent.name} (status: ${participant.status})`);
+      } catch (error: any) {
+        if (error.code === 'P2002') {
+          console.log(`[EventFlow] User ${userId} already registered for event`);
+        } else {
+          console.error(`[EventFlow] Auto-registration failed for ${userId}:`, error);
+        }
+      }
+    }, 3000);
   }
 
   private scheduleCall(userId: string, phoneNumber: string) {

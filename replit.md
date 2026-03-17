@@ -111,10 +111,12 @@ Six persona types with tailored onboarding flows:
 - **Stage compatibility**: VP's preferred stage vs Founder's current stage (10% weight)
 - **Money parser**: Handles K/M/B suffixes and range formats (e.g., "1m-5m", "$500K")
 
-### Event Management
+### Event Management & "The Pitch by Deel" Flow
 - **Event model**: name, description, date, endDate, location, isVirtual, maxCapacity, organizer, status (UPCOMING/ACTIVE/COMPLETED/CANCELLED)
-- **EventParticipant model**: eventId, userId, status (REGISTERED/CONFIRMED/WAITLISTED/CANCELLED/ATTENDED), checkedIn
+- **EventParticipant model**: eventId, userId, status (REGISTERED/CONFIRMED/WAITLISTED/CANCELLED/ATTENDED), checkedIn, eventCode, eventName, pitchTopic, preferredMentors (String[]), registeredAt
 - **Auto-waitlist**: When event reaches maxCapacity, new registrations get WAITLISTED status
+- **Auto-registration**: EVENT_PARTICIPANT persona users are auto-registered for the next upcoming event on onboarding completion (3s delay), with pitchTopic pulled from their businessDescription
+- **Pitch fields**: Join endpoint accepts eventCode, eventName, pitchTopic, preferredMentors; admin can update these per participant
 - **Endpoints**: `GET/POST/PATCH/DELETE /api/events`, `POST /api/events/:id/join`, `DELETE /api/events/:id/leave`, `PATCH /api/events/:eventId/participants/:userId`, `GET /api/events/admin/all`
 
 ### Admin Dashboard Tabs

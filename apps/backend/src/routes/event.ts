@@ -165,11 +165,18 @@ eventRouter.post('/:id/join', authenticate, async (req: Request, res: Response, 
 
     const isAtCapacity = event.maxCapacity && event._count.participants >= event.maxCapacity;
 
+    const { eventCode, eventName, pitchTopic, preferredMentors } = req.body;
+
     const participant = await prisma.eventParticipant.create({
       data: {
         eventId: req.params.id,
         userId: req.user!.userId,
         status: isAtCapacity ? 'WAITLISTED' : 'REGISTERED',
+        ...(eventCode && { eventCode }),
+        ...(eventName && { eventName }),
+        ...(pitchTopic && { pitchTopic }),
+        ...(preferredMentors && Array.isArray(preferredMentors) && { preferredMentors }),
+        registeredAt: new Date(),
       },
     });
     res.status(201).json({ success: true, data: participant });
@@ -206,7 +213,7 @@ eventRouter.patch('/:eventId/participants/:userId', authenticate, async (req: Re
       return res.status(403).json({ success: false, error: 'Admin access required' });
     }
 
-    const { status, checkedIn } = req.body;
+    const { status, checkedIn, pitchTopic, preferredMentors, eventCode, eventName } = req.body;
 
     const updated = await prisma.eventParticipant.update({
       where: {
@@ -218,6 +225,10 @@ eventRouter.patch('/:eventId/participants/:userId', authenticate, async (req: Re
       data: {
         ...(status && { status }),
         ...(checkedIn !== undefined && { checkedIn }),
+        ...(pitchTopic !== undefined && { pitchTopic }),
+        ...(preferredMentors && Array.isArray(preferredMentors) && { preferredMentors }),
+        ...(eventCode !== undefined && { eventCode }),
+        ...(eventName !== undefined && { eventName }),
       },
       include: {
         user: { select: { id: true, email: true, profile: { select: { headline: true, persona: true } } } },
