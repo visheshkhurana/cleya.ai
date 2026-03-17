@@ -27,45 +27,24 @@ export function DynamicForm({ fields, onSubmit, disabled }: DynamicFormProps) {
   const handleChange = (name: string, value: any) => {
     setValues((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
-      setErrors((prev) => {
-        const next = { ...prev };
-        delete next[name];
-        return next;
-      });
+      setErrors((prev) => { const next = { ...prev }; delete next[name]; return next; });
     }
   };
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-
     for (const field of fields) {
-      // Check conditional visibility
-      if (field.conditional) {
-        if (values[field.conditional.field] !== field.conditional.value) continue;
-      }
-
+      if (field.conditional && values[field.conditional.field] !== field.conditional.value) continue;
       const val = values[field.name];
-
       if (field.required && (!val || (typeof val === 'string' && val.trim() === ''))) {
-        newErrors[field.name] = `${field.label} is required`;
-        continue;
+        newErrors[field.name] = `${field.label} is required`; continue;
       }
-
       if (!val) continue;
-
-      if (field.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
-        newErrors[field.name] = 'Invalid email';
-      }
-
-      if (field.type === 'url') {
-        try { new URL(val); } catch { newErrors[field.name] = 'Invalid URL'; }
-      }
-
-      if (field.validation?.max && typeof val === 'string' && val.length > field.validation.max) {
+      if (field.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) newErrors[field.name] = 'Invalid email';
+      if (field.type === 'url') { try { new URL(val); } catch { newErrors[field.name] = 'Invalid URL'; } }
+      if (field.validation?.max && typeof val === 'string' && val.length > field.validation.max)
         newErrors[field.name] = `Max ${field.validation.max} characters`;
-      }
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -85,20 +64,22 @@ export function DynamicForm({ fields, onSubmit, disabled }: DynamicFormProps) {
 
   const toggleMultiselect = (name: string, value: string) => {
     const current = values[name] || [];
-    const updated = current.includes(value)
-      ? current.filter((v: string) => v !== value)
-      : [...current, value];
+    const updated = current.includes(value) ? current.filter((v: string) => v !== value) : [...current, value];
     handleChange(name, updated);
   };
 
+  const inputClass = `w-full px-3 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white
+    placeholder-white/30 text-sm focus:outline-none focus:ring-2 focus:ring-boardy-500
+    focus:border-transparent disabled:opacity-40 transition-all`;
+
   return (
-    <form onSubmit={handleSubmit} className="max-w-[85%] mb-3 space-y-4">
-      <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm space-y-4">
+    <form onSubmit={handleSubmit} className="max-w-[85%] mb-3 space-y-4 fade-up">
+      <div className="glass-card p-5 space-y-4">
         {fields.filter(isFieldVisible).map((field) => (
           <div key={field.name}>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+            <label className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wide">
               {field.label}
-              {field.required && <span className="text-red-400 ml-0.5">*</span>}
+              {field.required && <span className="text-boardy-400 ml-0.5">*</span>}
             </label>
 
             {field.type === 'select' && field.options && (
@@ -106,9 +87,7 @@ export function DynamicForm({ fields, onSubmit, disabled }: DynamicFormProps) {
                 value={values[field.name] || ''}
                 onChange={(e) => handleChange(field.name, e.target.value)}
                 disabled={submitted}
-                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm
-                           focus:outline-none focus:ring-2 focus:ring-boardy-500 focus:border-transparent
-                           disabled:opacity-50 disabled:bg-gray-50"
+                className={inputClass + ' appearance-none'}
               >
                 <option value="">Select...</option>
                 {field.options.map((opt) => (
@@ -120,7 +99,7 @@ export function DynamicForm({ fields, onSubmit, disabled }: DynamicFormProps) {
             {field.type === 'multiselect' && field.options && (
               <div className="flex flex-wrap gap-2">
                 {field.options.map((opt) => {
-                  const selected = (values[field.name] || []).includes(opt.value);
+                  const sel = (values[field.name] || []).includes(opt.value);
                   return (
                     <button
                       key={opt.value}
@@ -128,10 +107,8 @@ export function DynamicForm({ fields, onSubmit, disabled }: DynamicFormProps) {
                       onClick={() => toggleMultiselect(field.name, opt.value)}
                       disabled={submitted}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all
-                        ${selected
-                          ? 'bg-boardy-600 text-white border-boardy-600'
-                          : 'bg-white text-gray-600 border-gray-200 hover:border-boardy-400'
-                        } disabled:opacity-50`}
+                        ${sel ? 'bg-boardy-500 text-white border-boardy-500' : 'border-white/20 text-white/60 hover:border-boardy-500/50'}
+                        disabled:opacity-40`}
                     >
                       {opt.label}
                     </button>
@@ -147,9 +124,7 @@ export function DynamicForm({ fields, onSubmit, disabled }: DynamicFormProps) {
                 placeholder={field.placeholder}
                 disabled={submitted}
                 rows={3}
-                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm resize-none
-                           focus:outline-none focus:ring-2 focus:ring-boardy-500 focus:border-transparent
-                           disabled:opacity-50 disabled:bg-gray-50"
+                className={inputClass + ' resize-none'}
               />
             )}
 
@@ -160,25 +135,18 @@ export function DynamicForm({ fields, onSubmit, disabled }: DynamicFormProps) {
                 onChange={(e) => handleChange(field.name, e.target.value)}
                 placeholder={field.placeholder}
                 disabled={submitted}
-                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm
-                           focus:outline-none focus:ring-2 focus:ring-boardy-500 focus:border-transparent
-                           disabled:opacity-50 disabled:bg-gray-50"
+                className={inputClass}
               />
             )}
 
             {errors[field.name] && (
-              <p className="text-xs text-red-500 mt-1">{errors[field.name]}</p>
+              <p className="text-xs text-red-400 mt-1">{errors[field.name]}</p>
             )}
           </div>
         ))}
       </div>
 
-      <button
-        type="submit"
-        disabled={submitted}
-        className="w-full py-3 rounded-xl bg-boardy-600 text-white font-semibold text-sm
-                   hover:bg-boardy-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
+      <button type="submit" disabled={submitted} className="btn-primary">
         {submitted ? 'Submitted ✓' : 'Continue →'}
       </button>
     </form>

@@ -30,36 +30,41 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-boardy-50 via-white to-boardy-100">
-      <div className="w-full max-w-md mx-4">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden" style={{ background: 'radial-gradient(ellipse at center top, #2D1899 0%, #0D0B1A 65%)' }}>
+      {/* Background glow orbs */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full opacity-20 blur-[120px]" style={{ background: '#6C47FF' }} />
+      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full opacity-10 blur-[100px]" style={{ background: '#4E2FD8' }} />
+
+      <div className="relative w-full max-w-sm mx-4 fade-up">
         {/* Logo & Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-boardy-600 text-white text-2xl font-bold mb-4">
-            B
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 glow-pulse" style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>
+            <span className="text-white text-2xl font-bold">B</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Boardy AI</h1>
-          <p className="text-gray-500 mt-2">AI-powered networking. Meet the right people.</p>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Boardy AI</h1>
+          <p className="text-white/50 mt-2 text-sm">AI-powered networking. Meet the right people.</p>
         </div>
 
         {/* Auth Card */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
-          <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1">
+        <div className="glass-card p-8">
+          {/* Toggle */}
+          <div className="flex gap-1 mb-6 p-1 rounded-2xl" style={{ background: 'rgba(255,255,255,0.06)' }}>
             <button
               onClick={() => setMode('signup')}
-              className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
+              className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                 mode === 'signup'
-                  ? 'bg-white shadow text-gray-900'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-boardy-500 text-white shadow-boardy-sm'
+                  : 'text-white/40 hover:text-white/70'
               }`}
             >
               Sign Up
             </button>
             <button
               onClick={() => setMode('login')}
-              className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
+              className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                 mode === 'login'
-                  ? 'bg-white shadow text-gray-900'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-boardy-500 text-white shadow-boardy-sm'
+                  : 'text-white/40 hover:text-white/70'
               }`}
             >
               Log In
@@ -68,20 +73,19 @@ export default function Home() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Email</label>
+              <label className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wide">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm
-                           focus:outline-none focus:ring-2 focus:ring-boardy-500 focus:border-transparent"
+                className="input-dark"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Password</label>
+              <label className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wide">Password</label>
               <input
                 type="password"
                 value={password}
@@ -89,28 +93,33 @@ export default function Home() {
                 placeholder={mode === 'signup' ? 'Min 8 characters' : 'Your password'}
                 required
                 minLength={mode === 'signup' ? 8 : undefined}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm
-                           focus:outline-none focus:ring-2 focus:ring-boardy-500 focus:border-transparent"
+                className="input-dark"
               />
             </div>
 
             {error && (
-              <p className="text-sm text-red-500 bg-red-50 rounded-lg px-3 py-2">{error}</p>
+              <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">{error}</p>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-xl bg-boardy-600 text-white font-semibold text-sm
-                         hover:bg-boardy-700 transition-colors disabled:opacity-50"
-            >
-              {loading ? 'Loading...' : mode === 'signup' ? 'Get Started' : 'Log In'}
+            <button type="submit" disabled={loading} className="btn-primary mt-2">
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Loading...
+                </span>
+              ) : mode === 'signup' ? (
+                'Get Started →'
+              ) : (
+                'Log In →'
+              )}
             </button>
           </form>
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-6">
-          By continuing, you agree to Boardy&apos;s Terms and Privacy Policy.
+        <p className="text-center text-xs text-white/20 mt-6">
+          By continuing, you agree to Boardy&apos;s{' '}
+          <span className="text-boardy-400 hover:text-boardy-300 cursor-pointer">Terms</span> and{' '}
+          <span className="text-boardy-400 hover:text-boardy-300 cursor-pointer">Privacy Policy</span>.
         </p>
       </div>
     </div>

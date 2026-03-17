@@ -32,15 +32,10 @@ export default function ChatPage() {
   const [inputText, setInputText] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom
   useEffect(() => {
-    scrollRef.current?.scrollTo({
-      top: scrollRef.current.scrollHeight,
-      behavior: 'smooth',
-    });
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, typing]);
 
-  // Start conversation on mount
   useEffect(() => {
     startChat();
   }, []);
@@ -50,16 +45,13 @@ export default function ChatPage() {
       const data = await api.startConversation('onboarding_v1');
       setConversationId(data.conversationId);
       setCurrentNode(data.node);
-
       if (data.messages) {
-        setMessages(
-          data.messages.map((m: any) => ({
-            sender: m.sender,
-            content: m.content,
-            nodeId: m.nodeId,
-            createdAt: m.createdAt,
-          }))
-        );
+        setMessages(data.messages.map((m: any) => ({
+          sender: m.sender,
+          content: m.content,
+          nodeId: m.nodeId,
+          createdAt: m.createdAt,
+        })));
       }
     } catch (err: any) {
       console.error('Failed to start chat:', err);
@@ -77,45 +69,20 @@ export default function ChatPage() {
     textInput?: string;
   }) => {
     if (!conversationId) return;
-
-    // Add user message to UI
-    const userContent =
-      input.textInput ||
-      input.choiceValue ||
-      (input.formData ? 'Submitted form' : '');
-
+    const userContent = input.textInput || input.choiceValue || (input.formData ? 'Submitted form' : '');
     if (userContent) {
-      setMessages((prev) => [
-        ...prev,
-        { sender: 'USER', content: userContent, createdAt: new Date() },
-      ]);
+      setMessages((prev) => [...prev, { sender: 'USER', content: userContent, createdAt: new Date() }]);
     }
-
-    // Show typing indicator
     setTyping(true);
     setCurrentNode(null);
-
     try {
-      // Simulate slight delay for natural feel
       await new Promise((r) => setTimeout(r, 600 + Math.random() * 800));
-
       const data = await api.sendMessage(conversationId, input);
-
-      if (data.errors) {
-        // Form validation errors — re-show form
-        setCurrentNode(currentNode);
-        setTyping(false);
-        return;
-      }
-
+      if (data.errors) { setCurrentNode(currentNode); setTyping(false); return; }
       if (data.node) {
         setCurrentNode(data.node);
-
         if (data.node.content) {
-          setMessages((prev) => [
-            ...prev,
-            { sender: 'AI', content: data.node.content, createdAt: new Date() },
-          ]);
+          setMessages((prev) => [...prev, { sender: 'AI', content: data.node.content, createdAt: new Date() }]);
         }
       }
     } catch (err) {
@@ -134,53 +101,56 @@ export default function ChatPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0D0B1A' }}>
         <div className="text-center">
-          <div className="w-12 h-12 rounded-2xl bg-boardy-600 text-white text-xl font-bold flex items-center justify-center mx-auto mb-3 animate-pulse">
-            B
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 glow-pulse"
+            style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>
+            <span className="text-white text-2xl font-bold">B</span>
           </div>
-          <p className="text-sm text-gray-500">Starting conversation...</p>
+          <p className="text-sm text-white/40">Starting conversation...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ background: '#0D0B1A' }}>
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
-        <div className="w-10 h-10 rounded-full bg-boardy-600 flex items-center justify-center text-white font-bold">
+      <header className="px-4 py-3 flex items-center gap-3 sticky top-0 z-10 border-b border-white/5"
+        style={{ background: 'rgba(13,11,26,0.9)', backdropFilter: 'blur(20px)' }}>
+        <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+          style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>
           B
         </div>
-        <div>
-          <h1 className="font-semibold text-gray-900 text-sm">Boardy AI</h1>
-          <p className="text-xs text-green-500">Online</p>
+        <div className="flex-1">
+          <h1 className="font-semibold text-white text-sm">Boardy AI</h1>
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
+            <p className="text-xs text-white/40">Active now</p>
+          </div>
         </div>
+        <button
+          onClick={() => { window.location.href = '/'; }}
+          className="text-xs text-white/30 hover:text-white/60 transition-colors px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20"
+        >
+          Sign out
+        </button>
       </header>
 
       {/* Chat Area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto chat-scroll px-4 py-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto chat-scroll px-4 py-6 space-y-1">
         {messages.map((msg, i) => (
-          <ChatBubble
-            key={i}
-            sender={msg.sender}
-            content={msg.content}
-            timestamp={msg.createdAt}
-          />
+          <ChatBubble key={i} sender={msg.sender} content={msg.content} timestamp={msg.createdAt} />
         ))}
-
         {typing && <TypingIndicator />}
-
-        {/* Interactive elements based on current node */}
         {currentNode && !typing && (
-          <div className="mt-2">
+          <div className="mt-3 fade-up">
             {currentNode.type === 'choices' && currentNode.choices && (
               <ChoiceButtons
                 choices={currentNode.choices}
                 onSelect={(value) => sendMessage({ choiceValue: value })}
               />
             )}
-
             {currentNode.type === 'form' && currentNode.formSchema && (
               <DynamicForm
                 fields={currentNode.formSchema}
@@ -191,37 +161,36 @@ export default function ChatPage() {
         )}
       </div>
 
-      {/* Text Input (for message nodes or free text) */}
+      {/* Continue button for message nodes */}
       {currentNode?.type === 'message' && currentNode.next && (
-        <div className="px-4 py-3 bg-white border-t border-gray-200">
+        <div className="px-4 py-4 border-t border-white/5">
           <button
             onClick={() => sendMessage({ textInput: 'Continue' })}
-            className="w-full py-3 rounded-xl bg-boardy-600 text-white font-semibold text-sm
-                       hover:bg-boardy-700 transition-colors"
+            className="btn-primary"
           >
             Continue →
           </button>
         </div>
       )}
 
+      {/* Free text input */}
       {currentNode?.type === 'ai_response' && (
-        <form onSubmit={handleTextSubmit} className="px-4 py-3 bg-white border-t border-gray-200">
+        <form onSubmit={handleTextSubmit} className="px-4 py-4 border-t border-white/5">
           <div className="flex gap-2">
             <input
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder="Type a message..."
-              className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-sm
-                         focus:outline-none focus:ring-2 focus:ring-boardy-500 focus:border-transparent"
+              placeholder="Message Boardy..."
+              className="input-dark flex-1"
             />
             <button
               type="submit"
               disabled={!inputText.trim()}
-              className="px-5 py-3 rounded-xl bg-boardy-600 text-white font-semibold text-sm
-                         hover:bg-boardy-700 transition-colors disabled:opacity-50"
+              className="px-5 py-3 rounded-2xl font-semibold text-sm transition-all duration-200 disabled:opacity-40"
+              style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}
             >
-              Send
+              ↑
             </button>
           </div>
         </form>
