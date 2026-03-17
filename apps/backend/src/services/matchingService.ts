@@ -292,12 +292,12 @@ export class MatchingService {
       where: { dealPartnerId_founderId: { dealPartnerId, founderId } },
     });
 
-    if (deal && deal.status === 'SCOUTED') {
+    if (deal && deal.status === 'OPEN') {
       await prisma.dealTracking.update({
         where: { id: deal.id },
-        data: { status: 'INTRO_MADE', introSent: true, introSentAt: new Date() },
+        data: { status: 'INTRO_MADE', introSent: true, introSentAt: new Date(), introDate: new Date() },
       });
-      console.log(`[DealFlow] Deal ${deal.id} progressed SCOUTED → INTRO_MADE on match acceptance`);
+      console.log(`[DealFlow] Deal ${deal.id} progressed OPEN → INTRO_MADE on match acceptance`);
     }
   }
 

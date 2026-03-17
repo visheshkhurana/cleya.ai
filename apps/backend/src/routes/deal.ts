@@ -76,7 +76,7 @@ dealRouter.get('/', authenticate, async (req: Request, res: Response, next: Next
 
 dealRouter.post('/', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { founderId, industry, stage, notes } = req.body;
+    const { founderId, industry, stage, notes, dealValue, carryPercentage } = req.body;
 
     if (!founderId) {
       return res.status(400).json({ success: false, error: 'founderId is required' });
@@ -89,6 +89,8 @@ dealRouter.post('/', authenticate, async (req: Request, res: Response, next: Nex
         industry: industry || null,
         stage: stage || null,
         notes: notes || null,
+        dealValue: dealValue ? parseFloat(dealValue) : null,
+        carryPercentage: carryPercentage ? parseFloat(carryPercentage) : null,
       },
       include: {
         founder: { select: { id: true, email: true, profile: { select: { headline: true, persona: true, companyName: true } } } },
@@ -105,7 +107,7 @@ dealRouter.post('/', authenticate, async (req: Request, res: Response, next: Nex
 
 dealRouter.patch('/:id', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { status, notes, introSent, responseStatus } = req.body;
+    const { status, notes, introSent, responseStatus, dealValue, carryPercentage, introDate, closeDate } = req.body;
 
     const deal = await prisma.dealTracking.findUnique({ where: { id: req.params.id } });
     if (!deal) {
@@ -115,14 +117,31 @@ dealRouter.patch('/:id', authenticate, async (req: Request, res: Response, next:
       return res.status(403).json({ success: false, error: 'Not authorized' });
     }
 
+    const updateData: any = {};
+    if (status) updateData.status = status;
+    if (notes !== undefined) updateData.notes = notes;
+    if (introSent !== undefined) {
+      updateData.introSent = introSent;
+      updateData.introSentAt = introSent ? new Date() : null;
+    }
+    if (responseStatus) updateData.responseStatus = responseStatus;
+    if (dealValue !== undefined) updateData.dealValue = dealValue ? parseFloat(dealValue) : null;
+    if (carryPercentage !== undefined) updateData.carryPercentage = carryPercentage ? parseFloat(carryPercentage) : null;
+    if (introDate !== undefined) updateData.introDate = introDate ? new Date(introDate) : null;
+    if (closeDate !== undefined) updateData.closeDate = closeDate ? new Date(closeDate) : null;
+
+    if (status === 'INTRO_MADE' && !deal.introDate) {
+      updateData.introDate = new Date();
+      updateData.introSent = true;
+      updateData.introSentAt = new Date();
+    }
+    if ((status === 'CLOSED_WON' || status === 'CLOSED_LOST') && !deal.closeDate) {
+      updateData.closeDate = new Date();
+    }
+
     const updated = await prisma.dealTracking.update({
       where: { id: req.params.id },
-      data: {
-        ...(status && { status }),
-        ...(notes !== undefined && { notes }),
-        ...(introSent !== undefined && { introSent, introSentAt: introSent ? new Date() : null }),
-        ...(responseStatus && { responseStatus }),
-      },
+      data: updateData,
       include: {
         founder: { select: { id: true, email: true, profile: { select: { headline: true, persona: true, companyName: true } } } },
         dealPartner: { select: { id: true, email: true, profile: { select: { headline: true, persona: true, companyName: true } } } },

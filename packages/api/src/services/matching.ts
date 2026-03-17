@@ -434,5 +434,7 @@ function mapProfileToMatching(p: any): ProfileForMatching {
     industryFocus: p.industryFocus || [],
     investmentThesis: p.investmentThesis || undefined,
     fundName: p.fundName || undefined,
+    businessDescription: p.businessDescription || undefined,
+    investmentRange: p.investmentRange || undefined,
   };
 }

@@ -479,9 +479,8 @@ export default function AdminDashboard() {
                 {[
                   { label: 'Total Deals', value: dealData.stats.total, icon: '🤝' },
                   { label: 'Intros Sent', value: dealData.stats.introsSent, icon: '📨' },
-                  ...Object.entries(dealData.stats.byStatus || {}).slice(0, 2).map(([k, v]) => ({
-                    label: k.replace(/_/g, ' '), value: v as number, icon: k === 'SCOUTED' ? '🔍' : k === 'INTRO_MADE' ? '🤝' : '📋'
-                  })),
+                  { label: 'Open', value: dealData.stats.byStatus?.OPEN || 0, icon: '🔍' },
+                  { label: 'Closed Won', value: dealData.stats.byStatus?.CLOSED_WON || 0, icon: '🏆' },
                 ].map((stat) => (
                   <div key={stat.label} className="bg-[#1a1230]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 p-5">
                     <div className="flex items-center gap-2 mb-2">
@@ -507,8 +506,10 @@ export default function AdminDashboard() {
                       <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Industry</th>
                       <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Stage</th>
                       <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Status</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Deal Value</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Carry %</th>
                       <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Intro</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Date</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-purple-500/5">
@@ -524,28 +525,63 @@ export default function AdminDashboard() {
                         <td className="px-6 py-3 text-purple-200/70">{deal.industry || '-'}</td>
                         <td className="px-6 py-3 text-purple-200/70">{deal.stage?.replace(/_/g, ' ') || '-'}</td>
                         <td className="px-6 py-3">
-                          <span className={`px-2 py-0.5 rounded-full text-xs border ${
-                            deal.status === 'CLOSED' ? 'text-green-400 bg-green-500/10 border-green-500/20' :
-                            deal.status === 'IN_DILIGENCE' ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' :
-                            deal.status === 'PASSED' ? 'text-red-400 bg-red-500/10 border-red-500/20' :
-                            'text-purple-300 bg-purple-500/10 border-purple-500/20'
-                          }`}>
-                            {deal.status?.replace(/_/g, ' ')}
-                          </span>
+                          <select
+                            value={deal.status}
+                            onChange={async (e) => {
+                              try {
+                                await api.updateDeal(deal.id, { status: e.target.value });
+                                loadDeals();
+                              } catch (err) { console.error(err); }
+                            }}
+                            className="bg-[#0f0a1e] border border-purple-500/20 rounded px-2 py-1 text-xs text-purple-200"
+                          >
+                            <option value="OPEN">Open</option>
+                            <option value="INTRO_MADE">Intro Made</option>
+                            <option value="CLOSED_WON">Closed Won</option>
+                            <option value="CLOSED_LOST">Closed Lost</option>
+                          </select>
+                        </td>
+                        <td className="px-6 py-3 text-purple-200/70">
+                          {deal.dealValue ? `$${Number(deal.dealValue).toLocaleString()}` : '-'}
+                        </td>
+                        <td className="px-6 py-3 text-purple-200/70">
+                          {deal.carryPercentage ? `${deal.carryPercentage}%` : '-'}
                         </td>
                         <td className="px-6 py-3">
                           {deal.introSent ? (
-                            <span className="text-green-400 text-xs">Sent</span>
+                            <div>
+                              <span className="text-green-400 text-xs">Sent</span>
+                              {deal.introDate && <div className="text-purple-300/40 text-xs">{formatDate(deal.introDate)}</div>}
+                            </div>
                           ) : (
                             <span className="text-purple-400/40 text-xs">-</span>
                           )}
                         </td>
-                        <td className="px-6 py-3 text-purple-300/40 text-xs">{formatDate(deal.createdAt)}</td>
+                        <td className="px-6 py-3">
+                          <button
+                            onClick={async () => {
+                              const value = prompt('Enter deal value ($):');
+                              const carry = prompt('Enter carry percentage (%):');
+                              if (value || carry) {
+                                try {
+                                  await api.updateDeal(deal.id, {
+                                    ...(value && { dealValue: value }),
+                                    ...(carry && { carryPercentage: carry }),
+                                  });
+                                  loadDeals();
+                                } catch (err) { console.error(err); }
+                              }
+                            }}
+                            className="px-2 py-1 text-xs bg-purple-600/20 text-purple-300 rounded hover:bg-purple-600/40 transition"
+                          >
+                            Set Value
+                          </button>
+                        </td>
                       </tr>
                     ))}
                     {(!dealData?.deals || dealData.deals.length === 0) && (
                       <tr>
-                        <td colSpan={7} className="px-6 py-8 text-center text-purple-400/40">No deals tracked yet</td>
+                        <td colSpan={9} className="px-6 py-8 text-center text-purple-400/40">No deals tracked yet</td>
                       </tr>
                     )}
                   </tbody>

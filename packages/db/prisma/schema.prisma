@@ -426,12 +426,16 @@ model DealTracking {
   founderId       String
   founder         User            @relation("FounderDeals", fields: [founderId], references: [id], onDelete: Cascade)
 
-  status          DealStatus      @default(SCOUTED)
+  status          DealStatus      @default(OPEN)
   industry        String?
   stage           CompanyStage?
   notes           String?
+  dealValue       Float?
+  carryPercentage Float?
   introSent       Boolean         @default(false)
   introSentAt     DateTime?
+  introDate       DateTime?
+  closeDate       DateTime?
   responseStatus  DealResponse?
 
   createdAt       DateTime        @default(now())
@@ -445,12 +449,10 @@ model DealTracking {
 }
 
 enum DealStatus {
-  SCOUTED
-  CONTACTED
+  OPEN
   INTRO_MADE
-  IN_DILIGENCE
-  PASSED
-  CLOSED
+  CLOSED_WON
+  CLOSED_LOST
 }
 
 enum DealResponse {

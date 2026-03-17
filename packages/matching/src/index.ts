@@ -26,6 +26,8 @@ export interface ProfileForMatching {
   industryFocus?: string[];
   investmentThesis?: string;
   fundName?: string;
+  businessDescription?: string;
+  investmentRange?: string;
 }
 
 // ─── Persona Compatibility Matrix ───
@@ -515,32 +517,51 @@ export class MatchingEngine {
       if (founder.persona === 'VENTURE_PARTNER') {
         if (candidate.persona !== 'FOUNDER') return 0;
 
-        let score = 0.20;
+        let score = 0.15;
 
         const focusIndustries = founder.industryFocus?.length ? founder.industryFocus : founder.industries;
         const industryOverlap = this.scoreArrayOverlap(focusIndustries, candidate.industries);
-        score += industryOverlap * 0.25;
+        score += industryOverlap * 0.20;
 
         if (founder.companyStage && candidate.companyStage) {
           const compatible = STAGE_COMPATIBILITY[founder.companyStage] || [];
-          if (compatible.includes(candidate.companyStage)) score += 0.15;
+          if (compatible.includes(candidate.companyStage)) score += 0.10;
         } else {
-          score += 0.05;
+          score += 0.03;
         }
 
-        if (founder.investmentAmount && candidate.raiseAmount) {
-          const investNum = parseFloat(founder.investmentAmount.replace(/[^0-9.]/g, ''));
-          const raiseNum = parseFloat(candidate.raiseAmount.replace(/[^0-9.]/g, ''));
+        if (founder.investmentRange && candidate.raiseAmount) {
+          const range = founder.investmentRange.replace(/[^0-9.\-–—kKmMbB]/g, '').toLowerCase();
+          const raiseNum = this.parseMoneyValue(candidate.raiseAmount);
+          const rangeParts = range.split(/[-–—]/);
+          if (rangeParts.length === 2) {
+            const rangeMin = this.parseMoneyValue(rangeParts[0]);
+            const rangeMax = this.parseMoneyValue(rangeParts[1]);
+            if (rangeMin > 0 && rangeMax > 0 && raiseNum > 0 && raiseNum >= rangeMin && raiseNum <= rangeMax) {
+              score += 0.20;
+            } else if (rangeMax > 0 && raiseNum > 0 && raiseNum <= rangeMax * 1.5) {
+              score += 0.08;
+            }
+          } else {
+            const investNum = this.parseMoneyValue(founder.investmentRange);
+            if (investNum > 0 && raiseNum > 0 && investNum <= raiseNum) {
+              score += 0.15;
+            }
+          }
+        } else if (founder.investmentAmount && candidate.raiseAmount) {
+          const investNum = this.parseMoneyValue(founder.investmentAmount);
+          const raiseNum = this.parseMoneyValue(candidate.raiseAmount);
           if (investNum > 0 && raiseNum > 0 && investNum <= raiseNum) {
             score += 0.20;
           }
-        } else if (founder.investmentAmount || candidate.raiseAmount) {
+        } else if (founder.investmentRange || founder.investmentAmount || candidate.raiseAmount) {
           score += 0.05;
         }
 
-        if (founder.investmentThesis && candidate.headline) {
+        if (founder.investmentThesis) {
           const thesis = founder.investmentThesis.toLowerCase();
           const candidateText = [
+            candidate.businessDescription || '',
             candidate.headline || '',
             candidate.bio || '',
             ...candidate.industries,
@@ -548,7 +569,7 @@ export class MatchingEngine {
           const thesisTerms = thesis.split(/\s+/).filter(t => t.length > 3);
           const matchedTerms = thesisTerms.filter(term => candidateText.includes(term));
           const thesisOverlap = thesisTerms.length > 0 ? matchedTerms.length / thesisTerms.length : 0;
-          score += thesisOverlap * 0.20;
+          score += thesisOverlap * 0.35;
         }
 
         return Math.min(score, 1.0);
@@ -619,6 +640,16 @@ export class MatchingEngine {
     if (!a.companyStage || !b.companyStage) return 0.5;
     const compatible = STAGE_COMPATIBILITY[a.companyStage] || [];
     return compatible.includes(b.companyStage) ? 1.0 : 0.2;
+  }
+
+  private parseMoneyValue(value: string): number {
+    const cleaned = value.replace(/[^0-9.kKmMbB]/g, '').toLowerCase();
+    let num = parseFloat(cleaned.replace(/[kmb]/g, ''));
+    if (isNaN(num)) return 0;
+    if (cleaned.includes('b')) num *= 1_000_000_000;
+    else if (cleaned.includes('m')) num *= 1_000_000;
+    else if (cleaned.includes('k')) num *= 1_000;
+    return num;
   }
 
   private scoreArrayOverlap(arrA: string[], arrB: string[]): number {

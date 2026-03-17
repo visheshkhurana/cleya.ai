@@ -23,6 +23,8 @@ export class AutomationService {
 
     if (persona === 'DEAL_PARTNER') {
       this.scheduleDealPartnerScout(userId);
+    } else if (persona === 'VENTURE_PARTNER') {
+      this.scheduleVenturePartnerMatch(userId);
     } else {
       this.scheduleAutoMatch(userId);
     }
@@ -56,6 +58,18 @@ export class AutomationService {
         console.log(`[DealFlow] Auto-scouted ${scouted.length} founders for deal partner ${userId}`);
       } catch (error) {
         console.error(`[DealFlow] Auto-scout failed for deal partner ${userId}:`, error);
+      }
+    }, 5000);
+  }
+
+  private scheduleVenturePartnerMatch(userId: string) {
+    setTimeout(async () => {
+      try {
+        console.log(`[VPFlow] Finding thesis-matched founders for venture partner ${userId}`);
+        const proposed = await matchingService.findAndAutoPropose(userId, 5);
+        console.log(`[VPFlow] Proposed ${proposed.length} thesis-matched founders for VP ${userId}`);
+      } catch (error) {
+        console.error(`[VPFlow] Auto-match failed for venture partner ${userId}:`, error);
       }
     }, 5000);
   }

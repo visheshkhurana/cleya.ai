@@ -84,7 +84,7 @@ Six persona types with tailored onboarding flows:
   - **Investor** → Founders in matching industry + compatible stage + investment range fit
   - **Talent/Job Seeker** → Founders hiring for their target role + industry + skills
   - **Deal Partner** → Founders in focus industries + tracked companies overlap + stage compatibility
-  - **Venture Partner** → Founders in focus industries + stage + investment thesis keyword matching
+  - **Venture Partner** → Founders in focus industries + investment range/thesis compatibility
 - **Intent alignment scoring**: Maps `lookingFor` values to ideal persona matches
 - **Skill relevance scoring**: Both overlap + complementary skill matching
 
@@ -96,11 +96,20 @@ Six persona types with tailored onboarding flows:
 ### Deal Partner (Scout) Special Flow
 - **Auto-scout on onboarding**: When a Deal Partner completes onboarding, automatically finds matching Founders, creates DealTracking records, and proposes matches (5s delay)
 - **Manual scout**: `POST /api/deals/scout` — Deal Partners can trigger scouting on demand (persona-gated)
-- **Deal pipeline auto-progression**: When a Deal Partner ↔ Founder match is accepted, the corresponding DealTracking record auto-progresses from SCOUTED → INTRO_MADE with introSent=true
-- **DealTracking model**: Tracks deals scouted by deal partners linking to founders
-- **Fields**: dealPartnerId, founderId, status (SCOUTED→CONTACTED→INTRO_MADE→IN_DILIGENCE→PASSED→CLOSED), industry, stage, notes, introSent, responseStatus
+- **Deal pipeline auto-progression**: When a Deal Partner ↔ Founder match is accepted, the deal auto-progresses from OPEN → INTRO_MADE with introSent=true and introDate set
+- **DealTracking model**: dealPartnerId, founderId, dealValue (Float), carryPercentage (Float), status (OPEN→INTRO_MADE→CLOSED_WON/CLOSED_LOST), introDate, closeDate, introSent, responseStatus
+- **Auto-close date**: Setting status to CLOSED_WON or CLOSED_LOST auto-sets closeDate; INTRO_MADE auto-sets introDate
+- **Admin deal management**: Admin can update deal status via dropdown, set deal value and carry percentage
 - **Endpoints**: `POST /api/deals/scout`, `GET/POST/PATCH/DELETE /api/deals`, `GET /api/deals/admin/all`
 - **Unique constraint**: One deal per (dealPartner, founder) pair
+
+### Venture Partner Special Flow
+- **Auto-match on onboarding**: When a VP completes onboarding, automatically finds thesis-matched Founders and proposes matches (5s delay)
+- **Investment thesis matching**: Compares VP's `investmentThesis` against Founder's `businessDescription` + headline + bio + industries (keyword overlap scoring, 35% weight)
+- **Investment range compatibility**: Parses VP's `investmentRange` (supports "$1M-$5M", "$500K", etc.) and checks if Founder's `raiseAmount` falls within range (20% weight, with partial credit for near-range)
+- **Industry focus overlap**: VP's `industryFocus` vs Founder's industries (20% weight)
+- **Stage compatibility**: VP's preferred stage vs Founder's current stage (10% weight)
+- **Money parser**: Handles K/M/B suffixes and range formats (e.g., "1m-5m", "$500K")
 
 ### Event Management
 - **Event model**: name, description, date, endDate, location, isVirtual, maxCapacity, organizer, status (UPCOMING/ACTIVE/COMPLETED/CANCELLED)
