@@ -1,0 +1,13 @@
+{
+  "name": "@boardy/ai",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "dependencies": {
+    "openai": "^4.28.0",
+    "@anthropic-ai/sdk": "^0.17.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}
