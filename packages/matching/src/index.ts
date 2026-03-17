@@ -515,16 +515,26 @@ export class MatchingEngine {
       if (founder.persona === 'VENTURE_PARTNER') {
         if (candidate.persona !== 'FOUNDER') return 0;
 
-        let score = 0.25;
+        let score = 0.20;
 
         const focusIndustries = founder.industryFocus?.length ? founder.industryFocus : founder.industries;
         const industryOverlap = this.scoreArrayOverlap(focusIndustries, candidate.industries);
-        score += industryOverlap * 0.30;
+        score += industryOverlap * 0.25;
 
         if (founder.companyStage && candidate.companyStage) {
           const compatible = STAGE_COMPATIBILITY[founder.companyStage] || [];
-          if (compatible.includes(candidate.companyStage)) score += 0.20;
+          if (compatible.includes(candidate.companyStage)) score += 0.15;
         } else {
+          score += 0.05;
+        }
+
+        if (founder.investmentAmount && candidate.raiseAmount) {
+          const investNum = parseFloat(founder.investmentAmount.replace(/[^0-9.]/g, ''));
+          const raiseNum = parseFloat(candidate.raiseAmount.replace(/[^0-9.]/g, ''));
+          if (investNum > 0 && raiseNum > 0 && investNum <= raiseNum) {
+            score += 0.20;
+          }
+        } else if (founder.investmentAmount || candidate.raiseAmount) {
           score += 0.05;
         }
 
@@ -538,7 +548,7 @@ export class MatchingEngine {
           const thesisTerms = thesis.split(/\s+/).filter(t => t.length > 3);
           const matchedTerms = thesisTerms.filter(term => candidateText.includes(term));
           const thesisOverlap = thesisTerms.length > 0 ? matchedTerms.length / thesisTerms.length : 0;
-          score += thesisOverlap * 0.25;
+          score += thesisOverlap * 0.20;
         }
 
         return Math.min(score, 1.0);
