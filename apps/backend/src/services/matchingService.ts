@@ -195,6 +195,17 @@ export class MatchingService {
         headline: userA.profile?.headline,
       },
     });
+
+    const nameA = userA.profile?.currentRole
+      ? `${userA.profile.currentRole}${userA.profile.companyName ? ` at ${userA.profile.companyName}` : ''}`
+      : userA.email.split('@')[0];
+    const nameB = userB.profile?.currentRole
+      ? `${userB.profile.currentRole}${userB.profile.companyName ? ` at ${userB.profile.companyName}` : ''}`
+      : userB.email.split('@')[0];
+    const personaA = userA.profile?.persona || 'Professional';
+    const personaB = userB.profile?.persona || 'Professional';
+    emailService.sendMatchAccepted(userA.email, nameB, personaB, userB.email).catch(() => {});
+    emailService.sendMatchAccepted(userB.email, nameA, personaA, userA.email).catch(() => {});
   }
 
   async getMatchesForUser(userId: string) {
