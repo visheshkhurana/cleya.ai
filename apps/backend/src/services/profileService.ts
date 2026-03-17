@@ -1,5 +1,6 @@
 import { prisma } from '@boardy/db';
 import { createAIService } from '@boardy/ai';
+import { generateAndStoreEmbedding } from '@boardy/api';
 import { AppError } from '../middleware/errorHandler';
 
 export class ProfileService {
@@ -101,44 +102,11 @@ export class ProfileService {
 
   async generateEmbedding(userId: string, profile: any) {
     try {
-      const text = this.profileToText(profile);
-      const result = await this.ai.embed(text);
-
-      await prisma.$executeRawUnsafe(
-        `INSERT INTO user_embeddings (id, "userId", vector, source, content, "createdAt", "updatedAt")
-         VALUES (gen_random_uuid(), $1, $2::vector, 'PROFILE', $3, NOW(), NOW())
-         ON CONFLICT ("userId", source)
-         DO UPDATE SET vector = $2::vector, content = $3, "updatedAt" = NOW()`,
-        userId,
-        `[${result.vector.join(',')}]`,
-        text
-      );
-
+      await generateAndStoreEmbedding(userId, profile);
       console.log(`Embedding generated for user ${userId}`);
     } catch (error) {
       console.error('Failed to generate embedding:', error);
     }
-  }
-
-  private profileToText(profile: any): string {
-    const parts = [
-      profile.persona && `Role: ${profile.persona}`,
-      profile.headline && `Headline: ${profile.headline}`,
-      profile.bio && `Bio: ${profile.bio}`,
-      profile.companyName && `Company: ${profile.companyName}`,
-      profile.currentRole && `Title: ${profile.currentRole}`,
-      profile.businessDescription && `Business: ${profile.businessDescription}`,
-      profile.keyTractionPoints && `Traction: ${profile.keyTractionPoints}`,
-      profile.industries?.length && `Industries: ${profile.industries.join(', ')}`,
-      profile.skills?.length && `Skills: ${profile.skills.join(', ')}`,
-      profile.interests?.length && `Interests: ${profile.interests.join(', ')}`,
-      profile.lookingFor?.length && `Looking for: ${profile.lookingFor.join(', ')}`,
-      profile.location && `Location: ${profile.location}`,
-      profile.investorType && `Investor Type: ${profile.investorType}`,
-      profile.investmentAmount && `Check Size: ${profile.investmentAmount}`,
-      profile.targetRole && `Target Role: ${profile.targetRole}`,
-    ];
-    return parts.filter(Boolean).join('. ');
   }
 
   calculateCompleteness(data: Record<string, any>): number {

@@ -9,6 +9,7 @@ Monorepo with:
 - `packages/db` — Prisma ORM with PostgreSQL + pgvector
 - `packages/ai` — LLM abstraction (OpenAI/Anthropic)
 - `packages/conversation-engine` — JSON state machine for onboarding flows
+- `packages/api` — Shared API services: vector matching, embedding generation (pgvector)
 - `packages/matching` — Rule-based + intent + semantic matching engine
 - `packages/types` — Shared TypeScript types
 
