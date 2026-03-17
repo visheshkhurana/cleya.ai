@@ -5,6 +5,7 @@ import { AppError } from '../middleware/errorHandler';
 import { sendToUser } from '../websocket/server';
 import { introductionService } from './introductionService';
 import { vectorMatchingService } from './vectorMatchingService';
+import { emailService } from './email';
 
 export class MatchingService {
   private ai = createAIService();
@@ -94,6 +95,19 @@ export class MatchingService {
       reason,
       score: score.total,
     });
+
+    const [userAData, userBData] = await Promise.all([
+      prisma.user.findUnique({ where: { id: userAId }, include: { profile: true } }),
+      prisma.user.findUnique({ where: { id: userBId }, include: { profile: true } }),
+    ]);
+    if (userAData && userBData) {
+      const nameA = userAData.profile?.currentRole || userAData.email.split('@')[0];
+      const nameB = userBData.profile?.currentRole || userBData.email.split('@')[0];
+      const personaA = userAData.profile?.persona || 'Professional';
+      const personaB = userBData.profile?.persona || 'Professional';
+      emailService.sendMatchProposed(userAData.email, nameB, personaB, score.total).catch(() => {});
+      emailService.sendMatchProposed(userBData.email, nameA, personaA, score.total).catch(() => {});
+    }
 
     return match;
   }
