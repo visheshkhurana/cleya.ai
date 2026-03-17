@@ -4,16 +4,12 @@ import { createAIService } from '@boardy/ai';
 import { AppError } from '../middleware/errorHandler';
 import { sendToUser } from '../websocket/server';
 import { introductionService } from './introductionService';
+import { vectorMatchingService } from './vectorMatchingService';
 
 export class MatchingService {
   private ai = createAIService();
 
   async findMatchesForUser(userId: string, limit = 10) {
-    const userProfile = await this.getProfileForMatching(userId);
-    if (!userProfile) throw new AppError(404, 'Profile not found', 'PROFILE_NOT_FOUND');
-
-    const candidates = await this.getAllCandidates(userId);
-
     const existingMatches = await prisma.match.findMany({
       where: {
         OR: [{ userAId: userId }, { userBId: userId }],
@@ -25,16 +21,24 @@ export class MatchingService {
       existingMatches.flatMap((m) => [m.userAId, m.userBId])
     );
 
-    const eligibleCandidates = candidates.filter(
-      (c) => !matchedIds.has(c.userId)
-    );
+    await vectorMatchingService.ensureEmbedding(userId);
 
-    const matches = matchingEngine.findMatches(userProfile, eligibleCandidates, {
-      limit,
+    const hybridResults = await vectorMatchingService.hybridMatch(userId, {
+      limit: limit * 2,
+      vectorCandidatePool: 50,
       minScore: 0.30,
+      excludeUserIds: Array.from(matchedIds),
     });
 
-    return matches;
+    return hybridResults.slice(0, limit).map((r) => ({
+      profile: r.profile,
+      score: {
+        total: r.hybridScore,
+        ruleScore: r.ruleScore,
+        semanticScore: r.vectorSimilarity,
+        breakdown: r.breakdown,
+      },
+    }));
   }
 
   async findAndAutoPropose(userId: string, limit = 5) {
@@ -75,8 +79,8 @@ export class MatchingService {
       throw new AppError(409, 'Match already exists', 'MATCH_EXISTS');
     }
 
-    const profileA = await this.getProfileForMatching(userAId);
-    const profileB = await this.getProfileForMatching(userBId);
+    const profileA = await vectorMatchingService.getProfileForMatching(userAId);
+    const profileB = await vectorMatchingService.getProfileForMatching(userBId);
     if (!profileA || !profileB) throw new AppError(404, 'Profile not found');
 
     const score = matchingEngine.score(profileA, profileB);
@@ -302,67 +306,6 @@ Write a brief reason why they should connect.`,
     }
   }
 
-  async getProfileForMatching(userId: string): Promise<ProfileForMatching | null> {
-    const profile = await prisma.profile.findUnique({ where: { userId } });
-    if (!profile) return null;
-
-    let embedding: number[] | undefined;
-    try {
-      const embRow = await prisma.$queryRawUnsafe<any[]>(
-        `SELECT vector::text FROM user_embeddings WHERE "userId" = $1 AND source = 'PROFILE' LIMIT 1`,
-        userId
-      );
-      if (embRow.length > 0) {
-        embedding = JSON.parse(embRow[0].vector);
-      }
-    } catch {}
-
-    return {
-      userId,
-      persona: profile.persona || 'OTHER',
-      companyStage: profile.companyStage || undefined,
-      industries: profile.industries,
-      interests: profile.interests,
-      lookingFor: profile.lookingFor,
-      location: profile.location || undefined,
-      skills: profile.skills,
-      headline: profile.headline || undefined,
-      bio: profile.bio || undefined,
-      embedding,
-      priority: (profile as any).priority || undefined,
-      targetRole: (profile as any).targetRole || undefined,
-      investorType: (profile as any).investorType || undefined,
-      investmentAmount: (profile as any).investmentAmount || undefined,
-      raiseAmount: (profile as any).raiseAmount || undefined,
-    };
-  }
-
-  private async getAllCandidates(excludeUserId: string): Promise<ProfileForMatching[]> {
-    const profiles = await prisma.profile.findMany({
-      where: {
-        userId: { not: excludeUserId },
-        isComplete: true,
-      },
-    });
-
-    return profiles.map((p: any) => ({
-      userId: p.userId,
-      persona: p.persona || 'OTHER',
-      companyStage: p.companyStage || undefined,
-      industries: p.industries,
-      interests: p.interests,
-      lookingFor: p.lookingFor,
-      location: p.location || undefined,
-      skills: p.skills,
-      headline: p.headline || undefined,
-      bio: p.bio || undefined,
-      priority: p.priority || undefined,
-      targetRole: p.targetRole || undefined,
-      investorType: p.investorType || undefined,
-      investmentAmount: p.investmentAmount || undefined,
-      raiseAmount: p.raiseAmount || undefined,
-    }));
-  }
 }
 
 export const matchingService = new MatchingService();

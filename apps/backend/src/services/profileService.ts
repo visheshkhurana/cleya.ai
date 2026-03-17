@@ -107,7 +107,7 @@ export class ProfileService {
       await prisma.$executeRawUnsafe(
         `INSERT INTO user_embeddings (id, "userId", vector, source, content, "createdAt", "updatedAt")
          VALUES (gen_random_uuid(), $1, $2::vector, 'PROFILE', $3, NOW(), NOW())
-         ON CONFLICT ("userId") WHERE source = 'PROFILE'
+         ON CONFLICT ("userId", source)
          DO UPDATE SET vector = $2::vector, content = $3, "updatedAt" = NOW()`,
         userId,
         `[${result.vector.join(',')}]`,

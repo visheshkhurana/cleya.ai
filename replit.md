@@ -102,13 +102,26 @@ Six persona types with tailored onboarding flows:
 7. **Voice Calls** — Twilio integration, AI voice assistant, transcript extraction
 8. **Admin Dashboard** — Stats, user list, conversion funnel, communications tab, manual call/message triggers
 
+### Vector-Based AI Matching (pgvector)
+- **VectorMatchingService** (`apps/backend/src/services/vectorMatchingService.ts`) — Uses pgvector's native `<=>` cosine distance operator for efficient similarity search at the database level
+- **Hybrid matching pipeline**: Pre-filters candidates via pgvector similarity → combines with rule-based + intent scoring → returns ranked results
+- **Text search**: Generate ad-hoc query embeddings and find matching profiles by natural language description
+- **Embedding management**: Auto-generates embeddings on profile update; backfill endpoint for existing profiles
+- **Database indexes**: `user_embeddings_vector_cosine_idx` (IVFFlat cosine), `user_embeddings_userId_source_uniq` (unique constraint for upsert)
+- **API endpoints**:
+  - `POST /api/matches/similar` — Find similar users by vector similarity
+  - `POST /api/matches/search` — Search users by text query (generates embedding on-the-fly)
+  - `GET /api/matches/embeddings/stats` — Embedding coverage statistics
+  - `POST /api/matches/embeddings/backfill` — Generate missing embeddings in batch
+
 ## Key Files
 - `apps/backend/src/index.ts` — Main Express server
 - `apps/backend/src/services/matchingService.ts` — Matching orchestrator (find, propose, respond, auto-match, stats)
+- `apps/backend/src/services/vectorMatchingService.ts` — pgvector-based similarity search + hybrid matching
 - `apps/backend/src/services/introductionService.ts` — Post-acceptance intro messages
 - `apps/backend/src/services/automationService.ts` — Post-onboarding automation (call, message, auto-match)
 - `apps/backend/src/services/messagingService.ts` — Twilio SMS/WhatsApp
-- `apps/backend/src/routes/match.ts` — Match API routes (find, propose, respond, stats)
+- `apps/backend/src/routes/match.ts` — Match API routes (find, propose, respond, stats, similar, search, embeddings)
 - `apps/backend/src/routes/admin.ts` — Admin routes (stats, users, funnel, communications, triggers)
 - `apps/frontend/src/app/dashboard/page.tsx` — User dashboard
 - `apps/frontend/src/app/matches/page.tsx` — Match review UI
