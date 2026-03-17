@@ -47,7 +47,7 @@ export class MatchingService {
     return proposed;
   }
 
-  async proposeMatch(userAId: string, userBId: string) {
+  async proposeMatch(userAId: string, userBId: string, eventId?: string) {
     const existing = await prisma.match.findFirst({
       where: {
         OR: [
@@ -80,6 +80,7 @@ export class MatchingService {
         userAResponse: 'PENDING',
         userBResponse: 'PENDING',
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        ...(eventId && { eventId }),
       },
     });
 
@@ -346,6 +347,66 @@ export class MatchingService {
 
     console.log(`[DealFlow] Auto-scouted ${scouted.length} founders for deal partner ${dealPartnerId}`);
     return scouted;
+  }
+
+  async findEventMatches(eventId: string, userId: string, limit = 5) {
+    const participants = await prisma.eventParticipant.findMany({
+      where: {
+        eventId,
+        userId: { not: userId },
+        status: { in: ['REGISTERED', 'CONFIRMED', 'ATTENDED'] },
+      },
+      select: { userId: true },
+    });
+
+    if (participants.length === 0) return [];
+
+    const participantIds = participants.map(p => p.userId);
+
+    const allMatches = await this.findMatchesForUser(userId, 50);
+
+    const eventMatches = allMatches
+      .filter(m => participantIds.includes(m.profile.userId))
+      .slice(0, limit);
+
+    return eventMatches;
+  }
+
+  async matchEventParticipants(eventId: string, limit = 3) {
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      include: {
+        participants: {
+          where: { status: { in: ['REGISTERED', 'CONFIRMED', 'ATTENDED'] } },
+          select: { userId: true },
+        },
+      },
+    });
+
+    if (!event) throw new AppError(404, 'Event not found');
+
+    const results: { userId: string; matchesProposed: number }[] = [];
+
+    for (const participant of event.participants) {
+      const eventMatches = await this.findEventMatches(eventId, participant.userId, limit);
+      let proposed = 0;
+
+      for (const match of eventMatches) {
+        try {
+          await this.proposeMatch(participant.userId, match.profile.userId, eventId);
+          proposed++;
+        } catch (err: any) {
+          if (err.code !== 'MATCH_EXISTS') {
+            console.log(`[EventMatch] Propose failed for ${match.profile.userId}:`, err.message);
+          }
+        }
+      }
+
+      results.push({ userId: participant.userId, matchesProposed: proposed });
+    }
+
+    console.log(`[EventMatch] Matched ${results.length} participants for event ${eventId}`);
+    return results;
   }
 
   private async generateMatchReason(a: ProfileForMatching, b: ProfileForMatching): Promise<string> {

@@ -117,7 +117,9 @@ Six persona types with tailored onboarding flows:
 - **Auto-waitlist**: When event reaches maxCapacity, new registrations get WAITLISTED status
 - **Auto-registration**: EVENT_PARTICIPANT persona users are auto-registered for the next upcoming event on onboarding completion (3s delay), with pitchTopic pulled from their businessDescription
 - **Pitch fields**: Join endpoint accepts eventCode, eventName, pitchTopic, preferredMentors; admin can update these per participant
-- **Endpoints**: `GET/POST/PATCH/DELETE /api/events`, `POST /api/events/:id/join`, `DELETE /api/events/:id/leave`, `PATCH /api/events/:eventId/participants/:userId`, `GET /api/events/admin/all`
+- **Time-limited event matching**: `POST /api/events/match-participants` (admin) — matches participants only within the same event, tags Match records with `eventId`; `GET /api/events/:id/my-matches` — user sees their matches within an event
+- **Post-event follow-up**: When admin marks event as COMPLETED, a 24h follow-up is auto-scheduled to send each participant their event-scoped match results via WhatsApp/SMS; `POST /api/events/follow-up` for manual trigger; follows up only show matches tagged with the specific eventId
+- **Endpoints**: `GET/POST/PATCH/DELETE /api/events`, `POST /api/events/:id/join`, `DELETE /api/events/:id/leave`, `GET /api/events/:id/my-matches`, `POST /api/events/match-participants`, `POST /api/events/follow-up`, `PATCH /api/events/:eventId/participants/:userId`, `GET /api/events/admin/all`
 
 ### Admin Dashboard Tabs
 1. **Overview** — Key metrics, conversion funnel, users table with call/message triggers

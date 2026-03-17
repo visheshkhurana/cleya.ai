@@ -247,6 +247,8 @@ model Match {
   userBRespondedAt DateTime?
 
   reason      String?
+  eventId     String?
+  event       Event?      @relation(fields: [eventId], references: [id], onDelete: SetNull)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   expiresAt   DateTime?
@@ -256,6 +258,7 @@ model Match {
   @@index([userBId])
   @@index([status])
   @@index([score])
+  @@index([eventId])
   @@map("matches")
 }
 
@@ -481,6 +484,7 @@ model Event {
   metadata     Json?              @db.JsonB
 
   participants EventParticipant[]
+  matches      Match[]
 
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt

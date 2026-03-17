@@ -144,6 +144,78 @@ export class AutomationService {
     }
   }
 
+  async schedulePostEventFollowUp(eventId: string, delayMs = 24 * 60 * 60 * 1000) {
+    console.log(`[EventFlow] Scheduling post-event follow-up for event ${eventId} in ${delayMs / 1000}s`);
+
+    setTimeout(async () => {
+      try {
+        console.log(`[EventFlow] Running post-event follow-up for event ${eventId}`);
+
+        const event = await prisma.event.findUnique({
+          where: { id: eventId },
+          include: {
+            participants: {
+              where: { status: { in: ['REGISTERED', 'CONFIRMED', 'ATTENDED'] } },
+              include: {
+                user: {
+                  select: { id: true, email: true, phone: true, profile: { select: { currentRole: true, phoneNumber: true } } },
+                },
+              },
+            },
+          },
+        });
+
+        if (!event) {
+          console.log(`[EventFlow] Event ${eventId} not found for follow-up`);
+          return;
+        }
+
+        let sent = 0;
+        for (const participant of event.participants) {
+          const phone = participant.user.phone || (participant.user.profile as any)?.phoneNumber;
+          if (!phone) continue;
+
+          const matches = await prisma.match.findMany({
+            where: {
+              OR: [{ userAId: participant.userId }, { userBId: participant.userId }],
+              eventId: eventId,
+              status: { in: ['PROPOSED', 'PENDING_A', 'PENDING_B', 'ACCEPTED'] },
+            },
+            include: {
+              userA: { select: { profile: { select: { headline: true, companyName: true } } } },
+              userB: { select: { profile: { select: { headline: true, companyName: true } } } },
+            },
+            take: 5,
+          });
+
+          const matchNames = matches.map(m => {
+            const other = m.userAId === participant.userId ? m.userB : m.userA;
+            return `${other.profile?.headline || 'Professional'} at ${other.profile?.companyName || 'a company'}`;
+          });
+
+          const userName = (participant.user.profile as any)?.currentRole || participant.user.email.split('@')[0];
+          const message = matchNames.length > 0
+            ? `Hi ${userName}! Thanks for attending "${event.name}"! Your top matches:\n\n${matchNames.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\nOpen Cleo.ai to review and accept introductions!`
+            : `Hi ${userName}! Thanks for attending "${event.name}"! We're finding connections for you — check Cleo.ai soon!`;
+
+          try {
+            const result = await messagingService.sendWhatsApp(participant.userId, phone, message);
+            if (result.status === 'FAILED') {
+              await messagingService.sendSMS(participant.userId, phone, message);
+            }
+            sent++;
+          } catch (err) {
+            console.error(`[EventFlow] Follow-up failed for ${participant.userId}:`, err);
+          }
+        }
+
+        console.log(`[EventFlow] Post-event follow-up sent to ${sent}/${event.participants.length} participants`);
+      } catch (error) {
+        console.error(`[EventFlow] Post-event follow-up failed for event ${eventId}:`, error);
+      }
+    }, delayMs);
+  }
+
   async triggerCallForUser(userId: string, phoneNumber: string) {
     return callService.initiateCall(userId, phoneNumber);
   }

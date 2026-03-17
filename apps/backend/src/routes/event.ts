@@ -1,6 +1,9 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { authenticate } from '../middleware/auth';
 import { prisma } from '@boardy/db';
+import { matchingService } from '../services/matchingService';
+import { messagingService } from '../services/messagingService';
+import { automationService } from '../services/automationService';
 
 export const eventRouter = Router();
 
@@ -37,6 +40,121 @@ eventRouter.get('/admin/all', authenticate, async (req: Request, res: Response, 
   }
 });
 
+eventRouter.post('/match-participants', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (req.user!.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, error: 'Admin access required' });
+    }
+
+    const { eventId, limit: rawLimit } = req.body;
+    if (!eventId) {
+      return res.status(400).json({ success: false, error: 'eventId is required' });
+    }
+
+    const limit = Math.min(Math.max(parseInt(rawLimit) || 3, 1), 10);
+    const results = await matchingService.matchEventParticipants(eventId, limit);
+
+    res.json({
+      success: true,
+      data: {
+        eventId,
+        participantsMatched: results.length,
+        results,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+eventRouter.post('/follow-up', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (req.user!.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, error: 'Admin access required' });
+    }
+
+    const { eventId } = req.body;
+    if (!eventId) {
+      return res.status(400).json({ success: false, error: 'eventId is required' });
+    }
+
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      include: {
+        participants: {
+          where: { status: { in: ['REGISTERED', 'CONFIRMED', 'ATTENDED'] } },
+          include: {
+            user: {
+              select: { id: true, email: true, phone: true, profile: { select: { currentRole: true, phoneNumber: true } } },
+            },
+          },
+        },
+      },
+    });
+
+    if (!event) {
+      return res.status(404).json({ success: false, error: 'Event not found' });
+    }
+
+    const sent: string[] = [];
+    const failed: string[] = [];
+
+    for (const participant of event.participants) {
+      const phone = participant.user.phone || (participant.user.profile as any)?.phoneNumber;
+      if (!phone) {
+        failed.push(participant.userId);
+        continue;
+      }
+
+      const matches = await prisma.match.findMany({
+        where: {
+          OR: [{ userAId: participant.userId }, { userBId: participant.userId }],
+          eventId: eventId,
+          status: { in: ['PROPOSED', 'PENDING_A', 'PENDING_B', 'ACCEPTED'] },
+        },
+        include: {
+          userA: { select: { profile: { select: { headline: true, companyName: true } } } },
+          userB: { select: { profile: { select: { headline: true, companyName: true } } } },
+        },
+        take: 5,
+      });
+
+      const matchSummaries = matches.map(m => {
+        const other = m.userAId === participant.userId ? m.userB : m.userA;
+        return `${other.profile?.headline || 'Professional'} at ${other.profile?.companyName || 'a company'}`;
+      });
+
+      const userName = (participant.user.profile as any)?.currentRole || participant.user.email.split('@')[0];
+      const message = matchSummaries.length > 0
+        ? `Hi ${userName}! Thanks for attending "${event.name}"! Here are your top matches from the event:\n\n${matchSummaries.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\nOpen Cleo.ai to review and accept introductions!`
+        : `Hi ${userName}! Thanks for attending "${event.name}"! We're still finding the best connections for you. Check back on Cleo.ai soon!`;
+
+      try {
+        const result = await messagingService.sendWhatsApp(participant.userId, phone, message);
+        if (result.status === 'FAILED') {
+          await messagingService.sendSMS(participant.userId, phone, message);
+        }
+        sent.push(participant.userId);
+      } catch {
+        failed.push(participant.userId);
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        eventId,
+        eventName: event.name,
+        totalParticipants: event.participants.length,
+        messagesSent: sent.length,
+        messagesFailed: failed.length,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 eventRouter.get('/', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const events = await prisma.event.findMany({
@@ -47,6 +165,30 @@ eventRouter.get('/', authenticate, async (req: Request, res: Response, next: Nex
       orderBy: { date: 'asc' },
     });
     res.json({ success: true, data: events });
+  } catch (error) {
+    next(error);
+  }
+});
+
+eventRouter.get('/:id/my-matches', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const participant = await prisma.eventParticipant.findUnique({
+      where: {
+        eventId_userId: {
+          eventId: req.params.id,
+          userId: req.user!.userId,
+        },
+      },
+    });
+
+    if (!participant) {
+      return res.status(403).json({ success: false, error: 'You are not registered for this event' });
+    }
+
+    const limit = parseInt(req.query.limit as string) || 5;
+    const matches = await matchingService.findEventMatches(req.params.id, req.user!.userId, limit);
+
+    res.json({ success: true, data: matches });
   } catch (error) {
     next(error);
   }
@@ -116,6 +258,8 @@ eventRouter.patch('/:id', authenticate, async (req: Request, res: Response, next
 
     const { name, description, date, endDate, location, isVirtual, maxCapacity, status } = req.body;
 
+    const existingEvent = await prisma.event.findUnique({ where: { id: req.params.id } });
+
     const event = await prisma.event.update({
       where: { id: req.params.id },
       data: {
@@ -129,6 +273,13 @@ eventRouter.patch('/:id', authenticate, async (req: Request, res: Response, next
         ...(status && { status }),
       },
     });
+
+    if (status === 'COMPLETED' && existingEvent?.status !== 'COMPLETED') {
+      automationService.schedulePostEventFollowUp(event.id).catch(e =>
+        console.error(`[EventFlow] Failed to schedule follow-up:`, e)
+      );
+    }
+
     res.json({ success: true, data: event });
   } catch (error) {
     next(error);
