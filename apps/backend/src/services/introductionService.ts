@@ -71,7 +71,53 @@ export class IntroductionService {
       console.log('[IntroService] Notification creation failed:', e);
     }
 
+    const talkingPoints = await this.generateTalkingPoints(userA.profile, userB.profile, match.reason || '');
+    try {
+      await prisma.introductionRecord.upsert({
+        where: { matchId },
+        update: { status: 'SENT', talkingPoints },
+        create: {
+          matchId,
+          userAId: userA.id,
+          userBId: userB.id,
+          status: 'SENT',
+          talkingPoints,
+        },
+      });
+    } catch (e) {
+      console.log('[IntroService] IntroductionRecord creation failed:', e);
+    }
+
     console.log(`[IntroService] Introduction sent for match ${matchId}`);
+  }
+
+  private async generateTalkingPoints(profileA: any, profileB: any, reason: string): Promise<string[]> {
+    try {
+      const response = await this.ai.chat([
+        {
+          role: 'system',
+          content: 'Generate 4-5 specific conversation starter talking points for two people who have been matched for professional networking. Return ONLY a JSON array of strings. Each talking point should be 1-2 sentences and reference specific details about both people.',
+        },
+        {
+          role: 'user',
+          content: `Person A: ${profileA.persona} — ${profileA.headline || profileA.currentRole || ''} at ${profileA.companyName || ''}. Industries: ${profileA.industries?.join(', ') || 'N/A'}. Skills: ${profileA.skills?.join(', ') || 'N/A'}. Interests: ${profileA.interests?.join(', ') || 'N/A'}.
+Person B: ${profileB.persona} — ${profileB.headline || profileB.currentRole || ''} at ${profileB.companyName || ''}. Industries: ${profileB.industries?.join(', ') || 'N/A'}. Skills: ${profileB.skills?.join(', ') || 'N/A'}. Interests: ${profileB.interests?.join(', ') || 'N/A'}.
+Match reason: ${reason}`,
+        },
+      ]);
+      const parsed = JSON.parse(response.content);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      const points = [];
+      const sharedIndustries = (profileA.industries || []).filter((i: string) => (profileB.industries || []).includes(i));
+      const sharedSkills = (profileA.skills || []).filter((s: string) => (profileB.skills || []).includes(s));
+      if (sharedIndustries.length > 0) points.push(`You both work in ${sharedIndustries.join(' and ')} — share your perspectives on industry trends.`);
+      if (sharedSkills.length > 0) points.push(`You share expertise in ${sharedSkills.join(', ')}. Compare approaches and best practices.`);
+      if (reason) points.push(`The connection was made because: ${reason}`);
+      points.push('Discuss your current goals and how you might help each other.');
+      if (points.length < 3) points.push('Share what you\'re most excited about working on right now.');
+      return points;
+    }
   }
 
   private async generateIntroMessage(

@@ -43,6 +43,8 @@ model User {
   organizedEvents Event[]
   eventParticipations EventParticipant[]
   matchFeedbacks MatchFeedback[]
+  introductionsAsA IntroductionRecord[] @relation("IntroUserA")
+  introductionsAsB IntroductionRecord[] @relation("IntroUserB")
 
   @@index([email])
   @@index([phone])
@@ -255,6 +257,7 @@ model Match {
   expiresAt   DateTime?
 
   feedbacks   MatchFeedback[]
+  introduction IntroductionRecord?
 
   @@unique([userAId, userBId])
   @@index([userAId])
@@ -294,6 +297,38 @@ enum MatchResponse {
   ACCEPTED
   REJECTED
   PENDING
+}
+
+// ─────────────────────────────────────────────
+// INTRODUCTIONS
+// ─────────────────────────────────────────────
+
+model IntroductionRecord {
+  id           String             @id @default(cuid())
+  matchId      String             @unique
+  match        Match              @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  userAId      String
+  userA        User               @relation("IntroUserA", fields: [userAId], references: [id])
+  userBId      String
+  userB        User               @relation("IntroUserB", fields: [userBId], references: [id])
+  status       IntroductionStatus @default(SENT)
+  talkingPoints String[]          @default([])
+  scheduledAt  DateTime?
+  notes        String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@index([userAId])
+  @@index([userBId])
+  @@index([status])
+  @@map("introduction_records")
+}
+
+enum IntroductionStatus {
+  SENT
+  VIEWED
+  RESPONDED
+  MEETING_SCHEDULED
 }
 
 // ─────────────────────────────────────────────

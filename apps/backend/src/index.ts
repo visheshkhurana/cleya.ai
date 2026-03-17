@@ -18,6 +18,7 @@ import { twilioRouter } from './routes/twilio';
 import { dealRouter } from './routes/deal';
 import { eventRouter } from './routes/event';
 import { aiChatRouter } from './routes/aiChat';
+import { introductionRouter } from './routes/introduction';
 
 import { generalLimiter } from './middleware/rateLimit';
 
@@ -48,6 +49,7 @@ app.use('/api/twilio', twilioRouter);
 app.use('/api/deals', dealRouter);
 app.use('/api/events', eventRouter);
 app.use('/api/ai-chat', aiChatRouter);
+app.use('/api/introductions', introductionRouter);
 
 app.use(errorHandler);
 

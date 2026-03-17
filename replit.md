@@ -152,12 +152,21 @@ Six persona types with tailored onboarding flows:
 - **MobileNav Component**: `apps/frontend/src/components/MobileNav.tsx` — hamburger icon, slide-out drawer, body scroll lock, click-outside-to-close
 - **Google OAuth**: Optional (requires GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET env vars). Routes: GET /api/auth/google (redirect to Google), GET /api/auth/google/callback (exchange code → find/create user → redirect with token), GET /api/auth/google/status (check if enabled). Landing page shows "Continue with Google" button when configured. Handles token from redirect URL on landing/dashboard/chat pages.
 
+### Phase 7: Introductions + Search + Error Handling
+- **IntroductionRecord model**: matchId (unique), userAId, userBId, status (SENT/VIEWED/RESPONDED/MEETING_SCHEDULED), talkingPoints (String[]), scheduledAt, notes
+- **Introduction routes**: GET /api/introductions, GET /api/introductions/:id (auto-marks VIEWED), PATCH /api/introductions/:id/status
+- **Introduction pages**: `/introductions` (list), `/introductions/:id` (detail with both user cards, match reason, AI-generated talking points, Google Calendar link, mailto link, status tracking)
+- **IntroductionRecord auto-creation**: When match accepted, introductionService creates record with AI-generated talking points (fallback to rule-based)
+- **Matches search**: Search bar on matches page filtering by name, persona, industry, company, role, skills across all tabs
+- **404 page**: Custom not-found.tsx with dark purple theme, navigation buttons
+- **Error boundary**: error.tsx with retry button and dashboard link
+
 ## Features (all tested E2E)
 1. **Auth** — Sign up, login, JWT auth, Get Me, smart routing, Google OAuth (optional)
 2. **Chat Onboarding** — State machine flow with 6 persona types
 3. **Profile** — Get/update, completeness scoring, AI embedding generation
-4. **Matching** — Three-layer scoring, persona-specific context matching, auto-match, find-and-propose, double opt-in, contact reveal
-5. **Introductions** — AI-generated intro messages, WhatsApp/SMS delivery
+4. **Matching** — Three-layer scoring, persona-specific context matching, auto-match, find-and-propose, double opt-in, contact reveal, search/filter
+5. **Introductions** — AI-generated intro messages, WhatsApp/SMS delivery, IntroductionRecord with talking points, status tracking, Google Calendar + mailto integration
 6. **Notifications** — Multi-channel (IN_APP, EMAIL, SMS, WHATSAPP)
 7. **Voice Calls** — Twilio integration, AI voice assistant
 8. **Deal Tracking** — Scout/deal partner workflow for sourcing founders
@@ -167,6 +176,7 @@ Six persona types with tailored onboarding flows:
 12. **Settings Page** — Account info, change password, session management, account deletion
 13. **Email Service** — Nodemailer (SMTP) for welcome, match proposed, match accepted, weekly digest emails (branded HTML templates)
 14. **Rate Limiting** — 100/15min general, 5/hr signup, 10/15min login, 50/hr match proposals (express-rate-limit)
+15. **Error Handling** — Custom 404 page, global error boundary with retry
 
 ### Vector-Based AI Matching (pgvector)
 - **Hybrid matching pipeline**: pgvector cosine similarity → rule-based + intent scoring → ranked results
@@ -175,7 +185,8 @@ Six persona types with tailored onboarding flows:
 - **API endpoints**: similar search, text search, embedding stats, backfill
 
 ## Key Files
-- `apps/backend/src/index.ts` — Main Express server (routes: auth, users, conversations, matches, calls, admin, notifications, messaging, twilio, deals, events)
+- `apps/backend/src/index.ts` — Main Express server (routes: auth, users, conversations, matches, calls, admin, notifications, messaging, twilio, deals, events, ai-chat, introductions)
+- `apps/backend/src/routes/introduction.ts` — Introduction CRUD + status tracking
 - `apps/backend/src/services/matchingService.ts` — Matching orchestrator
 - `apps/backend/src/services/vectorMatchingService.ts` — pgvector similarity + hybrid matching
 - `apps/backend/src/services/introductionService.ts` — Post-acceptance intros

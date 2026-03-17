@@ -50,6 +50,7 @@ export default function MatchesPage() {
   const [me, setMe] = useState<any>(null);
   const [feedbackPrompt, setFeedbackPrompt] = useState<FeedbackState | null>(null);
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
 
   useEffect(() => {
@@ -122,12 +123,27 @@ export default function MatchesPage() {
     return myResp === 'PENDING' && match.status !== 'REJECTED' && match.status !== 'ACCEPTED';
   };
 
-  const pendingMatches = matches.filter(isPending);
-  const acceptedMatches = matches.filter((m) => m.status === 'ACCEPTED');
-  const waitingMatches = matches.filter((m) => {
+  const filterBySearch = (list: MatchData[]) => {
+    if (!searchQuery.trim()) return list;
+    const q = searchQuery.toLowerCase().trim();
+    return list.filter((m) => {
+      const other = getOtherUser(m);
+      const p = other.profile;
+      const searchableText = [
+        p?.currentRole, p?.companyName, p?.persona, p?.headline, p?.location, p?.bio,
+        other.email, m.reason,
+        ...(p?.industries || []), ...(p?.skills || []),
+      ].filter(Boolean).join(' ').toLowerCase();
+      return searchableText.includes(q);
+    });
+  };
+
+  const pendingMatches = filterBySearch(matches.filter(isPending));
+  const acceptedMatches = filterBySearch(matches.filter((m) => m.status === 'ACCEPTED'));
+  const waitingMatches = filterBySearch(matches.filter((m) => {
     const myResp = getMyResponse(m);
     return myResp === 'ACCEPTED' && m.status !== 'ACCEPTED' && m.status !== 'REJECTED';
-  });
+  }));
 
   const personaIcon: Record<string, string> = {
     FOUNDER: '🚀', INVESTOR: '💰', TALENT: '🎯', DEAL_PARTNER: '🤝',
@@ -232,6 +248,10 @@ export default function MatchesPage() {
                   <p className="text-xs text-white/40">📍 {profile.location}</p>
                 )}
               </div>
+              <button onClick={() => router.push('/introductions')}
+                className="mt-3 w-full py-2 rounded-lg text-xs font-medium text-purple-300 border border-purple-500/20 hover:bg-purple-500/5 transition">
+                View Introduction →
+              </button>
             </div>
           )}
         </div>
@@ -297,6 +317,26 @@ export default function MatchesPage() {
       </header>
 
       <div className="max-w-3xl mx-auto px-4 py-6">
+        <div className="mb-5">
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 text-sm">🔍</span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name, persona, industry, company..."
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-white placeholder:text-white/20 border border-white/5 focus:border-purple-500/30 focus:outline-none transition"
+              style={{ background: 'rgba(26,18,48,0.6)' }}
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/40 text-xs">
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
         {activeTab === 'pending' && (
           <div className="space-y-4">
             {pendingMatches.length === 0 && waitingMatches.length === 0 ? (

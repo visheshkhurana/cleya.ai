@@ -8,6 +8,7 @@ import NotificationCenter from './NotificationCenter';
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: '📊' },
   { href: '/matches', label: 'Matches', icon: '🤝' },
+  { href: '/introductions', label: 'Introductions', icon: '🤝' },
   { href: '/chat', label: 'Onboarding Chat', icon: '💬' },
   { href: '/profile', label: 'Profile', icon: '👤' },
   { href: '/settings', label: 'Settings', icon: '⚙️' },

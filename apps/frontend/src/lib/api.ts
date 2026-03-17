@@ -255,6 +255,21 @@ class ApiClient {
     });
   }
 
+  async getIntroductions() {
+    return this.fetch('/introductions');
+  }
+
+  async getIntroduction(id: string) {
+    return this.fetch(`/introductions/${id}`);
+  }
+
+  async updateIntroductionStatus(id: string, status: string, data?: { scheduledAt?: string; notes?: string }) {
+    return this.fetch(`/introductions/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, ...data }),
+    });
+  }
+
   async updateParticipant(eventId: string, userId: string, data: { status?: string; checkedIn?: boolean }) {
     return this.fetch(`/events/${eventId}/participants/${userId}`, {
       method: 'PATCH',
