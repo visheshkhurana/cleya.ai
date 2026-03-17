@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import NotificationCenter from '@/components/NotificationCenter';
+import MobileNav from '@/components/MobileNav';
 
 interface UserProfile {
   persona?: string;
@@ -44,9 +45,22 @@ export default function DashboardPage() {
   const [recentMatches, setRecentMatches] = useState<MatchData[]>([]);
   const [loading, setLoading] = useState(true);
   const [findingMatches, setFindingMatches] = useState(false);
+  const [showAIChat, setShowAIChat] = useState(false);
+  const [aiMessages, setAiMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
+  const [aiInput, setAiInput] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const aiScrollRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlToken = params.get('token');
+      if (urlToken) {
+        api.setToken(urlToken);
+        window.history.replaceState({}, '', '/dashboard');
+      }
+    }
     if (!api.getToken()) {
       router.push('/');
       return;
@@ -95,6 +109,25 @@ export default function DashboardPage() {
     }
   };
 
+  const sendAIMessage = async () => {
+    if (!aiInput.trim() || aiLoading) return;
+    const msg = aiInput.trim();
+    setAiInput('');
+    const newMessages = [...aiMessages, { role: 'user' as const, content: msg }];
+    setAiMessages(newMessages);
+    setAiLoading(true);
+    setTimeout(() => aiScrollRef.current?.scrollTo({ top: aiScrollRef.current.scrollHeight, behavior: 'smooth' }), 50);
+    try {
+      const result = await api.sendAIChat(msg, aiMessages);
+      setAiMessages([...newMessages, { role: 'assistant', content: result.content }]);
+      setTimeout(() => aiScrollRef.current?.scrollTo({ top: aiScrollRef.current.scrollHeight, behavior: 'smooth' }), 50);
+    } catch {
+      setAiMessages([...newMessages, { role: 'assistant', content: "Sorry, I couldn't process that. Try again!" }]);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: '#0D0B1A' }}>
@@ -139,7 +172,7 @@ export default function DashboardPage() {
             </div>
             <h1 className="font-semibold text-white text-sm">Cleo.ai</h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2">
             <button onClick={() => router.push('/matches')}
               className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-white/50 hover:text-white/80 hover:border-white/20 transition">
               Matches {matchStats.pending > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-purple-500 text-white">{matchStats.pending}</span>}
@@ -161,6 +194,10 @@ export default function DashboardPage() {
               className="text-xs text-white/30 hover:text-white/60 transition px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20">
               Sign out
             </button>
+          </div>
+          <div className="flex md:hidden items-center gap-2">
+            <NotificationCenter />
+            <MobileNav />
           </div>
         </div>
       </header>
@@ -374,6 +411,103 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {!showAIChat && (
+        <button
+          onClick={() => setShowAIChat(true)}
+          className="fixed bottom-6 right-6 w-14 h-14 rounded-full flex items-center justify-center text-white text-xl shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all z-40 glow-pulse"
+          style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}
+        >
+          💬
+        </button>
+      )}
+
+      {showAIChat && (
+        <div className="fixed inset-0 sm:inset-auto sm:bottom-6 sm:right-6 sm:w-96 sm:h-[500px] z-50 flex flex-col rounded-none sm:rounded-2xl border-0 sm:border border-white/10 shadow-2xl"
+          style={{ background: '#0D0B1A' }}>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/5" style={{ background: 'rgba(26,18,48,0.9)' }}>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
+                style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>C</div>
+              <div>
+                <h3 className="text-sm font-semibold text-white">Chat with Cleo</h3>
+                <div className="flex items-center gap-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                  <span className="text-[10px] text-white/30">AI Assistant</span>
+                </div>
+              </div>
+            </div>
+            <button onClick={() => setShowAIChat(false)} className="text-white/30 hover:text-white/60 transition p-1">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <div ref={aiScrollRef} className="flex-1 overflow-y-auto chat-scroll px-4 py-4 space-y-3">
+            {aiMessages.length === 0 && (
+              <div className="text-center py-8">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
+                  style={{ background: 'linear-gradient(135deg, #6C47FF20, #4E2FD820)', border: '1px solid rgba(108,71,255,0.15)' }}>
+                  <span className="text-2xl">✨</span>
+                </div>
+                <p className="text-sm text-white/60 mb-1">Ask Cleo anything!</p>
+                <p className="text-xs text-white/30">Get networking tips, match insights, or career advice</p>
+                <div className="mt-4 space-y-2">
+                  {['Tell me about my matches', 'Give me networking tips', 'How can I improve my profile?'].map((q) => (
+                    <button key={q} onClick={() => { setAiInput(q); }}
+                      className="block w-full text-left px-3 py-2 rounded-xl text-xs text-white/40 border border-white/5 hover:border-purple-500/20 hover:text-white/60 transition"
+                      style={{ background: 'rgba(26,18,48,0.4)' }}>
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {aiMessages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                  msg.role === 'user'
+                    ? 'rounded-tr-sm text-white'
+                    : 'rounded-tl-sm bg-white/5 text-white/80 border border-white/5'
+                }`}
+                  style={msg.role === 'user' ? { background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' } : {}}>
+                  {msg.content}
+                </div>
+              </div>
+            ))}
+            {aiLoading && (
+              <div className="flex justify-start">
+                <div className="bg-white/5 border border-white/5 rounded-2xl rounded-tl-sm px-4 py-3 flex gap-1">
+                  <div className="w-2 h-2 bg-white/30 rounded-full typing-dot" />
+                  <div className="w-2 h-2 bg-white/30 rounded-full typing-dot" />
+                  <div className="w-2 h-2 bg-white/30 rounded-full typing-dot" />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <form onSubmit={(e) => { e.preventDefault(); sendAIMessage(); }} className="px-3 py-3 border-t border-white/5">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={aiInput}
+                onChange={(e) => setAiInput(e.target.value)}
+                placeholder="Ask Cleo anything..."
+                className="input-dark flex-1 !py-2.5 !text-sm"
+              />
+              <button
+                type="submit"
+                disabled={!aiInput.trim() || aiLoading}
+                className="px-4 py-2.5 rounded-2xl font-semibold text-sm text-white transition-all disabled:opacity-30"
+                style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}
+              >
+                ↑
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

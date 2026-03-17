@@ -60,6 +60,14 @@ export default function ChatPage() {
   }, [messages, typing]);
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlToken = params.get('token');
+      if (urlToken) {
+        api.setToken(urlToken);
+        window.history.replaceState({}, '', '/chat');
+      }
+    }
     startChat();
   }, []);
 

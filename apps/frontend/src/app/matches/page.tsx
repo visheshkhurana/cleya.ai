@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import NotificationCenter from '@/components/NotificationCenter';
+import MobileNav from '@/components/MobileNav';
 
 interface MatchData {
   id: string;
@@ -266,11 +267,11 @@ export default function MatchesPage() {
       <header className="sticky top-0 z-10 border-b border-white/5" style={{ background: 'rgba(13,11,26,0.9)', backdropFilter: 'blur(20px)' }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button onClick={() => router.push('/dashboard')} className="text-white/30 hover:text-white/60 transition text-sm">← Back</button>
+            <button onClick={() => router.push('/dashboard')} className="text-white/30 hover:text-white/60 transition text-sm hidden sm:block">← Back</button>
             <h1 className="font-semibold text-white text-sm">Your Matches</h1>
           </div>
-          <div className="flex items-center gap-3">
-          <NotificationCenter />
+          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="hidden sm:block"><NotificationCenter /></div>
           <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: 'rgba(108,71,255,0.08)' }}>
             {[
               { id: 'pending' as Tab, label: `Pending (${pendingMatches.length})` },
@@ -290,6 +291,7 @@ export default function MatchesPage() {
               </button>
             ))}
           </div>
+          <div className="sm:hidden"><MobileNav /></div>
           </div>
         </div>
       </header>

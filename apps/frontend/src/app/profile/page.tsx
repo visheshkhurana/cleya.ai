@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import MobileNav from '@/components/MobileNav';
 
 interface ProfileData {
   persona?: string;
@@ -118,16 +119,17 @@ export default function ProfilePage() {
       <header className="sticky top-0 z-10 border-b border-white/5" style={{ background: 'rgba(13,11,26,0.9)', backdropFilter: 'blur(20px)' }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button onClick={() => router.push('/dashboard')} className="text-white/30 hover:text-white/60 transition text-sm">← Back</button>
+            <button onClick={() => router.push('/dashboard')} className="text-white/30 hover:text-white/60 transition text-sm hidden sm:block">← Back</button>
             <h1 className="font-semibold text-white text-sm">Edit Profile</h1>
           </div>
           <div className="flex items-center gap-2">
-            {saved && <span className="text-xs text-green-400">Saved ✓</span>}
+            {saved && <span className="text-xs text-green-400 hidden sm:inline">Saved ✓</span>}
             <button onClick={handleSave} disabled={saving}
               className="px-4 py-1.5 text-xs font-medium rounded-lg text-white transition disabled:opacity-40"
               style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>
-              {saving ? 'Saving...' : 'Save Changes'}
+              {saving ? 'Saving...' : 'Save'}
             </button>
+            <div className="sm:hidden"><MobileNav /></div>
           </div>
         </div>
       </header>

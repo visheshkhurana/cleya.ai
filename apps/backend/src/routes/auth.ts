@@ -1,11 +1,21 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import crypto from 'crypto';
 import { z } from 'zod';
 import { authService } from '../services/authService';
 import { authenticate } from '../middleware/auth';
 import { signupLimiter, loginLimiter } from '../middleware/rateLimit';
 import { emailService } from '../services/email';
+import { env } from '../config/env';
 
 export const authRouter = Router();
+
+const oauthStates = new Map<string, { createdAt: number }>();
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, val] of oauthStates) {
+    if (now - val.createdAt > 10 * 60 * 1000) oauthStates.delete(key);
+  }
+}, 60 * 1000);
 
 const signupSchema = z.object({
   email: z.string().email(),
@@ -46,4 +56,87 @@ authRouter.get('/me', authenticate, async (req: Request, res: Response, next: Ne
   } catch (error) {
     next(error);
   }
+});
+
+authRouter.get('/google', (req: Request, res: Response) => {
+  if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+    res.status(501).json({ success: false, error: { message: 'Google OAuth not configured' } });
+    return;
+  }
+  const state = crypto.randomBytes(32).toString('hex');
+  oauthStates.set(state, { createdAt: Date.now() });
+  const redirectUri = `${env.BACKEND_URL}/api/auth/google/callback`;
+  const params = new URLSearchParams({
+    client_id: env.GOOGLE_CLIENT_ID,
+    redirect_uri: redirectUri,
+    response_type: 'code',
+    scope: 'openid email profile',
+    access_type: 'offline',
+    prompt: 'consent',
+    state,
+  });
+  res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+});
+
+authRouter.get('/google/callback', async (req: Request, res: Response) => {
+  try {
+    if (req.query.error) {
+      res.redirect(`${env.FRONTEND_URL}/?error=google_auth_denied`);
+      return;
+    }
+    const code = typeof req.query.code === 'string' ? req.query.code : '';
+    const state = typeof req.query.state === 'string' ? req.query.state : '';
+    if (!code || !state || !oauthStates.has(state) || !env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+      res.redirect(`${env.FRONTEND_URL}/?error=google_auth_failed`);
+      return;
+    }
+    oauthStates.delete(state);
+    const redirectUri = `${env.BACKEND_URL}/api/auth/google/callback`;
+    const tokenBody = new URLSearchParams({
+      code,
+      client_id: env.GOOGLE_CLIENT_ID,
+      client_secret: env.GOOGLE_CLIENT_SECRET,
+      redirect_uri: redirectUri,
+      grant_type: 'authorization_code',
+    });
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: tokenBody.toString(),
+    });
+    const tokenData = await tokenRes.json();
+    if (!tokenData.access_token) {
+      res.redirect(`${env.FRONTEND_URL}/?error=google_token_failed`);
+      return;
+    }
+    const profileRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    });
+    const profile = await profileRes.json();
+    if (!profile.email || !profile.verified_email) {
+      res.redirect(`${env.FRONTEND_URL}/?error=google_no_verified_email`);
+      return;
+    }
+    const result = await authService.findOrCreateGoogleUser({
+      email: profile.email,
+      name: profile.name,
+      googleId: profile.id,
+    });
+    if (result.isNew) {
+      emailService.sendWelcome(profile.email).catch(() => {});
+    }
+    const profileComplete = result.user.profile?.isComplete;
+    const dest = result.user.role === 'ADMIN' ? '/admin' : profileComplete ? '/dashboard' : '/chat';
+    res.redirect(`${env.FRONTEND_URL}${dest}?token=${result.token}`);
+  } catch (err) {
+    console.error('Google OAuth error:', err);
+    res.redirect(`${env.FRONTEND_URL}/?error=google_auth_error`);
+  }
+});
+
+authRouter.get('/google/status', (_req: Request, res: Response) => {
+  res.json({
+    success: true,
+    data: { enabled: !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) },
+  });
 });

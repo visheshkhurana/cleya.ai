@@ -11,8 +11,24 @@ export default function Home() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [googleEnabled, setGoogleEnabled] = useState(false);
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlToken = params.get('token');
+      const urlError = params.get('error');
+      if (urlToken) {
+        api.setToken(urlToken);
+        window.history.replaceState({}, '', '/');
+      }
+      if (urlError) {
+        setError('Google sign-in failed. Please try again or use email.');
+        setShowAuth(true);
+        window.history.replaceState({}, '', '/');
+      }
+    }
+    api.getGoogleAuthStatus().then(d => setGoogleEnabled(d.enabled)).catch(() => {});
     const token = api.getToken();
     if (token) {
       api.getMe().then(async (user) => {
@@ -92,17 +108,17 @@ export default function Home() {
               style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>C</div>
             <span className="text-white font-semibold text-lg">Cleo.ai</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button onClick={() => { setShowAuth(true); setMode('login'); }}
-              className="px-4 py-2 text-sm text-white/60 hover:text-white transition">Log In</button>
+              className="px-3 sm:px-4 py-2 text-xs sm:text-sm text-white/60 hover:text-white transition">Log In</button>
             <button onClick={() => { setShowAuth(true); setMode('signup'); }}
-              className="px-5 py-2 text-sm font-medium text-white rounded-xl transition"
+              className="px-4 sm:px-5 py-2 text-xs sm:text-sm font-medium text-white rounded-xl transition"
               style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>Get Started</button>
           </div>
         </div>
       </nav>
 
-      <section className="relative pt-32 pb-24 overflow-hidden">
+      <section className="relative pt-24 sm:pt-32 pb-16 sm:pb-24 overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full opacity-20 blur-[150px]" style={{ background: '#6C47FF' }} />
         <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full opacity-10 blur-[120px]" style={{ background: '#4E2FD8' }} />
         <div className="absolute top-20 left-10 w-[300px] h-[300px] rounded-full opacity-10 blur-[100px]" style={{ background: '#2D1899' }} />
@@ -115,15 +131,15 @@ export default function Home() {
                 <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
                 AI-Powered Networking
               </div>
-              <h1 className="text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-4 sm:mb-6">
                 Meet the right people. <span style={{ color: '#a78bfa' }}>Faster.</span>
               </h1>
-              <p className="text-lg text-white/50 leading-relaxed mb-8 max-w-lg">
+              <p className="text-base sm:text-lg text-white/50 leading-relaxed mb-6 sm:mb-8 max-w-lg">
                 Cleo is your AI Superconnector — matching founders, investors, talent, and partners through intelligent conversations.
               </p>
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                 <button onClick={() => { setShowAuth(true); setMode('signup'); }}
-                  className="px-8 py-3.5 rounded-2xl text-white font-semibold text-sm transition-all duration-200 shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40"
+                  className="px-6 sm:px-8 py-3 sm:py-3.5 rounded-2xl text-white font-semibold text-sm transition-all duration-200 shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40"
                   style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>
                   Get Started →
                 </button>
@@ -134,7 +150,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="relative flex justify-center">
+            <div className="relative hidden lg:flex justify-center">
               <div className="relative w-[280px] rounded-[40px] border-[6px] p-2 shadow-2xl shadow-purple-900/30"
                 style={{ borderColor: 'rgba(255,255,255,0.1)', background: '#0D0B1A' }}>
                 <div className="w-20 h-5 bg-black rounded-full absolute top-2 left-1/2 -translate-x-1/2 z-10" />
@@ -211,7 +227,7 @@ export default function Home() {
       <section className="py-16 border-t border-white/5">
         <div className="max-w-6xl mx-auto px-6 text-center">
           <p className="text-sm text-white/30 uppercase tracking-wider mb-8">Trusted by founders, investors, and talent worldwide</p>
-          <div className="flex items-center justify-center gap-12 flex-wrap opacity-30">
+          <div className="flex items-center justify-center gap-6 sm:gap-12 flex-wrap opacity-30">
             {['TechCrunch', 'Y Combinator', 'Sequoia', 'a16z', 'Stripe'].map((name) => (
               <div key={name} className="text-white/60 font-semibold text-lg tracking-wide">{name}</div>
             ))}
@@ -337,6 +353,28 @@ export default function Home() {
                   ) : mode === 'signup' ? 'Get Started →' : 'Log In →'}
                 </button>
               </form>
+
+              {googleEnabled && (
+                <>
+                  <div className="flex items-center gap-3 my-4">
+                    <div className="flex-1 h-px bg-white/10" />
+                    <span className="text-xs text-white/30">or</span>
+                    <div className="flex-1 h-px bg-white/10" />
+                  </div>
+                  <a
+                    href="/api/auth/google"
+                    className="w-full flex items-center justify-center gap-3 py-3 rounded-2xl border border-white/10 text-white/70 text-sm font-medium hover:bg-white/5 hover:border-white/20 transition"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                    </svg>
+                    Continue with Google
+                  </a>
+                </>
+              )}
             </div>
 
             <p className="text-center text-xs text-white/20 mt-6">

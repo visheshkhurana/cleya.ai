@@ -47,6 +47,10 @@ class ApiClient {
     return json.data;
   }
 
+  async getGoogleAuthStatus() {
+    return this.fetch<{ enabled: boolean }>('/auth/google/status');
+  }
+
   // Auth
   async signup(email: string, password: string, phone?: string) {
     const data = await this.fetch<{ user: any; token: string }>('/auth/signup', {
@@ -242,6 +246,13 @@ class ApiClient {
 
   async getConversationMessages(conversationId: string) {
     return this.fetch(`/conversations/${conversationId}`);
+  }
+
+  async sendAIChat(message: string, history: { role: 'user' | 'assistant'; content: string }[] = []) {
+    return this.fetch('/ai-chat/message', {
+      method: 'POST',
+      body: JSON.stringify({ message, history }),
+    });
   }
 
   async updateParticipant(eventId: string, userId: string, data: { status?: string; checkedIn?: boolean }) {

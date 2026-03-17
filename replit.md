@@ -27,6 +27,8 @@ Monorepo with:
 - `OPENAI_API_KEY` — set
 - `NODE_ENV` — development
 - `PORT` — 3001
+- `GOOGLE_CLIENT_ID` — optional, for Google OAuth
+- `GOOGLE_CLIENT_SECRET` — optional, for Google OAuth
 
 ## Running the App
 ```
@@ -143,8 +145,15 @@ Six persona types with tailored onboarding flows:
 - **Chat persistence**: Conversation ID + messages saved to localStorage, restored on refresh (24h expiry)
 - **Match feedback UI**: After accept/reject, modal with star rating + optional text feedback
 
+### Phase 6: Mobile Responsive + AI Chat + Google OAuth
+- **Mobile Responsive**: All pages (landing, dashboard, matches, profile, settings, admin, chat) responsive with hamburger nav (MobileNav component), breakpoints at sm/md/lg
+- **AI Chat Service**: `apps/backend/src/services/ai.ts` using `@boardy/ai` with gpt-4o-mini, POST /api/ai-chat/message with user context + fallback
+- **Dashboard AI Chat Widget**: Floating 💬 FAB → fullscreen (mobile) / 500px panel (desktop), conversation history, typing indicator, quick prompts
+- **MobileNav Component**: `apps/frontend/src/components/MobileNav.tsx` — hamburger icon, slide-out drawer, body scroll lock, click-outside-to-close
+- **Google OAuth**: Optional (requires GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET env vars). Routes: GET /api/auth/google (redirect to Google), GET /api/auth/google/callback (exchange code → find/create user → redirect with token), GET /api/auth/google/status (check if enabled). Landing page shows "Continue with Google" button when configured. Handles token from redirect URL on landing/dashboard/chat pages.
+
 ## Features (all tested E2E)
-1. **Auth** — Sign up, login, JWT auth, Get Me, smart routing
+1. **Auth** — Sign up, login, JWT auth, Get Me, smart routing, Google OAuth (optional)
 2. **Chat Onboarding** — State machine flow with 6 persona types
 3. **Profile** — Get/update, completeness scoring, AI embedding generation
 4. **Matching** — Three-layer scoring, persona-specific context matching, auto-match, find-and-propose, double opt-in, contact reveal

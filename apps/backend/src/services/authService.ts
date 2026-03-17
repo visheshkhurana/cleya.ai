@@ -102,6 +102,57 @@ export class AuthService {
     };
   }
 
+  async findOrCreateGoogleUser(googleProfile: { email: string; name?: string; googleId: string }) {
+    let user = await prisma.user.findUnique({
+      where: { email: googleProfile.email },
+      include: { profile: true },
+    });
+
+    if (user) {
+      if (!user.isActive) {
+        throw new AppError(403, 'Account is disabled', 'ACCOUNT_DISABLED');
+      }
+      const token = this.generateToken(user);
+      return {
+        user: {
+          id: user.id,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          profile: user.profile,
+        },
+        token,
+        isNew: false,
+      };
+    }
+
+    user = await prisma.user.create({
+      data: {
+        email: googleProfile.email,
+        passwordHash: '',
+        profile: {
+          create: {
+            ...(googleProfile.name ? { currentRole: googleProfile.name } : {}),
+          },
+        },
+      },
+      include: { profile: true },
+    });
+
+    const token = this.generateToken(user);
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        profile: user.profile,
+      },
+      token,
+      isNew: true,
+    };
+  }
+
   private generateToken(user: { id: string; email: string; role: string }): string {
     const payload: AuthPayload = {
       userId: user.id,

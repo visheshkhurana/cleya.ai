@@ -51,6 +51,14 @@ export default function AdminDashboard() {
   const router = useRouter();
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlToken = params.get('token');
+      if (urlToken) {
+        api.setToken(urlToken);
+        window.history.replaceState({}, '', '/admin');
+      }
+    }
     if (!api.getToken()) {
       router.push('/');
       return;
@@ -213,28 +221,28 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-[#0f0a1e]">
-      <header className="bg-[#1a1230]/80 backdrop-blur-sm border-b border-purple-500/10 px-6 py-4">
+      <header className="bg-[#1a1230]/80 backdrop-blur-sm border-b border-purple-500/10 px-4 sm:px-6 py-3 sm:py-4 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 text-white text-sm font-bold flex items-center justify-center shadow-lg shadow-purple-500/20">
               C
             </div>
-            <h1 className="text-lg font-bold text-white">Cleo.ai Admin</h1>
+            <h1 className="text-base sm:text-lg font-bold text-white">Cleo.ai Admin</h1>
           </div>
           <button
             onClick={() => { api.clearToken(); router.push('/'); }}
-            className="text-sm text-purple-300/60 hover:text-purple-200 transition"
+            className="text-xs sm:text-sm text-purple-300/60 hover:text-purple-200 transition"
           >
             Sign out
           </button>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-6">
-        <div className="flex gap-1 mb-6 p-1 rounded-xl bg-purple-900/20 border border-purple-500/10 w-fit">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+        <div className="flex gap-1 mb-6 p-1 rounded-xl bg-purple-900/20 border border-purple-500/10 overflow-x-auto">
           {[
             { id: 'overview' as Tab, label: 'Overview', icon: '📊' },
-            { id: 'communications' as Tab, label: 'Communications', icon: '📞' },
+            { id: 'communications' as Tab, label: 'Comms', icon: '📞' },
             { id: 'deals' as Tab, label: 'Deals', icon: '🤝' },
             { id: 'events' as Tab, label: 'Events', icon: '📅' },
             { id: 'analytics' as Tab, label: 'Analytics', icon: '📈' },
@@ -242,7 +250,7 @@ export default function AdminDashboard() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`px-3 sm:px-5 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/20'
                   : 'text-purple-300/60 hover:text-purple-200'
@@ -313,11 +321,11 @@ export default function AdminDashboard() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-purple-900/10">
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Email</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Persona</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Company</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Completeness</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Actions</th>
+                      <th className="text-left px-3 sm:px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Email</th>
+                      <th className="text-left px-3 sm:px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Persona</th>
+                      <th className="text-left px-3 sm:px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Company</th>
+                      <th className="text-left px-3 sm:px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Completeness</th>
+                      <th className="text-left px-3 sm:px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-purple-500/5">

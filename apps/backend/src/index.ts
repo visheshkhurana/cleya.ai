@@ -17,10 +17,12 @@ import { messagingRouter } from './routes/messaging';
 import { twilioRouter } from './routes/twilio';
 import { dealRouter } from './routes/deal';
 import { eventRouter } from './routes/event';
+import { aiChatRouter } from './routes/aiChat';
 
 import { generalLimiter } from './middleware/rateLimit';
 
 const app = express();
+app.set('trust proxy', 1);
 const server = createServer(app);
 
 app.use(helmet());
@@ -45,6 +47,7 @@ app.use('/api/messaging', messagingRouter);
 app.use('/api/twilio', twilioRouter);
 app.use('/api/deals', dealRouter);
 app.use('/api/events', eventRouter);
+app.use('/api/ai-chat', aiChatRouter);
 
 app.use(errorHandler);
 

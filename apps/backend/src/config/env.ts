@@ -31,6 +31,10 @@ const envSchema = z.object({
   BACKEND_URL: z.string().default('http://localhost:3001'),
   WS_PORT: z.coerce.number().default(3002),
 
+  // Google OAuth
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+
   // Email (SMTP)
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().default(587),

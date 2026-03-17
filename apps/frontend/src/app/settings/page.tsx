@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import MobileNav from '@/components/MobileNav';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -100,38 +101,23 @@ export default function SettingsPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#0D0B1A' }}>
-      <nav style={{
-        padding: '16px 32px',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => router.push('/dashboard')}>
-          <div style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: '10px',
-            background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            fontWeight: 700,
-            fontSize: '14px',
-          }}>C</div>
-          <span style={{ color: '#fff', fontWeight: 600, fontSize: '16px' }}>Cleo.ai</span>
+      <nav className="sticky top-0 z-10 border-b border-white/5 px-4 sm:px-8 py-3 flex items-center justify-between" style={{ background: 'rgba(13,11,26,0.9)', backdropFilter: 'blur(20px)' }}>
+        <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => router.push('/dashboard')}>
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold"
+            style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>C</div>
+          <span className="text-white font-semibold text-sm sm:text-base">Cleo.ai</span>
         </div>
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-          <button onClick={() => router.push('/dashboard')} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '14px' }}>Dashboard</button>
-          <button onClick={() => router.push('/profile')} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '14px' }}>Profile</button>
-          <span style={{ color: '#6C47FF', fontSize: '14px', fontWeight: 600 }}>Settings</span>
+        <div className="hidden sm:flex items-center gap-4">
+          <button onClick={() => router.push('/dashboard')} className="text-sm text-white/50 hover:text-white/80 transition bg-transparent border-0 cursor-pointer">Dashboard</button>
+          <button onClick={() => router.push('/profile')} className="text-sm text-white/50 hover:text-white/80 transition bg-transparent border-0 cursor-pointer">Profile</button>
+          <span className="text-sm font-semibold" style={{ color: '#6C47FF' }}>Settings</span>
         </div>
+        <div className="sm:hidden"><MobileNav /></div>
       </nav>
 
-      <div style={{ maxWidth: '640px', margin: '0 auto', padding: '40px 24px' }}>
-        <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 700, marginBottom: '8px' }}>Settings</h1>
-        <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '14px', marginBottom: '40px' }}>Manage your account and preferences</p>
+      <div style={{ maxWidth: '640px', margin: '0 auto', padding: '24px 16px' }} className="sm:!p-10">
+        <h1 className="text-xl sm:text-[28px] font-bold text-white mb-2">Settings</h1>
+        <p className="text-sm text-white/40 mb-8 sm:mb-10">Manage your account and preferences</p>
 
         {/* Account Info */}
         <section style={{
@@ -153,7 +139,7 @@ export default function SettingsPage() {
               <label style={labelStyle}>Phone</label>
               <div style={{ ...inputStyle, background: 'rgba(255,255,255,0.02)', color: 'rgba(255,255,255,0.5)' }}>{settings?.phone || 'Not set'}</div>
             </div>
-            <div style={{ display: 'flex', gap: '16px' }}>
+            <div className="flex flex-col sm:flex-row gap-4">
               <div style={{ flex: 1 }}>
                 <label style={labelStyle}>Persona</label>
                 <div style={{

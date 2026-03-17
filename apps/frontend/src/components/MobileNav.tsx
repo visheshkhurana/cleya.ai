@@ -1,0 +1,113 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { api } from '@/lib/api';
+import NotificationCenter from './NotificationCenter';
+
+const navItems = [
+  { href: '/dashboard', label: 'Dashboard', icon: '📊' },
+  { href: '/matches', label: 'Matches', icon: '🤝' },
+  { href: '/chat', label: 'Onboarding Chat', icon: '💬' },
+  { href: '/profile', label: 'Profile', icon: '👤' },
+  { href: '/settings', label: 'Settings', icon: '⚙️' },
+];
+
+export default function MobileNav() {
+  const [open, setOpen] = useState(false);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [open]);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (drawerRef.current && !drawerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    if (open) document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(!open)}
+        className="md:hidden flex flex-col gap-1.5 p-2 -m-2"
+        aria-label="Menu"
+      >
+        <span className={`block w-5 h-0.5 bg-white/60 transition-all duration-200 ${open ? 'rotate-45 translate-y-2' : ''}`} />
+        <span className={`block w-5 h-0.5 bg-white/60 transition-all duration-200 ${open ? 'opacity-0' : ''}`} />
+        <span className={`block w-5 h-0.5 bg-white/60 transition-all duration-200 ${open ? '-rotate-45 -translate-y-2' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="fixed inset-0 z-50 md:hidden" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
+          <div
+            ref={drawerRef}
+            className="absolute top-0 right-0 w-72 h-full border-l border-white/5 overflow-y-auto"
+            style={{ background: '#0D0B1A' }}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-white/5">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
+                  style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>C</div>
+                <span className="text-white font-semibold text-sm">Cleo.ai</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <NotificationCenter />
+                <button onClick={() => setOpen(false)} className="text-white/40 hover:text-white/70 transition p-1">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <nav className="p-3 space-y-1">
+              {navItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <button
+                    key={item.href}
+                    onClick={() => router.push(item.href)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${
+                      isActive ? 'text-white' : 'text-white/50 hover:text-white/80'
+                    }`}
+                    style={isActive ? { background: 'rgba(108,71,255,0.12)', borderLeft: '2px solid #6C47FF' } : {}}
+                  >
+                    <span className="text-base">{item.icon}</span>
+                    {item.label}
+                  </button>
+                );
+              })}
+            </nav>
+
+            <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/5">
+              <button
+                onClick={() => { api.clearToken(); router.push('/'); }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400/60 hover:text-red-400 hover:bg-red-500/5 transition"
+              >
+                <span className="text-base">🚪</span>
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
