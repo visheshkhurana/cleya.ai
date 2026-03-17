@@ -18,10 +18,18 @@ export default function Home() {
     try {
       if (mode === 'signup') {
         await api.signup(email, password);
+        window.location.href = '/chat';
       } else {
-        await api.login(email, password);
+        const data = await api.login(email, password);
+        const profile = await api.getProfile().catch(() => null);
+        if (data.user?.role === 'ADMIN') {
+          window.location.href = '/admin';
+        } else if (profile?.isComplete) {
+          window.location.href = '/dashboard';
+        } else {
+          window.location.href = '/chat';
+        }
       }
-      window.location.href = '/chat';
     } catch (err: any) {
       setError(err.message || 'Something went wrong');
     } finally {

@@ -110,6 +110,24 @@ class ApiClient {
     return this.fetch('/matches');
   }
 
+  async getMatchStats() {
+    return this.fetch('/matches/stats');
+  }
+
+  async findMatches(limit = 10) {
+    return this.fetch('/matches/find', {
+      method: 'POST',
+      body: JSON.stringify({ limit }),
+    });
+  }
+
+  async findAndPropose(limit = 5) {
+    return this.fetch('/matches/find-and-propose', {
+      method: 'POST',
+      body: JSON.stringify({ limit }),
+    });
+  }
+
   async respondToMatch(matchId: string, response: 'ACCEPTED' | 'REJECTED') {
     return this.fetch(`/matches/${matchId}/respond`, {
       method: 'POST',

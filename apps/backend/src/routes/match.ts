@@ -4,7 +4,6 @@ import { matchingService } from '../services/matchingService';
 
 export const matchRouter = Router();
 
-// Get matches for current user
 matchRouter.get('/', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const matches = await matchingService.getMatchesForUser(req.user!.userId);
@@ -14,7 +13,15 @@ matchRouter.get('/', authenticate, async (req: Request, res: Response, next: Nex
   }
 });
 
-// Find new matches
+matchRouter.get('/stats', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const stats = await matchingService.getMatchStats(req.user!.userId);
+    res.json({ success: true, data: stats });
+  } catch (error) {
+    next(error);
+  }
+});
+
 matchRouter.post('/find', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { limit } = req.body;
@@ -25,7 +32,16 @@ matchRouter.post('/find', authenticate, async (req: Request, res: Response, next
   }
 });
 
-// Propose a match (admin or system)
+matchRouter.post('/find-and-propose', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { limit } = req.body;
+    const proposed = await matchingService.findAndAutoPropose(req.user!.userId, limit || 5);
+    res.json({ success: true, data: proposed });
+  } catch (error) {
+    next(error);
+  }
+});
+
 matchRouter.post('/propose', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { userAId, userBId } = req.body;
@@ -36,10 +52,9 @@ matchRouter.post('/propose', authenticate, async (req: Request, res: Response, n
   }
 });
 
-// Respond to a match (accept/reject)
 matchRouter.post('/:id/respond', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { response } = req.body; // 'ACCEPTED' | 'REJECTED'
+    const { response } = req.body;
     const match = await matchingService.respondToMatch(
       req.params.id,
       req.user!.userId,

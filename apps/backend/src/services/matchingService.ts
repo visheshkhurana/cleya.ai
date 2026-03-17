@@ -3,19 +3,17 @@ import { matchingEngine, ProfileForMatching } from '@boardy/matching';
 import { createAIService } from '@boardy/ai';
 import { AppError } from '../middleware/errorHandler';
 import { sendToUser } from '../websocket/server';
+import { introductionService } from './introductionService';
 
 export class MatchingService {
   private ai = createAIService();
 
-  // Run matching for a specific user
   async findMatchesForUser(userId: string, limit = 10) {
     const userProfile = await this.getProfileForMatching(userId);
     if (!userProfile) throw new AppError(404, 'Profile not found', 'PROFILE_NOT_FOUND');
 
-    // Get all other complete profiles
     const candidates = await this.getAllCandidates(userId);
 
-    // Get already matched user IDs to exclude
     const existingMatches = await prisma.match.findMany({
       where: {
         OR: [{ userAId: userId }, { userBId: userId }],
@@ -31,18 +29,39 @@ export class MatchingService {
       (c) => !matchedIds.has(c.userId)
     );
 
-    // Score and rank
     const matches = matchingEngine.findMatches(userProfile, eligibleCandidates, {
       limit,
-      minScore: 0.35,
+      minScore: 0.30,
     });
 
     return matches;
   }
 
-  // Create a match proposal
+  async findAndAutoPropose(userId: string, limit = 5) {
+    const matches = await this.findMatchesForUser(userId, limit);
+    const proposed = [];
+
+    for (const match of matches) {
+      try {
+        const proposal = await this.proposeMatch(userId, match.profile.userId);
+        proposed.push({
+          matchId: proposal.id,
+          userId: match.profile.userId,
+          score: match.score.total,
+          reason: proposal.reason,
+        });
+      } catch (err: any) {
+        if (err.code !== 'MATCH_EXISTS') {
+          console.log(`[MatchingService] Auto-propose failed for ${match.profile.userId}:`, err.message);
+        }
+      }
+    }
+
+    console.log(`[MatchingService] Auto-proposed ${proposed.length} matches for user ${userId}`);
+    return proposed;
+  }
+
   async proposeMatch(userAId: string, userBId: string) {
-    // Check if match already exists
     const existing = await prisma.match.findFirst({
       where: {
         OR: [
@@ -56,14 +75,12 @@ export class MatchingService {
       throw new AppError(409, 'Match already exists', 'MATCH_EXISTS');
     }
 
-    // Calculate score
     const profileA = await this.getProfileForMatching(userAId);
     const profileB = await this.getProfileForMatching(userBId);
     if (!profileA || !profileB) throw new AppError(404, 'Profile not found');
 
     const score = matchingEngine.score(profileA, profileB);
 
-    // Generate AI match reason
     const reason = await this.generateMatchReason(profileA, profileB);
 
     const match = await prisma.match.create({
@@ -76,11 +93,10 @@ export class MatchingService {
         reason,
         userAResponse: 'PENDING',
         userBResponse: 'PENDING',
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
     });
 
-    // Notify both users
     sendToUser(userAId, 'match:proposed', {
       matchId: match.id,
       reason,
@@ -95,7 +111,6 @@ export class MatchingService {
     return match;
   }
 
-  // Double opt-in response
   async respondToMatch(matchId: string, userId: string, response: 'ACCEPTED' | 'REJECTED') {
     const match = await prisma.match.findUnique({ where: { id: matchId } });
     if (!match) throw new AppError(404, 'Match not found');
@@ -107,7 +122,6 @@ export class MatchingService {
       throw new AppError(403, 'Not part of this match');
     }
 
-    // Update the response
     const updateData: any = {};
     if (isUserA) {
       updateData.userAResponse = response;
@@ -117,7 +131,6 @@ export class MatchingService {
       updateData.userBRespondedAt = new Date();
     }
 
-    // Determine match status
     const otherResponse = isUserA ? match.userBResponse : match.userAResponse;
 
     if (response === 'REJECTED') {
@@ -135,9 +148,11 @@ export class MatchingService {
       data: updateData,
     });
 
-    // If both accepted, reveal contacts
     if (updated.status === 'ACCEPTED') {
       await this.revealContacts(updated);
+      introductionService.sendIntroduction(matchId).catch((e) =>
+        console.log('[MatchingService] Intro send failed:', e)
+      );
     }
 
     return updated;
@@ -157,7 +172,6 @@ export class MatchingService {
 
     if (!userA || !userB) return;
 
-    // Send contact info to both users
     sendToUser(match.userAId, 'match:accepted', {
       matchId: match.id,
       contact: {
@@ -180,16 +194,90 @@ export class MatchingService {
   }
 
   async getMatchesForUser(userId: string) {
-    return prisma.match.findMany({
+    const matches = await prisma.match.findMany({
       where: {
         OR: [{ userAId: userId }, { userBId: userId }],
+        status: { not: 'REJECTED' },
       },
       include: {
-        userA: { include: { profile: true } },
-        userB: { include: { profile: true } },
+        userA: {
+          select: {
+            id: true,
+            email: true,
+            profile: {
+              select: {
+                persona: true,
+                headline: true,
+                companyName: true,
+                currentRole: true,
+                location: true,
+                industries: true,
+                skills: true,
+                linkedinUrl: true,
+                bio: true,
+              },
+            },
+          },
+        },
+        userB: {
+          select: {
+            id: true,
+            email: true,
+            profile: {
+              select: {
+                persona: true,
+                headline: true,
+                companyName: true,
+                currentRole: true,
+                location: true,
+                industries: true,
+                skills: true,
+                linkedinUrl: true,
+                bio: true,
+              },
+            },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    return matches.map((m) => {
+      const isAccepted = m.status === 'ACCEPTED';
+      const isUserA = m.userAId === userId;
+      const other = isUserA ? m.userB : m.userA;
+
+      if (!isAccepted && other?.profile) {
+        (other as any).email = undefined;
+        if (other.profile) {
+          (other.profile as any).linkedinUrl = undefined;
+        }
+      }
+      return m;
+    });
+  }
+
+  async getMatchStats(userId: string) {
+    const [total, pending, accepted] = await Promise.all([
+      prisma.match.count({
+        where: { OR: [{ userAId: userId }, { userBId: userId }] },
+      }),
+      prisma.match.count({
+        where: {
+          OR: [
+            { userAId: userId, status: { in: ['PROPOSED', 'PENDING_B'] } },
+            { userBId: userId, status: { in: ['PROPOSED', 'PENDING_A'] } },
+          ],
+        },
+      }),
+      prisma.match.count({
+        where: {
+          OR: [{ userAId: userId }, { userBId: userId }],
+          status: 'ACCEPTED',
+        },
+      }),
+    ]);
+    return { total, pending, accepted };
   }
 
   private async generateMatchReason(a: ProfileForMatching, b: ProfileForMatching): Promise<string> {
@@ -214,11 +302,10 @@ Write a brief reason why they should connect.`,
     }
   }
 
-  private async getProfileForMatching(userId: string): Promise<ProfileForMatching | null> {
+  async getProfileForMatching(userId: string): Promise<ProfileForMatching | null> {
     const profile = await prisma.profile.findUnique({ where: { userId } });
     if (!profile) return null;
 
-    // Get embedding if exists
     let embedding: number[] | undefined;
     try {
       const embRow = await prisma.$queryRawUnsafe<any[]>(
@@ -242,6 +329,11 @@ Write a brief reason why they should connect.`,
       headline: profile.headline || undefined,
       bio: profile.bio || undefined,
       embedding,
+      priority: (profile as any).priority || undefined,
+      targetRole: (profile as any).targetRole || undefined,
+      investorType: (profile as any).investorType || undefined,
+      investmentAmount: (profile as any).investmentAmount || undefined,
+      raiseAmount: (profile as any).raiseAmount || undefined,
     };
   }
 
@@ -253,7 +345,7 @@ Write a brief reason why they should connect.`,
       },
     });
 
-    return profiles.map((p) => ({
+    return profiles.map((p: any) => ({
       userId: p.userId,
       persona: p.persona || 'OTHER',
       companyStage: p.companyStage || undefined,
@@ -264,6 +356,11 @@ Write a brief reason why they should connect.`,
       skills: p.skills,
       headline: p.headline || undefined,
       bio: p.bio || undefined,
+      priority: p.priority || undefined,
+      targetRole: p.targetRole || undefined,
+      investorType: p.investorType || undefined,
+      investmentAmount: p.investmentAmount || undefined,
+      raiseAmount: p.raiseAmount || undefined,
     }));
   }
 }

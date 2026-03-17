@@ -1,6 +1,7 @@
 import { prisma } from '@boardy/db';
 import { callService } from './voice/callService';
 import { messagingService } from './messagingService';
+import { matchingService } from './matchingService';
 
 export class AutomationService {
   async onOnboardingComplete(userId: string, context: Record<string, any>) {
@@ -16,8 +17,10 @@ export class AutomationService {
       return;
     }
 
-    const phoneNumber = user.phone || user.profile?.phoneNumber;
+    const phoneNumber = user.phone || (user.profile as any)?.phoneNumber;
     const userName = user.profile?.currentRole || user.email.split('@')[0];
+
+    this.scheduleAutoMatch(userId);
 
     if (!phoneNumber) {
       console.log(`No phone number for user ${userId}, skipping call/messaging automation`);
@@ -26,6 +29,18 @@ export class AutomationService {
 
     this.scheduleCall(userId, phoneNumber);
     this.sendWelcomeMessages(userId, phoneNumber, userName);
+  }
+
+  private scheduleAutoMatch(userId: string) {
+    setTimeout(async () => {
+      try {
+        console.log(`[AutoMatch] Finding matches for user ${userId}`);
+        const proposed = await matchingService.findAndAutoPropose(userId, 5);
+        console.log(`[AutoMatch] Proposed ${proposed.length} matches for ${userId}`);
+      } catch (error) {
+        console.error(`[AutoMatch] Failed for user ${userId}:`, error);
+      }
+    }, 5000);
   }
 
   private scheduleCall(userId: string, phoneNumber: string) {

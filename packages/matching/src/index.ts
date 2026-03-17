@@ -1,6 +1,6 @@
 // ============================================
-// Cleo.ai — Matching Engine
-// Two-layer scoring: Rule-based + Semantic
+// Cleo.ai — Enhanced Matching Engine
+// Three-layer scoring: Rule-based + Intent + Semantic
 // ============================================
 
 import { MatchScore } from '@boardy/types';
@@ -17,64 +17,154 @@ export interface ProfileForMatching {
   headline?: string;
   bio?: string;
   embedding?: number[];
+  priority?: string;
+  targetRole?: string;
+  investorType?: string;
+  investmentAmount?: string;
+  raiseAmount?: string;
 }
 
 // ─── Persona Compatibility Matrix ───
-// Defines which persona pairs have high networking value
 const PERSONA_COMPATIBILITY: Record<string, Record<string, number>> = {
   FOUNDER: {
     INVESTOR: 0.95,
     ADVISOR: 0.85,
+    DEAL_PARTNER: 0.90,
+    VENTURE_PARTNER: 0.80,
     FOUNDER: 0.70,
     OPERATOR: 0.60,
+    TALENT: 0.55,
+    EVENT_PARTICIPANT: 0.65,
     RECRUITER: 0.40,
     FREELANCER: 0.50,
     JOB_SEEKER: 0.45,
+    OTHER: 0.40,
   },
   INVESTOR: {
     FOUNDER: 0.95,
+    EVENT_PARTICIPANT: 0.85,
+    DEAL_PARTNER: 0.90,
+    VENTURE_PARTNER: 0.75,
     INVESTOR: 0.65,
     ADVISOR: 0.55,
     OPERATOR: 0.40,
+    TALENT: 0.15,
     RECRUITER: 0.20,
     FREELANCER: 0.15,
     JOB_SEEKER: 0.10,
+    OTHER: 0.30,
+  },
+  TALENT: {
+    FOUNDER: 0.90,
+    RECRUITER: 0.95,
+    OPERATOR: 0.70,
+    ADVISOR: 0.50,
+    TALENT: 0.25,
+    INVESTOR: 0.15,
+    DEAL_PARTNER: 0.20,
+    VENTURE_PARTNER: 0.20,
+    EVENT_PARTICIPANT: 0.30,
+    FREELANCER: 0.30,
+    JOB_SEEKER: 0.20,
+    OTHER: 0.30,
+  },
+  DEAL_PARTNER: {
+    FOUNDER: 0.90,
+    INVESTOR: 0.90,
+    DEAL_PARTNER: 0.50,
+    VENTURE_PARTNER: 0.70,
+    EVENT_PARTICIPANT: 0.75,
+    ADVISOR: 0.60,
+    OPERATOR: 0.45,
+    TALENT: 0.20,
+    RECRUITER: 0.25,
+    FREELANCER: 0.20,
+    JOB_SEEKER: 0.15,
+    OTHER: 0.30,
+  },
+  EVENT_PARTICIPANT: {
+    INVESTOR: 0.85,
+    FOUNDER: 0.65,
+    DEAL_PARTNER: 0.75,
+    ADVISOR: 0.70,
+    EVENT_PARTICIPANT: 0.55,
+    VENTURE_PARTNER: 0.60,
+    OPERATOR: 0.45,
+    TALENT: 0.30,
+    RECRUITER: 0.25,
+    FREELANCER: 0.25,
+    JOB_SEEKER: 0.20,
+    OTHER: 0.35,
+  },
+  VENTURE_PARTNER: {
+    FOUNDER: 0.80,
+    INVESTOR: 0.75,
+    DEAL_PARTNER: 0.70,
+    VENTURE_PARTNER: 0.50,
+    EVENT_PARTICIPANT: 0.60,
+    ADVISOR: 0.65,
+    OPERATOR: 0.50,
+    TALENT: 0.20,
+    RECRUITER: 0.25,
+    FREELANCER: 0.20,
+    JOB_SEEKER: 0.15,
+    OTHER: 0.30,
   },
   ADVISOR: {
     FOUNDER: 0.85,
     INVESTOR: 0.55,
+    DEAL_PARTNER: 0.60,
+    VENTURE_PARTNER: 0.65,
     ADVISOR: 0.40,
     OPERATOR: 0.60,
+    EVENT_PARTICIPANT: 0.70,
+    TALENT: 0.30,
     JOB_SEEKER: 0.30,
     RECRUITER: 0.25,
     FREELANCER: 0.35,
+    OTHER: 0.35,
   },
   OPERATOR: {
     FOUNDER: 0.60,
     ADVISOR: 0.60,
     OPERATOR: 0.55,
+    TALENT: 0.55,
     INVESTOR: 0.40,
+    DEAL_PARTNER: 0.45,
+    VENTURE_PARTNER: 0.50,
+    EVENT_PARTICIPANT: 0.45,
     RECRUITER: 0.50,
     JOB_SEEKER: 0.45,
     FREELANCER: 0.40,
+    OTHER: 0.40,
   },
   JOB_SEEKER: {
     RECRUITER: 0.95,
     FOUNDER: 0.70,
     OPERATOR: 0.60,
     ADVISOR: 0.50,
+    TALENT: 0.30,
     INVESTOR: 0.10,
+    DEAL_PARTNER: 0.15,
+    VENTURE_PARTNER: 0.15,
+    EVENT_PARTICIPANT: 0.20,
     JOB_SEEKER: 0.20,
     FREELANCER: 0.25,
+    OTHER: 0.25,
   },
   RECRUITER: {
     JOB_SEEKER: 0.95,
+    TALENT: 0.95,
     FOUNDER: 0.60,
     OPERATOR: 0.50,
     RECRUITER: 0.30,
     ADVISOR: 0.25,
     INVESTOR: 0.20,
+    DEAL_PARTNER: 0.25,
+    VENTURE_PARTNER: 0.25,
+    EVENT_PARTICIPANT: 0.25,
     FREELANCER: 0.35,
+    OTHER: 0.25,
   },
   FREELANCER: {
     FOUNDER: 0.75,
@@ -82,8 +172,27 @@ const PERSONA_COMPATIBILITY: Record<string, Record<string, number>> = {
     ADVISOR: 0.35,
     FREELANCER: 0.30,
     RECRUITER: 0.35,
+    TALENT: 0.30,
     INVESTOR: 0.15,
+    DEAL_PARTNER: 0.20,
+    VENTURE_PARTNER: 0.20,
+    EVENT_PARTICIPANT: 0.25,
     JOB_SEEKER: 0.25,
+    OTHER: 0.30,
+  },
+  OTHER: {
+    FOUNDER: 0.40,
+    INVESTOR: 0.30,
+    ADVISOR: 0.35,
+    OPERATOR: 0.40,
+    DEAL_PARTNER: 0.30,
+    VENTURE_PARTNER: 0.30,
+    EVENT_PARTICIPANT: 0.35,
+    TALENT: 0.30,
+    RECRUITER: 0.25,
+    FREELANCER: 0.30,
+    JOB_SEEKER: 0.25,
+    OTHER: 0.30,
   },
 };
 
@@ -99,27 +208,63 @@ const STAGE_COMPATIBILITY: Record<string, string[]> = {
   BOOTSTRAPPED: ['PRE_SEED', 'SEED', 'BOOTSTRAPPED'],
 };
 
-export class MatchingEngine {
-  private ruleWeight = 0.6;
-  private semanticWeight = 0.4;
+// ─── Intent Alignment: lookingFor → persona mapping ───
+const INTENT_TO_PERSONA: Record<string, string[]> = {
+  fundraising: ['INVESTOR', 'DEAL_PARTNER', 'VENTURE_PARTNER'],
+  investors: ['INVESTOR', 'DEAL_PARTNER', 'VENTURE_PARTNER'],
+  deal_flow: ['FOUNDER', 'EVENT_PARTICIPANT', 'DEAL_PARTNER'],
+  hiring: ['TALENT', 'JOB_SEEKER', 'RECRUITER'],
+  job_opportunities: ['FOUNDER', 'OPERATOR', 'RECRUITER'],
+  cofounder: ['FOUNDER', 'TALENT'],
+  advisors: ['ADVISOR', 'VENTURE_PARTNER'],
+  advisory_roles: ['FOUNDER', 'OPERATOR'],
+  partnerships: ['FOUNDER', 'OPERATOR', 'DEAL_PARTNER'],
+  mentoring: ['FOUNDER', 'TALENT', 'JOB_SEEKER'],
+};
 
-  // Compute full match score between two profiles
+// ─── Founder Priority → Best persona match ───
+const PRIORITY_PERSONA_BOOST: Record<string, string[]> = {
+  FUNDRAISING: ['INVESTOR', 'DEAL_PARTNER', 'VENTURE_PARTNER'],
+  COFOUNDER: ['TALENT', 'FOUNDER'],
+  HIRING: ['TALENT', 'JOB_SEEKER', 'RECRUITER'],
+  MARKETING: ['ADVISOR', 'OPERATOR', 'FREELANCER'],
+  SALES_BD: ['ADVISOR', 'DEAL_PARTNER', 'OPERATOR'],
+  VENTURE_PARTNER_HIRE: ['VENTURE_PARTNER', 'DEAL_PARTNER', 'ADVISOR'],
+};
+
+// ─── Talent Target Role → Best persona match ───
+const TARGET_ROLE_BOOST: Record<string, string[]> = {
+  FOUNDING_ENGINEER: ['FOUNDER'],
+  FOUNDING_GTM: ['FOUNDER'],
+  CHIEF_OF_STAFF: ['FOUNDER', 'OPERATOR'],
+  GROWTH_CONTENT: ['FOUNDER', 'OPERATOR'],
+  OPEN_APPLICATION: ['FOUNDER', 'OPERATOR', 'RECRUITER'],
+  COFOUNDER: ['FOUNDER'],
+};
+
+export class MatchingEngine {
+  private ruleWeight = 0.45;
+  private intentWeight = 0.20;
+  private semanticWeight = 0.35;
+
   score(profileA: ProfileForMatching, profileB: ProfileForMatching): MatchScore {
     const roleMatch = this.scoreRoleMatch(profileA, profileB);
     const stageMatch = this.scoreStageMatch(profileA, profileB);
     const industryMatch = this.scoreArrayOverlap(profileA.industries, profileB.industries);
     const interestMatch = this.scoreArrayOverlap(profileA.interests, profileB.interests);
     const locationMatch = this.scoreLocation(profileA.location, profileB.location);
+    const skillMatch = this.scoreSkillRelevance(profileA, profileB);
 
-    // Rule-based composite
     const ruleScore =
-      roleMatch * 0.30 +
-      stageMatch * 0.15 +
-      industryMatch * 0.25 +
-      interestMatch * 0.15 +
-      locationMatch * 0.15;
+      roleMatch * 0.25 +
+      stageMatch * 0.12 +
+      industryMatch * 0.22 +
+      interestMatch * 0.13 +
+      locationMatch * 0.13 +
+      skillMatch * 0.15;
 
-    // Semantic similarity (if embeddings available)
+    const intentScore = this.scoreIntentAlignment(profileA, profileB);
+
     let semanticSimilarity = 0;
     if (profileA.embedding && profileB.embedding) {
       semanticSimilarity = this.cosineSimilarity(profileA.embedding, profileB.embedding);
@@ -127,6 +272,7 @@ export class MatchingEngine {
 
     const total =
       this.ruleWeight * ruleScore +
+      this.intentWeight * intentScore +
       this.semanticWeight * semanticSimilarity;
 
     return {
@@ -139,12 +285,13 @@ export class MatchingEngine {
         industryMatch: Math.round(industryMatch * 100) / 100,
         interestMatch: Math.round(interestMatch * 100) / 100,
         locationMatch: Math.round(locationMatch * 100) / 100,
+        skillMatch: Math.round(skillMatch * 100) / 100,
+        intentScore: Math.round(intentScore * 100) / 100,
         semanticSimilarity: Math.round(semanticSimilarity * 100) / 100,
       },
     };
   }
 
-  // Find top N matches for a user from a candidate pool
   findMatches(
     user: ProfileForMatching,
     candidates: ProfileForMatching[],
@@ -167,11 +314,82 @@ export class MatchingEngine {
   // --- Scoring Functions ---
 
   private scoreRoleMatch(a: ProfileForMatching, b: ProfileForMatching): number {
-    return PERSONA_COMPATIBILITY[a.persona]?.[b.persona] ?? 0.3;
+    const base = PERSONA_COMPATIBILITY[a.persona]?.[b.persona] ?? 0.3;
+
+    let priorityBoost = 0;
+    if (a.priority && PRIORITY_PERSONA_BOOST[a.priority]?.includes(b.persona)) {
+      priorityBoost = 0.15;
+    }
+    if (b.priority && PRIORITY_PERSONA_BOOST[b.priority]?.includes(a.persona)) {
+      priorityBoost = Math.max(priorityBoost, 0.15);
+    }
+
+    let targetBoost = 0;
+    if (a.targetRole && TARGET_ROLE_BOOST[a.targetRole]?.includes(b.persona)) {
+      targetBoost = 0.12;
+    }
+    if (b.targetRole && TARGET_ROLE_BOOST[b.targetRole]?.includes(a.persona)) {
+      targetBoost = Math.max(targetBoost, 0.12);
+    }
+
+    return Math.min(base + priorityBoost + targetBoost, 1.0);
+  }
+
+  private scoreIntentAlignment(a: ProfileForMatching, b: ProfileForMatching): number {
+    let score = 0;
+    let checks = 0;
+
+    for (const intent of a.lookingFor) {
+      const idealPersonas = INTENT_TO_PERSONA[intent] || [];
+      if (idealPersonas.includes(b.persona)) {
+        score += 1.0;
+      }
+      checks++;
+    }
+
+    for (const intent of b.lookingFor) {
+      const idealPersonas = INTENT_TO_PERSONA[intent] || [];
+      if (idealPersonas.includes(a.persona)) {
+        score += 1.0;
+      }
+      checks++;
+    }
+
+    const lookingForOverlap = this.scoreArrayOverlap(a.lookingFor, b.lookingFor);
+    score += lookingForOverlap * 0.5;
+    checks++;
+
+    return checks > 0 ? Math.min(score / checks, 1.0) : 0.3;
+  }
+
+  private scoreSkillRelevance(a: ProfileForMatching, b: ProfileForMatching): number {
+    if (!a.skills.length && !b.skills.length) return 0.3;
+
+    const directOverlap = this.scoreArrayOverlap(a.skills, b.skills);
+
+    let complementaryScore = 0;
+    const aNeeds = new Set(a.lookingFor.map(s => s.toLowerCase()));
+    const bSkills = new Set(b.skills.map(s => s.toLowerCase()));
+    const bNeeds = new Set(b.lookingFor.map(s => s.toLowerCase()));
+    const aSkills = new Set(a.skills.map(s => s.toLowerCase()));
+
+    let complementaryChecks = 0;
+    for (const need of aNeeds) {
+      if (bSkills.has(need)) complementaryScore += 1;
+      complementaryChecks++;
+    }
+    for (const need of bNeeds) {
+      if (aSkills.has(need)) complementaryScore += 1;
+      complementaryChecks++;
+    }
+
+    const compScore = complementaryChecks > 0 ? complementaryScore / complementaryChecks : 0;
+
+    return directOverlap * 0.4 + compScore * 0.6;
   }
 
   private scoreStageMatch(a: ProfileForMatching, b: ProfileForMatching): number {
-    if (!a.companyStage || !b.companyStage) return 0.5; // Neutral if unknown
+    if (!a.companyStage || !b.companyStage) return 0.5;
     const compatible = STAGE_COMPATIBILITY[a.companyStage] || [];
     return compatible.includes(b.companyStage) ? 1.0 : 0.2;
   }
@@ -182,7 +400,7 @@ export class MatchingEngine {
     const setB = new Set(arrB.map((s) => s.toLowerCase()));
     const intersection = [...setA].filter((x) => setB.has(x));
     const union = new Set([...setA, ...setB]);
-    return intersection.length / union.size; // Jaccard similarity
+    return intersection.length / union.size;
   }
 
   private scoreLocation(locA?: string, locB?: string): number {
@@ -190,7 +408,6 @@ export class MatchingEngine {
     const a = locA.toLowerCase().trim();
     const b = locB.toLowerCase().trim();
     if (a === b) return 1.0;
-    // Check city or country overlap
     const partsA = a.split(',').map((s) => s.trim());
     const partsB = b.split(',').map((s) => s.trim());
     for (const pa of partsA) {

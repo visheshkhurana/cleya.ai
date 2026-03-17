@@ -84,6 +84,11 @@ export default function ChatPage() {
         if (data.node.content) {
           setMessages((prev) => [...prev, { sender: 'AI', content: data.node.content, createdAt: new Date() }]);
         }
+        if (data.node.metadata?.action === 'complete_onboarding' || data.node.next === null) {
+          setTimeout(() => {
+            window.location.href = '/dashboard';
+          }, 3000);
+        }
       }
     } catch (err) {
       console.error('Send failed:', err);
@@ -128,12 +133,20 @@ export default function ChatPage() {
             <p className="text-xs text-white/40">Active now</p>
           </div>
         </div>
-        <button
-          onClick={() => { window.location.href = '/'; }}
-          className="text-xs text-white/30 hover:text-white/60 transition-colors px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20"
-        >
-          Sign out
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => { window.location.href = '/dashboard'; }}
+            className="text-xs text-white/30 hover:text-white/60 transition-colors px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20"
+          >
+            Dashboard
+          </button>
+          <button
+            onClick={() => { api.clearToken(); window.location.href = '/'; }}
+            className="text-xs text-white/30 hover:text-white/60 transition-colors px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20"
+          >
+            Sign out
+          </button>
+        </div>
       </header>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto chat-scroll px-4 py-6 space-y-1">
