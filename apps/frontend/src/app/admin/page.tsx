@@ -27,7 +27,7 @@ interface CommData {
   messageStats: { totalSMS: number; totalWhatsApp: number; delivered: number; failed: number; total: number };
 }
 
-type Tab = 'overview' | 'communications' | 'deals' | 'events';
+type Tab = 'overview' | 'communications' | 'deals' | 'events' | 'analytics';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
@@ -46,6 +46,8 @@ export default function AdminDashboard() {
   const [triggerLoading, setTriggerLoading] = useState(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [newEvent, setNewEvent] = useState({ name: '', description: '', date: '', location: '', isVirtual: false, maxCapacity: '' });
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [digestLoading, setDigestLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -101,6 +103,25 @@ export default function AdminDashboard() {
     }
   };
 
+  const loadAnalytics = async () => {
+    try {
+      const data = await api.getAdminAnalytics();
+      setAnalyticsData(data);
+    } catch (err: any) {
+      console.error('Failed to load analytics:', err);
+    }
+  };
+
+  const handleSendDigest = async () => {
+    setDigestLoading(true);
+    try {
+      await api.sendWeeklyDigest();
+    } catch (err) {
+      console.error('Digest send failed:', err);
+    }
+    setDigestLoading(false);
+  };
+
   const handleCreateEvent = async () => {
     try {
       await api.createEvent({
@@ -119,6 +140,7 @@ export default function AdminDashboard() {
     if (activeTab === 'communications' && !commData) loadComms();
     if (activeTab === 'deals' && !dealData) loadDeals();
     if (activeTab === 'events' && !eventData) loadEvents();
+    if (activeTab === 'analytics' && !analyticsData) loadAnalytics();
   }, [activeTab]);
 
   const handleTrigger = async () => {
@@ -215,6 +237,7 @@ export default function AdminDashboard() {
             { id: 'communications' as Tab, label: 'Communications', icon: '📞' },
             { id: 'deals' as Tab, label: 'Deals', icon: '🤝' },
             { id: 'events' as Tab, label: 'Events', icon: '📅' },
+            { id: 'analytics' as Tab, label: 'Analytics', icon: '📈' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -758,6 +781,171 @@ export default function AdminDashboard() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {activeTab === 'analytics' && (
+        <div className="space-y-6">
+          {!analyticsData ? (
+            <div className="text-center py-12 text-purple-300/40">Loading analytics...</div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <h2 className="text-white text-lg font-semibold">Platform Analytics</h2>
+                <button onClick={handleSendDigest} disabled={digestLoading}
+                  className="px-4 py-2 rounded-xl text-sm font-medium bg-purple-600 text-white hover:bg-purple-500 transition disabled:opacity-40">
+                  {digestLoading ? 'Sending...' : '📧 Send Weekly Digest'}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { label: 'Total Users', value: analyticsData.totalUsers, icon: '👥', color: '#a78bfa' },
+                  { label: 'Complete Profiles', value: analyticsData.completedProfiles, icon: '✅', color: '#6ee7b7' },
+                  { label: 'Onboarding Rate', value: `${analyticsData.onboardingRate}%`, icon: '📈', color: '#fbbf24' },
+                  { label: 'Signups (7d)', value: analyticsData.recentSignups, icon: '🆕', color: '#60a5fa' },
+                  { label: 'Total Matches', value: analyticsData.totalMatches, icon: '🎯', color: '#a78bfa' },
+                  { label: 'Accepted', value: analyticsData.acceptedMatches, icon: '✅', color: '#6ee7b7' },
+                  { label: 'Accept Rate', value: `${analyticsData.matchAcceptRate}%`, icon: '📊', color: '#fbbf24' },
+                  { label: 'Avg Score', value: `${analyticsData.avgMatchScore}%`, icon: '⭐', color: '#f472b6' },
+                ].map((s, i) => (
+                  <div key={i} className="rounded-xl border border-purple-500/10 p-4" style={{ background: 'rgba(26,18,48,0.6)' }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-lg">{s.icon}</span>
+                      <span className="text-xs text-purple-300/40 uppercase font-medium">{s.label}</span>
+                    </div>
+                    <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="rounded-xl border border-purple-500/10 p-5" style={{ background: 'rgba(26,18,48,0.6)' }}>
+                  <h3 className="text-white text-sm font-semibold mb-4">📊 Daily Signups (7 days)</h3>
+                  <div className="flex items-end gap-2 h-32">
+                    {analyticsData.dailySignups?.map((d: any, i: number) => {
+                      const max = Math.max(...analyticsData.dailySignups.map((x: any) => x.count), 1);
+                      const height = (d.count / max) * 100;
+                      return (
+                        <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                          <span className="text-xs text-purple-300/40">{d.count}</span>
+                          <div className="w-full rounded-t-md" style={{
+                            height: `${Math.max(height, 4)}%`,
+                            background: 'linear-gradient(180deg, #6C47FF, #4E2FD8)',
+                            minHeight: '4px',
+                          }} />
+                          <span className="text-[10px] text-purple-300/30">{d.date.slice(5)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-purple-500/10 p-5" style={{ background: 'rgba(26,18,48,0.6)' }}>
+                  <h3 className="text-white text-sm font-semibold mb-4">🎭 Personas</h3>
+                  <div className="space-y-2">
+                    {analyticsData.personaBreakdown?.map((p: any, i: number) => {
+                      const total = analyticsData.personaBreakdown.reduce((s: number, x: any) => s + x.count, 0);
+                      const pct = total > 0 ? Math.round((p.count / total) * 100) : 0;
+                      return (
+                        <div key={i}>
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-purple-200/60">{p.persona}</span>
+                            <span className="text-purple-300/40">{p.count} ({pct}%)</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-purple-900/30">
+                            <div className="h-full rounded-full" style={{
+                              width: `${pct}%`,
+                              background: 'linear-gradient(90deg, #6C47FF, #a78bfa)',
+                            }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {(!analyticsData.personaBreakdown || analyticsData.personaBreakdown.length === 0) && (
+                      <p className="text-purple-300/30 text-xs">No persona data yet</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="rounded-xl border border-purple-500/10 p-5" style={{ background: 'rgba(26,18,48,0.6)' }}>
+                  <h3 className="text-white text-sm font-semibold mb-4">⭐ Feedback</h3>
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="text-center">
+                      <p className="text-3xl font-bold text-yellow-400">{analyticsData.feedbackStats?.avgRating || 0}</p>
+                      <p className="text-xs text-purple-300/40">Avg Rating</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-3xl font-bold text-purple-400">{analyticsData.feedbackStats?.total || 0}</p>
+                      <p className="text-xs text-purple-300/40">Total Reviews</p>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    {[5, 4, 3, 2, 1].map(r => {
+                      const count = analyticsData.feedbackStats?.distribution?.find((d: any) => d.rating === r)?.count || 0;
+                      const total = analyticsData.feedbackStats?.total || 1;
+                      return (
+                        <div key={r} className="flex items-center gap-2">
+                          <span className="text-xs text-yellow-400 w-6">{r}★</span>
+                          <div className="flex-1 h-2 rounded-full bg-purple-900/30">
+                            <div className="h-full rounded-full bg-yellow-400/60" style={{ width: `${(count / total) * 100}%` }} />
+                          </div>
+                          <span className="text-xs text-purple-300/40 w-6 text-right">{count}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-purple-500/10 p-5" style={{ background: 'rgba(26,18,48,0.6)' }}>
+                  <h3 className="text-white text-sm font-semibold mb-4">📞 Communications</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-lg border border-purple-500/10 p-3 text-center" style={{ background: 'rgba(108,71,255,0.05)' }}>
+                      <p className="text-xl font-bold text-purple-400">{analyticsData.totalCalls}</p>
+                      <p className="text-xs text-purple-300/40">Calls</p>
+                    </div>
+                    <div className="rounded-lg border border-purple-500/10 p-3 text-center" style={{ background: 'rgba(108,71,255,0.05)' }}>
+                      <p className="text-xl font-bold text-blue-400">{analyticsData.totalMessages}</p>
+                      <p className="text-xs text-purple-300/40">Messages</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 space-y-1.5">
+                    {analyticsData.channelBreakdown?.map((c: any, i: number) => (
+                      <div key={i} className="flex justify-between text-xs">
+                        <span className="text-purple-200/60">{c.channel}</span>
+                        <span className="text-purple-300/40">{c.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-purple-500/10 p-5" style={{ background: 'rgba(26,18,48,0.6)' }}>
+                <h3 className="text-white text-sm font-semibold mb-4">🔔 Recent Activity</h3>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {analyticsData.recentActivity?.map((a: any, i: number) => (
+                    <div key={i} className="flex items-center gap-3 px-3 py-2 rounded-lg" style={{ background: 'rgba(108,71,255,0.03)' }}>
+                      <span className="text-sm">
+                        {a.type === 'MATCH_FOUND' ? '🎯' : a.type === 'INTRO_ACCEPTED' ? '✅' : a.type === 'INTRO_REQUEST' ? '🤝' : '🔔'}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs text-white/70 truncate block">{a.title}</span>
+                        {a.email && <span className="text-[10px] text-purple-300/30">{a.email}</span>}
+                      </div>
+                      <span className="text-[10px] text-purple-300/20 flex-shrink-0">
+                        {new Date(a.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  ))}
+                  {(!analyticsData.recentActivity || analyticsData.recentActivity.length === 0) && (
+                    <p className="text-purple-300/30 text-xs text-center py-4">No recent activity</p>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 

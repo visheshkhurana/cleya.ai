@@ -146,6 +146,19 @@ export class NotificationService {
       data: { readAt: new Date() },
     });
   }
+
+  async markAllRead(userId: string) {
+    return prisma.notification.updateMany({
+      where: { userId, readAt: null },
+      data: { readAt: new Date() },
+    });
+  }
+
+  async getUnreadCount(userId: string) {
+    return prisma.notification.count({
+      where: { userId, readAt: null },
+    });
+  }
 }
 
 export const notificationService = new NotificationService();

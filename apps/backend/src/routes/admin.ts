@@ -4,6 +4,7 @@ import { authenticate, requireAdmin } from '../middleware/auth';
 import { matchingService } from '../services/matchingService';
 import { messagingService } from '../services/messagingService';
 import { automationService } from '../services/automationService';
+import { emailService } from '../services/emailService';
 
 export const adminRouter = Router();
 
@@ -211,6 +212,132 @@ adminRouter.post('/match/run/:userId', async (req: Request, res: Response, next:
   try {
     const matches = await matchingService.findMatchesForUser(req.params.userId);
     res.json({ success: true, data: matches });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/analytics', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const [
+      totalUsers, completedProfiles, totalMatches, acceptedMatches,
+      rejectedMatches, totalCalls, totalMessages, totalFeedbacks,
+    ] = await Promise.all([
+      prisma.user.count({ where: { role: 'USER' } }),
+      prisma.profile.count({ where: { isComplete: true } }),
+      prisma.match.count(),
+      prisma.match.count({ where: { status: 'ACCEPTED' } }),
+      prisma.match.count({ where: { status: 'REJECTED' } }),
+      prisma.call.count(),
+      prisma.messageRecord.count(),
+      prisma.matchFeedback.count(),
+    ]);
+
+    const personaBreakdown = await prisma.profile.groupBy({
+      by: ['persona'],
+      _count: { persona: true },
+      where: { persona: { not: null } },
+    });
+
+    const avgScore = await prisma.match.aggregate({ _avg: { score: true } });
+
+    const avgRating = await prisma.matchFeedback.aggregate({ _avg: { rating: true } });
+
+    const ratingDist = await prisma.matchFeedback.groupBy({
+      by: ['rating'],
+      _count: { rating: true },
+    });
+
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const recentSignups = await prisma.user.count({
+      where: { createdAt: { gte: sevenDaysAgo }, role: 'USER' },
+    });
+
+    const dailySignups: { date: string; count: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const start = new Date();
+      start.setDate(start.getDate() - i);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 1);
+      const count = await prisma.user.count({
+        where: { createdAt: { gte: start, lt: end }, role: 'USER' },
+      });
+      dailySignups.push({ date: start.toISOString().split('T')[0], count });
+    }
+
+    const channelBreakdown = await prisma.messageRecord.groupBy({
+      by: ['channel'],
+      _count: { channel: true },
+    });
+
+    const topMatchedPersonas = await prisma.$queryRaw`
+      SELECT p.persona, COUNT(*)::int as match_count
+      FROM matches m
+      JOIN profiles p ON (p."userId" = m."userAId" OR p."userId" = m."userBId")
+      WHERE p.persona IS NOT NULL
+      GROUP BY p.persona
+      ORDER BY match_count DESC
+      LIMIT 10
+    ` as any[];
+
+    const recentActivity = await prisma.notification.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+      include: { user: { select: { email: true } } },
+    });
+
+    const startedOnboarding = await prisma.conversation.count({ where: { flowId: 'onboarding_v1' } });
+
+    res.json({
+      success: true,
+      data: {
+        totalUsers,
+        completedProfiles,
+        onboardingRate: startedOnboarding > 0 ? Math.round((completedProfiles / startedOnboarding) * 100) : 0,
+        startedOnboarding,
+        totalMatches,
+        acceptedMatches,
+        rejectedMatches,
+        matchAcceptRate: totalMatches > 0 ? Math.round((acceptedMatches / totalMatches) * 100) : 0,
+        avgMatchScore: Math.round((avgScore._avg.score || 0) * 100),
+        totalCalls,
+        totalMessages,
+        recentSignups,
+        dailySignups,
+        personaBreakdown: personaBreakdown.map((p) => ({
+          persona: p.persona,
+          count: p._count.persona,
+        })),
+        channelBreakdown: channelBreakdown.map((c) => ({
+          channel: c.channel,
+          count: c._count.channel,
+        })),
+        topMatchedPersonas,
+        feedbackStats: {
+          total: totalFeedbacks,
+          avgRating: Math.round((avgRating._avg.rating || 0) * 10) / 10,
+          distribution: ratingDist.map((r) => ({ rating: r.rating, count: r._count.rating })),
+        },
+        recentActivity: recentActivity.map((n) => ({
+          id: n.id,
+          type: n.event,
+          title: n.title,
+          body: n.body,
+          email: (n as any).user?.email,
+          createdAt: n.createdAt,
+        })),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/send-digest', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await emailService.sendDigestToAll();
+    res.json({ success: true, data: result });
   } catch (error) {
     next(error);
   }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import NotificationCenter from '@/components/NotificationCenter';
 
 interface MatchData {
   id: string;
@@ -268,6 +269,8 @@ export default function MatchesPage() {
             <button onClick={() => router.push('/dashboard')} className="text-white/30 hover:text-white/60 transition text-sm">← Back</button>
             <h1 className="font-semibold text-white text-sm">Your Matches</h1>
           </div>
+          <div className="flex items-center gap-3">
+          <NotificationCenter />
           <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: 'rgba(108,71,255,0.08)' }}>
             {[
               { id: 'pending' as Tab, label: `Pending (${pendingMatches.length})` },
@@ -286,6 +289,7 @@ export default function MatchesPage() {
                 {tab.label}
               </button>
             ))}
+          </div>
           </div>
         </div>
       </header>

@@ -126,6 +126,7 @@ Six persona types with tailored onboarding flows:
 2. **Communications** — Call/message stats and logs
 3. **Deals** — Deal pipeline table with status, industry, stage, intro tracking; stats cards
 4. **Events** — Event list with participants, status, capacity; create event modal; stats cards
+5. **Analytics** — Users by persona, onboarding rate, match stats, feedback distribution, daily signups chart, communications breakdown, recent activity feed, weekly digest trigger
 
 ### User-Facing Pages
 - **Landing Page** (`/`) — Hero section, phone mockup, How It Works (3 steps), Features grid (6 items), Social proof, Footer. Non-auth users see landing page; auth users auto-redirect to dashboard/admin
@@ -133,6 +134,7 @@ Six persona types with tailored onboarding flows:
 - **Profile** (`/profile`) — Edit all profile fields per persona type (Founder/Investor/Talent sections), save via PATCH /api/users/profile
 - **Chat** (`/chat`) — AI chat with typing indicator, timestamps, smooth scroll, chat history persistence (localStorage, survives refresh, 24h expiry)
 - **Matches** (`/matches`) — Card-based match review with accept/reject, contact reveal, post-response feedback prompt (1-5 star rating + optional text)
+- **Settings** (`/settings`) — Account info display, change password, logout, delete account (danger zone)
 - **Smart Login Routing**: Admin → `/admin`, completed profiles → `/dashboard`, new users → `/chat`
 
 ### Phase 4: Landing Page + UX Polish
@@ -151,7 +153,11 @@ Six persona types with tailored onboarding flows:
 7. **Voice Calls** — Twilio integration, AI voice assistant
 8. **Deal Tracking** — Scout/deal partner workflow for sourcing founders
 9. **Event Management** — Event CRUD, participant registration, waitlisting, check-in
-10. **Admin Dashboard** — 4 tabs: Overview, Communications, Deals, Events
+10. **Admin Dashboard** — 5 tabs: Overview, Communications, Deals, Events, Analytics
+11. **Notification Center** — Bell icon in nav bar with unread count badge, dropdown with recent notifications, mark read/mark all read
+12. **Settings Page** — Account info, change password, session management, account deletion
+13. **Email Service** — Nodemailer (SMTP) for welcome, match proposed, match accepted, weekly digest emails (branded HTML templates)
+14. **Rate Limiting** — 100/15min general, 5/hr signup, 10/15min login, 50/hr match proposals (express-rate-limit)
 
 ### Vector-Based AI Matching (pgvector)
 - **Hybrid matching pipeline**: pgvector cosine similarity → rule-based + intent scoring → ranked results
@@ -166,7 +172,11 @@ Six persona types with tailored onboarding flows:
 - `apps/backend/src/services/introductionService.ts` — Post-acceptance intros
 - `apps/backend/src/routes/deal.ts` — Deal tracking CRUD + admin endpoint
 - `apps/backend/src/routes/event.ts` — Event CRUD + participant management + admin endpoint
-- `apps/frontend/src/app/admin/page.tsx` — Admin dashboard (4 tabs)
+- `apps/backend/src/services/emailService.ts` — Email service (nodemailer, branded HTML templates)
+- `apps/backend/src/middleware/rateLimit.ts` — Rate limiting middleware
+- `apps/frontend/src/app/admin/page.tsx` — Admin dashboard (5 tabs)
+- `apps/frontend/src/app/settings/page.tsx` — Settings page
+- `apps/frontend/src/components/NotificationCenter.tsx` — Bell icon notification dropdown
 - `apps/frontend/src/lib/api.ts` — API client (relative `/api` path, token as `cleo_token`)
 - `packages/matching/src/index.ts` — Enhanced matching engine with persona context matching
 - `packages/api/src/services/matching.ts` — Shared matching API services

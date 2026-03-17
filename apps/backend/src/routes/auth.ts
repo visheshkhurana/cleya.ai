@@ -2,6 +2,8 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { authService } from '../services/authService';
 import { authenticate } from '../middleware/auth';
+import { signupLimiter, loginLimiter } from '../middleware/rateLimit';
+import { emailService } from '../services/emailService';
 
 export const authRouter = Router();
 
@@ -16,17 +18,18 @@ const loginSchema = z.object({
   password: z.string(),
 });
 
-authRouter.post('/signup', async (req: Request, res: Response, next: NextFunction) => {
+authRouter.post('/signup', signupLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = signupSchema.parse(req.body);
     const result = await authService.signup(data);
+    emailService.sendWelcome(data.email).catch(() => {});
     res.status(201).json({ success: true, data: result });
   } catch (error) {
     next(error);
   }
 });
 
-authRouter.post('/login', async (req: Request, res: Response, next: NextFunction) => {
+authRouter.post('/login', loginLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = loginSchema.parse(req.body);
     const result = await authService.login(data);

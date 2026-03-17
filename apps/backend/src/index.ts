@@ -18,6 +18,8 @@ import { twilioRouter } from './routes/twilio';
 import { dealRouter } from './routes/deal';
 import { eventRouter } from './routes/event';
 
+import { generalLimiter } from './middleware/rateLimit';
+
 const app = express();
 const server = createServer(app);
 
@@ -26,6 +28,7 @@ app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/api', generalLimiter);
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', env: env.NODE_ENV });

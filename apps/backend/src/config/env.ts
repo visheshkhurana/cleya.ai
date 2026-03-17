@@ -31,9 +31,12 @@ const envSchema = z.object({
   BACKEND_URL: z.string().default('http://localhost:3001'),
   WS_PORT: z.coerce.number().default(3002),
 
-  // Email
-  SENDGRID_API_KEY: z.string().optional(),
-  FROM_EMAIL: z.string().email().default('hello@cleo.ai'),
+  // Email (SMTP)
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().default(587),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  FROM_EMAIL: z.string().default('hello@cleo.ai'),
 });
 
 function validateEnv() {

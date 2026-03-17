@@ -3,6 +3,7 @@ import { authenticate } from '../middleware/auth';
 import { matchingService } from '../services/matchingService';
 import { vectorMatchingService } from '../services/vectorMatchingService';
 import { prisma } from '@boardy/db';
+import { matchProposalLimiter } from '../middleware/rateLimit';
 
 export const matchRouter = Router();
 
@@ -34,7 +35,7 @@ matchRouter.post('/find', authenticate, async (req: Request, res: Response, next
   }
 });
 
-matchRouter.post('/find-and-propose', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+matchRouter.post('/find-and-propose', authenticate, matchProposalLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { limit } = req.body;
     const proposed = await matchingService.findAndAutoPropose(req.user!.userId, limit || 5);

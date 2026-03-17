@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import NotificationCenter from '@/components/NotificationCenter';
 
 interface UserProfile {
   persona?: string;
@@ -151,6 +152,11 @@ export default function DashboardPage() {
               className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-white/50 hover:text-white/80 hover:border-white/20 transition">
               Profile
             </button>
+            <button onClick={() => router.push('/settings')}
+              className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-white/50 hover:text-white/80 hover:border-white/20 transition">
+              Settings
+            </button>
+            <NotificationCenter />
             <button onClick={() => { api.clearToken(); router.push('/'); }}
               className="text-xs text-white/30 hover:text-white/60 transition px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20">
               Sign out

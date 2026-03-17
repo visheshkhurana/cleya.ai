@@ -140,6 +140,39 @@ class ApiClient {
     return this.fetch(`/notifications?limit=${limit}`);
   }
 
+  async markNotificationRead(id: string) {
+    return this.fetch(`/notifications/${id}/read`, { method: 'PATCH' });
+  }
+
+  async markAllNotificationsRead() {
+    return this.fetch('/notifications/read-all', { method: 'POST' });
+  }
+
+  // Settings
+  async getSettings() {
+    return this.fetch('/users/settings');
+  }
+
+  async changePassword(currentPassword: string, newPassword: string) {
+    return this.fetch('/users/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  }
+
+  async deleteAccount() {
+    return this.fetch('/users/account', { method: 'DELETE' });
+  }
+
+  // Admin Analytics
+  async getAdminAnalytics() {
+    return this.fetch('/admin/analytics');
+  }
+
+  async sendWeeklyDigest() {
+    return this.fetch('/admin/send-digest', { method: 'POST' });
+  }
+
   // Admin
   async getAdminStats() {
     return this.fetch('/admin/stats');
