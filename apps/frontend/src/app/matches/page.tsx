@@ -33,12 +33,21 @@ interface ProfileData {
 
 type Tab = 'pending' | 'accepted';
 
+interface FeedbackState {
+  matchId: string;
+  rating: number;
+  text: string;
+  action: 'ACCEPTED' | 'REJECTED';
+}
+
 export default function MatchesPage() {
   const [matches, setMatches] = useState<MatchData[]>([]);
   const [loading, setLoading] = useState(true);
   const [responding, setResponding] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('pending');
   const [me, setMe] = useState<any>(null);
+  const [feedbackPrompt, setFeedbackPrompt] = useState<FeedbackState | null>(null);
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -69,11 +78,30 @@ export default function MatchesPage() {
     setResponding(matchId);
     try {
       await api.respondToMatch(matchId, response);
+      setFeedbackPrompt({ matchId, rating: 0, text: '', action: response });
       await loadData();
     } catch (err) {
       console.error('Respond failed:', err);
     } finally {
       setResponding(null);
+    }
+  };
+
+  const submitFeedback = async () => {
+    if (!feedbackPrompt || feedbackPrompt.rating === 0) return;
+    setSubmittingFeedback(true);
+    try {
+      await api.submitMatchFeedback(
+        feedbackPrompt.matchId,
+        feedbackPrompt.rating,
+        feedbackPrompt.text || undefined
+      );
+      setFeedbackPrompt(null);
+    } catch (err) {
+      console.error('Feedback failed:', err);
+      setFeedbackPrompt(null);
+    } finally {
+      setSubmittingFeedback(false);
     }
   };
 
@@ -327,6 +355,48 @@ export default function MatchesPage() {
           </div>
         )}
       </div>
+
+      {feedbackPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
+          <div className="w-full max-w-sm mx-4 rounded-2xl border border-white/10 p-6 fade-up" style={{ background: '#1a1230' }}>
+            <h3 className="text-lg font-semibold text-white mb-1">
+              {feedbackPrompt.action === 'ACCEPTED' ? 'Great choice!' : 'Got it!'}
+            </h3>
+            <p className="text-sm text-white/40 mb-5">How relevant was this match?</p>
+
+            <div className="flex justify-center gap-2 mb-5">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button key={star} onClick={() => setFeedbackPrompt({ ...feedbackPrompt, rating: star })}
+                  className="text-3xl transition-transform hover:scale-110"
+                  style={{ filter: star <= feedbackPrompt.rating ? 'none' : 'grayscale(1) opacity(0.3)' }}>
+                  ⭐
+                </button>
+              ))}
+            </div>
+
+            <textarea
+              value={feedbackPrompt.text}
+              onChange={(e) => setFeedbackPrompt({ ...feedbackPrompt, text: e.target.value })}
+              placeholder="Any additional feedback? (optional)"
+              rows={3}
+              className="input-dark resize-none mb-4"
+            />
+
+            <div className="flex gap-3">
+              <button onClick={() => setFeedbackPrompt(null)}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white/40 border border-white/10 hover:border-white/20 transition">
+                Skip
+              </button>
+              <button onClick={submitFeedback}
+                disabled={feedbackPrompt.rating === 0 || submittingFeedback}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white transition disabled:opacity-40"
+                style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>
+                {submittingFeedback ? 'Sending...' : 'Submit'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

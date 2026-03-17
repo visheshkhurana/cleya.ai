@@ -23,6 +23,29 @@ interface FlowNode {
   next?: string | null;
 }
 
+const CHAT_STORAGE_KEY = 'cleo_chat_state';
+
+function saveChatState(conversationId: string, messages: Message[]) {
+  try {
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify({ conversationId, messages, savedAt: Date.now() }));
+  } catch {}
+}
+
+function loadChatState(): { conversationId: string; messages: Message[] } | null {
+  try {
+    const raw = localStorage.getItem(CHAT_STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (Date.now() - data.savedAt > 24 * 60 * 60 * 1000) {
+      localStorage.removeItem(CHAT_STORAGE_KEY);
+      return null;
+    }
+    return data;
+  } catch {
+    return null;
+  }
+}
+
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentNode, setCurrentNode] = useState<FlowNode | null>(null);
@@ -40,8 +63,33 @@ export default function ChatPage() {
     startChat();
   }, []);
 
+  useEffect(() => {
+    if (conversationId && messages.length > 0) {
+      saveChatState(conversationId, messages);
+    }
+  }, [conversationId, messages]);
+
   const startChat = async () => {
     try {
+      const saved = loadChatState();
+      if (saved && saved.conversationId && saved.messages.length > 0) {
+        try {
+          const convData = await api.getConversation(saved.conversationId);
+          setConversationId(saved.conversationId);
+          setMessages(saved.messages.map((m: any) => ({
+            ...m,
+            createdAt: m.createdAt ? new Date(m.createdAt) : undefined,
+          })));
+          if (convData.node) {
+            setCurrentNode(convData.node);
+          }
+          setLoading(false);
+          return;
+        } catch {
+          localStorage.removeItem(CHAT_STORAGE_KEY);
+        }
+      }
+
       const data = await api.startConversation('onboarding_v1');
       setConversationId(data.conversationId);
       setCurrentNode(data.node);
@@ -85,6 +133,7 @@ export default function ChatPage() {
           setMessages((prev) => [...prev, { sender: 'AI', content: data.node.content, createdAt: new Date() }]);
         }
         if (data.node.metadata?.action === 'complete_onboarding' || data.node.next === null) {
+          localStorage.removeItem(CHAT_STORAGE_KEY);
           setTimeout(() => {
             window.location.href = '/dashboard';
           }, 3000);
@@ -141,7 +190,7 @@ export default function ChatPage() {
             Dashboard
           </button>
           <button
-            onClick={() => { api.clearToken(); window.location.href = '/'; }}
+            onClick={() => { api.clearToken(); localStorage.removeItem(CHAT_STORAGE_KEY); window.location.href = '/'; }}
             className="text-xs text-white/30 hover:text-white/60 transition-colors px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20"
           >
             Sign out

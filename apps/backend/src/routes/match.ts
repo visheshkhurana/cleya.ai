@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { authenticate } from '../middleware/auth';
 import { matchingService } from '../services/matchingService';
 import { vectorMatchingService } from '../services/vectorMatchingService';
+import { prisma } from '@boardy/db';
 
 export const matchRouter = Router();
 
@@ -48,6 +49,32 @@ matchRouter.post('/propose', authenticate, async (req: Request, res: Response, n
     const { userAId, userBId } = req.body;
     const match = await matchingService.proposeMatch(userAId, userBId);
     res.status(201).json({ success: true, data: match });
+  } catch (error) {
+    next(error);
+  }
+});
+
+matchRouter.post('/:id/feedback', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { rating, feedback } = req.body;
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ success: false, error: { message: 'Rating must be between 1 and 5' } });
+    }
+    const match = await prisma.match.findFirst({
+      where: {
+        id: req.params.id,
+        OR: [{ userAId: req.user!.userId }, { userBId: req.user!.userId }],
+      },
+    });
+    if (!match) {
+      return res.status(404).json({ success: false, error: { message: 'Match not found' } });
+    }
+    const result = await prisma.matchFeedback.upsert({
+      where: { matchId_userId: { matchId: req.params.id, userId: req.user!.userId } },
+      update: { rating: parseInt(rating), feedback: feedback || null },
+      create: { matchId: req.params.id, userId: req.user!.userId, rating: parseInt(rating), feedback: feedback || null },
+    });
+    res.json({ success: true, data: result });
   } catch (error) {
     next(error);
   }

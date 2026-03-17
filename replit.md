@@ -128,9 +128,18 @@ Six persona types with tailored onboarding flows:
 4. **Events** — Event list with participants, status, capacity; create event modal; stats cards
 
 ### User-Facing Pages
-- **Dashboard** (`/dashboard`) — Profile summary, match stats, quick actions
-- **Matches** (`/matches`) — Card-based match review with accept/reject, contact reveal
+- **Landing Page** (`/`) — Hero section, phone mockup, How It Works (3 steps), Features grid (6 items), Social proof, Footer. Non-auth users see landing page; auth users auto-redirect to dashboard/admin
+- **Dashboard** (`/dashboard`) — Profile summary, match stats, recent match cards with scores + persona + reason, quick actions (View Matches, Find Matches, Edit Profile, Chat)
+- **Profile** (`/profile`) — Edit all profile fields per persona type (Founder/Investor/Talent sections), save via PATCH /api/users/profile
+- **Chat** (`/chat`) — AI chat with typing indicator, timestamps, smooth scroll, chat history persistence (localStorage, survives refresh, 24h expiry)
+- **Matches** (`/matches`) — Card-based match review with accept/reject, contact reveal, post-response feedback prompt (1-5 star rating + optional text)
 - **Smart Login Routing**: Admin → `/admin`, completed profiles → `/dashboard`, new users → `/chat`
+
+### Phase 4: Landing Page + UX Polish
+- **MatchFeedback model**: id, matchId (unique per user+match), userId, rating (1-5), feedback text, createdAt
+- **Backend routes**: `PATCH /api/users/profile`, `POST /api/matches/:id/feedback`
+- **Chat persistence**: Conversation ID + messages saved to localStorage, restored on refresh (24h expiry)
+- **Match feedback UI**: After accept/reject, modal with star rating + optional text feedback
 
 ## Features (all tested E2E)
 1. **Auth** — Sign up, login, JWT auth, Get Me, smart routing

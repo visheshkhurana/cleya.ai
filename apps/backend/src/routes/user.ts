@@ -21,3 +21,12 @@ userRouter.put('/profile', authenticate, async (req: Request, res: Response, nex
     next(error);
   }
 });
+
+userRouter.patch('/profile', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const profile = await profileService.updateProfile(req.user!.userId, req.body);
+    res.json({ success: true, data: profile });
+  } catch (error) {
+    next(error);
+  }
+});

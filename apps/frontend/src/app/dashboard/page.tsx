@@ -22,10 +22,25 @@ interface MatchStats {
   accepted: number;
 }
 
+interface MatchData {
+  id: string;
+  status: string;
+  score: number;
+  reason?: string;
+  userAId: string;
+  userBId: string;
+  userAResponse: string;
+  userBResponse: string;
+  createdAt: string;
+  userA: { id: string; email: string; profile?: any };
+  userB: { id: string; email: string; profile?: any };
+}
+
 export default function DashboardPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [user, setUser] = useState<any>(null);
   const [matchStats, setMatchStats] = useState<MatchStats>({ total: 0, pending: 0, accepted: 0 });
+  const [recentMatches, setRecentMatches] = useState<MatchData[]>([]);
   const [loading, setLoading] = useState(true);
   const [findingMatches, setFindingMatches] = useState(false);
   const router = useRouter();
@@ -40,14 +55,17 @@ export default function DashboardPage() {
 
   const loadDashboard = async () => {
     try {
-      const [userData, profileData, stats] = await Promise.all([
+      const [userData, profileData, stats, matches] = await Promise.all([
         api.getMe(),
         api.getProfile().catch(() => null),
         api.getMatchStats().catch(() => ({ total: 0, pending: 0, accepted: 0 })),
+        api.getMatches().catch(() => []),
       ]);
       setUser(userData);
       setProfile(profileData);
       setMatchStats(stats);
+      const matchArr = Array.isArray(matches) ? matches : [];
+      setRecentMatches(matchArr.slice(0, 5));
     } catch (err: any) {
       console.error('Dashboard load failed:', err);
       if (err.message?.includes('Unauthorized') || err.message?.includes('token')) {
@@ -62,8 +80,13 @@ export default function DashboardPage() {
     setFindingMatches(true);
     try {
       await api.findAndPropose(5);
-      const stats = await api.getMatchStats();
+      const [stats, matches] = await Promise.all([
+        api.getMatchStats(),
+        api.getMatches().catch(() => []),
+      ]);
       setMatchStats(stats);
+      const matchArr = Array.isArray(matches) ? matches : [];
+      setRecentMatches(matchArr.slice(0, 5));
     } catch (err) {
       console.error('Find matches failed:', err);
     } finally {
@@ -83,33 +106,25 @@ export default function DashboardPage() {
   }
 
   const personaLabel: Record<string, string> = {
-    FOUNDER: 'Founder',
-    INVESTOR: 'Investor',
-    TALENT: 'Talent',
-    DEAL_PARTNER: 'Deal Partner',
-    EVENT_PARTICIPANT: 'The Pitch by Deel',
-    VENTURE_PARTNER: 'Venture Partner',
-    ADVISOR: 'Advisor',
-    OPERATOR: 'Operator',
-    JOB_SEEKER: 'Job Seeker',
-    RECRUITER: 'Recruiter',
-    FREELANCER: 'Freelancer',
-    OTHER: 'Other',
+    FOUNDER: 'Founder', INVESTOR: 'Investor', TALENT: 'Talent', DEAL_PARTNER: 'Deal Partner',
+    EVENT_PARTICIPANT: 'The Pitch by Deel', VENTURE_PARTNER: 'Venture Partner', ADVISOR: 'Advisor',
+    OPERATOR: 'Operator', JOB_SEEKER: 'Job Seeker', RECRUITER: 'Recruiter', FREELANCER: 'Freelancer', OTHER: 'Other',
   };
 
   const personaIcon: Record<string, string> = {
-    FOUNDER: '🚀',
-    INVESTOR: '💰',
-    TALENT: '🎯',
-    DEAL_PARTNER: '🤝',
-    EVENT_PARTICIPANT: '🏆',
-    VENTURE_PARTNER: '🏦',
-    ADVISOR: '🧠',
-    OPERATOR: '⚙️',
-    JOB_SEEKER: '💼',
-    RECRUITER: '👔',
-    FREELANCER: '✨',
-    OTHER: '💬',
+    FOUNDER: '🚀', INVESTOR: '💰', TALENT: '🎯', DEAL_PARTNER: '🤝',
+    EVENT_PARTICIPANT: '🏆', VENTURE_PARTNER: '🏦', ADVISOR: '🧠',
+    OPERATOR: '⚙️', JOB_SEEKER: '💼', RECRUITER: '👔', FREELANCER: '✨', OTHER: '💬',
+  };
+
+  const getOtherUser = (match: MatchData) => {
+    if (!user) return match.userB;
+    return match.userAId === user.id ? match.userB : match.userA;
+  };
+
+  const getMyResponse = (match: MatchData) => {
+    if (!user) return 'PENDING';
+    return match.userAId === user.id ? match.userAResponse : match.userBResponse;
   };
 
   return (
@@ -131,6 +146,10 @@ export default function DashboardPage() {
             <button onClick={() => router.push('/chat')}
               className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-white/50 hover:text-white/80 hover:border-white/20 transition">
               Chat
+            </button>
+            <button onClick={() => router.push('/profile')}
+              className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-white/50 hover:text-white/80 hover:border-white/20 transition">
+              Profile
             </button>
             <button onClick={() => { api.clearToken(); router.push('/'); }}
               className="text-xs text-white/30 hover:text-white/60 transition px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20">
@@ -191,84 +210,163 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <button
-            onClick={() => router.push('/matches')}
-            className="rounded-2xl border border-white/5 p-6 text-left hover:border-purple-500/20 transition group"
-            style={{ background: 'rgba(26,18,48,0.6)' }}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-2xl">🎯</span>
-              <span className="text-xs text-white/20 group-hover:text-white/40 transition">→</span>
+        {recentMatches.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Your Matches</h3>
+              <button onClick={() => router.push('/matches')} className="text-xs text-purple-400 hover:text-purple-300 transition">
+                View All →
+              </button>
             </div>
-            <h3 className="font-semibold text-white mb-1">View Matches</h3>
-            <p className="text-sm text-white/40">Review and respond to your match proposals</p>
-            {matchStats.pending > 0 && (
-              <p className="text-xs mt-2" style={{ color: '#a78bfa' }}>
-                {matchStats.pending} match{matchStats.pending !== 1 ? 'es' : ''} waiting for your response
-              </p>
-            )}
-          </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {recentMatches.slice(0, 6).map((match) => {
+                const other = getOtherUser(match);
+                const otherProfile = other.profile;
+                const scorePercent = Math.round((match.score || 0) * 100);
+                const myResponse = getMyResponse(match);
+                const isPending = myResponse === 'PENDING' && match.status !== 'REJECTED' && match.status !== 'ACCEPTED';
 
-          <button
-            onClick={handleFindMatches}
-            disabled={findingMatches}
-            className="rounded-2xl border border-white/5 p-6 text-left hover:border-purple-500/20 transition group disabled:opacity-60"
-            style={{ background: 'rgba(26,18,48,0.6)' }}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-2xl">🔍</span>
-              {findingMatches && <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />}
-            </div>
-            <h3 className="font-semibold text-white mb-1">
-              {findingMatches ? 'Finding Matches...' : 'Find New Matches'}
-            </h3>
-            <p className="text-sm text-white/40">Let Cleo search for new connections based on your profile</p>
-          </button>
-
-          <button
-            onClick={() => router.push('/chat')}
-            className="rounded-2xl border border-white/5 p-6 text-left hover:border-purple-500/20 transition group"
-            style={{ background: 'rgba(26,18,48,0.6)' }}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-2xl">💬</span>
-              <span className="text-xs text-white/20 group-hover:text-white/40 transition">→</span>
-            </div>
-            <h3 className="font-semibold text-white mb-1">Chat with Cleo</h3>
-            <p className="text-sm text-white/40">Update your profile or ask Cleo anything</p>
-          </button>
-
-          {profile?.industries && profile.industries.length > 0 && (
-            <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(26,18,48,0.6)' }}>
-              <div className="mb-3">
-                <span className="text-2xl">🏷️</span>
-              </div>
-              <h3 className="font-semibold text-white mb-3">Your Industries</h3>
-              <div className="flex flex-wrap gap-2">
-                {profile.industries.map((ind) => (
-                  <span key={ind} className="px-2.5 py-1 rounded-full text-xs border"
-                    style={{ background: 'rgba(108,71,255,0.08)', borderColor: 'rgba(108,71,255,0.15)', color: '#a78bfa' }}>
-                    {ind.replace(/_/g, ' ')}
-                  </span>
-                ))}
-              </div>
-              {profile.skills && profile.skills.length > 0 && (
-                <>
-                  <h4 className="font-medium text-white/60 text-xs mt-4 mb-2 uppercase tracking-wider">Skills</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {profile.skills.map((skill) => (
-                      <span key={skill} className="px-2.5 py-1 rounded-full text-xs border"
-                        style={{ background: 'rgba(16,185,129,0.08)', borderColor: 'rgba(16,185,129,0.15)', color: '#6ee7b7' }}>
-                        {skill.replace(/-/g, ' ')}
-                      </span>
-                    ))}
+                return (
+                  <div key={match.id} className="rounded-2xl border border-white/5 p-4 hover:border-purple-500/15 transition"
+                    style={{ background: 'rgba(26,18,48,0.6)' }}>
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
+                        style={{ background: 'linear-gradient(135deg, #6C47FF15, #4E2FD815)', border: '1px solid rgba(108,71,255,0.12)' }}>
+                        {personaIcon[otherProfile?.persona || 'OTHER'] || '💬'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-sm font-semibold text-white truncate">
+                            {otherProfile?.currentRole || other.email.split('@')[0]}
+                          </h4>
+                          <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold"
+                            style={{
+                              background: scorePercent >= 70 ? 'rgba(16,185,129,0.12)' : scorePercent >= 50 ? 'rgba(245,158,11,0.12)' : 'rgba(108,71,255,0.12)',
+                              color: scorePercent >= 70 ? '#6ee7b7' : scorePercent >= 50 ? '#fbbf24' : '#a78bfa'
+                            }}>
+                            {scorePercent}%
+                          </div>
+                        </div>
+                        {otherProfile?.persona && (
+                          <span className="text-[10px] font-medium" style={{ color: '#a78bfa' }}>
+                            {personaLabel[otherProfile.persona] || otherProfile.persona}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {match.reason && (
+                      <p className="text-xs text-white/40 line-clamp-2 mb-3">{match.reason}</p>
+                    )}
+                    <div className="flex gap-2">
+                      {isPending ? (
+                        <button onClick={() => router.push('/matches')}
+                          className="flex-1 py-2 rounded-xl text-xs font-medium text-white transition"
+                          style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>
+                          Review
+                        </button>
+                      ) : (
+                        <button onClick={() => router.push('/matches')}
+                          className="flex-1 py-2 rounded-xl text-xs font-medium text-white/50 border border-white/10 hover:border-white/20 transition">
+                          View
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </>
-              )}
+                );
+              })}
             </div>
-          )}
+          </div>
+        )}
+
+        <div>
+          <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider mb-4">Quick Actions</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <button
+              onClick={() => router.push('/matches')}
+              className="rounded-2xl border border-white/5 p-5 text-left hover:border-purple-500/20 transition group"
+              style={{ background: 'rgba(26,18,48,0.6)' }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-2xl">🎯</span>
+                <span className="text-xs text-white/20 group-hover:text-white/40 transition">→</span>
+              </div>
+              <h3 className="font-semibold text-white text-sm mb-1">View Matches</h3>
+              <p className="text-xs text-white/40">Review proposals</p>
+              {matchStats.pending > 0 && (
+                <p className="text-[11px] mt-1" style={{ color: '#a78bfa' }}>{matchStats.pending} pending</p>
+              )}
+            </button>
+
+            <button
+              onClick={handleFindMatches}
+              disabled={findingMatches}
+              className="rounded-2xl border border-white/5 p-5 text-left hover:border-purple-500/20 transition group disabled:opacity-60"
+              style={{ background: 'rgba(26,18,48,0.6)' }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-2xl">🔍</span>
+                {findingMatches && <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />}
+              </div>
+              <h3 className="font-semibold text-white text-sm mb-1">
+                {findingMatches ? 'Finding...' : 'Find Matches'}
+              </h3>
+              <p className="text-xs text-white/40">Search for connections</p>
+            </button>
+
+            <button
+              onClick={() => router.push('/profile')}
+              className="rounded-2xl border border-white/5 p-5 text-left hover:border-purple-500/20 transition group"
+              style={{ background: 'rgba(26,18,48,0.6)' }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-2xl">✏️</span>
+                <span className="text-xs text-white/20 group-hover:text-white/40 transition">→</span>
+              </div>
+              <h3 className="font-semibold text-white text-sm mb-1">Edit Profile</h3>
+              <p className="text-xs text-white/40">Update your info</p>
+            </button>
+
+            <button
+              onClick={() => router.push('/chat')}
+              className="rounded-2xl border border-white/5 p-5 text-left hover:border-purple-500/20 transition group"
+              style={{ background: 'rgba(26,18,48,0.6)' }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-2xl">💬</span>
+                <span className="text-xs text-white/20 group-hover:text-white/40 transition">→</span>
+              </div>
+              <h3 className="font-semibold text-white text-sm mb-1">Chat with Cleo</h3>
+              <p className="text-xs text-white/40">Start a conversation</p>
+            </button>
+          </div>
         </div>
+
+        {profile?.industries && profile.industries.length > 0 && (
+          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(26,18,48,0.6)' }}>
+            <h3 className="font-semibold text-white mb-3 text-sm">Your Industries</h3>
+            <div className="flex flex-wrap gap-2">
+              {profile.industries.map((ind) => (
+                <span key={ind} className="px-2.5 py-1 rounded-full text-xs border"
+                  style={{ background: 'rgba(108,71,255,0.08)', borderColor: 'rgba(108,71,255,0.15)', color: '#a78bfa' }}>
+                  {ind.replace(/_/g, ' ')}
+                </span>
+              ))}
+            </div>
+            {profile.skills && profile.skills.length > 0 && (
+              <>
+                <h4 className="font-medium text-white/60 text-xs mt-4 mb-2 uppercase tracking-wider">Skills</h4>
+                <div className="flex flex-wrap gap-2">
+                  {profile.skills.map((skill) => (
+                    <span key={skill} className="px-2.5 py-1 rounded-full text-xs border"
+                      style={{ background: 'rgba(16,185,129,0.08)', borderColor: 'rgba(16,185,129,0.15)', color: '#6ee7b7' }}>
+                      {skill.replace(/-/g, ' ')}
+                    </span>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

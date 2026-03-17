@@ -100,7 +100,7 @@ class ApiClient {
 
   async updateProfile(data: Record<string, any>) {
     return this.fetch('/users/profile', {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify(data),
     });
   }
@@ -198,6 +198,17 @@ class ApiClient {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
+  }
+
+  async submitMatchFeedback(matchId: string, rating: number, feedback?: string) {
+    return this.fetch(`/matches/${matchId}/feedback`, {
+      method: 'POST',
+      body: JSON.stringify({ rating, feedback }),
+    });
+  }
+
+  async getConversationMessages(conversationId: string) {
+    return this.fetch(`/conversations/${conversationId}`);
   }
 
   async updateParticipant(eventId: string, userId: string, data: { status?: string; checkedIn?: boolean }) {
