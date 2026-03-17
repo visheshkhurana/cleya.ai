@@ -36,6 +36,7 @@ async function main() {
     {
       email: 'sarah@techstartup.com',
       persona: 'FOUNDER' as const,
+      priority: 'FUNDRAISING' as const,
       headline: 'Building AI-powered supply chain optimization',
       companyName: 'ChainMind',
       companyStage: 'SEED' as const,
@@ -55,6 +56,7 @@ async function main() {
       industries: ['ai_ml', 'saas', 'enterprise'],
       skills: ['investing', 'mentoring', 'strategy'],
       lookingFor: ['deal_flow'],
+      investmentAmount: '$500K',
       location: 'New York, NY',
     },
     {
@@ -83,6 +85,7 @@ async function main() {
     {
       email: 'jessica@jobhunt.me',
       persona: 'JOB_SEEKER' as const,
+      targetRole: 'FOUNDING_ENGINEER' as const,
       headline: 'Senior PM looking for my next challenge at a Series A startup',
       companyName: 'Google (prev)',
       currentRole: 'Senior Product Manager',
@@ -105,6 +108,9 @@ async function main() {
         profile: {
           create: {
             persona: user.persona,
+            priority: (user as any).priority || null,
+            targetRole: (user as any).targetRole || null,
+            investmentAmount: (user as any).investmentAmount || null,
             headline: user.headline,
             companyName: user.companyName,
             companyStage: user.companyStage,
