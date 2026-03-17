@@ -45,11 +45,11 @@ Starts both frontend (port 5000) and backend (port 3001) concurrently.
 
 ## Seed Users
 - `admin@cleo.ai` / `admin123456` (ADMIN role)
-- `sarah@techstartup.com` / `password123` (FOUNDER)
-- `alex@venturefund.com` / `password123` (INVESTOR)
+- `sarah@techstartup.com` / `password123` (FOUNDER, priority=FUNDRAISING)
+- `alex@venturefund.com` / `password123` (INVESTOR, investmentAmount=$500K)
 - `priya@bigcorp.com` / `password123` (OPERATOR)
 - `marcus@advisors.io` / `password123` (ADVISOR)
-- `jessica@jobhunt.me` / `password123` (JOB_SEEKER)
+- `jessica@jobhunt.me` / `password123` (JOB_SEEKER, targetRole=FOUNDING_ENGINEER)
 
 ## Phase 1: Multi-Persona Onboarding
 Six persona types with tailored onboarding flows:
@@ -72,63 +72,77 @@ Six persona types with tailored onboarding flows:
 - **Admin Communications tab** — recent calls/messages tables, stats, manual trigger (Call/Message) per user
 - **MessageRecord model** — SMS/WhatsApp/Email audit trail
 
-## Phase 3: Enhanced Matching Engine + Special Flows
+## Phase 3: Enhanced Matching Engine + Special Flows + Deal/Event Management
+
 ### Enhanced Matching Engine
 - **Three-layer scoring**: Rule-based (45%) + Intent alignment (20%) + Semantic similarity (35%)
-- **Extended persona compatibility matrix**: All 12 persona types (FOUNDER, INVESTOR, TALENT, DEAL_PARTNER, EVENT_PARTICIPANT, VENTURE_PARTNER, ADVISOR, OPERATOR, JOB_SEEKER, RECRUITER, FREELANCER, OTHER)
-- **Intent alignment scoring**: Maps `lookingFor` values to ideal persona matches (e.g., fundraising → INVESTOR)
-- **Founder priority boost**: FUNDRAISING → INVESTOR/DEAL_PARTNER, HIRING → TALENT/RECRUITER
-- **Talent target role boost**: FOUNDING_ENGINEER → FOUNDER, etc.
+- **Extended persona compatibility matrix**: All 12 persona types
+- **Founder Context Matching** (15% of rule score):
+  - **Founder (Fundraising)** → Investors/Deal Partners in same industry + compatible stage + raise/check size alignment
+  - **Founder (Co-Founder)** → Talent/Founders with complementary skills + shared industry/interests
+  - **Founder (Hiring)** → Talent/Job Seekers with matching target roles + industry + skills
+  - **Investor** → Founders in matching industry + compatible stage + investment range fit
+  - **Talent/Job Seeker** → Founders hiring for their target role + industry + skills
+  - **Deal Partner** → Founders in focus industries + tracked companies overlap + stage compatibility
+  - **Venture Partner** → Founders in focus industries + stage + investment thesis keyword matching
+- **Intent alignment scoring**: Maps `lookingFor` values to ideal persona matches
 - **Skill relevance scoring**: Both overlap + complementary skill matching
 
 ### Special Flows
 - **Auto-matching**: Profile completion triggers automatic match finding + proposal (5s delay)
-- **Introduction service**: After double opt-in acceptance, sends personalized intro via WhatsApp/SMS with AI-generated intro text + contact details
+- **Introduction service**: After double opt-in acceptance, sends personalized intro via WhatsApp/SMS
 - **Find & Propose**: Single endpoint to find matches and auto-propose top N
 
+### Deal Tracking (Scout / Deal Partner Flow)
+- **DealTracking model**: Tracks deals scouted by deal partners linking to founders
+- **Fields**: dealPartnerId, founderId, status (SCOUTED→CONTACTED→INTRO_MADE→IN_DILIGENCE→PASSED→CLOSED), industry, stage, notes, introSent, responseStatus
+- **Endpoints**: `GET/POST/PATCH/DELETE /api/deals`, `GET /api/deals/admin/all`
+- **Unique constraint**: One deal per (dealPartner, founder) pair
+
+### Event Management
+- **Event model**: name, description, date, endDate, location, isVirtual, maxCapacity, organizer, status (UPCOMING/ACTIVE/COMPLETED/CANCELLED)
+- **EventParticipant model**: eventId, userId, status (REGISTERED/CONFIRMED/WAITLISTED/CANCELLED/ATTENDED), checkedIn
+- **Auto-waitlist**: When event reaches maxCapacity, new registrations get WAITLISTED status
+- **Endpoints**: `GET/POST/PATCH/DELETE /api/events`, `POST /api/events/:id/join`, `DELETE /api/events/:id/leave`, `PATCH /api/events/:eventId/participants/:userId`, `GET /api/events/admin/all`
+
+### Admin Dashboard Tabs
+1. **Overview** — Key metrics, conversion funnel, users table with call/message triggers
+2. **Communications** — Call/message stats and logs
+3. **Deals** — Deal pipeline table with status, industry, stage, intro tracking; stats cards
+4. **Events** — Event list with participants, status, capacity; create event modal; stats cards
+
 ### User-Facing Pages
-- **Dashboard** (`/dashboard`) — Profile summary, match stats (total/pending/accepted), quick actions (view matches, find new, chat), industries/skills display
-- **Matches** (`/matches`) — Card-based match review with accept/reject, pending vs accepted tabs, contact reveal on acceptance, AI match reasons, score display
+- **Dashboard** (`/dashboard`) — Profile summary, match stats, quick actions
+- **Matches** (`/matches`) — Card-based match review with accept/reject, contact reveal
 - **Smart Login Routing**: Admin → `/admin`, completed profiles → `/dashboard`, new users → `/chat`
-- **Post-onboarding redirect**: Chat completion → dashboard (3s delay)
-- **Navigation**: Dashboard ↔ Matches ↔ Chat with sign out
 
 ## Features (all tested E2E)
 1. **Auth** — Sign up, login, JWT auth, Get Me, smart routing
-2. **Chat Onboarding** — State machine flow: welcome → persona select (6 options) → persona-specific forms → common details → attribution → completion → dashboard redirect
-3. **Profile** — Get/update profile, completeness scoring, AI embedding generation
-4. **Matching** — Enhanced three-layer scoring, intent alignment, persona-specific boosts, auto-match on completion, find-and-propose, double opt-in, contact reveal
-5. **Introductions** — AI-generated intro messages, WhatsApp/SMS delivery, in-app notifications
-6. **Notifications** — Multi-channel (IN_APP, EMAIL, SMS, WHATSAPP), mark as read
-7. **Voice Calls** — Twilio integration, AI voice assistant, transcript extraction
-8. **Admin Dashboard** — Stats, user list, conversion funnel, communications tab, manual call/message triggers
+2. **Chat Onboarding** — State machine flow with 6 persona types
+3. **Profile** — Get/update, completeness scoring, AI embedding generation
+4. **Matching** — Three-layer scoring, persona-specific context matching, auto-match, find-and-propose, double opt-in, contact reveal
+5. **Introductions** — AI-generated intro messages, WhatsApp/SMS delivery
+6. **Notifications** — Multi-channel (IN_APP, EMAIL, SMS, WHATSAPP)
+7. **Voice Calls** — Twilio integration, AI voice assistant
+8. **Deal Tracking** — Scout/deal partner workflow for sourcing founders
+9. **Event Management** — Event CRUD, participant registration, waitlisting, check-in
+10. **Admin Dashboard** — 4 tabs: Overview, Communications, Deals, Events
 
 ### Vector-Based AI Matching (pgvector)
-- **VectorMatchingService** (`apps/backend/src/services/vectorMatchingService.ts`) — Uses pgvector's native `<=>` cosine distance operator for efficient similarity search at the database level
-- **Hybrid matching pipeline**: Pre-filters candidates via pgvector similarity → combines with rule-based + intent scoring → returns ranked results
-- **Text search**: Generate ad-hoc query embeddings and find matching profiles by natural language description
-- **Embedding management**: Auto-generates embeddings on profile update; backfill endpoint for existing profiles
-- **Database indexes**: `user_embeddings_vector_cosine_idx` (IVFFlat cosine), `user_embeddings_userId_source_uniq` (unique constraint for upsert)
-- **API endpoints**:
-  - `POST /api/matches/similar` — Find similar users by vector similarity
-  - `POST /api/matches/search` — Search users by text query (generates embedding on-the-fly)
-  - `GET /api/matches/embeddings/stats` — Embedding coverage statistics
-  - `POST /api/matches/embeddings/backfill` — Generate missing embeddings in batch
+- **Hybrid matching pipeline**: pgvector cosine similarity → rule-based + intent scoring → ranked results
+- **Embedding management**: Auto-generates on profile update; backfill for existing profiles
+- **Database indexes**: IVFFlat cosine, unique constraint for upsert
+- **API endpoints**: similar search, text search, embedding stats, backfill
 
 ## Key Files
-- `apps/backend/src/index.ts` — Main Express server
-- `apps/backend/src/services/matchingService.ts` — Matching orchestrator (find, propose, respond, auto-match, stats)
-- `apps/backend/src/services/vectorMatchingService.ts` — pgvector-based similarity search + hybrid matching
-- `apps/backend/src/services/introductionService.ts` — Post-acceptance intro messages
-- `apps/backend/src/services/automationService.ts` — Post-onboarding automation (call, message, auto-match)
-- `apps/backend/src/services/messagingService.ts` — Twilio SMS/WhatsApp
-- `apps/backend/src/routes/match.ts` — Match API routes (find, propose, respond, stats, similar, search, embeddings)
-- `apps/backend/src/routes/admin.ts` — Admin routes (stats, users, funnel, communications, triggers)
-- `apps/frontend/src/app/dashboard/page.tsx` — User dashboard
-- `apps/frontend/src/app/matches/page.tsx` — Match review UI
-- `apps/frontend/src/app/chat/page.tsx` — Onboarding chat
-- `apps/frontend/src/app/admin/page.tsx` — Admin dashboard
-- `apps/frontend/src/lib/api.ts` — API client (uses relative `/api` path, token as `cleo_token`)
-- `packages/conversation-engine/src/flows/onboarding.ts` — Onboarding flow definition (6 persona types)
-- `packages/matching/src/index.ts` — Enhanced matching engine (persona matrix, intent, skills, priorities)
-- `packages/db/prisma/schema.prisma` — Full schema with all models
+- `apps/backend/src/index.ts` — Main Express server (routes: auth, users, conversations, matches, calls, admin, notifications, messaging, twilio, deals, events)
+- `apps/backend/src/services/matchingService.ts` — Matching orchestrator
+- `apps/backend/src/services/vectorMatchingService.ts` — pgvector similarity + hybrid matching
+- `apps/backend/src/services/introductionService.ts` — Post-acceptance intros
+- `apps/backend/src/routes/deal.ts` — Deal tracking CRUD + admin endpoint
+- `apps/backend/src/routes/event.ts` — Event CRUD + participant management + admin endpoint
+- `apps/frontend/src/app/admin/page.tsx` — Admin dashboard (4 tabs)
+- `apps/frontend/src/lib/api.ts` — API client (relative `/api` path, token as `cleo_token`)
+- `packages/matching/src/index.ts` — Enhanced matching engine with persona context matching
+- `packages/api/src/services/matching.ts` — Shared matching API services
+- `packages/db/prisma/schema.prisma` — Full schema (User, Profile, Match, DealTracking, Event, EventParticipant, etc.)

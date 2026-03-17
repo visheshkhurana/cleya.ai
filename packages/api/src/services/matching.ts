@@ -210,6 +210,10 @@ export async function getProfileForMatching(userId: string): Promise<ProfileForM
     investorType: (profile as any).investorType || undefined,
     investmentAmount: (profile as any).investmentAmount || undefined,
     raiseAmount: (profile as any).raiseAmount || undefined,
+    trackedCompanies: (profile as any).trackedCompanies || undefined,
+    industryFocus: (profile as any).industryFocus || [],
+    investmentThesis: (profile as any).investmentThesis || undefined,
+    fundName: (profile as any).fundName || undefined,
   };
 }
 
@@ -390,23 +394,7 @@ async function getRuleBasedCandidates(
     take: limit,
   });
 
-  return profiles.map((p: any) => ({
-    userId: p.userId,
-    persona: p.persona || 'OTHER',
-    companyStage: p.companyStage || undefined,
-    industries: p.industries,
-    interests: p.interests,
-    lookingFor: p.lookingFor,
-    location: p.location || undefined,
-    skills: p.skills,
-    headline: p.headline || undefined,
-    bio: p.bio || undefined,
-    priority: p.priority || undefined,
-    targetRole: p.targetRole || undefined,
-    investorType: p.investorType || undefined,
-    investmentAmount: p.investmentAmount || undefined,
-    raiseAmount: p.raiseAmount || undefined,
-  }));
+  return profiles.map((p: any) => mapProfileToMatching(p));
 }
 
 async function getAllCompletedProfiles(
@@ -422,15 +410,19 @@ async function getAllCompletedProfiles(
     },
   });
 
-  return profiles.map((p: any) => ({
+  return profiles.map((p: any) => mapProfileToMatching(p));
+}
+
+function mapProfileToMatching(p: any): ProfileForMatching {
+  return {
     userId: p.userId,
     persona: p.persona || 'OTHER',
     companyStage: p.companyStage || undefined,
-    industries: p.industries,
-    interests: p.interests,
-    lookingFor: p.lookingFor,
+    industries: p.industries || [],
+    interests: p.interests || [],
+    lookingFor: p.lookingFor || [],
     location: p.location || undefined,
-    skills: p.skills,
+    skills: p.skills || [],
     headline: p.headline || undefined,
     bio: p.bio || undefined,
     priority: p.priority || undefined,
@@ -438,5 +430,9 @@ async function getAllCompletedProfiles(
     investorType: p.investorType || undefined,
     investmentAmount: p.investmentAmount || undefined,
     raiseAmount: p.raiseAmount || undefined,
-  }));
+    trackedCompanies: p.trackedCompanies || undefined,
+    industryFocus: p.industryFocus || [],
+    investmentThesis: p.investmentThesis || undefined,
+    fundName: p.fundName || undefined,
+  };
 }

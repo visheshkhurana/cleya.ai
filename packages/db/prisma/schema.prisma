@@ -38,6 +38,10 @@ model User {
   notifications Notification[]
   embeddings    UserEmbedding[]
   messageRecords MessageRecord[]
+  scoutedDeals    DealTracking[] @relation("DealPartnerDeals")
+  foundedDeals    DealTracking[] @relation("FounderDeals")
+  organizedEvents Event[]
+  eventParticipations EventParticipant[]
 
   @@index([email])
   @@index([phone])
@@ -409,4 +413,112 @@ enum MessageStatus {
   DELIVERED
   FAILED
   READ
+}
+
+// ─────────────────────────────────────────────
+// DEAL TRACKING (Scout / Deal Partner flow)
+// ─────────────────────────────────────────────
+
+model DealTracking {
+  id              String          @id @default(cuid())
+  dealPartnerId   String
+  dealPartner     User            @relation("DealPartnerDeals", fields: [dealPartnerId], references: [id], onDelete: Cascade)
+  founderId       String
+  founder         User            @relation("FounderDeals", fields: [founderId], references: [id], onDelete: Cascade)
+
+  status          DealStatus      @default(SCOUTED)
+  industry        String?
+  stage           CompanyStage?
+  notes           String?
+  introSent       Boolean         @default(false)
+  introSentAt     DateTime?
+  responseStatus  DealResponse?
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@unique([dealPartnerId, founderId])
+  @@index([dealPartnerId])
+  @@index([founderId])
+  @@index([status])
+  @@map("deal_tracking")
+}
+
+enum DealStatus {
+  SCOUTED
+  CONTACTED
+  INTRO_MADE
+  IN_DILIGENCE
+  PASSED
+  CLOSED
+}
+
+enum DealResponse {
+  PENDING
+  INTERESTED
+  NOT_INTERESTED
+  MEETING_SCHEDULED
+}
+
+// ─────────────────────────────────────────────
+// EVENTS
+// ─────────────────────────────────────────────
+
+model Event {
+  id           String             @id @default(cuid())
+  name         String
+  description  String?
+  date         DateTime
+  endDate      DateTime?
+  location     String?
+  isVirtual    Boolean            @default(false)
+  maxCapacity  Int?
+  organizerId  String
+  organizer    User               @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  status       EventStatus        @default(UPCOMING)
+  metadata     Json?              @db.JsonB
+
+  participants EventParticipant[]
+
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@index([organizerId])
+  @@index([date])
+  @@index([status])
+  @@map("events")
+}
+
+enum EventStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model EventParticipant {
+  id        String                  @id @default(cuid())
+  eventId   String
+  event     Event                   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    EventParticipantStatus  @default(REGISTERED)
+  checkedIn Boolean                 @default(false)
+  notes     String?
+
+  createdAt DateTime                @default(now())
+  updatedAt DateTime                @updatedAt
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+  @@map("event_participants")
+}
+
+enum EventParticipantStatus {
+  REGISTERED
+  CONFIRMED
+  WAITLISTED
+  CANCELLED
+  ATTENDED
 }

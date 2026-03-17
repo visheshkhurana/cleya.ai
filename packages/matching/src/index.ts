@@ -22,6 +22,10 @@ export interface ProfileForMatching {
   investorType?: string;
   investmentAmount?: string;
   raiseAmount?: string;
+  trackedCompanies?: string;
+  industryFocus?: string[];
+  investmentThesis?: string;
+  fundName?: string;
 }
 
 // ─── Persona Compatibility Matrix ───
@@ -340,9 +344,7 @@ export class MatchingEngine {
 
   private scoreFounderContextMatch(a: ProfileForMatching, b: ProfileForMatching): number {
     const scoreOneDirection = (founder: ProfileForMatching, candidate: ProfileForMatching): number => {
-      if (founder.persona !== 'FOUNDER') return 0;
-
-      if (founder.priority === 'FUNDRAISING') {
+      if (founder.persona === 'FOUNDER' && founder.priority === 'FUNDRAISING') {
         if (!['INVESTOR', 'DEAL_PARTNER', 'VENTURE_PARTNER'].includes(candidate.persona)) return 0;
 
         let score = 0.4;
@@ -368,7 +370,7 @@ export class MatchingEngine {
         return Math.min(score, 1.0);
       }
 
-      if (founder.priority === 'COFOUNDER') {
+      if (founder.persona === 'FOUNDER' && founder.priority === 'COFOUNDER') {
         if (!['TALENT', 'FOUNDER'].includes(candidate.persona)) return 0;
 
         let score = 0.3;
@@ -394,7 +396,7 @@ export class MatchingEngine {
         return Math.min(score, 1.0);
       }
 
-      if (founder.priority === 'HIRING') {
+      if (founder.persona === 'FOUNDER' && founder.priority === 'HIRING') {
         if (!['TALENT', 'JOB_SEEKER'].includes(candidate.persona)) return 0;
 
         let score = 0.3;
@@ -446,6 +448,97 @@ export class MatchingEngine {
           }
         } else if (founder.investmentAmount || candidate.raiseAmount) {
           score += 0.05;
+        }
+
+        return Math.min(score, 1.0);
+      }
+
+      if (founder.persona === 'TALENT' || founder.persona === 'JOB_SEEKER') {
+        if (candidate.persona !== 'FOUNDER') return 0;
+
+        let score = 0.3;
+
+        if (founder.targetRole && candidate.priority) {
+          const roleMatchesPriority: Record<string, string[]> = {
+            FOUNDING_ENGINEER: ['HIRING', 'COFOUNDER'],
+            FOUNDING_GTM: ['HIRING', 'MARKETING', 'SALES_BD'],
+            CHIEF_OF_STAFF: ['HIRING'],
+            GROWTH_CONTENT: ['HIRING', 'MARKETING'],
+            OPEN_APPLICATION: ['HIRING', 'COFOUNDER', 'MARKETING', 'SALES_BD'],
+            COFOUNDER: ['COFOUNDER'],
+          };
+          const matchingPriorities = roleMatchesPriority[founder.targetRole] || [];
+          if (matchingPriorities.includes(candidate.priority)) {
+            score += 0.35;
+          }
+        }
+
+        const industryOverlap = this.scoreArrayOverlap(founder.industries, candidate.industries);
+        score += industryOverlap * 0.20;
+
+        const skillRelevance = this.scoreArrayOverlap(founder.skills, candidate.skills);
+        score += skillRelevance * 0.15;
+
+        return Math.min(score, 1.0);
+      }
+
+      if (founder.persona === 'DEAL_PARTNER') {
+        if (candidate.persona !== 'FOUNDER') return 0;
+
+        let score = 0.25;
+
+        const focusIndustries = founder.industryFocus?.length ? founder.industryFocus : founder.industries;
+        const industryOverlap = this.scoreArrayOverlap(focusIndustries, candidate.industries);
+        score += industryOverlap * 0.30;
+
+        if (founder.trackedCompanies && candidate.headline) {
+          const tracked = founder.trackedCompanies.toLowerCase();
+          const candidateText = [
+            candidate.headline || '',
+            candidate.bio || '',
+          ].join(' ').toLowerCase();
+          const trackedList = tracked.split(/[,;|]+/).map(s => s.trim()).filter(Boolean);
+          const hasOverlap = trackedList.some(company => candidateText.includes(company));
+          if (hasOverlap) score += 0.25;
+        }
+
+        if (founder.companyStage && candidate.companyStage) {
+          const compatible = STAGE_COMPATIBILITY[founder.companyStage] || [];
+          if (compatible.includes(candidate.companyStage)) score += 0.15;
+        } else {
+          score += 0.05;
+        }
+
+        return Math.min(score, 1.0);
+      }
+
+      if (founder.persona === 'VENTURE_PARTNER') {
+        if (candidate.persona !== 'FOUNDER') return 0;
+
+        let score = 0.25;
+
+        const focusIndustries = founder.industryFocus?.length ? founder.industryFocus : founder.industries;
+        const industryOverlap = this.scoreArrayOverlap(focusIndustries, candidate.industries);
+        score += industryOverlap * 0.30;
+
+        if (founder.companyStage && candidate.companyStage) {
+          const compatible = STAGE_COMPATIBILITY[founder.companyStage] || [];
+          if (compatible.includes(candidate.companyStage)) score += 0.20;
+        } else {
+          score += 0.05;
+        }
+
+        if (founder.investmentThesis && candidate.headline) {
+          const thesis = founder.investmentThesis.toLowerCase();
+          const candidateText = [
+            candidate.headline || '',
+            candidate.bio || '',
+            ...candidate.industries,
+          ].join(' ').toLowerCase();
+          const thesisTerms = thesis.split(/\s+/).filter(t => t.length > 3);
+          const matchedTerms = thesisTerms.filter(term => candidateText.includes(term));
+          const thesisOverlap = thesisTerms.length > 0 ? matchedTerms.length / thesisTerms.length : 0;
+          score += thesisOverlap * 0.25;
         }
 
         return Math.min(score, 1.0);

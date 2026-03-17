@@ -27,13 +27,15 @@ interface CommData {
   messageStats: { totalSMS: number; totalWhatsApp: number; delivered: number; failed: number; total: number };
 }
 
-type Tab = 'overview' | 'communications';
+type Tab = 'overview' | 'communications' | 'deals' | 'events';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [funnel, setFunnel] = useState<FunnelStep[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [commData, setCommData] = useState<CommData | null>(null);
+  const [dealData, setDealData] = useState<{ deals: any[]; stats: any } | null>(null);
+  const [eventData, setEventData] = useState<{ events: any[]; stats: any } | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +44,8 @@ export default function AdminDashboard() {
   const [triggerMessage, setTriggerMessage] = useState('');
   const [triggerChannel, setTriggerChannel] = useState<'SMS' | 'WHATSAPP'>('WHATSAPP');
   const [triggerLoading, setTriggerLoading] = useState(false);
+  const [showCreateEvent, setShowCreateEvent] = useState(false);
+  const [newEvent, setNewEvent] = useState({ name: '', description: '', date: '', location: '', isVirtual: false, maxCapacity: '' });
   const router = useRouter();
 
   useEffect(() => {
@@ -79,10 +83,42 @@ export default function AdminDashboard() {
     }
   };
 
-  useEffect(() => {
-    if (activeTab === 'communications' && !commData) {
-      loadComms();
+  const loadDeals = async () => {
+    try {
+      const data = await api.getAdminDeals();
+      setDealData(data);
+    } catch (err: any) {
+      console.error('Failed to load deals:', err);
     }
+  };
+
+  const loadEvents = async () => {
+    try {
+      const data = await api.getAdminEvents();
+      setEventData(data);
+    } catch (err: any) {
+      console.error('Failed to load events:', err);
+    }
+  };
+
+  const handleCreateEvent = async () => {
+    try {
+      await api.createEvent({
+        ...newEvent,
+        maxCapacity: newEvent.maxCapacity ? parseInt(newEvent.maxCapacity) : undefined,
+      });
+      setShowCreateEvent(false);
+      setNewEvent({ name: '', description: '', date: '', location: '', isVirtual: false, maxCapacity: '' });
+      loadEvents();
+    } catch (err: any) {
+      alert(err.message || 'Failed to create event');
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'communications' && !commData) loadComms();
+    if (activeTab === 'deals' && !dealData) loadDeals();
+    if (activeTab === 'events' && !eventData) loadEvents();
   }, [activeTab]);
 
   const handleTrigger = async () => {
@@ -177,6 +213,8 @@ export default function AdminDashboard() {
           {[
             { id: 'overview' as Tab, label: 'Overview', icon: '📊' },
             { id: 'communications' as Tab, label: 'Communications', icon: '📞' },
+            { id: 'deals' as Tab, label: 'Deals', icon: '🤝' },
+            { id: 'events' as Tab, label: 'Events', icon: '📅' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -433,7 +471,259 @@ export default function AdminDashboard() {
             </div>
           </div>
         )}
+
+        {activeTab === 'deals' && (
+          <div className="space-y-6">
+            {dealData && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { label: 'Total Deals', value: dealData.stats.total, icon: '🤝' },
+                  { label: 'Intros Sent', value: dealData.stats.introsSent, icon: '📨' },
+                  ...Object.entries(dealData.stats.byStatus || {}).slice(0, 2).map(([k, v]) => ({
+                    label: k.replace(/_/g, ' '), value: v as number, icon: k === 'SCOUTED' ? '🔍' : k === 'INTRO_MADE' ? '🤝' : '📋'
+                  })),
+                ].map((stat) => (
+                  <div key={stat.label} className="bg-[#1a1230]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 p-5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-lg">{stat.icon}</span>
+                      <p className="text-xs font-medium text-purple-300/60 uppercase tracking-wider">{stat.label}</p>
+                    </div>
+                    <p className="text-2xl font-bold text-white">{stat.value}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="bg-[#1a1230]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 overflow-hidden">
+              <div className="px-6 py-4 border-b border-purple-500/10">
+                <h2 className="text-sm font-semibold text-white">Deal Pipeline ({dealData?.deals?.length || 0})</h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-purple-900/10">
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Deal Partner</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Founder</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Industry</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Stage</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Status</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Intro</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-purple-500/5">
+                    {(dealData?.deals || []).map((deal: any) => (
+                      <tr key={deal.id} className="hover:bg-purple-900/10 transition">
+                        <td className="px-6 py-3 text-white">{deal.dealPartner?.email || '-'}</td>
+                        <td className="px-6 py-3">
+                          <div>
+                            <div className="text-white">{deal.founder?.email || '-'}</div>
+                            <div className="text-xs text-purple-300/50">{deal.founder?.profile?.companyName || ''}</div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-3 text-purple-200/70">{deal.industry || '-'}</td>
+                        <td className="px-6 py-3 text-purple-200/70">{deal.stage?.replace(/_/g, ' ') || '-'}</td>
+                        <td className="px-6 py-3">
+                          <span className={`px-2 py-0.5 rounded-full text-xs border ${
+                            deal.status === 'CLOSED' ? 'text-green-400 bg-green-500/10 border-green-500/20' :
+                            deal.status === 'IN_DILIGENCE' ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' :
+                            deal.status === 'PASSED' ? 'text-red-400 bg-red-500/10 border-red-500/20' :
+                            'text-purple-300 bg-purple-500/10 border-purple-500/20'
+                          }`}>
+                            {deal.status?.replace(/_/g, ' ')}
+                          </span>
+                        </td>
+                        <td className="px-6 py-3">
+                          {deal.introSent ? (
+                            <span className="text-green-400 text-xs">Sent</span>
+                          ) : (
+                            <span className="text-purple-400/40 text-xs">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-3 text-purple-300/40 text-xs">{formatDate(deal.createdAt)}</td>
+                      </tr>
+                    ))}
+                    {(!dealData?.deals || dealData.deals.length === 0) && (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-8 text-center text-purple-400/40">No deals tracked yet</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'events' && (
+          <div className="space-y-6">
+            {eventData && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { label: 'Total Events', value: eventData.stats.total, icon: '📅' },
+                  { label: 'Upcoming', value: eventData.stats.upcoming, icon: '🔜' },
+                  { label: 'Active', value: eventData.stats.active, icon: '🟢' },
+                  { label: 'Total Participants', value: eventData.stats.totalParticipants, icon: '👥' },
+                ].map((stat) => (
+                  <div key={stat.label} className="bg-[#1a1230]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 p-5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-lg">{stat.icon}</span>
+                      <p className="text-xs font-medium text-purple-300/60 uppercase tracking-wider">{stat.label}</p>
+                    </div>
+                    <p className="text-2xl font-bold text-white">{stat.value}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="bg-[#1a1230]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 overflow-hidden">
+              <div className="px-6 py-4 border-b border-purple-500/10 flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-white">Events ({eventData?.events?.length || 0})</h2>
+                <button
+                  onClick={() => setShowCreateEvent(true)}
+                  className="px-3 py-1.5 text-xs rounded-lg bg-purple-600 text-white hover:bg-purple-500 transition shadow-lg shadow-purple-600/20"
+                >
+                  + New Event
+                </button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-purple-900/10">
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Name</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Date</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Location</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Status</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Participants</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Capacity</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-purple-500/5">
+                    {(eventData?.events || []).map((event: any) => (
+                      <tr key={event.id} className="hover:bg-purple-900/10 transition">
+                        <td className="px-6 py-3">
+                          <div>
+                            <div className="text-white font-medium">{event.name}</div>
+                            {event.description && <div className="text-xs text-purple-300/50 mt-0.5 max-w-xs truncate">{event.description}</div>}
+                          </div>
+                        </td>
+                        <td className="px-6 py-3 text-purple-200/70 text-xs">{formatDate(event.date)}</td>
+                        <td className="px-6 py-3 text-purple-200/70">
+                          {event.isVirtual ? (
+                            <span className="text-blue-400 text-xs">Virtual</span>
+                          ) : (
+                            <span className="text-xs">{event.location || '-'}</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-3">
+                          <span className={`px-2 py-0.5 rounded-full text-xs border ${
+                            event.status === 'UPCOMING' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' :
+                            event.status === 'ACTIVE' ? 'text-green-400 bg-green-500/10 border-green-500/20' :
+                            event.status === 'COMPLETED' ? 'text-purple-300 bg-purple-500/10 border-purple-500/20' :
+                            'text-red-400 bg-red-500/10 border-red-500/20'
+                          }`}>
+                            {event.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-3 text-white">{event._count?.participants || event.participants?.length || 0}</td>
+                        <td className="px-6 py-3 text-purple-200/70">{event.maxCapacity || 'Unlimited'}</td>
+                      </tr>
+                    ))}
+                    {(!eventData?.events || eventData.events.length === 0) && (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-8 text-center text-purple-400/40">No events yet</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {showCreateEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#1a1230] border border-purple-500/20 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="text-white font-semibold mb-4">Create Event</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-purple-300/60 uppercase mb-1.5">Name</label>
+                <input
+                  value={newEvent.name}
+                  onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })}
+                  placeholder="Event name"
+                  className="w-full px-3 py-2.5 rounded-xl border border-purple-500/20 bg-purple-900/20 text-white placeholder-purple-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-purple-300/60 uppercase mb-1.5">Description</label>
+                <textarea
+                  value={newEvent.description}
+                  onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                  placeholder="Event description"
+                  rows={2}
+                  className="w-full px-3 py-2.5 rounded-xl border border-purple-500/20 bg-purple-900/20 text-white placeholder-purple-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-purple-300/60 uppercase mb-1.5">Date & Time</label>
+                <input
+                  type="datetime-local"
+                  value={newEvent.date}
+                  onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+                  className="w-full px-3 py-2.5 rounded-xl border border-purple-500/20 bg-purple-900/20 text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-purple-300/60 uppercase mb-1.5">Location</label>
+                <input
+                  value={newEvent.location}
+                  onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
+                  placeholder="Event location"
+                  className="w-full px-3 py-2.5 rounded-xl border border-purple-500/20 bg-purple-900/20 text-white placeholder-purple-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newEvent.isVirtual}
+                    onChange={(e) => setNewEvent({ ...newEvent, isVirtual: e.target.checked })}
+                    className="rounded border-purple-500/20 bg-purple-900/20 text-purple-600"
+                  />
+                  <span className="text-sm text-purple-300">Virtual event</span>
+                </label>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-purple-300/60 uppercase mb-1.5">Max Capacity (optional)</label>
+                <input
+                  type="number"
+                  value={newEvent.maxCapacity}
+                  onChange={(e) => setNewEvent({ ...newEvent, maxCapacity: e.target.value })}
+                  placeholder="No limit"
+                  className="w-full px-3 py-2.5 rounded-xl border border-purple-500/20 bg-purple-900/20 text-white placeholder-purple-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setShowCreateEvent(false)}
+                className="px-4 py-2 text-sm text-purple-300/60 hover:text-purple-200 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateEvent}
+                disabled={!newEvent.name || !newEvent.date}
+                className="px-4 py-2 text-sm bg-purple-600 text-white rounded-xl hover:bg-purple-500 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-purple-600/20"
+              >
+                Create Event
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {triggerModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">

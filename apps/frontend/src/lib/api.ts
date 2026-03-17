@@ -170,6 +170,42 @@ class ApiClient {
       body: JSON.stringify({ phoneNumber, channel, message }),
     });
   }
+
+  async getAdminDeals() {
+    return this.fetch('/deals/admin/all');
+  }
+
+  async getAdminEvents() {
+    return this.fetch('/events/admin/all');
+  }
+
+  async createEvent(data: { name: string; description?: string; date: string; endDate?: string; location?: string; isVirtual?: boolean; maxCapacity?: number }) {
+    return this.fetch('/events', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateEvent(id: string, data: Record<string, any>) {
+    return this.fetch(`/events/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateDeal(id: string, data: Record<string, any>) {
+    return this.fetch(`/deals/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateParticipant(eventId: string, userId: string, data: { status?: string; checkedIn?: boolean }) {
+    return this.fetch(`/events/${eventId}/participants/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
 }
 
 export const api = new ApiClient();

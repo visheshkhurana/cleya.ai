@@ -15,6 +15,8 @@ import { adminRouter } from './routes/admin';
 import { notificationRouter } from './routes/notification';
 import { messagingRouter } from './routes/messaging';
 import { twilioRouter } from './routes/twilio';
+import { dealRouter } from './routes/deal';
+import { eventRouter } from './routes/event';
 
 const app = express();
 const server = createServer(app);
@@ -38,6 +40,8 @@ app.use('/api/admin', adminRouter);
 app.use('/api/notifications', notificationRouter);
 app.use('/api/messaging', messagingRouter);
 app.use('/api/twilio', twilioRouter);
+app.use('/api/deals', dealRouter);
+app.use('/api/events', eventRouter);
 
 app.use(errorHandler);
 
