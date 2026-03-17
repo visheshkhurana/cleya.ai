@@ -4,7 +4,7 @@ import { authenticate, requireAdmin } from '../middleware/auth';
 import { matchingService } from '../services/matchingService';
 import { messagingService } from '../services/messagingService';
 import { automationService } from '../services/automationService';
-import { emailService } from '../services/emailService';
+import { emailService } from '../services/email';
 
 export const adminRouter = Router();
 

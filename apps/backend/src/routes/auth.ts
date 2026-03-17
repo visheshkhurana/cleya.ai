@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { authService } from '../services/authService';
 import { authenticate } from '../middleware/auth';
 import { signupLimiter, loginLimiter } from '../middleware/rateLimit';
-import { emailService } from '../services/emailService';
+import { emailService } from '../services/email';
 
 export const authRouter = Router();
 

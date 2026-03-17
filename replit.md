@@ -172,7 +172,7 @@ Six persona types with tailored onboarding flows:
 - `apps/backend/src/services/introductionService.ts` — Post-acceptance intros
 - `apps/backend/src/routes/deal.ts` — Deal tracking CRUD + admin endpoint
 - `apps/backend/src/routes/event.ts` — Event CRUD + participant management + admin endpoint
-- `apps/backend/src/services/emailService.ts` — Email service (nodemailer, branded HTML templates)
+- `apps/backend/src/services/email.ts` — Email service (nodemailer, branded HTML templates)
 - `apps/backend/src/middleware/rateLimit.ts` — Rate limiting middleware
 - `apps/frontend/src/app/admin/page.tsx` — Admin dashboard (5 tabs)
 - `apps/frontend/src/app/settings/page.tsx` — Settings page
