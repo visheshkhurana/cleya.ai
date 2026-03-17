@@ -93,10 +93,13 @@ Six persona types with tailored onboarding flows:
 - **Introduction service**: After double opt-in acceptance, sends personalized intro via WhatsApp/SMS
 - **Find & Propose**: Single endpoint to find matches and auto-propose top N
 
-### Deal Tracking (Scout / Deal Partner Flow)
+### Deal Partner (Scout) Special Flow
+- **Auto-scout on onboarding**: When a Deal Partner completes onboarding, automatically finds matching Founders, creates DealTracking records, and proposes matches (5s delay)
+- **Manual scout**: `POST /api/deals/scout` — Deal Partners can trigger scouting on demand (persona-gated)
+- **Deal pipeline auto-progression**: When a Deal Partner ↔ Founder match is accepted, the corresponding DealTracking record auto-progresses from SCOUTED → INTRO_MADE with introSent=true
 - **DealTracking model**: Tracks deals scouted by deal partners linking to founders
 - **Fields**: dealPartnerId, founderId, status (SCOUTED→CONTACTED→INTRO_MADE→IN_DILIGENCE→PASSED→CLOSED), industry, stage, notes, introSent, responseStatus
-- **Endpoints**: `GET/POST/PATCH/DELETE /api/deals`, `GET /api/deals/admin/all`
+- **Endpoints**: `POST /api/deals/scout`, `GET/POST/PATCH/DELETE /api/deals`, `GET /api/deals/admin/all`
 - **Unique constraint**: One deal per (dealPartner, founder) pair
 
 ### Event Management

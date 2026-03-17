@@ -139,6 +139,9 @@ export class MatchingService {
       introductionService.sendIntroduction(matchId).catch((e) =>
         console.log('[MatchingService] Intro send failed:', e)
       );
+      this.progressDealOnAcceptance(updated.userAId, updated.userBId).catch((e) =>
+        console.log('[MatchingService] Deal progression failed:', e)
+      );
     }
 
     return updated;
@@ -264,6 +267,85 @@ export class MatchingService {
       }),
     ]);
     return { total, pending, accepted };
+  }
+
+  private async progressDealOnAcceptance(userAId: string, userBId: string) {
+    const [profileA, profileB] = await Promise.all([
+      prisma.profile.findUnique({ where: { userId: userAId }, select: { persona: true } }),
+      prisma.profile.findUnique({ where: { userId: userBId }, select: { persona: true } }),
+    ]);
+
+    let dealPartnerId: string | null = null;
+    let founderId: string | null = null;
+
+    if (profileA?.persona === 'DEAL_PARTNER' && profileB?.persona === 'FOUNDER') {
+      dealPartnerId = userAId;
+      founderId = userBId;
+    } else if (profileB?.persona === 'DEAL_PARTNER' && profileA?.persona === 'FOUNDER') {
+      dealPartnerId = userBId;
+      founderId = userAId;
+    }
+
+    if (!dealPartnerId || !founderId) return;
+
+    const deal = await prisma.dealTracking.findUnique({
+      where: { dealPartnerId_founderId: { dealPartnerId, founderId } },
+    });
+
+    if (deal && deal.status === 'SCOUTED') {
+      await prisma.dealTracking.update({
+        where: { id: deal.id },
+        data: { status: 'INTRO_MADE', introSent: true, introSentAt: new Date() },
+      });
+      console.log(`[DealFlow] Deal ${deal.id} progressed SCOUTED → INTRO_MADE on match acceptance`);
+    }
+  }
+
+  async autoScoutFounders(dealPartnerId: string, limit = 5) {
+    const matches = await this.findMatchesForUser(dealPartnerId, limit);
+    const scouted = [];
+
+    for (const match of matches) {
+      const founderProfile = await prisma.profile.findUnique({
+        where: { userId: match.profile.userId },
+        select: { persona: true, industries: true, companyStage: true },
+      });
+
+      if (founderProfile?.persona !== 'FOUNDER') continue;
+
+      try {
+        const deal = await prisma.dealTracking.create({
+          data: {
+            dealPartnerId,
+            founderId: match.profile.userId,
+            industry: founderProfile.industries?.[0] || null,
+            stage: founderProfile.companyStage || null,
+            notes: `Auto-scouted via matching engine (score: ${(match.score.total * 100).toFixed(0)}%)`,
+          },
+          include: {
+            founder: { select: { id: true, email: true, profile: { select: { headline: true, persona: true, companyName: true } } } },
+          },
+        });
+        scouted.push(deal);
+
+        try {
+          await this.proposeMatch(dealPartnerId, match.profile.userId);
+        } catch (err: any) {
+          if (err.code !== 'MATCH_EXISTS') {
+            console.log(`[DealFlow] Match propose failed for ${match.profile.userId}:`, err.message);
+          }
+        }
+      } catch (err: any) {
+        if (err.code === 'P2002') {
+          console.log(`[DealFlow] Deal already tracked for founder ${match.profile.userId}`);
+        } else {
+          console.log(`[DealFlow] Failed to create deal for ${match.profile.userId}:`, err.message);
+        }
+      }
+    }
+
+    console.log(`[DealFlow] Auto-scouted ${scouted.length} founders for deal partner ${dealPartnerId}`);
+    return scouted;
   }
 
   private async generateMatchReason(a: ProfileForMatching, b: ProfileForMatching): Promise<string> {

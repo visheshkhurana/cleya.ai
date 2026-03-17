@@ -1,8 +1,28 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { authenticate } from '../middleware/auth';
 import { prisma } from '@boardy/db';
+import { matchingService } from '../services/matchingService';
 
 export const dealRouter = Router();
+
+dealRouter.post('/scout', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const profile = await prisma.profile.findUnique({
+      where: { userId: req.user!.userId },
+      select: { persona: true },
+    });
+
+    if (profile?.persona !== 'DEAL_PARTNER') {
+      return res.status(403).json({ success: false, error: 'Only deal partners can scout founders' });
+    }
+
+    const { limit } = req.body;
+    const scouted = await matchingService.autoScoutFounders(req.user!.userId, limit || 5);
+    res.json({ success: true, data: scouted });
+  } catch (error) {
+    next(error);
+  }
+});
 
 dealRouter.get('/admin/all', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
