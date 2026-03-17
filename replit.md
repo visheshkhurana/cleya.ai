@@ -1,4 +1,4 @@
-# Boardy AI Platform
+# Cleo.ai Platform
 
 Imported from: https://github.com/visheshkhurana/boardy-ai-platform
 
@@ -26,8 +26,6 @@ Monorepo with:
 - `OPENAI_API_KEY` — set
 - `NODE_ENV` — development
 - `PORT` — 3001
-- `FRONTEND_URL` — https://boardy-ai-platform.replit.dev
-- `BACKEND_URL` — https://boardy-ai-platform.replit.dev:3001
 
 ## Running the App
 ```
@@ -39,22 +37,36 @@ Starts both frontend (port 5000) and backend (port 3001) concurrently.
 `apps/frontend/next.config.js` has rewrites proxying `/api/*` → `http://localhost:3001/api/*` so the browser can reach the backend through the Next.js dev server.
 
 ## Database
-- Migration applied: `20260317_init`
+- Schema pushed via `prisma db push`
 - Seeded with 11 users (admin + 5 persona types + test users)
 - Demo data includes: notifications, conversations, matches, calls
 - To re-seed: `npm run db:seed`
 
 ## Seed Users
-- `admin@boardy.ai` / `admin123456` (ADMIN role)
+- `admin@cleo.ai` / `admin123456` (ADMIN role)
 - `sarah@techstartup.com` / `password123` (FOUNDER)
 - `alex@venturefund.com` / `password123` (INVESTOR)
 - `priya@bigcorp.com` / `password123` (OPERATOR)
 - `marcus@advisors.io` / `password123` (ADVISOR)
 - `jessica@jobhunt.me` / `password123` (JOB_SEEKER)
 
+## Phase 1: Multi-Persona Onboarding
+Six persona types with tailored onboarding flows:
+1. **Founder / Business Owner** — company details, priority (fundraising/cofounder/hiring/marketing/sales/VP hire), fundraising fields
+2. **Talent (Join a Startup)** — experience, target role (founding engineer/GTM/CoS/growth/open/cofounder)
+3. **Investor** — fund details, investor type, check size, stage preferences
+4. **The Pitch by Deel (Event)** — company pitch details for event participation
+5. **Deal Partner / Scout** — deal sourcing, city, tracked companies, founder access pitch
+6. **Other** — general profile
+
+### Schema additions (Phase 1)
+- New PersonaType enums: TALENT, DEAL_PARTNER, VENTURE_PARTNER, EVENT_PARTICIPANT
+- New enums: FounderPriority, TalentTargetRole
+- New Profile columns: priority, raiseAmount, roundCloseDate, amountRaisedToDate, businessDescription, keyTractionPoints, investorType, investmentAmount, accreditedInvestor, targetRole, fundName, fundSize, investmentRange, industryFocus, investmentThesis, cityBased, exampleInvestment, outreachMethod, trackedCompanies, founderAccessPitch, channelSource, channelType, phoneNumber
+
 ## Features (all tested E2E)
 1. **Auth** — Sign up, login, JWT auth, Get Me
-2. **Chat Onboarding** — State machine flow: welcome → persona select → persona-specific form → common details → voice offer → completion
+2. **Chat Onboarding** — State machine flow: welcome → persona select (6 options) → persona-specific forms → common details → attribution → completion
 3. **Profile** — Get/update profile, completeness scoring, AI embedding generation
 4. **Matching** — Rule-based scoring (persona compatibility, industry/interest overlap, location) + semantic similarity, find matches, propose match, double opt-in accept/reject
 5. **Notifications** — Multi-channel (IN_APP, EMAIL, SMS, WHATSAPP), mark as read
@@ -65,5 +77,6 @@ Starts both frontend (port 5000) and backend (port 3001) concurrently.
 - `apps/backend/src/index.ts` — Main Express server (reconstructed, not in original repo)
 - `apps/backend/src/middleware/auth.ts` — JWT auth + admin role check (case-insensitive)
 - `apps/frontend/src/lib/api.ts` — API client (uses relative `/api` path)
-- `packages/conversation-engine/src/flows/onboarding.ts` — Onboarding flow definition
+- `packages/conversation-engine/src/flows/onboarding.ts` — Onboarding flow definition (6 persona types)
 - `packages/matching/src/index.ts` — Matching engine with persona compatibility matrix
+- `packages/db/prisma/schema.prisma` — Full schema with Phase 1 persona fields

@@ -1,5 +1,5 @@
 // ============================================
-// Boardy AI — Database Schema
+// Cleo.ai — Database Schema
 // PostgreSQL + pgvector
 // ============================================
 
@@ -67,6 +67,7 @@ model Profile {
   location         String?
   linkedinUrl      String?
   websiteUrl       String?
+  phoneNumber      String?
   yearsExperience  Int?
 
   // Array fields
@@ -75,7 +76,41 @@ model Profile {
   interests        String[]     @default([])
   lookingFor       String[]     @default([])
 
-  // Polymorphic extension data (persona-specific fields)
+  // Founder-specific fields
+  priority         FounderPriority?
+  raiseAmount      String?
+  roundCloseDate   String?
+  amountRaisedToDate String?
+  businessDescription String?
+  keyTractionPoints String?
+
+  // Investor-specific fields
+  investorType     String?
+  investmentAmount String?
+  accreditedInvestor Boolean?
+
+  // Talent-specific fields
+  targetRole       TalentTargetRole?
+
+  // Venture Partner / Deal Partner fields
+  fundName         String?
+  fundSize         String?
+  investmentRange  String?
+  industryFocus    String[]     @default([])
+  investmentThesis String?
+
+  // Scout / Deal Partner fields
+  cityBased        String?
+  exampleInvestment String?
+  outreachMethod   String?
+  trackedCompanies String?
+  founderAccessPitch String?
+
+  // Attribution tracking
+  channelSource    String?
+  channelType      String?
+
+  // Polymorphic extension data (any additional persona-specific fields)
   extraData        Json?        @db.JsonB
 
   // Computed
@@ -95,12 +130,34 @@ model Profile {
 enum PersonaType {
   FOUNDER
   INVESTOR
+  TALENT
+  DEAL_PARTNER
+  VENTURE_PARTNER
+  EVENT_PARTICIPANT
   ADVISOR
   OPERATOR
   JOB_SEEKER
   RECRUITER
   FREELANCER
   OTHER
+}
+
+enum FounderPriority {
+  FUNDRAISING
+  COFOUNDER
+  HIRING
+  MARKETING
+  SALES_BD
+  VENTURE_PARTNER_HIRE
+}
+
+enum TalentTargetRole {
+  FOUNDING_ENGINEER
+  FOUNDING_GTM
+  CHIEF_OF_STAFF
+  GROWTH_CONTENT
+  OPEN_APPLICATION
+  COFOUNDER
 }
 
 enum CompanyStage {
@@ -125,7 +182,7 @@ model Conversation {
   flowId      String
   status      ConversationStatus @default(ACTIVE)
   currentNode String?
-  context     Json?              @db.JsonB  // Accumulated answers
+  context     Json?              @db.JsonB
   startedAt   DateTime           @default(now())
   completedAt DateTime?
 
@@ -179,13 +236,12 @@ model Match {
   score       Float
   scoreBreakdown Json?    @db.JsonB
 
-  // Double opt-in tracking
   userAResponse MatchResponse?
   userBResponse MatchResponse?
   userARespondedAt DateTime?
   userBRespondedAt DateTime?
 
-  reason      String?     // AI-generated reason for match
+  reason      String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   expiresAt   DateTime?
@@ -225,7 +281,7 @@ model Call {
   status        CallStatus @default(SCHEDULED)
   direction     CallDirection @default(OUTBOUND)
   phoneNumber   String
-  duration      Int?       // seconds
+  duration      Int?
   transcript    Json?      @db.JsonB
   extractedData Json?      @db.JsonB
   scheduledAt   DateTime?
@@ -262,7 +318,7 @@ model UserEmbedding {
   user      User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
   vector    Unsupported("vector(1536)")
   source    EmbeddingSource
-  content   String                       // The text that was embedded
+  content   String
   createdAt DateTime                     @default(now())
   updatedAt DateTime                     @updatedAt
 

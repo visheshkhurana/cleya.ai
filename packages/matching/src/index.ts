@@ -1,5 +1,5 @@
 // ============================================
-// Boardy AI — Matching Engine
+// Cleo.ai — Matching Engine
 // Two-layer scoring: Rule-based + Semantic
 // ============================================
 

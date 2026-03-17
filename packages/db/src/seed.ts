@@ -9,19 +9,19 @@ async function main() {
   // Create admin user
   const adminPassword = await bcrypt.hash('admin123456', 12);
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@boardy.ai' },
+    where: { email: 'admin@cleo.ai' },
     update: {},
     create: {
-      email: 'admin@boardy.ai',
+      email: 'admin@cleo.ai',
       passwordHash: adminPassword,
       role: 'ADMIN',
       emailVerified: true,
       profile: {
         create: {
           persona: 'OPERATOR',
-          headline: 'Boardy Platform Admin',
+          headline: 'Cleo.ai Platform Admin',
           currentRole: 'Admin',
-          companyName: 'Boardy AI',
+          companyName: 'Cleo.ai',
           location: 'San Francisco, CA',
           isComplete: true,
           completenessScore: 1.0,

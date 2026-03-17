@@ -1,5 +1,5 @@
 // ============================================
-// Boardy AI — Shared Type Definitions
+// Cleo.ai — Shared Type Definitions
 // ============================================
 
 // --- User & Profile ---
@@ -8,6 +8,10 @@ export type UserRole = 'user' | 'admin';
 export type PersonaType =
   | 'founder'
   | 'investor'
+  | 'talent'
+  | 'deal_partner'
+  | 'venture_partner'
+  | 'event_participant'
   | 'advisor'
   | 'operator'
   | 'job_seeker'
@@ -25,6 +29,22 @@ export type CompanyStage =
   | 'public'
   | 'bootstrapped';
 
+export type FounderPriority =
+  | 'FUNDRAISING'
+  | 'COFOUNDER'
+  | 'HIRING'
+  | 'MARKETING'
+  | 'SALES_BD'
+  | 'VENTURE_PARTNER_HIRE';
+
+export type TalentTargetRole =
+  | 'FOUNDING_ENGINEER'
+  | 'FOUNDING_GTM'
+  | 'CHIEF_OF_STAFF'
+  | 'GROWTH_CONTENT'
+  | 'OPEN_APPLICATION'
+  | 'COFOUNDER';
+
 export interface ProfileData {
   persona: PersonaType;
   headline?: string;
@@ -39,8 +59,30 @@ export interface ProfileData {
   location?: string;
   linkedinUrl?: string;
   websiteUrl?: string;
+  phoneNumber?: string;
   yearsExperience?: number;
-  // Polymorphic fields based on persona
+  priority?: FounderPriority;
+  raiseAmount?: string;
+  roundCloseDate?: string;
+  amountRaisedToDate?: string;
+  businessDescription?: string;
+  keyTractionPoints?: string;
+  investorType?: string;
+  investmentAmount?: string;
+  accreditedInvestor?: boolean;
+  targetRole?: TalentTargetRole;
+  fundName?: string;
+  fundSize?: string;
+  investmentRange?: string;
+  industryFocus?: string[];
+  investmentThesis?: string;
+  cityBased?: string;
+  exampleInvestment?: string;
+  outreachMethod?: string;
+  trackedCompanies?: string;
+  founderAccessPitch?: string;
+  channelSource?: string;
+  channelType?: string;
   [key: string]: any;
 }
 

@@ -39,7 +39,7 @@ app.use(errorHandler);
 setupWebSocket(server);
 
 server.listen(env.PORT, () => {
-  console.log(`🚀 Boardy AI Backend running on port ${env.PORT}`);
+  console.log(`🚀 Cleo.ai Backend running on port ${env.PORT}`);
   console.log(`🔌 WebSocket ready`);
   console.log(`📡 Environment: ${env.NODE_ENV}`);
 });

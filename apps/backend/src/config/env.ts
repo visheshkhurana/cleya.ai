@@ -33,7 +33,7 @@ const envSchema = z.object({
 
   // Email
   SENDGRID_API_KEY: z.string().optional(),
-  FROM_EMAIL: z.string().email().default('hello@boardy.ai'),
+  FROM_EMAIL: z.string().email().default('hello@cleo.ai'),
 });
 
 function validateEnv() {

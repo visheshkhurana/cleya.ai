@@ -1,5 +1,5 @@
 // ============================================
-// Boardy AI — LLM Abstraction Layer
+// Cleo.ai — LLM Abstraction Layer
 // Supports OpenAI and Anthropic with unified interface
 // ============================================
 

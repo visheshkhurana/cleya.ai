@@ -105,7 +105,7 @@ export default function ChatPage() {
         <div className="text-center">
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 glow-pulse"
             style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>
-            <span className="text-white text-2xl font-bold">B</span>
+            <span className="text-white text-2xl font-bold">C</span>
           </div>
           <p className="text-sm text-white/40">Starting conversation...</p>
         </div>
@@ -115,15 +115,14 @@ export default function ChatPage() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#0D0B1A' }}>
-      {/* Header */}
       <header className="px-4 py-3 flex items-center gap-3 sticky top-0 z-10 border-b border-white/5"
         style={{ background: 'rgba(13,11,26,0.9)', backdropFilter: 'blur(20px)' }}>
         <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
           style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>
-          B
+          C
         </div>
         <div className="flex-1">
-          <h1 className="font-semibold text-white text-sm">Boardy AI</h1>
+          <h1 className="font-semibold text-white text-sm">Cleo.ai</h1>
           <div className="flex items-center gap-1.5">
             <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
             <p className="text-xs text-white/40">Active now</p>
@@ -137,7 +136,6 @@ export default function ChatPage() {
         </button>
       </header>
 
-      {/* Chat Area */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto chat-scroll px-4 py-6 space-y-1">
         {messages.map((msg, i) => (
           <ChatBubble key={i} sender={msg.sender} content={msg.content} timestamp={msg.createdAt} />
@@ -161,7 +159,6 @@ export default function ChatPage() {
         )}
       </div>
 
-      {/* Continue button for message nodes */}
       {currentNode?.type === 'message' && currentNode.next && (
         <div className="px-4 py-4 border-t border-white/5">
           <button
@@ -173,7 +170,6 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* Free text input */}
       {currentNode?.type === 'ai_response' && (
         <form onSubmit={handleTextSubmit} className="px-4 py-4 border-t border-white/5">
           <div className="flex gap-2">
@@ -181,7 +177,7 @@ export default function ChatPage() {
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder="Message Boardy..."
+              placeholder="Message Cleo..."
               className="input-dark flex-1"
             />
             <button

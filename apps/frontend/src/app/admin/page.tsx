@@ -88,9 +88,9 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 text-white text-sm font-bold flex items-center justify-center shadow-lg shadow-purple-500/20">
-              B
+              C
             </div>
-            <h1 className="text-lg font-bold text-white">Boardy Admin</h1>
+            <h1 className="text-lg font-bold text-white">Cleo.ai Admin</h1>
           </div>
           <button
             onClick={() => { api.clearToken(); router.push('/'); }}

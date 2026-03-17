@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Boardy AI — Smart Networking',
+  title: 'Cleo.ai — AI Superconnector',
   description: 'AI-powered networking and matchmaking platform',
 };
 

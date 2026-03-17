@@ -28,7 +28,6 @@ export class ProfileService {
       },
     });
 
-    // Regenerate embedding if significant fields changed
     if (data.headline || data.bio || data.skills || data.interests) {
       await this.generateEmbedding(userId, profile);
     }
@@ -36,11 +35,11 @@ export class ProfileService {
     return profile;
   }
 
-  // Called when onboarding conversation completes
   async updateFromConversation(userId: string, context: Record<string, any>) {
-    // Map conversation context to profile fields
     const persona = context['persona_select_choice'];
-    const goalChoice = context['founder_goals_choice'] || context['lookingFor'];
+    const founderPriority = context['founder_priority_choice'];
+    const talentRole = context['talent_target_role_choice'];
+    const channelSource = context['attribution_choice'];
 
     const profileData: Record<string, any> = {
       persona,
@@ -54,11 +53,45 @@ export class ProfileService {
       industries: context.industries || [],
       skills: context.skills || [],
       interests: context.interests || [],
-      lookingFor: goalChoice ? [goalChoice] : [],
       yearsExperience: context.yearsExperience ? Number(context.yearsExperience) : undefined,
     };
 
-    // Clean undefined values
+    if (persona === 'FOUNDER') {
+      profileData.priority = founderPriority;
+      profileData.businessDescription = context.businessDescription;
+      profileData.keyTractionPoints = context.keyTractionPoints;
+      profileData.raiseAmount = context.raiseAmount;
+      profileData.amountRaisedToDate = context.amountRaisedToDate;
+      profileData.roundCloseDate = context.roundCloseDate;
+      profileData.lookingFor = founderPriority ? [founderPriority] : [];
+    }
+
+    if (persona === 'TALENT') {
+      profileData.targetRole = talentRole;
+      profileData.lookingFor = talentRole ? [talentRole] : [];
+    }
+
+    if (persona === 'INVESTOR') {
+      profileData.investorType = context.investorType;
+      profileData.investmentAmount = context.investmentAmount;
+    }
+
+    if (persona === 'DEAL_PARTNER') {
+      profileData.cityBased = context.cityBased;
+      profileData.exampleInvestment = context.exampleInvestment;
+      profileData.outreachMethod = context.outreachMethod;
+      profileData.trackedCompanies = context.trackedCompanies;
+      profileData.founderAccessPitch = context.founderAccessPitch;
+    }
+
+    if (persona === 'EVENT_PARTICIPANT') {
+      profileData.businessDescription = context.businessDescription;
+    }
+
+    if (channelSource) {
+      profileData.channelSource = channelSource;
+    }
+
     Object.keys(profileData).forEach((key) => {
       if (profileData[key] === undefined) delete profileData[key];
     });
@@ -68,11 +101,9 @@ export class ProfileService {
 
   async generateEmbedding(userId: string, profile: any) {
     try {
-      // Build text representation for embedding
       const text = this.profileToText(profile);
       const result = await this.ai.embed(text);
 
-      // Store embedding using raw SQL (pgvector)
       await prisma.$executeRawUnsafe(
         `INSERT INTO user_embeddings (id, "userId", vector, source, content, "createdAt", "updatedAt")
          VALUES (gen_random_uuid(), $1, $2::vector, 'PROFILE', $3, NOW(), NOW())
@@ -83,7 +114,7 @@ export class ProfileService {
         text
       );
 
-      console.log(`🧠 Embedding generated for user ${userId}`);
+      console.log(`Embedding generated for user ${userId}`);
     } catch (error) {
       console.error('Failed to generate embedding:', error);
     }
@@ -96,11 +127,16 @@ export class ProfileService {
       profile.bio && `Bio: ${profile.bio}`,
       profile.companyName && `Company: ${profile.companyName}`,
       profile.currentRole && `Title: ${profile.currentRole}`,
+      profile.businessDescription && `Business: ${profile.businessDescription}`,
+      profile.keyTractionPoints && `Traction: ${profile.keyTractionPoints}`,
       profile.industries?.length && `Industries: ${profile.industries.join(', ')}`,
       profile.skills?.length && `Skills: ${profile.skills.join(', ')}`,
       profile.interests?.length && `Interests: ${profile.interests.join(', ')}`,
       profile.lookingFor?.length && `Looking for: ${profile.lookingFor.join(', ')}`,
       profile.location && `Location: ${profile.location}`,
+      profile.investorType && `Investor Type: ${profile.investorType}`,
+      profile.investmentAmount && `Check Size: ${profile.investmentAmount}`,
+      profile.targetRole && `Target Role: ${profile.targetRole}`,
     ];
     return parts.filter(Boolean).join('. ');
   }
@@ -129,8 +165,15 @@ export class ProfileService {
   private sanitizeProfileData(data: Record<string, any>) {
     const allowed = [
       'persona', 'headline', 'bio', 'companyName', 'companyStage',
-      'currentRole', 'location', 'linkedinUrl', 'websiteUrl',
+      'currentRole', 'location', 'linkedinUrl', 'websiteUrl', 'phoneNumber',
       'yearsExperience', 'industries', 'skills', 'interests', 'lookingFor',
+      'priority', 'raiseAmount', 'roundCloseDate', 'amountRaisedToDate',
+      'businessDescription', 'keyTractionPoints',
+      'investorType', 'investmentAmount', 'accreditedInvestor',
+      'targetRole',
+      'fundName', 'fundSize', 'investmentRange', 'industryFocus', 'investmentThesis',
+      'cityBased', 'exampleInvestment', 'outreachMethod', 'trackedCompanies', 'founderAccessPitch',
+      'channelSource', 'channelType',
     ];
 
     const sanitized: Record<string, any> = {};
@@ -140,7 +183,6 @@ export class ProfileService {
       }
     }
 
-    // Store extra fields in JSONB
     const extraKeys = Object.keys(data).filter((k) => !allowed.includes(k));
     if (extraKeys.length > 0) {
       sanitized.extraData = {};
@@ -149,7 +191,6 @@ export class ProfileService {
       }
     }
 
-    // Calculate isComplete
     sanitized.isComplete = this.calculateCompleteness(data) >= 0.75;
 
     return sanitized;

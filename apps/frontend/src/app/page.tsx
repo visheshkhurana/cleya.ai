@@ -31,23 +31,19 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden" style={{ background: 'radial-gradient(ellipse at center top, #2D1899 0%, #0D0B1A 65%)' }}>
-      {/* Background glow orbs */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full opacity-20 blur-[120px]" style={{ background: '#6C47FF' }} />
       <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full opacity-10 blur-[100px]" style={{ background: '#4E2FD8' }} />
 
       <div className="relative w-full max-w-sm mx-4 fade-up">
-        {/* Logo & Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 glow-pulse" style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>
-            <span className="text-white text-2xl font-bold">B</span>
+            <span className="text-white text-2xl font-bold">C</span>
           </div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Boardy AI</h1>
-          <p className="text-white/50 mt-2 text-sm">AI-powered networking. Meet the right people.</p>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Cleo.ai</h1>
+          <p className="text-white/50 mt-2 text-sm">AI Superconnector. Meet the right people.</p>
         </div>
 
-        {/* Auth Card */}
         <div className="glass-card p-8">
-          {/* Toggle */}
           <div className="flex gap-1 mb-6 p-1 rounded-2xl" style={{ background: 'rgba(255,255,255,0.06)' }}>
             <button
               onClick={() => setMode('signup')}
@@ -117,7 +113,7 @@ export default function Home() {
         </div>
 
         <p className="text-center text-xs text-white/20 mt-6">
-          By continuing, you agree to Boardy&apos;s{' '}
+          By continuing, you agree to Cleo.ai&apos;s{' '}
           <span className="text-boardy-400 hover:text-boardy-300 cursor-pointer">Terms</span> and{' '}
           <span className="text-boardy-400 hover:text-boardy-300 cursor-pointer">Privacy Policy</span>.
         </p>

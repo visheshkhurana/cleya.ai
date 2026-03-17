@@ -6,14 +6,14 @@ class ApiClient {
   setToken(token: string) {
     this.token = token;
     if (typeof window !== 'undefined') {
-      localStorage.setItem('boardy_token', token);
+      localStorage.setItem('cleo_token', token);
     }
   }
 
   getToken(): string | null {
     if (this.token) return this.token;
     if (typeof window !== 'undefined') {
-      this.token = localStorage.getItem('boardy_token');
+      this.token = localStorage.getItem('cleo_token');
     }
     return this.token;
   }
@@ -21,7 +21,7 @@ class ApiClient {
   clearToken() {
     this.token = null;
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('boardy_token');
+      localStorage.removeItem('cleo_token');
     }
   }
 

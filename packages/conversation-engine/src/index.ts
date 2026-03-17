@@ -1,5 +1,5 @@
 // ============================================
-// Boardy AI — Conversation Engine
+// Cleo.ai — Conversation Engine
 // JSON-driven state machine for onboarding flows
 // ============================================
 
