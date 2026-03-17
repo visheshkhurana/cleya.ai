@@ -58,3 +58,13 @@ waitForPort = 5000
 
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[userenv]
+
+[userenv.shared]
+AI_PROVIDER = "openai"
+NODE_ENV = "development"
+PORT = "3001"
+FRONTEND_URL = "https://boardy-ai-platform.replit.dev"
+BACKEND_URL = "https://boardy-ai-platform.replit.dev:3001"
+JWT_SECRET = "c0a5a053f8698508919b603afcb4e48a2a240e54cd59965280759d28dda83434"
