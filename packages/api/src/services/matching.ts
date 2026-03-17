@@ -43,7 +43,6 @@ export interface HybridMatchResult {
   userId: string;
   vectorSimilarity: number;
   ruleScore: number;
-  intentScore: number;
   hybridScore: number;
   breakdown: Record<string, number>;
   profile: ProfileForMatching;
@@ -311,7 +310,6 @@ export async function hybridMatch(
       userId: candidate.userId,
       vectorSimilarity: matchScore.breakdown.semanticSimilarity || 0,
       ruleScore: matchScore.ruleScore,
-      intentScore: matchScore.breakdown.intentScore || 0,
       hybridScore: matchScore.total,
       breakdown: matchScore.breakdown,
       profile: candidate,

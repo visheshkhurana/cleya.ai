@@ -60,7 +60,7 @@ export default function IntroductionsPage() {
 
   const getOtherUser = (intro: IntroData) => {
     if (!me) return intro.userB;
-    return intro.userAId === me.id ? intro.userB : intro.userA;
+    return intro.userA.id === me.id ? intro.userB : intro.userA;
   };
 
   if (loading) {

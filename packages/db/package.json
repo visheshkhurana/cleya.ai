@@ -8,7 +8,8 @@
     "migrate": "prisma migrate dev",
     "migrate:prod": "prisma migrate deploy",
     "seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' src/seed.ts",
-    "studio": "prisma studio"
+    "studio": "prisma studio",
+    "build": "echo 'no build needed'"
   },
   "dependencies": {
     "@prisma/client": "^5.9.1"
