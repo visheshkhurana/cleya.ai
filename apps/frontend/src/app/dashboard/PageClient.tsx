@@ -48,6 +48,8 @@ export default function DashboardPage() {
   const [aiMessages, setAiMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
   const [aiInput, setAiInput] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [sendingVerification, setSendingVerification] = useState(false);
   const aiScrollRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -87,6 +89,17 @@ export default function DashboardPage() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setSendingVerification(true);
+    try {
+      await api.sendVerificationEmail();
+      setVerificationSent(true);
+    } catch {
+    } finally {
+      setSendingVerification(false);
     }
   };
 
@@ -226,6 +239,38 @@ export default function DashboardPage() {
       </header>
 
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+        {user && !user.emailVerified && (
+          <div className="rounded-xl border p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+            style={{ background: 'rgba(245,158,11,0.06)', borderColor: 'rgba(245,158,11,0.2)' }}>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                style={{ background: 'rgba(245,158,11,0.15)' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: '#fbbf24' }}>Verify your email</p>
+                <p className="text-xs" style={{ color: 'rgba(251,191,36,0.6)' }}>
+                  {verificationSent
+                    ? 'Verification email sent! Check your inbox.'
+                    : `We sent a verification link to ${user.email}. Please check your inbox.`}
+                </p>
+              </div>
+            </div>
+            {!verificationSent && (
+              <button
+                onClick={handleResendVerification}
+                disabled={sendingVerification}
+                className="text-xs font-medium px-4 py-2 rounded-lg transition flex-shrink-0"
+                style={{ background: 'rgba(245,158,11,0.15)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.2)' }}>
+                {sendingVerification ? 'Sending...' : 'Resend email'}
+              </button>
+            )}
+          </div>
+        )}
+
         <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(26,18,48,0.6)' }}>
           <div className="flex items-start gap-4">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0"

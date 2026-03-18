@@ -33,6 +33,9 @@ authRouter.post('/signup', signupLimiter, async (req: Request, res: Response, ne
     const data = signupSchema.parse(req.body);
     const result = await authService.signup(data);
     emailService.sendWelcome(data.email).catch(() => {});
+    const verifyToken = crypto.randomBytes(32).toString('hex');
+    verifyTokens.set(verifyToken, { userId: result.user.id, createdAt: Date.now() });
+    emailService.sendEmailVerification(data.email, verifyToken).catch(() => {});
     res.status(201).json({ success: true, data: result });
   } catch (error) {
     next(error);

@@ -17,7 +17,7 @@ Monorepo with:
 - **Frontend:** Next.js 14, React 18, Tailwind CSS (dark purple theme)
 - **Backend:** Express, TypeScript, WebSocket
 - **Database:** PostgreSQL (Replit built-in), Prisma ORM, pgvector
-- **Auth:** JWT (bcryptjs password hashing), CSRF double-submit cookie protection
+- **Auth:** JWT (bcryptjs password hashing), CSRF double-submit cookie protection, email verification on signup
 - **Validation:** Zod schemas on all state-changing endpoints (profile, password, match, introduction)
 - **AI:** OpenAI for embeddings + chat (gpt-4-turbo-preview, text-embedding-3-small)
 

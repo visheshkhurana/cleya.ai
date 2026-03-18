@@ -43,6 +43,7 @@ export class AuthService {
         email: user.email,
         phone: user.phone,
         role: user.role,
+        emailVerified: user.emailVerified,
         profile: user.profile,
       },
       token,
@@ -76,6 +77,7 @@ export class AuthService {
         email: user.email,
         phone: user.phone,
         role: user.role,
+        emailVerified: user.emailVerified,
         profile: user.profile,
       },
       token,
@@ -97,6 +99,7 @@ export class AuthService {
       email: user.email,
       phone: user.phone,
       role: user.role,
+      emailVerified: user.emailVerified,
       profile: user.profile,
       createdAt: user.createdAt,
     };
@@ -112,6 +115,13 @@ export class AuthService {
       if (!user.isActive) {
         throw new AppError(403, 'Account is disabled', 'ACCOUNT_DISABLED');
       }
+      if (!user.emailVerified) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { emailVerified: true },
+          include: { profile: true },
+        });
+      }
       const token = this.generateToken(user);
       return {
         user: {
@@ -119,6 +129,7 @@ export class AuthService {
           email: user.email,
           phone: user.phone,
           role: user.role,
+          emailVerified: user.emailVerified,
           profile: user.profile,
         },
         token,
@@ -130,6 +141,7 @@ export class AuthService {
       data: {
         email: googleProfile.email,
         passwordHash: '',
+        emailVerified: true,
         profile: {
           create: {
             ...(googleProfile.name ? { currentRole: googleProfile.name } : {}),
@@ -146,6 +158,7 @@ export class AuthService {
         email: user.email,
         phone: user.phone,
         role: user.role,
+        emailVerified: user.emailVerified,
         profile: user.profile,
       },
       token,
