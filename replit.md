@@ -36,6 +36,23 @@ npm run dev
 ```
 Starts both frontend (port 5000) and backend (port 3001) concurrently.
 
+## Building for Production
+```
+npm run build
+```
+Builds in dependency order: prisma generate → types → db → ai → matching → conversation-engine → api → backend (tsc) → frontend (next build). All packages compile TypeScript to `dist/` with `main` pointing to `./dist/index.js`. Frontend build script (`build.js`) handles the Next.js `_not-found` prerender issue and generates `prerender-manifest.json` if needed.
+
+## Production Start
+```
+npm run start
+```
+Runs backend (`node dist/index.js` on port 3001) and frontend (`next start` on port 5000) concurrently.
+
+## Page Architecture
+All frontend pages use a server/client wrapper pattern for build compatibility:
+- `page.tsx` — server component that exports `dynamic = 'force-dynamic'` and re-exports the client component
+- `PageClient.tsx` — the actual `'use client'` component with hooks, state, and UI
+
 ## Frontend Proxy
 `apps/frontend/next.config.js` has rewrites proxying `/api/*` → `http://localhost:3001/api/*` so the browser can reach the backend through the Next.js dev server.
 

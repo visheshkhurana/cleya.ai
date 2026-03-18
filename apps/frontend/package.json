@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 5000",
-    "build": "bash build.sh",
+    "build": "node build.js",
     "start": "next start --port 5000"
   },
   "dependencies": {
