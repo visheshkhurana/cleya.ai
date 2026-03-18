@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { api } from '@/lib/api';
 const navItems = [
@@ -16,6 +16,7 @@ export default function MobileNav() {
   const [open, setOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -26,6 +27,7 @@ export default function MobileNav() {
   useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden';
+      closeRef.current?.focus();
     } else {
       document.body.style.overflow = '';
     }
@@ -43,13 +45,46 @@ export default function MobileNav() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [open]);
 
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      setOpen(false);
+      toggleRef.current?.focus();
+    }
+    if (e.key === 'Tab' && drawerRef.current) {
+      const focusable = drawerRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (open) document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [open, handleKeyDown]);
+
   return (
     <>
       <button
         ref={toggleRef}
         onClick={() => setOpen(!open)}
         className="flex flex-col gap-1.5 p-2 -m-2"
-        aria-label="Menu"
+        aria-label={open ? 'Close menu' : 'Open menu'}
+        aria-expanded={open}
+        aria-controls="mobile-nav-drawer"
       >
         <span className={`block w-5 h-0.5 bg-white/60 transition-all duration-200 ${open ? 'rotate-45 translate-y-2' : ''}`} />
         <span className={`block w-5 h-0.5 bg-white/60 transition-all duration-200 ${open ? 'opacity-0' : ''}`} />
@@ -57,9 +92,16 @@ export default function MobileNav() {
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 md:hidden" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
+        <div
+          className="fixed inset-0 z-50 md:hidden"
+          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Navigation menu"
+        >
           <div
             ref={drawerRef}
+            id="mobile-nav-drawer"
             className="absolute top-0 right-0 w-72 h-full border-l border-white/5 overflow-y-auto"
             style={{ background: '#0D0B1A' }}
           >
@@ -70,7 +112,12 @@ export default function MobileNav() {
                 <span className="text-white font-semibold text-sm">Cleo.ai</span>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={() => setOpen(false)} className="text-white/40 hover:text-white/70 transition p-1">
+                <button
+                  ref={closeRef}
+                  onClick={() => { setOpen(false); toggleRef.current?.focus(); }}
+                  className="text-white/40 hover:text-white/70 transition p-1"
+                  aria-label="Close menu"
+                >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M18 6L6 18M6 6l12 12" />
                   </svg>
@@ -78,7 +125,7 @@ export default function MobileNav() {
               </div>
             </div>
 
-            <nav className="p-3 space-y-1">
+            <nav className="p-3 space-y-1" aria-label="Main navigation">
               {navItems.map((item) => {
                 const isActive = pathname === item.href;
                 return (
@@ -89,8 +136,9 @@ export default function MobileNav() {
                       isActive ? 'text-white' : 'text-white/50 hover:text-white/80'
                     }`}
                     style={isActive ? { background: 'rgba(108,71,255,0.12)', borderLeft: '2px solid #0D9488' } : {}}
+                    aria-current={isActive ? 'page' : undefined}
                   >
-                    <span className="text-base">{item.icon}</span>
+                    <span className="text-base" aria-hidden="true">{item.icon}</span>
                     {item.label}
                   </button>
                 );
@@ -102,7 +150,7 @@ export default function MobileNav() {
                 onClick={() => { api.clearToken(); router.push('/'); }}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400/60 hover:text-red-400 hover:bg-red-500/5 transition"
               >
-                <span className="text-base">🚪</span>
+                <span className="text-base" aria-hidden="true">🚪</span>
                 Sign Out
               </button>
             </div>

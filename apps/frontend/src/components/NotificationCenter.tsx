@@ -19,6 +19,7 @@ export default function NotificationCenter() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -50,6 +51,17 @@ export default function NotificationCenter() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+        toggleRef.current?.focus();
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
 
   const handleMarkAllRead = async () => {
     setLoading(true);
@@ -98,7 +110,11 @@ export default function NotificationCenter() {
   return (
     <div ref={dropdownRef} style={{ position: 'relative' }}>
       <button
+        ref={toggleRef}
         onClick={() => { setIsOpen(!isOpen); if (!isOpen) fetchNotifications(); }}
+        aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
+        aria-expanded={isOpen}
+        aria-haspopup="true"
         style={{
           background: 'transparent',
           border: 'none',
@@ -111,12 +127,12 @@ export default function NotificationCenter() {
         onMouseEnter={e => (e.currentTarget.style.background = 'rgba(108,71,255,0.1)')}
         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
       >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
           <path d="M13.73 21a2 2 0 0 1-3.46 0" />
         </svg>
         {unreadCount > 0 && (
-          <span style={{
+          <span aria-hidden="true" style={{
             position: 'absolute',
             top: '4px',
             right: '4px',
@@ -138,19 +154,22 @@ export default function NotificationCenter() {
       </button>
 
       {isOpen && (
-        <div style={{
-          position: 'absolute',
-          top: 'calc(100% + 8px)',
-          right: 0,
-          width: '380px',
-          maxHeight: '480px',
-          background: '#1a1230',
-          border: '1px solid rgba(108,71,255,0.2)',
-          borderRadius: '16px',
-          overflow: 'hidden',
-          zIndex: 1000,
-          boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
-        }}>
+        <div
+          role="region"
+          aria-label="Notifications"
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 8px)',
+            right: 0,
+            width: '380px',
+            maxHeight: '480px',
+            background: '#1a1230',
+            border: '1px solid rgba(108,71,255,0.2)',
+            borderRadius: '16px',
+            overflow: 'hidden',
+            zIndex: 1000,
+            boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+          }}>
           <div style={{
             padding: '16px 20px',
             borderBottom: '1px solid rgba(255,255,255,0.05)',
@@ -168,7 +187,7 @@ export default function NotificationCenter() {
                   padding: '2px 8px',
                   borderRadius: '10px',
                   fontWeight: 600,
-                }}>
+                }} aria-live="polite">
                   {unreadCount} new
                 </span>
               )}
@@ -208,7 +227,7 @@ export default function NotificationCenter() {
                   justifyContent: 'center',
                   margin: '0 auto 12px',
                   fontSize: '22px',
-                }}>🔔</div>
+                }} aria-hidden="true">🔔</div>
                 <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', fontWeight: 500, marginBottom: '4px' }}>No notifications yet</p>
                 <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '12px', lineHeight: 1.5 }}>Once you get matched, you'll see updates here.</p>
               </div>
@@ -216,7 +235,10 @@ export default function NotificationCenter() {
               notifications.map(n => (
                 <div
                   key={n.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => !n.readAt && handleMarkRead(n.id)}
+                  onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !n.readAt) { e.preventDefault(); handleMarkRead(n.id); } }}
                   style={{
                     padding: '14px 20px',
                     borderBottom: '1px solid rgba(255,255,255,0.03)',
@@ -228,7 +250,7 @@ export default function NotificationCenter() {
                     alignItems: 'flex-start',
                   }}
                 >
-                  <span style={{ fontSize: '18px', marginTop: '2px' }}>{eventIcon(n.event)}</span>
+                  <span style={{ fontSize: '18px', marginTop: '2px' }} aria-hidden="true">{eventIcon(n.event)}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
                       <span style={{
@@ -239,7 +261,7 @@ export default function NotificationCenter() {
                         {n.title}
                       </span>
                       {!n.readAt && (
-                        <span style={{
+                        <span aria-label="Unread" style={{
                           width: '6px',
                           height: '6px',
                           borderRadius: '50%',

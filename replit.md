@@ -200,6 +200,7 @@ Six persona types with tailored onboarding flows:
 28. **Health Endpoint** — `GET /health` returns `{ status, timestamp, version, uptime, env }`; documented in DEPLOYMENT.md for UptimeRobot/Better Uptime monitoring
 29. **Empty State Improvements** — Dashboard: welcome card with "Set Up Your Profile" CTA for new users; Chat: Cleo avatar + greeting + suggested prompts when no messages; Notifications: styled empty state with descriptive text
 30. **Database Backup** — `scripts/backup.sh` runs pg_dump with gzip compression, 7-day retention; documented in DEPLOYMENT.md with restore instructions
+31. **Keyboard Navigation & Accessibility** — Skip-to-content link in layout; global `focus-visible` teal outline on all interactive elements; MobileNav: Escape key closes + returns focus to toggle, focus trap within drawer, `aria-expanded`/`aria-controls`/`aria-modal`/`aria-current="page"`; NotificationCenter: Escape key closes + returns focus, `aria-haspopup`/`aria-expanded`/`aria-label` with unread count, `role="menu"`/`role="list"`, notification items keyboard-operable with Enter/Space; PhoneInput: Escape closes country dropdown, arrow key navigation with visual highlight, `role="listbox"`/`role="option"`/`aria-selected`, `aria-describedby` for validation errors with `role="alert"`; `prefers-reduced-motion` already handled
 
 ### Vector-Based AI Matching (pgvector)
 - **Hybrid matching pipeline**: pgvector cosine similarity → rule-based + intent scoring → ranked results

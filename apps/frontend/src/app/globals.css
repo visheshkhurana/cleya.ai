@@ -10,6 +10,27 @@
     @apply bg-dark-400 text-white antialiased font-sans;
     background: #0B0918;
   }
+  *:focus-visible {
+    outline: 2px solid #0D9488;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  .skip-to-content {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 9999;
+    padding: 12px 24px;
+    background: #0D9488;
+    color: #fff;
+    font-weight: 600;
+    font-size: 14px;
+    border-radius: 0 0 8px 0;
+    text-decoration: none;
+  }
+  .skip-to-content:focus {
+    left: 0;
+  }
 }
 
 @layer components {

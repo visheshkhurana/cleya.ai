@@ -63,8 +63,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${dmSans.variable} ${playfairDisplay.variable}`} suppressHydrationWarning>
       <body className="min-h-screen" suppressHydrationWarning>
+        <a href="#main-content" className="skip-to-content">Skip to content</a>
         <SentryProvider>
-          <PostHogProvider>{children}</PostHogProvider>
+          <PostHogProvider>
+            <main id="main-content" tabIndex={-1} style={{ outline: 'none' }}>{children}</main>
+          </PostHogProvider>
         </SentryProvider>
       </body>
     </html>
