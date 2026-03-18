@@ -6,6 +6,7 @@ import { createServer } from 'http';
 import { env } from './config/env';
 import { errorHandler } from './middleware/errorHandler';
 import { setupWebSocket } from './websocket/server';
+import { seedDatabase } from './seed';
 import { authRouter } from './routes/auth';
 import { userRouter } from './routes/user';
 import { conversationRouter } from './routes/conversation';
@@ -55,8 +56,9 @@ app.use(errorHandler);
 
 setupWebSocket(server);
 
-server.listen(env.PORT, () => {
+server.listen(env.PORT, async () => {
   console.log(`Cleo.ai Backend running on port ${env.PORT}`);
   console.log(`WebSocket ready`);
   console.log(`Environment: ${env.NODE_ENV}`);
+  await seedDatabase();
 });
