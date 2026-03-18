@@ -148,7 +148,7 @@ Six persona types with tailored onboarding flows:
 5. **Analytics** — Users by persona, onboarding rate, match stats, feedback distribution, daily signups chart, communications breakdown, recent activity feed, weekly digest trigger
 
 ### User-Facing Pages
-- **Landing Page** (`/`) — Hero section, phone mockup, How It Works (3 steps), Features grid (6 items), Social proof, Footer. Non-auth users see landing page; auth users auto-redirect to dashboard/admin
+- **Landing Page** (`/`) — Redesigned "Precision Intelligence" aesthetic. Sections: frosted-glass nav, hero (Playfair Display serif headline + phone chat mockup with staggered match cards), metrics bar (count-up animation), testimonial ticker (marquee), How It Works (3-step cards), Who It's For (3 persona columns), featured match story (blockquote), final CTA, minimal footer. Fonts: Playfair Display (hero/quotes) + DM Sans (body). Colors: #0B0918 bg, #6D28D9 violet accent, #A09FB5 muted text. Animations respect prefers-reduced-motion. Auth modal has Escape/click-outside dismiss. Non-auth users see landing; auth users auto-redirect to dashboard/admin
 - **Dashboard** (`/dashboard`) — Profile summary, match stats, recent match cards with scores + persona + reason, quick actions (View Matches, Find Matches, Edit Profile, Chat)
 - **Profile** (`/profile`) — Edit all profile fields per persona type (Founder/Investor/Talent sections), save via PATCH /api/users/profile
 - **Chat** (`/chat`) — AI chat with typing indicator, timestamps, smooth scroll, chat history persistence (localStorage, survives refresh, 24h expiry)

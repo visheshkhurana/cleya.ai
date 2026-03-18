@@ -1,0 +1,271 @@
+# Cleo.ai Landing Page — Full UI/UX Redesign Prompt
+
+> Feed this prompt directly into an AI design tool (v0, Lovable, Builder.io, Bolt, or a Figma AI plugin) to generate a fully redesigned landing page.
+
+---
+
+## CONTEXT & BRAND READING
+
+**Product**: Cleo.ai — an AI-powered professional networking and matchmaking platform connecting founders, investors, and talent.
+
+**Current page analysis**:
+- Dark navy/indigo background (#0D0B1E range) with purple (#7C3AED) as the primary accent
+- Hero headline: "Meet the right people. Faster." — clear, punchy, good
+- Chat widget mockup on the right showing an AI conversation flow with match results
+- Two CTAs: "Get Started →" (filled) and "Log In" (ghost border)
+- Social proof bar at bottom: "Trusted by founders, investors, and talent worldwide"
+- Tagline: "Cleo is your AI Superconnector — matching founders, investors, talent, and partners through intelligent conversations."
+
+**Core gap**: The design is competent but generic — it looks like dozens of AI SaaS dark-mode landing pages. It lacks emotional resonance, trust signals, specificity, and a scroll journey. The chat mockup is the most compelling element but is underutilized. There is no social proof with faces/names, no outcome metrics, and no clear differentiation from LinkedIn, Lunchclub, or Bumble Bizz.
+
+---
+
+## REDESIGN BRIEF
+
+### Aesthetic Direction
+**"Precision Intelligence" — Dark luxury meets editorial precision.**
+
+Think: the visual weight of Notion combined with the depth of Linear, but with the human warmth of a curated members club. Not a chatbot product — a concierge. The purple accent should evolve from a neon SaaS color into a rich, jewel-toned violet (#6D28D9 → #5B21B6). Introduce a warm off-white (#F5F0EB) for contrast sections. Use a single editorial serif display font (e.g., Playfair Display, Canela, or Editorial New) for the hero headline — only the hero — paired with a clean geometric sans (e.g., DM Sans, Syne, or Neue Montreal) for body and UI elements.
+
+**NOT**: Generic purple gradient + white SaaS look. No floating blobs. No gradient mesh backgrounds. No Inter font.
+
+---
+
+## SECTION-BY-SECTION REDESIGN INSTRUCTIONS
+
+### 1. NAVIGATION BAR
+- Keep it minimal: Logo left, "Log In" ghost button + "Get Started →" filled button on right
+- Add a subtle frosted glass effect on scroll (backdrop-filter: blur(12px)) with a very thin 1px border at bottom
+- Logo: Replace the current purple square "C" with a wordmark + a small node/connection glyph (two dots connected by a line) in violet
+- Nav background: transparent until user scrolls 80px, then transitions to semi-opaque dark
+
+### 2. HERO SECTION
+**Layout**: Split — left 55% text + CTA, right 45% chat mockup (kept, but redesigned)
+
+**Headline**:
+```
+[Serif display font, large — ~72px desktop]
+Meet the right people.
+[Violet accent word, slightly italic] Faster.
+```
+Keep the current headline — it works. But render "Faster." in the editorial serif, slightly italicized, and in the jewel violet. The rest in the same serif, white. Give it generous line-height (1.1).
+
+**Sub-headline** (keep current copy but improve styling):
+```
+Cleo is your AI Superconnector — matching founders, investors, 
+talent, and partners through intelligent conversations.
+```
+Render in DM Sans, 18px, #A09FB5 (muted lavender-grey). Max-width 420px.
+
+**CTAs**:
+- Primary: "Get Started →" — filled violet (#6D28D9), rounded-lg (10px), 52px height, DM Sans 500 weight, subtle glow shadow on hover
+- Secondary: "See How It Works" — no border, just text with an underline animation on hover, arrow icon. Remove "Log In" from hero — it's a distraction at this stage.
+
+**Pill badge above headline**:
+Replace the current green dot + "AI-Powered Networking" with:
+`✦ Members-only · Invite or apply`
+Style: thin border, frosted glass pill, smaller font (11px uppercase tracking-widest), violet dot
+
+**Right side — Chat Mockup Redesign**:
+- Upgrade to a floating phone/browser frame with a soft violet outer glow (box-shadow: 0 0 60px rgba(109,40,217,0.3))
+- Show 3 match cards — not 2. Add a third with a different sector (e.g., "Priya Sharma — Angel Investor · Consumer · 94% match")
+- Add a small animated typing indicator (the "..." dots) that pulses
+- Show a match percentage bar under each card — a thin violet progress bar at ~90%
+- The chat bubbles: user message bubble should be a more premium violet (#7C3AED), not flat purple. AI bubbles should be #1E1B2E (darker card).
+- Add a micro-animation: the cards appear one by one with a 0.2s stagger on page load
+
+**Background treatment**:
+- Behind the chat mockup: a very subtle radial gradient bloom in violet (opacity 15%) on the dark background — creates depth without being cliché
+- Add a very faint diagonal grid or dot-matrix pattern (opacity 4%) to the full hero background to add texture without distraction
+
+---
+
+### 3. SOCIAL PROOF BAR (immediately below fold)
+**Current**: "Trusted by founders, investors, and talent worldwide" — no data, no faces, weak.
+
+**Redesign**:
+Replace with a two-row trust section:
+
+**Row 1** — 3–4 outcome metrics in large numbers:
+```
+12,000+          94%              48 hrs            $2.4B
+Members          Match accuracy   Avg. intro time   Funding raised via Cleo
+```
+Style: large DM Sans numerals (48px, white), small label below (13px, #A09FB5). Separated by thin vertical dividers. Background: a slightly lighter strip (#13112A).
+
+**Row 2** — 5 avatar+name+title testimonial chips scrolling horizontally (marquee/ticker):
+```
+[ 🟣 AV ] "Met my Series A lead in 3 days." — Arjun V., Founder · HealthTech
+[ 🟣 SK ] "Best investor match I've found outside warm intros." — Sarah K., Investor · Series A
+```
+Style: pill chips with avatar circle, quote text in italics, name+title in small caps. Slow horizontal scroll on loop.
+
+---
+
+### 4. HOW IT WORKS (new section — currently missing)
+**This section is critical for conversion** — the product is novel and needs explanation.
+
+3-step horizontal flow with large step numbers (editorial serif, giant and faded as background decoration):
+
+```
+01 — Tell Cleo what you need
+      Describe your goals in plain language — 
+      raise a round, find a co-founder, hire engineers, 
+      or source deals. Cleo listens like a person.
+
+02 — Cleo finds your matches
+      Our AI searches across 12,000+ verified members, 
+      weighing sector fit, stage, check size, and intent — 
+      not just keywords.
+
+03 — Get warm intros, instantly
+      Cleo makes the introduction with context. 
+      No cold emails. No awkward LinkedIn DMs.
+```
+
+Visual: Each step has a small isometric illustration or icon (not stock — custom SVG line-art style). Use violet accent for the step numbers.
+
+Layout: Horizontal cards on desktop, vertical stack on mobile. Thin connecting arrow between steps.
+
+---
+
+### 5. WHO IT'S FOR (Persona Section)
+**Currently missing** — critical for a multi-sided marketplace to reduce confusion.
+
+3-column grid, each column for a different user type:
+
+```
+[Column 1 — Founders]
+Icon: seedling/rocket glyph
+"Raise faster. Hire smarter."
+→ Get in front of investors who've already backed companies like yours.
+CTA chip: "I'm a Founder →"
+
+[Column 2 — Investors]
+Icon: graph/lens glyph  
+"Source deals before they're announced."
+→ See pre-pitch founders in your thesis verticals before they're on AngelList.
+CTA chip: "I'm an Investor →"
+
+[Column 3 — Talent & Operators]
+Icon: person/network glyph
+"Land your next role through relationships."
+→ Get introduced to founders who are hiring — before the job is posted.
+CTA chip: "I'm looking for a role →"
+```
+
+Background: alternating card-style columns with a very slight #161328 fill and 1px border. Hover: slight violet glow.
+
+---
+
+### 6. SOCIAL PROOF — FEATURED MATCHES (new section)
+**Pull one real match story as a full-width feature:**
+
+```
+[Large quote — editorial serif, 28px]
+"Cleo introduced me to my lead investor in 48 hours. 
+The match was so precise it felt like Cleo had read my deck."
+
+[Avatar + Name + Result]
+● Meera R. — Founder, Numr · Raised ₹4Cr Seed
+[Small: Matched with: Arjun Capital · Series Seed · Consumer Tech]
+```
+
+Layout: dark card, full width, violet left-border accent (4px). Background: slightly different shade of dark for contrast.
+
+---
+
+### 7. FINAL CTA SECTION
+Full-width section with:
+
+**Headline**: `Your next co-founder, investor, or hire is already on Cleo.`
+Sub: `Apply for early access or log in if you're already a member.`
+
+Two CTAs side by side:
+- "Apply for Access →" (filled, large)  
+- "Log In" (ghost)
+
+Background: Deep violet to near-black gradient. Faint node/network illustration in background at very low opacity (5%).
+
+---
+
+### 8. FOOTER
+Minimal. Logo left. Links: About · Privacy · Terms · Blog. Social icons right (LinkedIn, Twitter/X). One-liner: `©️ 2026 Cleo.ai — AI-Powered Professional Networking`
+
+---
+
+## TYPOGRAPHY SYSTEM
+
+| Element | Font | Size | Weight | Color |
+|---|---|---|---|---|
+| Hero Headline | Playfair Display (or Canela) | 68–80px | 700 | #FFFFFF |
+| "Faster." accent | Playfair Display, italic | same | 700 | #7C3AED |
+| Section Headers | DM Sans | 36–44px | 600 | #FFFFFF |
+| Body copy | DM Sans | 16–18px | 400 | #A09FB5 |
+| Labels / caps | DM Sans | 11–12px | 500 | #7C3AED |
+| Metric numbers | DM Sans | 48px | 700 | #FFFFFF |
+| Testimonial quotes | Playfair Display, italic | 24–28px | 400 | #E8E4F0 |
+
+---
+
+## COLOR PALETTE
+
+```
+Background (primary):    #0B0918
+Background (secondary):  #13112A
+Card surface:            #1A1730
+Border / dividers:       #2D2A45
+Body text:               #A09FB5
+Accent (violet):         #6D28D9
+Accent (light):          #8B5CF6
+Accent (glow):           rgba(109,40,217,0.25)
+Success / match:         #10B981 (emerald — for % bars)
+White:                   #FFFFFF
+Off-white warmth:        #F0ECF8
+```
+
+---
+
+## ANIMATION & INTERACTION SPECS
+
+- **Page load**: Hero headline fades + slides up (transform: translateY(20px) → 0, opacity 0 → 1, duration 0.6s ease-out, stagger 0.1s per line)
+- **Chat mockup**: Match cards appear one by one, staggered 0.2s each, slide in from right
+- **Typing indicator**: 3-dot pulse animation (CSS keyframes, infinite loop, 0.4s between each dot)
+- **CTA hover**: Slight scale(1.02) + deeper glow shadow
+- **Metrics counter**: Count-up animation on scroll-into-view (IntersectionObserver)
+- **Persona columns**: On hover, slight violet background wash + border glow transition (0.2s ease)
+- **Nav**: Smooth transition from transparent to frosted-glass on scroll
+
+---
+
+## RESPONSIVENESS
+
+- **Mobile** (≤768px): Stack hero vertically. Chat mockup moves below text. 3-step flow becomes vertical accordion. Persona columns stack. Metrics become 2×2 grid.
+- **Tablet** (768–1024px): 2-column grid where possible. Chat mockup scales to 80%.
+- Touch targets: minimum 44×44px for all interactive elements.
+
+---
+
+## TECHNICAL STACK RECOMMENDATION
+
+- **Framework**: Next.js 14 (App Router) or plain HTML/Tailwind CSS for static
+- **Animations**: Framer Motion (for React) or CSS keyframes
+- **Fonts**: Google Fonts — Playfair Display + DM Sans (or self-host via Fontsource)
+- **Icons**: Lucide React or custom SVG
+- **Chat mockup**: Pure CSS/HTML component (no external dependencies)
+
+---
+
+## WHAT TO EXPLICITLY AVOID
+
+- ❌ Purple gradient blobs or mesh backgrounds
+- ❌ Inter or Roboto as the primary font
+- ❌ Cookie-cutter AI SaaS layout (full-width banner headline, centered text, generic screenshot)
+- ❌ Generic stock illustration or Lottie animations that feel off-brand
+- ❌ More than 2 CTAs visible at any one time
+- ❌ Floating "chat with us" widget that competes with the product mockup
+- ❌ Social proof without names, numbers, or specifics
+
+---
+
+*Prompt authored based on analysis of: Cleo.ai current landing page, Lunchclub, Linear, Notion, and 2025–2026 AI SaaS landing page benchmarks.*
