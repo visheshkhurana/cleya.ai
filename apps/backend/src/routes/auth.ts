@@ -21,6 +21,9 @@ const signupSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
   phone: z.string().optional(),
+  utmSource: z.string().optional(),
+  utmMedium: z.string().optional(),
+  utmCampaign: z.string().optional(),
 });
 
 const loginSchema = z.object({

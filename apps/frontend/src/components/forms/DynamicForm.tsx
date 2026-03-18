@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import PhoneInput from '@/components/PhoneInput';
 
 interface FormField {
   name: string;
@@ -128,9 +129,18 @@ export function DynamicForm({ fields, onSubmit, disabled }: DynamicFormProps) {
               />
             )}
 
-            {!['select', 'multiselect', 'textarea'].includes(field.type) && (
+            {field.type === 'phone' && (
+              <PhoneInput
+                value={values[field.name] || ''}
+                onChange={(val) => handleChange(field.name, val)}
+                placeholder={field.placeholder || '98765 43210'}
+                disabled={submitted}
+              />
+            )}
+
+            {!['select', 'multiselect', 'textarea', 'phone'].includes(field.type) && (
               <input
-                type={field.type === 'phone' ? 'tel' : field.type === 'number' ? 'number' : 'text'}
+                type={field.type === 'number' ? 'number' : 'text'}
                 value={values[field.name] || ''}
                 onChange={(e) => handleChange(field.name, e.target.value)}
                 placeholder={field.placeholder}

@@ -61,6 +61,22 @@ export default function Home() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
+
+      const utmSource = params.get('utm_source');
+      const utmMedium = params.get('utm_medium');
+      const utmCampaign = params.get('utm_campaign');
+      const utmContent = params.get('utm_content');
+      const utmTerm = params.get('utm_term');
+      if (utmSource || utmMedium || utmCampaign || utmContent || utmTerm) {
+        const utmData: Record<string, string> = {};
+        if (utmSource) utmData.utm_source = utmSource;
+        if (utmMedium) utmData.utm_medium = utmMedium;
+        if (utmCampaign) utmData.utm_campaign = utmCampaign;
+        if (utmContent) utmData.utm_content = utmContent;
+        if (utmTerm) utmData.utm_term = utmTerm;
+        localStorage.setItem('cleo_utm', JSON.stringify(utmData));
+      }
+
       const urlToken = params.get('token');
       const urlError = params.get('error');
       if (urlToken) {
@@ -115,7 +131,14 @@ export default function Home() {
     setLoading(true);
     try {
       if (mode === 'signup') {
-        await api.signup(email, password);
+        const utmRaw = localStorage.getItem('cleo_utm');
+        const utmData = utmRaw ? JSON.parse(utmRaw) : {};
+        await api.signup(email, password, undefined, {
+          utmSource: utmData.utm_source,
+          utmMedium: utmData.utm_medium,
+          utmCampaign: utmData.utm_campaign,
+        });
+        localStorage.removeItem('cleo_utm');
         window.location.href = '/chat';
       } else {
         const data = await api.login(email, password);

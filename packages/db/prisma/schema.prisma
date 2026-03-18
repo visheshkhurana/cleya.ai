@@ -47,6 +47,10 @@ model User {
   introductionsAsB IntroductionRecord[] @relation("IntroUserB")
   communicationPreference CommunicationPreference?
 
+  utmSource    String?
+  utmMedium    String?
+  utmCampaign  String?
+
   @@index([email])
   @@index([phone])
   @@map("users")

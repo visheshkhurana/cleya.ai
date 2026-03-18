@@ -191,6 +191,9 @@ Six persona types with tailored onboarding flows:
 19. **Legal Pages** — Privacy Policy (/privacy) with GDPR, CCPA, Indian DPDPA sections, DPO contact, children's privacy, cookies/tracking, data export rights; Terms of Service (/terms) with India jurisdiction (Bangalore courts), dispute resolution, indemnification clauses
 20. **Input Validation** — HTML stripping, LinkedIn URL validation, headline ≤150 chars, bio ≤1000 chars
 21. **Skeleton Loaders** — Dashboard and matches pages show animated skeleton UI during data loading
+22. **UTM Attribution** — Landing page captures utm_source/utm_medium/utm_campaign/utm_content/utm_term from URL params into localStorage; on signup, utmSource/utmMedium/utmCampaign are saved to User model in DB
+23. **Channel Attribution** — Onboarding "How did you hear about us?" with 9 options (LinkedIn, Twitter/X, WhatsApp Group, Friend Referral, Event The Pitch, Angel Network, VC Newsletter, Google Search, Other); stored as channelSource on Profile; breakdown chart in admin analytics
+24. **International Phone Input** — Custom PhoneInput component with country flag + dial code dropdown (36 countries, default India +91); integrated in onboarding common_details form, profile edit page, and admin trigger modal
 
 ### Vector-Based AI Matching (pgvector)
 - **Hybrid matching pipeline**: pgvector cosine similarity → rule-based + intent scoring → ranked results
@@ -211,6 +214,7 @@ Six persona types with tailored onboarding flows:
 - `apps/frontend/src/app/admin/page.tsx` — Admin dashboard (5 tabs)
 - `apps/frontend/src/app/settings/page.tsx` — Settings page
 - `apps/frontend/src/components/NotificationCenter.tsx` — Bell icon notification dropdown
+- `apps/frontend/src/components/PhoneInput.tsx` — International phone input with country selector (36 countries, default India)
 - `apps/frontend/src/lib/api.ts` — API client (relative `/api` path, token as `cleo_token`)
 - `packages/matching/src/index.ts` — Enhanced matching engine with persona context matching
 - `packages/api/src/services/matching.ts` — Shared matching API services

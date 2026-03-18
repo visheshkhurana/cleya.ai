@@ -108,10 +108,10 @@ class ApiClient {
   }
 
   // Auth
-  async signup(email: string, password: string, phone?: string) {
+  async signup(email: string, password: string, phone?: string, utm?: { utmSource?: string; utmMedium?: string; utmCampaign?: string }) {
     const data = await this.fetch<{ user: any; token: string }>('/auth/signup', {
       method: 'POST',
-      body: JSON.stringify({ email, password, phone }),
+      body: JSON.stringify({ email, password, phone, ...utm }),
     });
     this.setToken(data.token);
     return data;

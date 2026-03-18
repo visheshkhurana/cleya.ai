@@ -271,6 +271,12 @@ adminRouter.get('/analytics', async (_req: Request, res: Response, next: NextFun
       _count: { channel: true },
     });
 
+    const attributionBreakdown = await prisma.profile.groupBy({
+      by: ['channelSource'],
+      _count: { channelSource: true },
+      where: { channelSource: { not: null } },
+    });
+
     const topMatchedPersonas = await prisma.$queryRaw`
       SELECT p.persona, COUNT(*)::int as match_count
       FROM matches m
@@ -314,6 +320,10 @@ adminRouter.get('/analytics', async (_req: Request, res: Response, next: NextFun
           count: c._count.channel,
         })),
         topMatchedPersonas,
+        attributionBreakdown: attributionBreakdown.map((a) => ({
+          source: a.channelSource,
+          count: a._count.channelSource,
+        })),
         feedbackStats: {
           total: totalFeedbacks,
           avgRating: Math.round((avgRating._avg.rating || 0) * 10) / 10,

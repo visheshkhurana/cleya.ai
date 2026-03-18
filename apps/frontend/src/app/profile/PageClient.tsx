@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import MobileNav from '@/components/MobileNav';
+import PhoneInput from '@/components/PhoneInput';
 
 interface ProfileData {
   persona?: string;
@@ -25,6 +26,7 @@ interface ProfileData {
   preferredRole?: string;
   salaryRange?: string;
   availability?: string;
+  phoneNumber?: string;
 }
 
 const personaLabel: Record<string, string> = {
@@ -178,8 +180,17 @@ export default function ProfilePage() {
             <div>
               <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Location</label>
               <input type="text" value={profile.location || ''} onChange={(e) => updateField('location', e.target.value)}
-                placeholder="e.g. San Francisco, CA" className="input-dark" />
+                placeholder="e.g. Bangalore, India" className="input-dark" />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Phone Number</label>
+            <PhoneInput
+              value={profile.phoneNumber || ''}
+              onChange={(val) => updateField('phoneNumber', val)}
+              placeholder="98765 43210"
+            />
           </div>
 
           <div>

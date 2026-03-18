@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import PhoneInput from '@/components/PhoneInput';
 
 interface Stats {
   totalUsers: number;
@@ -876,6 +877,40 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
+              <div className="rounded-xl border border-purple-500/10 p-5" style={{ background: 'rgba(26,18,48,0.6)' }}>
+                <h3 className="text-white text-sm font-semibold mb-4">📣 Channel Attribution</h3>
+                <div className="space-y-2">
+                  {analyticsData.attributionBreakdown?.map((a: any, i: number) => {
+                    const total = analyticsData.attributionBreakdown.reduce((s: number, x: any) => s + x.count, 0);
+                    const pct = total > 0 ? Math.round((a.count / total) * 100) : 0;
+                    const sourceLabels: Record<string, string> = {
+                      linkedin: 'LinkedIn', twitter: 'Twitter / X', whatsapp_group: 'WhatsApp Group',
+                      friend_referral: 'Friend Referral', event_the_pitch: 'Event (The Pitch)',
+                      angel_network: 'Angel Network', vc_newsletter: 'VC Newsletter',
+                      google_search: 'Google Search', referral: 'Referral', email: 'Email',
+                      event: 'Event', other: 'Other',
+                    };
+                    return (
+                      <div key={i}>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-purple-200/60">{sourceLabels[a.source] || a.source}</span>
+                          <span className="text-purple-300/40">{a.count} ({pct}%)</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-purple-900/30">
+                          <div className="h-full rounded-full" style={{
+                            width: `${pct}%`,
+                            background: 'linear-gradient(90deg, #14B8A6, #2DD4BF)',
+                          }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {(!analyticsData.attributionBreakdown || analyticsData.attributionBreakdown.length === 0) && (
+                    <p className="text-purple-300/30 text-xs">No attribution data yet</p>
+                  )}
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="rounded-xl border border-purple-500/10 p-5" style={{ background: 'rgba(26,18,48,0.6)' }}>
                   <h3 className="text-white text-sm font-semibold mb-4">⭐ Feedback</h3>
@@ -966,12 +1001,10 @@ export default function AdminDashboard() {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-medium text-purple-300/60 uppercase mb-1.5">Phone Number</label>
-                <input
-                  type="tel"
+                <PhoneInput
                   value={triggerPhone}
-                  onChange={(e) => setTriggerPhone(e.target.value)}
-                  placeholder="+1 555 123 4567"
-                  className="w-full px-3 py-2.5 rounded-xl border border-purple-500/20 bg-purple-900/20 text-white placeholder-purple-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  onChange={setTriggerPhone}
+                  placeholder="98765 43210"
                 />
               </div>
 

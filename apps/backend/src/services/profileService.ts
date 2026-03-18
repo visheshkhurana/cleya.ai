@@ -60,6 +60,7 @@ export class ProfileService {
       bio: context.bio,
       location: context.location,
       linkedinUrl: context.linkedinUrl,
+      phoneNumber: context.phoneNumber,
       industries: context.industries || [],
       skills: context.skills || [],
       interests: context.interests || [],
