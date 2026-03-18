@@ -40,8 +40,9 @@ const personaIcon: Record<string, string> = {
 };
 
 const industryOptions = [
-  'FINTECH', 'HEALTHTECH', 'EDTECH', 'AI_ML', 'SAAS', 'E_COMMERCE', 'BIOTECH',
-  'CLEANTECH', 'CYBERSECURITY', 'REAL_ESTATE', 'MEDIA', 'GAMING', 'LOGISTICS', 'FOOD_BEVERAGE',
+  'ai_ml', 'fintech', 'saas', 'healthtech', 'edtech', 'e_commerce', 'biotech',
+  'cleantech', 'cybersecurity', 'real_estate', 'media', 'gaming', 'logistics', 'food_beverage',
+  'enterprise', 'consumer', 'climate',
 ];
 
 export default function ProfilePage() {
@@ -215,7 +216,7 @@ export default function ProfilePage() {
                       : 'border-white/10 text-white/40 hover:border-white/20 hover:text-white/60'
                   }`}
                   style={selected ? { background: 'rgba(108,71,255,0.15)' } : { background: 'rgba(255,255,255,0.03)' }}>
-                  {ind.replace(/_/g, ' ')}
+                  {ind.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/\bAi Ml\b/, 'AI/ML').replace(/\bSaas\b/, 'SaaS').replace(/\bE Commerce\b/, 'E-Commerce')}
                 </button>
               );
             })}

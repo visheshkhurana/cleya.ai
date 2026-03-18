@@ -78,6 +78,21 @@ export default function ChatPage() {
 
   const startChat = async () => {
     try {
+      const existingProfile = await api.getProfile().catch(() => null);
+      if (existingProfile?.isComplete) {
+        setMessages([{
+          sender: 'AI',
+          content: `Welcome back! Your profile is already set up as a ${(existingProfile.persona || '').replace(/_/g, ' ') || 'member'}. You can update your details from the Profile page, or head to your Dashboard to find matches.`,
+          createdAt: new Date(),
+        }]);
+        setCurrentNode({
+          id: 'profile_complete',
+          type: 'profile_complete',
+        });
+        setLoading(false);
+        return;
+      }
+
       const saved = loadChatState();
       if (saved && saved.conversationId && saved.messages.length > 0) {
         try {
@@ -223,6 +238,21 @@ export default function ChatPage() {
                 fields={currentNode.formSchema}
                 onSubmit={(data) => sendMessage({ formData: data })}
               />
+            )}
+            {currentNode.type === 'profile_complete' && (
+              <div className="flex gap-2 justify-center mt-4">
+                <button
+                  onClick={() => window.location.href = '/dashboard'}
+                  className="px-5 py-2.5 rounded-xl text-sm font-medium text-white transition"
+                  style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>
+                  Go to Dashboard
+                </button>
+                <button
+                  onClick={() => window.location.href = '/profile'}
+                  className="px-5 py-2.5 rounded-xl text-sm font-medium text-white/60 border border-white/10 hover:border-white/20 hover:text-white/80 transition">
+                  Edit Profile
+                </button>
+              </div>
             )}
           </div>
         )}

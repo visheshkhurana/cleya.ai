@@ -224,7 +224,7 @@ adminRouter.get('/analytics', async (_req: Request, res: Response, next: NextFun
       rejectedMatches, totalCalls, totalMessages, totalFeedbacks,
     ] = await Promise.all([
       prisma.user.count({ where: { role: 'USER' } }),
-      prisma.profile.count({ where: { isComplete: true } }),
+      prisma.profile.count({ where: { isComplete: true, user: { role: 'USER' } } }),
       prisma.match.count(),
       prisma.match.count({ where: { status: 'ACCEPTED' } }),
       prisma.match.count({ where: { status: 'REJECTED' } }),
@@ -294,7 +294,7 @@ adminRouter.get('/analytics', async (_req: Request, res: Response, next: NextFun
       data: {
         totalUsers,
         completedProfiles,
-        onboardingRate: startedOnboarding > 0 ? Math.round((completedProfiles / startedOnboarding) * 100) : 0,
+        onboardingRate: totalUsers > 0 ? Math.round((completedProfiles / totalUsers) * 100) : 0,
         startedOnboarding,
         totalMatches,
         acceptedMatches,

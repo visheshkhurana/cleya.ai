@@ -18,10 +18,10 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const token = api.getToken();
-    if (!token) { router.push('/login'); return; }
+    if (!token) { router.push('/'); return; }
     api.getSettings()
       .then(data => { setSettings(data); setLoading(false); })
-      .catch(() => { router.push('/login'); });
+      .catch(() => { router.push('/'); });
   }, [router]);
 
   const handleChangePassword = async () => {
@@ -60,7 +60,7 @@ export default function SettingsPage() {
 
   const handleLogout = () => {
     api.clearToken();
-    router.push('/login');
+    router.push('/');
   };
 
   if (loading) {

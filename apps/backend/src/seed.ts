@@ -132,4 +132,71 @@ export async function seedDatabase() {
   } catch (error) {
     console.error('Seed error (non-fatal):', error);
   }
+
+  await seedMatches();
+}
+
+async function seedMatches() {
+  try {
+    const matchCount = await prisma.match.count();
+    if (matchCount > 0) return;
+
+    const users = await prisma.user.findMany({
+      where: { role: 'USER' },
+      include: { profile: true },
+    });
+
+    if (users.length < 2) return;
+
+    const matchPairs: { a: string; b: string; score: number; reason: string }[] = [];
+
+    const sarah = users.find(u => u.email === 'sarah@techstartup.com');
+    const alex = users.find(u => u.email === 'alex@venturefund.com');
+    const priya = users.find(u => u.email === 'priya@bigcorp.com');
+    const marcus = users.find(u => u.email === 'marcus@advisors.io');
+    const jessica = users.find(u => u.email === 'jessica@jobhunt.me');
+
+    if (sarah && alex) matchPairs.push({
+      a: sarah.id, b: alex.id, score: 0.92,
+      reason: 'Sarah is building an AI-powered supply chain startup at seed stage, and Alex invests in early-stage enterprise AI. Strong alignment on industry focus and stage.',
+    });
+    if (sarah && marcus) matchPairs.push({
+      a: sarah.id, b: marcus.id, score: 0.85,
+      reason: 'Marcus specializes in helping SaaS founders scale from $1M to $10M ARR. His go-to-market expertise could accelerate ChainMind\'s growth.',
+    });
+    if (sarah && jessica) matchPairs.push({
+      a: sarah.id, b: jessica.id, score: 0.78,
+      reason: 'Jessica is a senior PM from Google looking for her next role at a Series A startup. Her product expertise in AI/ML is a strong fit for ChainMind.',
+    });
+    if (alex && priya) matchPairs.push({
+      a: alex.id, b: priya.id, score: 0.75,
+      reason: 'Priya is scaling engineering at a Series B company in SaaS/fintech. Alex could provide strategic investment perspective and portfolio introductions.',
+    });
+    if (priya && marcus) matchPairs.push({
+      a: priya.id, b: marcus.id, score: 0.82,
+      reason: 'Marcus has deep sales and go-to-market expertise that could complement Priya\'s engineering leadership at ScaleUp Inc.',
+    });
+    if (alex && jessica) matchPairs.push({
+      a: alex.id, b: jessica.id, score: 0.7,
+      reason: 'Jessica\'s product background at Google and interest in AI startups aligns with Alex\'s portfolio focus. Potential talent introduction for portfolio companies.',
+    });
+
+    for (const pair of matchPairs) {
+      await prisma.match.create({
+        data: {
+          userAId: pair.a,
+          userBId: pair.b,
+          score: pair.score,
+          reason: pair.reason,
+          status: 'PROPOSED',
+          userAResponse: 'PENDING',
+          userBResponse: 'PENDING',
+        },
+      });
+    }
+
+    console.log(`  Seeded ${matchPairs.length} matches between users`);
+  } catch (error) {
+    console.error('Match seeding error (non-fatal):', error);
+  }
 }

@@ -17,6 +17,7 @@ const navItems = [
 export default function MobileNav() {
   const [open, setOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -35,6 +36,7 @@ export default function MobileNav() {
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
+      if (toggleRef.current && toggleRef.current.contains(e.target as Node)) return;
       if (drawerRef.current && !drawerRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
@@ -46,8 +48,9 @@ export default function MobileNav() {
   return (
     <>
       <button
+        ref={toggleRef}
         onClick={() => setOpen(!open)}
-        className="md:hidden flex flex-col gap-1.5 p-2 -m-2"
+        className="flex flex-col gap-1.5 p-2 -m-2"
         aria-label="Menu"
       >
         <span className={`block w-5 h-0.5 bg-white/60 transition-all duration-200 ${open ? 'rotate-45 translate-y-2' : ''}`} />

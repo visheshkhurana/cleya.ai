@@ -118,9 +118,9 @@ export default function Home() {
       </nav>
 
       <section className="relative pt-24 sm:pt-32 pb-16 sm:pb-24 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full opacity-20 blur-[150px]" style={{ background: '#6C47FF' }} />
-        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full opacity-10 blur-[120px]" style={{ background: '#4E2FD8' }} />
-        <div className="absolute top-20 left-10 w-[300px] h-[300px] rounded-full opacity-10 blur-[100px]" style={{ background: '#2D1899' }} />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full opacity-20 blur-[150px] pointer-events-none" style={{ background: '#6C47FF' }} />
+        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full opacity-10 blur-[120px] pointer-events-none" style={{ background: '#4E2FD8' }} />
+        <div className="absolute top-20 left-10 w-[300px] h-[300px] rounded-full opacity-10 blur-[100px] pointer-events-none" style={{ background: '#2D1899' }} />
 
         <div className="relative max-w-6xl mx-auto px-6">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
@@ -217,7 +217,7 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-              <div className="absolute -z-10 w-full h-full rounded-full opacity-30 blur-[60px]" style={{ background: 'radial-gradient(circle, #6C47FF 0%, transparent 70%)' }} />
+              <div className="absolute -z-10 w-full h-full rounded-full opacity-30 blur-[60px] pointer-events-none" style={{ background: 'radial-gradient(circle, #6C47FF 0%, transparent 70%)' }} />
             </div>
           </div>
         </div>
