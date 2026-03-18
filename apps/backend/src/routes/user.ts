@@ -67,6 +67,94 @@ userRouter.delete('/account', authenticate, async (req: Request, res: Response, 
   }
 });
 
+userRouter.get('/export', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId;
+    const format = (req.query.format as string) || 'json';
+
+    const [user, profile, matches, messages, notifications, feedbacks] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, email: true, phone: true, role: true, createdAt: true, updatedAt: true, emailVerified: true },
+      }),
+      prisma.profile.findUnique({
+        where: { userId },
+        select: {
+          persona: true, headline: true, bio: true, companyName: true, companyStage: true,
+          currentRole: true, location: true, linkedinUrl: true, websiteUrl: true, phoneNumber: true,
+          yearsExperience: true, industries: true, skills: true, interests: true, lookingFor: true,
+          priority: true, raiseAmount: true, investorType: true, investmentAmount: true,
+          targetRole: true, fundName: true, channelSource: true, completenessScore: true,
+          isComplete: true, createdAt: true, updatedAt: true,
+        },
+      }),
+      prisma.match.findMany({
+        where: { OR: [{ userAId: userId }, { userBId: userId }] },
+        select: {
+          id: true, status: true, score: true, reason: true, createdAt: true,
+          userAId: true, userBId: true, userAResponse: true, userBResponse: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.message.findMany({
+        where: { conversation: { userId } },
+        select: { id: true, sender: true, content: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.notification.findMany({
+        where: { userId },
+        select: { id: true, event: true, title: true, body: true, createdAt: true, readAt: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.matchFeedback.findMany({
+        where: { userId },
+        select: { id: true, matchId: true, rating: true, feedback: true, createdAt: true },
+      }),
+    ]);
+
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      user,
+      profile,
+      matches,
+      messages,
+      notifications,
+      feedbacks,
+    };
+
+    if (format === 'csv') {
+      const lines: string[] = [];
+      lines.push('section,field,value');
+      if (user) {
+        Object.entries(user).forEach(([k, v]) => lines.push(`user,${k},"${String(v ?? '')}"`));
+      }
+      if (profile) {
+        Object.entries(profile).forEach(([k, v]) => {
+          const val = Array.isArray(v) ? v.join('; ') : String(v ?? '');
+          lines.push(`profile,${k},"${val}"`);
+        });
+      }
+      matches.forEach((m, i) => {
+        Object.entries(m).forEach(([k, v]) => lines.push(`match_${i + 1},${k},"${String(v ?? '')}"`));
+      });
+      notifications.forEach((n, i) => {
+        Object.entries(n).forEach(([k, v]) => lines.push(`notification_${i + 1},${k},"${String(v ?? '')}"`));
+      });
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=cleo-data-export.csv');
+      res.send(lines.join('\n'));
+      return;
+    }
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', 'attachment; filename=cleo-data-export.json');
+    res.json({ success: true, data: exportData });
+  } catch (error) {
+    next(error);
+  }
+});
+
 userRouter.get('/settings', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = await prisma.user.findUnique({

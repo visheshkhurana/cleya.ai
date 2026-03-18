@@ -196,11 +196,21 @@ export default function NotificationCenter() {
               <div style={{
                 padding: '40px 20px',
                 textAlign: 'center',
-                color: 'rgba(255,255,255,0.3)',
-                fontSize: '14px',
               }}>
-                <div style={{ fontSize: '32px', marginBottom: '12px' }}>🔔</div>
-                No notifications yet
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '14px',
+                  background: 'rgba(13,148,136,0.1)',
+                  border: '1px solid rgba(13,148,136,0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 12px',
+                  fontSize: '22px',
+                }}>🔔</div>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', fontWeight: 500, marginBottom: '4px' }}>No notifications yet</p>
+                <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '12px', lineHeight: 1.5 }}>Once you get matched, you'll see updates here.</p>
               </div>
             ) : (
               notifications.map(n => (

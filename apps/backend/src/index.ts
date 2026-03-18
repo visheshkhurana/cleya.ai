@@ -48,8 +48,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/api', generalLimiter);
 
+const startTime = Date.now();
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', env: env.NODE_ENV });
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    version: '1.0.0',
+    uptime: Math.floor((Date.now() - startTime) / 1000),
+    env: env.NODE_ENV,
+  });
 });
 
 app.get('/api/csrf-token', csrfTokenProvider);

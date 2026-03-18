@@ -17,6 +17,7 @@ export default function SettingsPage() {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
 
   useEffect(() => {
     const token = api.getToken();
@@ -57,6 +58,16 @@ export default function SettingsPage() {
       router.push('/');
     } catch {
       setDeleteLoading(false);
+    }
+  };
+
+  const handleExportData = async (format: 'json' | 'csv') => {
+    setExportLoading(true);
+    try {
+      await api.exportMyData(format);
+    } catch {
+    } finally {
+      setExportLoading(false);
     }
   };
 
@@ -268,6 +279,58 @@ export default function SettingsPage() {
           >
             Log Out
           </button>
+        </section>
+
+        {/* Export Data */}
+        <section style={{
+          background: '#1a1230',
+          border: '1px solid rgba(255,255,255,0.05)',
+          borderRadius: '16px',
+          padding: '28px',
+          marginBottom: '24px',
+        }}>
+          <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 600, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '20px' }}>📦</span> Export My Data
+          </h2>
+          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '13px', marginBottom: '16px', lineHeight: 1.5 }}>
+            Download all your data including profile, matches, messages, notifications, and feedback. Available in JSON or CSV format.
+          </p>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => handleExportData('json')}
+              disabled={exportLoading}
+              style={{
+                padding: '12px 24px',
+                background: 'linear-gradient(135deg, #0D9488, #0F766E)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                opacity: exportLoading ? 0.5 : 1,
+              }}
+            >
+              {exportLoading ? 'Exporting...' : 'Export as JSON'}
+            </button>
+            <button
+              onClick={() => handleExportData('csv')}
+              disabled={exportLoading}
+              style={{
+                padding: '12px 24px',
+                background: 'rgba(255,255,255,0.05)',
+                color: 'rgba(255,255,255,0.7)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '12px',
+                fontSize: '14px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                opacity: exportLoading ? 0.5 : 1,
+              }}
+            >
+              {exportLoading ? 'Exporting...' : 'Export as CSV'}
+            </button>
+          </div>
         </section>
 
         {/* Danger Zone */}

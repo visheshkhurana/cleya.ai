@@ -224,6 +224,23 @@ class ApiClient {
     return this.fetch('/users/account', { method: 'DELETE' });
   }
 
+  async exportMyData(format: 'json' | 'csv' = 'json') {
+    const token = this.getToken();
+    const res = await fetch(`${API_BASE}/users/export?format=${format}`, {
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), 'x-csrf-token': this.csrfToken || getCookie('cleo_csrf') || '' },
+    });
+    if (!res.ok) throw new Error('Export failed');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cleo-data-export.${format === 'csv' ? 'csv' : 'json'}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   // Admin Analytics
   async getAdminAnalytics() {
     return this.fetch('/admin/analytics');

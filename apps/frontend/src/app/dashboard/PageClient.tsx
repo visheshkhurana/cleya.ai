@@ -278,6 +278,29 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {!profile?.persona && matchStats.total === 0 && (
+          <div className="rounded-2xl border p-6" style={{ background: 'linear-gradient(135deg, rgba(13,148,136,0.08), rgba(15,118,110,0.04))', borderColor: 'rgba(13,148,136,0.2)' }}>
+            <div className="flex items-start gap-4">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
+                style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)', boxShadow: '0 4px 20px rgba(13,148,136,0.3)' }}>
+                C
+              </div>
+              <div className="flex-1">
+                <h2 className="text-lg font-bold text-white mb-1">Welcome to Cleo.ai!</h2>
+                <p className="text-sm text-white/50 mb-4">Start by telling Cleo about yourself. It takes about 2 minutes and helps us find your best connections in India's startup ecosystem.</p>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <button onClick={() => router.push('/chat')}
+                    className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition"
+                    style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
+                    Set Up Your Profile
+                  </button>
+                  <span className="text-xs text-white/30">Takes ~2 minutes</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(26,18,48,0.6)' }}>
           <div className="flex items-start gap-4">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0"
