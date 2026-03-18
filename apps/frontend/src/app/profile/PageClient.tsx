@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import MobileNav from '@/components/MobileNav';
 import PhoneInput, { validatePhone } from '@/components/PhoneInput';
+import { analytics } from '@/lib/posthog';
 
 interface ProfileData {
   persona?: string;
@@ -83,6 +84,7 @@ export default function ProfilePage() {
       const updated = await api.updateProfile(profile);
       setProfile(updated);
       setSaved(true);
+      analytics.profileUpdated(Object.keys(profile));
       setTimeout(() => setSaved(false), 3000);
     } catch (err: any) {
       setError(err.message || 'Failed to save');

@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
 import { api } from '@/lib/api';
+import { analytics, identifyUser } from '@/lib/posthog';
 
 function useInView(ref: React.RefObject<HTMLElement | null>) {
   const [inView, setInView] = useState(false);
@@ -139,9 +140,12 @@ export default function Home() {
           utmCampaign: utmData.utm_campaign,
         });
         localStorage.removeItem('cleo_utm');
+        analytics.signup('email');
         window.location.href = '/chat';
       } else {
         const data = await api.login(email, password);
+        identifyUser(data.user?.id || '', { email });
+        analytics.login('email');
         const profile = await api.getProfile().catch(() => null);
         if (data.user?.role === 'ADMIN') {
           window.location.href = '/admin';

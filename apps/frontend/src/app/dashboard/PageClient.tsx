@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import NotificationCenter from '@/components/NotificationCenter';
 import MobileNav from '@/components/MobileNav';
+import { analytics, identifyUser } from '@/lib/posthog';
 
 interface UserProfile {
   persona?: string;
@@ -82,6 +83,10 @@ export default function DashboardPage() {
       setMatchStats(stats);
       const matchArr = Array.isArray(matches) ? matches : [];
       setRecentMatches(matchArr.slice(0, 5));
+      if (userData?.id) {
+        identifyUser(userData.id, { email: userData.email, persona: profileData?.persona });
+      }
+      analytics.pageViewed('dashboard');
     } catch (err: any) {
       console.error('Dashboard load failed:', err);
       if (err.message?.includes('Unauthorized') || err.message?.includes('token')) {

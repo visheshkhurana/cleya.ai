@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import NotificationCenter from '@/components/NotificationCenter';
 import MobileNav from '@/components/MobileNav';
+import { analytics } from '@/lib/posthog';
 
 interface MatchData {
   id: string;
@@ -80,6 +81,8 @@ export default function MatchesPage() {
     setResponding(matchId);
     try {
       await api.respondToMatch(matchId, response);
+      if (response === 'ACCEPTED') analytics.matchAccepted(matchId);
+      else analytics.matchDeclined(matchId);
       setFeedbackPrompt({ matchId, rating: 0, text: '', action: response });
       await loadData();
     } catch (err) {

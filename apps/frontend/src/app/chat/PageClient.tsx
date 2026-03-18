@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
+import { analytics } from '@/lib/posthog';
 import { ChatBubble } from '@/components/chat/ChatBubble';
 import { ChoiceButtons } from '@/components/chat/ChoiceButtons';
 import { DynamicForm } from '@/components/forms/DynamicForm';
@@ -156,6 +157,7 @@ export default function ChatPage() {
         }
         if (data.node.metadata?.action === 'complete_onboarding' || data.node.next === null) {
           localStorage.removeItem(CHAT_STORAGE_KEY);
+          analytics.onboardingCompleted(data.node.metadata?.persona || 'unknown');
           setTimeout(() => {
             window.location.href = '/dashboard';
           }, 3000);

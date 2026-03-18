@@ -31,7 +31,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https:",
-              "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com",
+              "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com https://us.i.posthog.com https://us.posthog.com",
               "frame-ancestors 'none'",
             ].join('; '),
           },

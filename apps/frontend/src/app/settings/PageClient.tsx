@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import MobileNav from '@/components/MobileNav';
+import { resetUser } from '@/lib/posthog';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -59,6 +60,7 @@ export default function SettingsPage() {
   };
 
   const handleLogout = () => {
+    resetUser();
     api.clearToken();
     router.push('/');
   };
