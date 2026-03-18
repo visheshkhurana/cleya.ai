@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import MobileNav from '@/components/MobileNav';
-import PhoneInput from '@/components/PhoneInput';
+import PhoneInput, { validatePhone } from '@/components/PhoneInput';
 
 interface ProfileData {
   persona?: string;
@@ -75,6 +75,10 @@ export default function ProfilePage() {
     setSaving(true);
     setError('');
     setSaved(false);
+    if (profile.phoneNumber) {
+      const phoneErr = validatePhone(profile.phoneNumber);
+      if (phoneErr) { setError(phoneErr); setSaving(false); return; }
+    }
     try {
       const updated = await api.updateProfile(profile);
       setProfile(updated);

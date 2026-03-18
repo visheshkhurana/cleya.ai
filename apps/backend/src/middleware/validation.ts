@@ -59,10 +59,33 @@ const websiteUrlSchema = z.string()
   .optional()
   .or(z.literal(''));
 
+const phoneValidationRules: Record<string, number | [number, number]> = {
+  '+91': 10, '+1': 10, '+44': 10, '+971': [7, 9], '+65': 8, '+61': 9,
+  '+49': [7, 12], '+33': 9, '+81': [9, 10], '+82': [9, 10], '+86': 11,
+  '+55': [10, 11], '+972': [7, 9], '+31': 9, '+46': [7, 9], '+41': 9,
+  '+62': [9, 12], '+60': [9, 10], '+63': 10, '+66': 9, '+84': [9, 10],
+  '+27': 9, '+234': [7, 8], '+254': 9, '+52': 10, '+54': 10, '+57': 10,
+  '+56': 9, '+64': [8, 10], '+353': [7, 9], '+92': 10, '+880': 10,
+  '+94': 9, '+977': 10,
+};
+
+function validatePhoneNumber(val: string): boolean {
+  if (!val) return true;
+  const cleaned = val.replace(/[\s\-]/g, '');
+  if (!cleaned.startsWith('+')) return false;
+  const dialCodes = Object.keys(phoneValidationRules).sort((a, b) => b.length - a.length);
+  const matched = dialCodes.find(code => cleaned.startsWith(code));
+  if (!matched) return /^\+\d{7,15}$/.test(cleaned);
+  const localDigits = cleaned.slice(matched.length).replace(/\D/g, '');
+  const rule = phoneValidationRules[matched];
+  if (typeof rule === 'number') return localDigits.length === rule;
+  return localDigits.length >= rule[0] && localDigits.length <= rule[1];
+}
+
 const phoneSchema = z.string()
   .refine(
-    val => !val || /^[+]?[\d\s\-().]{7,20}$/.test(val),
-    { message: 'Invalid phone number format' }
+    val => !val || validatePhoneNumber(val),
+    { message: 'Invalid phone number. For India (+91), enter exactly 10 digits after the country code.' }
   )
   .optional()
   .or(z.literal(''));

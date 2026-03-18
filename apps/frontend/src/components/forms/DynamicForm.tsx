@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import PhoneInput from '@/components/PhoneInput';
+import PhoneInput, { validatePhone } from '@/components/PhoneInput';
 
 interface FormField {
   name: string;
@@ -43,6 +43,10 @@ export function DynamicForm({ fields, onSubmit, disabled }: DynamicFormProps) {
       if (!val) continue;
       if (field.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) newErrors[field.name] = 'Invalid email';
       if (field.type === 'url') { try { new URL(val); } catch { newErrors[field.name] = 'Invalid URL'; } }
+      if (field.type === 'phone' && val) {
+        const phoneErr = validatePhone(val);
+        if (phoneErr) newErrors[field.name] = phoneErr;
+      }
       if (field.validation?.max && typeof val === 'string' && val.length > field.validation.max)
         newErrors[field.name] = `Max ${field.validation.max} characters`;
     }
