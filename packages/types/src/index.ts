@@ -156,7 +156,11 @@ export interface MatchScore {
     industryMatch: number;
     interestMatch: number;
     locationMatch: number;
+    skillMatch: number;
+    founderContextMatch: number;
+    intentScore: number;
     semanticSimilarity: number;
+    [key: string]: number;
   };
 }
 
