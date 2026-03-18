@@ -192,32 +192,35 @@ export default function DashboardPage() {
             </div>
             <h1 className="font-semibold text-white text-sm">Cleo.ai</h1>
           </div>
-          <div className="hidden md:flex items-center gap-2">
-            <button onClick={() => router.push('/matches')}
-              className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-white/50 hover:text-white/80 hover:border-white/20 transition">
-              Matches {matchStats.pending > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-purple-500 text-white">{matchStats.pending}</span>}
-            </button>
-            <button onClick={() => router.push('/chat')}
-              className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-white/50 hover:text-white/80 hover:border-white/20 transition">
-              Chat
-            </button>
-            <button onClick={() => router.push('/profile')}
-              className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-white/50 hover:text-white/80 hover:border-white/20 transition">
-              Profile
-            </button>
-            <button onClick={() => router.push('/settings')}
-              className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-white/50 hover:text-white/80 hover:border-white/20 transition">
-              Settings
-            </button>
+          <div className="flex items-center gap-2">
+            <div className="hidden md:flex items-center gap-2">
+              <button onClick={() => router.push('/matches')}
+                className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-white/50 hover:text-white/80 hover:border-white/20 transition">
+                Matches {matchStats.pending > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-purple-500 text-white">{matchStats.pending}</span>}
+              </button>
+              <button onClick={() => router.push('/chat')}
+                className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-white/50 hover:text-white/80 hover:border-white/20 transition">
+                Chat
+              </button>
+              <button onClick={() => router.push('/profile')}
+                className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-white/50 hover:text-white/80 hover:border-white/20 transition">
+                Profile
+              </button>
+              <button onClick={() => router.push('/settings')}
+                className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-white/50 hover:text-white/80 hover:border-white/20 transition">
+                Settings
+              </button>
+            </div>
             <NotificationCenter />
-            <button onClick={() => { api.clearToken(); router.push('/'); }}
-              className="text-xs text-white/30 hover:text-white/60 transition px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20">
-              Sign out
-            </button>
-          </div>
-          <div className="flex md:hidden items-center gap-2">
-            <NotificationCenter />
-            <MobileNav />
+            <div className="hidden md:flex items-center">
+              <button onClick={() => { api.clearToken(); router.push('/'); }}
+                className="text-xs text-white/30 hover:text-white/60 transition px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20">
+                Sign out
+              </button>
+            </div>
+            <div className="flex md:hidden items-center">
+              <MobileNav />
+            </div>
           </div>
         </div>
       </header>

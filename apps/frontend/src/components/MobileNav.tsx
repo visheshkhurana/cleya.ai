@@ -3,8 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { api } from '@/lib/api';
-import NotificationCenter from './NotificationCenter';
-
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: '📊' },
   { href: '/matches', label: 'Matches', icon: '🤝' },
@@ -72,7 +70,6 @@ export default function MobileNav() {
                 <span className="text-white font-semibold text-sm">Cleo.ai</span>
               </div>
               <div className="flex items-center gap-2">
-                <NotificationCenter />
                 <button onClick={() => setOpen(false)} className="text-white/40 hover:text-white/70 transition p-1">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M18 6L6 18M6 6l12 12" />
