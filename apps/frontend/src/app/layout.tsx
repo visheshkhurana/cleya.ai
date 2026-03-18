@@ -3,6 +3,7 @@ import { DM_Sans, Playfair_Display } from 'next/font/google';
 import './globals.css';
 import PostHogProvider from '@/components/PostHogProvider';
 import SentryProvider from '@/components/SentryProvider';
+import CookieConsent from '@/components/CookieConsent';
 
 const dmSans = DM_Sans({
   subsets: ['latin'],
@@ -67,6 +68,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SentryProvider>
           <PostHogProvider>
             <main id="main-content" tabIndex={-1} style={{ outline: 'none' }}>{children}</main>
+            <CookieConsent />
           </PostHogProvider>
         </SentryProvider>
       </body>
