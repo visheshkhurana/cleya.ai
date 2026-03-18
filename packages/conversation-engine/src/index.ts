@@ -205,3 +205,6 @@ function evaluateCondition(fieldValue: any, operator: string, compareValue: any)
 
 // Export the engine singleton
 export const engine = new ConversationEngine();
+
+// Re-export flows
+export { onboardingFlow } from './flows/onboarding';

@@ -1,6 +1,6 @@
 import { prisma } from '@boardy/db';
 import { ConversationEngine } from '@boardy/conversation-engine';
-import { onboardingFlow } from '@boardy/conversation-engine/src/flows/onboarding';
+import { onboardingFlow } from '@boardy/conversation-engine';
 import { createAIService, AIService } from '@boardy/ai';
 import { FlowNode } from '@boardy/types';
 import { sendToUser } from '../websocket/server';
