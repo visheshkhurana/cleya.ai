@@ -28,8 +28,8 @@ const config: Config = {
         muted: '#A09FB5',
       },
       fontFamily: {
-        sans: ['DM Sans', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-        display: ['Playfair Display', 'Georgia', 'serif'],
+        sans: ['var(--font-dm-sans)', 'DM Sans', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        display: ['var(--font-playfair)', 'Playfair Display', 'Georgia', 'serif'],
       },
       backgroundImage: {
         'boardy-gradient': 'linear-gradient(135deg, #0B0918 0%, #13112A 50%, #0B0918 100%)',
