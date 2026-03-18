@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { DM_Sans, Playfair_Display } from 'next/font/google';
 import './globals.css';
 import PostHogProvider from '@/components/PostHogProvider';
+import SentryProvider from '@/components/SentryProvider';
 
 const dmSans = DM_Sans({
   subsets: ['latin'],
@@ -62,7 +63,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${dmSans.variable} ${playfairDisplay.variable}`} suppressHydrationWarning>
       <body className="min-h-screen" suppressHydrationWarning>
-        <PostHogProvider>{children}</PostHogProvider>
+        <SentryProvider>
+          <PostHogProvider>{children}</PostHogProvider>
+        </SentryProvider>
       </body>
     </html>
   );

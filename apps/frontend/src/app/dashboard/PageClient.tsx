@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import NotificationCenter from '@/components/NotificationCenter';
 import MobileNav from '@/components/MobileNav';
 import { analytics, identifyUser } from '@/lib/posthog';
+import { setUser as setSentryUser } from '@/lib/sentry';
 
 interface UserProfile {
   persona?: string;
@@ -85,6 +86,7 @@ export default function DashboardPage() {
       setRecentMatches(matchArr.slice(0, 5));
       if (userData?.id) {
         identifyUser(userData.id, { email: userData.email, persona: profileData?.persona });
+        setSentryUser({ id: userData.id, email: userData.email });
       }
       analytics.pageView('dashboard');
     } catch (err: any) {

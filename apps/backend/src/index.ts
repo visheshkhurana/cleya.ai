@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -5,6 +6,14 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
 import { env } from './config/env';
+
+if (env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: env.SENTRY_DSN,
+    environment: env.NODE_ENV,
+    tracesSampleRate: env.NODE_ENV === 'production' ? 0.2 : 1.0,
+  });
+}
 import { errorHandler } from './middleware/errorHandler';
 import { setupWebSocket } from './websocket/server';
 import { seedDatabase } from './seed';

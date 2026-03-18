@@ -1,4 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
+import * as Sentry from '@sentry/node';
+import { env } from '../config/env';
 
 export class AppError extends Error {
   constructor(
@@ -13,7 +15,7 @@ export class AppError extends Error {
 
 export function errorHandler(
   err: Error,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction
 ) {
@@ -27,6 +29,16 @@ export function errorHandler(
   }
 
   console.error('Unhandled error:', err);
+
+  if (env.SENTRY_DSN) {
+    Sentry.captureException(err, {
+      extra: {
+        method: req.method,
+        url: req.originalUrl,
+        userId: (req as any).user?.userId,
+      },
+    });
+  }
 
   res.status(500).json({
     error: {

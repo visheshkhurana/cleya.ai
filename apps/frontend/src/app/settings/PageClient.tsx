@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import MobileNav from '@/components/MobileNav';
 import { resetUser } from '@/lib/posthog';
+import { setUser as setSentryUser } from '@/lib/sentry';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -61,6 +62,7 @@ export default function SettingsPage() {
 
   const handleLogout = () => {
     resetUser();
+    setSentryUser(null);
     api.clearToken();
     router.push('/');
   };

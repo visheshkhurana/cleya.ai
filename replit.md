@@ -194,7 +194,8 @@ Six persona types with tailored onboarding flows:
 22. **UTM Attribution** — Landing page captures utm_source/utm_medium/utm_campaign/utm_content/utm_term from URL params into localStorage; on signup, utmSource/utmMedium/utmCampaign are saved to User model in DB
 23. **Channel Attribution** — Onboarding "How did you hear about us?" with 9 options (LinkedIn, Twitter/X, WhatsApp Group, Friend Referral, Event The Pitch, Angel Network, VC Newsletter, Google Search, Other); stored as channelSource on Profile; breakdown chart in admin analytics
 24. **International Phone Input** — Custom PhoneInput component with country flag + dial code dropdown (36 countries, default India +91); integrated in onboarding common_details form, profile edit page, and admin trigger modal
-25. **PostHog Analytics** — Optional analytics loaded from CDN (`https://us.i.posthog.com/static/array.js`) via `NEXT_PUBLIC_POSTHOG_KEY` env var; silently skips if not set; tracks signup, login, onboarding completion, profile updates, match accept/decline, page views; identifies users; resets on logout; CSP allows posthog.com; no npm dependency
+25. **PostHog Analytics** — Optional analytics loaded from CDN (`https://us.i.posthog.com/static/array.js`) via `NEXT_PUBLIC_POSTHOG_KEY` env var; silently skips if not set; tracks signup_completed, onboarding_started, onboarding_completed, match_proposed, match_accepted, match_rejected, profile_updated, page_view; identifies users; resets on logout; CSP allows posthog.com; no npm dependency
+26. **Sentry Error Monitoring** — Optional error tracking; backend uses `@sentry/node` via `SENTRY_DSN` env var, frontend loads from CDN (`browser.sentry-cdn.com`) via `NEXT_PUBLIC_SENTRY_DSN`; silently skips if not set; captures unhandled errors/rejections, identifies users, clears on logout; error handler sends exceptions with request context; CSP allows sentry-cdn.com and *.sentry.io
 
 ### Vector-Based AI Matching (pgvector)
 - **Hybrid matching pipeline**: pgvector cosine similarity → rule-based + intent scoring → ranked results
@@ -216,8 +217,10 @@ Six persona types with tailored onboarding flows:
 - `apps/frontend/src/app/settings/page.tsx` — Settings page
 - `apps/frontend/src/components/NotificationCenter.tsx` — Bell icon notification dropdown
 - `apps/frontend/src/components/PhoneInput.tsx` — International phone input with country selector (36 countries, default India)
-- `apps/frontend/src/lib/posthog.ts` — PostHog analytics utility (init, identify, track, reset; no-ops if no key)
-- `apps/frontend/src/components/PostHogProvider.tsx` — PostHog provider with pageview tracking
+- `apps/frontend/src/lib/posthog.ts` — PostHog analytics utility (identify, track, reset; no-ops if no key)
+- `apps/frontend/src/lib/sentry.ts` — Sentry error capture utility (captureException, setUser; no-ops if no DSN)
+- `apps/frontend/src/components/PostHogProvider.tsx` — PostHog CDN loader + pageview tracking
+- `apps/frontend/src/components/SentryProvider.tsx` — Sentry CDN loader + global error handlers
 - `apps/frontend/src/lib/api.ts` — API client (relative `/api` path, token as `cleo_token`)
 - `packages/matching/src/index.ts` — Enhanced matching engine with persona context matching
 - `packages/api/src/services/matching.ts` — Shared matching API services
