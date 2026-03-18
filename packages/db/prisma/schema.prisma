@@ -45,6 +45,7 @@ model User {
   matchFeedbacks MatchFeedback[]
   introductionsAsA IntroductionRecord[] @relation("IntroUserA")
   introductionsAsB IntroductionRecord[] @relation("IntroUserB")
+  communicationPreference CommunicationPreference?
 
   @@index([email])
   @@index([phone])
@@ -120,6 +121,9 @@ model Profile {
 
   // Polymorphic extension data (any additional persona-specific fields)
   extraData        Json?        @db.JsonB
+
+  // AI matching — pgvector embedding
+  profileEmbedding Unsupported("vector(1536)")?
 
   // Computed
   completenessScore Float       @default(0)
@@ -586,4 +590,33 @@ enum EventParticipantStatus {
   WAITLISTED
   CANCELLED
   ATTENDED
+}
+
+// ─────────────────────────────────────────────
+// COMMUNICATION PREFERENCES
+// ─────────────────────────────────────────────
+
+model CommunicationPreference {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  emailEnabled    Boolean  @default(true)
+  smsEnabled      Boolean  @default(false)
+  whatsappEnabled Boolean  @default(false)
+  inAppEnabled    Boolean  @default(true)
+
+  matchNotify     Boolean  @default(true)
+  introNotify     Boolean  @default(true)
+  weeklyDigest    Boolean  @default(true)
+  marketingEmails Boolean  @default(false)
+
+  quietHoursStart String?
+  quietHoursEnd   String?
+  timezone        String?  @default("Asia/Kolkata")
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("communication_preferences")
 }

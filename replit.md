@@ -54,14 +54,11 @@ All frontend pages use a server/client wrapper pattern for build compatibility:
 `apps/frontend/next.config.js` has rewrites proxying `/api/*` → `http://localhost:3001/api/*` so the browser can reach the backend through the Next.js dev server.
 
 ## Database
+- Schema: 15 models — User, Profile (with pgvector `profileEmbedding`), Conversation, Message, Match, MatchFeedback, IntroductionRecord, DealTracking, Event, EventParticipant, Notification, Call, MessageRecord, UserEmbedding, CommunicationPreference
+- pgvector extension enabled for semantic similarity search
 - Schema pushed via `prisma db push`
-- Seeded with `npx tsx packages/db/src/seed.ts`
-- Seed data: admin + 5 sample persona users
-- To re-seed: `npx tsx packages/db/src/seed.ts`
-
-## Seed Users
-- `admin@cleo.ai` / `admin123456` (ADMIN role)
-- Sample/test users have been removed from production. The backend auto-seed only creates the admin user on empty databases.
+- Seed: `npx ts-node packages/db/src/seed.ts` — idempotent, skips existing emails
+- Seed data: 1 admin + 20 Indian startup ecosystem profiles (6 Founders, 4 Investors, 3 Talent, 3 Deal Partners, 2 Venture Partners, 2 Event Participants)
 - To clean seed data: `npx tsx packages/db/src/clean-seed.ts`
 
 ## Phase 1: Multi-Persona Onboarding
