@@ -483,8 +483,8 @@ export default function Home() {
                 cta: 'I\'m looking for a role →',
               },
             ].map((persona, i) => (
-              <div key={i}
-                className="rounded-2xl border border-white/[0.06] p-8 group hover:border-boardy-400/20 transition-all duration-300 cursor-pointer"
+              <button key={i}
+                className="rounded-2xl border border-white/[0.06] p-8 group hover:border-boardy-400/20 transition-all duration-300 cursor-pointer text-left"
                 style={{ background: '#13112A' }}
                 onClick={() => { setShowAuth(true); setMode('signup'); }}
               >
@@ -498,7 +498,7 @@ export default function Home() {
                 <span className="inline-flex items-center text-sm font-medium text-white/70 group-hover:text-white transition-colors">
                   {persona.cta}
                 </span>
-              </div>
+              </button>
             ))}
           </div>
         </div>
