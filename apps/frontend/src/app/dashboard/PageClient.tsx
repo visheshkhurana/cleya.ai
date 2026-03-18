@@ -129,10 +129,31 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0D0B1A' }}>
-        <div className="flex items-center gap-3">
-          <div className="w-5 h-5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
-          <p className="text-purple-300/60 text-sm">Loading dashboard...</p>
+      <div className="min-h-screen" style={{ background: '#0D0B1A' }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-12">
+          <div className="h-8 w-48 rounded-lg animate-pulse mb-6" style={{ background: 'rgba(255,255,255,0.05)' }} />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            {[1,2,3].map(i => (
+              <div key={i} className="rounded-2xl p-6 border border-white/5 animate-pulse" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                <div className="h-4 w-20 rounded mb-3" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                <div className="h-8 w-16 rounded" style={{ background: 'rgba(255,255,255,0.08)' }} />
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 rounded-2xl p-6 border border-white/5 animate-pulse" style={{ background: 'rgba(255,255,255,0.03)' }}>
+              <div className="h-5 w-32 rounded mb-4" style={{ background: 'rgba(255,255,255,0.06)' }} />
+              <div className="space-y-3">
+                {[1,2,3].map(i => <div key={i} className="h-20 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }} />)}
+              </div>
+            </div>
+            <div className="rounded-2xl p-6 border border-white/5 animate-pulse" style={{ background: 'rgba(255,255,255,0.03)' }}>
+              <div className="h-5 w-24 rounded mb-4" style={{ background: 'rgba(255,255,255,0.06)' }} />
+              <div className="space-y-3">
+                {[1,2,3,4].map(i => <div key={i} className="h-10 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)' }} />)}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

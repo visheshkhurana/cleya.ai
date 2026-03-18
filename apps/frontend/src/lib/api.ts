@@ -276,6 +276,31 @@ class ApiClient {
       body: JSON.stringify(data),
     });
   }
+
+  async forgotPassword(email: string) {
+    return this.fetch('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async resetPassword(token: string, password: string) {
+    return this.fetch('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    });
+  }
+
+  async sendVerificationEmail() {
+    return this.fetch('/auth/send-verification', { method: 'POST' });
+  }
+
+  async verifyEmail(token: string) {
+    return this.fetch('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+  }
 }
 
 export const api = new ApiClient();

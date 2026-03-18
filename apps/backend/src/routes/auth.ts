@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { z } from 'zod';
 import { authService } from '../services/authService';
 import { authenticate } from '../middleware/auth';
-import { signupLimiter, loginLimiter } from '../middleware/rateLimit';
+import { signupLimiter, loginLimiter, passwordResetLimiter } from '../middleware/rateLimit';
 import { emailService } from '../services/email';
 import { env } from '../config/env';
 
@@ -139,4 +139,84 @@ authRouter.get('/google/status', (_req: Request, res: Response) => {
     success: true,
     data: { enabled: !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) },
   });
+});
+
+const resetTokens = new Map<string, { email: string; createdAt: number }>();
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, val] of resetTokens) {
+    if (now - val.createdAt > 30 * 60 * 1000) resetTokens.delete(key);
+  }
+}, 60 * 1000);
+
+const verifyTokens = new Map<string, { userId: string; createdAt: number }>();
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, val] of verifyTokens) {
+    if (now - val.createdAt > 24 * 60 * 60 * 1000) verifyTokens.delete(key);
+  }
+}, 5 * 60 * 1000);
+
+authRouter.post('/forgot-password', passwordResetLimiter, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email } = z.object({ email: z.string().email() }).parse(req.body);
+    const user = await authService.findUserByEmail(email);
+    if (user) {
+      const token = crypto.randomBytes(32).toString('hex');
+      resetTokens.set(token, { email, createdAt: Date.now() });
+      emailService.sendPasswordReset(email, token).catch(() => {});
+    }
+    res.json({ success: true, message: 'If an account exists with that email, a reset link has been sent.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+authRouter.post('/reset-password', passwordResetLimiter, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { token, password } = z.object({
+      token: z.string(),
+      password: z.string().min(8),
+    }).parse(req.body);
+
+    const entry = resetTokens.get(token);
+    if (!entry || Date.now() - entry.createdAt > 30 * 60 * 1000) {
+      res.status(400).json({ success: false, error: { message: 'Invalid or expired reset token', code: 'INVALID_TOKEN' } });
+      return;
+    }
+
+    await authService.resetPassword(entry.email, password);
+    resetTokens.delete(token);
+    res.json({ success: true, message: 'Password has been reset successfully.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+authRouter.post('/send-verification', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = await authService.getMe(req.user!.userId);
+    const token = crypto.randomBytes(32).toString('hex');
+    verifyTokens.set(token, { userId: req.user!.userId, createdAt: Date.now() });
+    emailService.sendEmailVerification(user.email, token).catch(() => {});
+    res.json({ success: true, message: 'Verification email sent.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+authRouter.post('/verify-email', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { token } = z.object({ token: z.string() }).parse(req.body);
+    const entry = verifyTokens.get(token);
+    if (!entry || Date.now() - entry.createdAt > 24 * 60 * 60 * 1000) {
+      res.status(400).json({ success: false, error: { message: 'Invalid or expired verification token', code: 'INVALID_TOKEN' } });
+      return;
+    }
+    await authService.verifyEmail(entry.userId);
+    verifyTokens.delete(token);
+    res.json({ success: true, message: 'Email verified successfully.' });
+  } catch (error) {
+    next(error);
+  }
 });

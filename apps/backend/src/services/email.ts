@@ -134,6 +134,54 @@ class EmailService {
     await this.send(email, `You matched with ${matchName}!`, html);
   }
 
+  async sendPasswordReset(email: string, token: string) {
+    const resetUrl = `${env.FRONTEND_URL}/reset-password?token=${token}`;
+    const html = emailLayout(`
+      <h1 style="color:#fff;font-size:24px;margin:0 0 16px;">Reset Your Password</h1>
+      <p style="color:rgba(255,255,255,0.6);font-size:15px;line-height:1.6;margin:0 0 24px;">
+        We received a request to reset your password. Click the button below to create a new password. This link expires in 30 minutes.
+      </p>
+      <div style="text-align:center;margin:32px 0;">
+        ${btn('Reset Password →', resetUrl)}
+      </div>
+      <p style="color:rgba(255,255,255,0.3);font-size:12px;line-height:1.6;margin:0;">
+        If you didn't request this reset, you can safely ignore this email. Your password will remain unchanged.
+      </p>
+    `);
+    await this.send(email, 'Reset Your Cleo.ai Password', html);
+  }
+
+  async sendEmailVerification(email: string, token: string) {
+    const verifyUrl = `${env.FRONTEND_URL}/verify-email?token=${token}`;
+    const html = emailLayout(`
+      <h1 style="color:#fff;font-size:24px;margin:0 0 16px;">Verify Your Email</h1>
+      <p style="color:rgba(255,255,255,0.6);font-size:15px;line-height:1.6;margin:0 0 24px;">
+        Please verify your email address to complete your Cleo.ai account setup and unlock all features.
+      </p>
+      <div style="text-align:center;margin:32px 0;">
+        ${btn('Verify Email →', verifyUrl)}
+      </div>
+      <p style="color:rgba(255,255,255,0.3);font-size:12px;line-height:1.6;margin:0;">
+        This link expires in 24 hours. If you didn't create a Cleo.ai account, please ignore this email.
+      </p>
+    `);
+    await this.send(email, 'Verify Your Cleo.ai Email', html);
+  }
+
+  async sendNewMatch(email: string, matchName: string, matchScore: number) {
+    const scorePercent = Math.round(matchScore * 100);
+    const html = emailLayout(`
+      <h1 style="color:#fff;font-size:24px;margin:0 0 16px;">You Have a New Match! 🎯</h1>
+      <p style="color:rgba(255,255,255,0.6);font-size:15px;line-height:1.6;margin:0 0 24px;">
+        Cleo found a new connection for you — <strong style="color:#fff;">${matchName}</strong> with a <strong style="color:#6ee7b7;">${scorePercent}%</strong> compatibility score.
+      </p>
+      <div style="text-align:center;margin:32px 0;">
+        ${btn('Review Match →', `${env.FRONTEND_URL}/matches`)}
+      </div>
+    `);
+    await this.send(email, `New Match: ${matchName} (${scorePercent}%)`, html);
+  }
+
   async sendWeeklyDigest(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },

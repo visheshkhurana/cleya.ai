@@ -46,6 +46,11 @@ export default function Home() {
   const [checking, setChecking] = useState(true);
   const [googleEnabled, setGoogleEnabled] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [consent, setConsent] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSent, setForgotSent] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 80);
@@ -90,9 +95,23 @@ export default function Home() {
     }
   }, []);
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotLoading(true);
+    try {
+      await api.forgotPassword(forgotEmail);
+      setForgotSent(true);
+    } catch {}
+    setForgotLoading(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    if (mode === 'signup' && !consent) {
+      setError('Please agree to the Terms of Service and Privacy Policy');
+      return;
+    }
     setLoading(true);
     try {
       if (mode === 'signup') {
@@ -523,8 +542,12 @@ export default function Home() {
               <span className="text-white font-semibold text-sm">Cleo.ai</span>
             </div>
             <div className="flex items-center gap-6">
-              {['About', 'Privacy', 'Terms', 'Blog', 'Contact'].map((link) => (
-                <span key={link} className="text-xs cursor-pointer transition-colors hover:text-white/60" style={{ color: '#A09FB5' }}>{link}</span>
+              {[
+                { label: 'Privacy', href: '/privacy' },
+                { label: 'Terms', href: '/terms' },
+                { label: 'Contact', href: 'mailto:hello@cleo.ai' },
+              ].map((link) => (
+                <a key={link.label} href={link.href} className="text-xs transition-colors hover:text-white/60" style={{ color: '#A09FB5' }}>{link.label}</a>
               ))}
             </div>
             <p className="text-xs" style={{ color: 'rgba(255,255,255,0.2)' }}>
@@ -575,57 +598,87 @@ export default function Home() {
                   style={mode === 'login' ? { background: '#6D28D9' } : {}}>Log In</button>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#A09FB5' }}>Email</label>
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com" required className="input-dark" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#A09FB5' }}>Password</label>
-                  <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                    placeholder={mode === 'signup' ? 'Min 8 characters' : 'Your password'} required
-                    minLength={mode === 'signup' ? 8 : undefined} className="input-dark" />
-                </div>
-                {error && (
-                  <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">{error}</p>
-                )}
-                <button type="submit" disabled={loading} className="btn-primary mt-2">
-                  {loading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Loading...
-                    </span>
-                  ) : mode === 'signup' ? 'Get Started →' : 'Log In →'}
-                </button>
-              </form>
-
-              {googleEnabled && (
-                <>
-                  <div className="flex items-center gap-3 my-4">
-                    <div className="flex-1 h-px bg-white/[0.06]" />
-                    <span className="text-xs" style={{ color: '#A09FB5' }}>or</span>
-                    <div className="flex-1 h-px bg-white/[0.06]" />
+              {showForgotPassword ? (
+                forgotSent ? (
+                  <div className="text-center py-4">
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3" style={{ background: 'rgba(16,185,129,0.1)' }}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2"><path d="M20 6L9 17l-5-5" /></svg>
+                    </div>
+                    <p className="text-white text-sm font-medium mb-1">Check your email</p>
+                    <p className="text-xs mb-4" style={{ color: '#A09FB5' }}>If an account exists with that email, we sent a reset link.</p>
+                    <button type="button" onClick={() => { setShowForgotPassword(false); setForgotSent(false); }} className="text-xs font-medium" style={{ color: '#8B5CF6' }}>Back to Login</button>
                   </div>
-                  <a href="/api/auth/google"
-                    className="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-white/10 text-white/70 text-sm font-medium hover:bg-white/5 hover:border-white/20 transition">
-                    <svg width="18" height="18" viewBox="0 0 24 24">
-                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
-                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                    </svg>
-                    Continue with Google
-                  </a>
+                ) : (
+                  <form onSubmit={handleForgotPassword} className="space-y-4">
+                    <p className="text-sm mb-1" style={{ color: '#A09FB5' }}>Enter your email and we&apos;ll send you a reset link.</p>
+                    <div>
+                      <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#A09FB5' }}>Email</label>
+                      <input type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} placeholder="you@example.com" required className="input-dark" />
+                    </div>
+                    <button type="submit" disabled={forgotLoading} className="btn-primary">{forgotLoading ? 'Sending...' : 'Send Reset Link'}</button>
+                    <button type="button" onClick={() => setShowForgotPassword(false)} className="w-full text-xs text-center font-medium" style={{ color: '#8B5CF6' }}>Back to Login</button>
+                  </form>
+                )
+              ) : (
+                <>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#A09FB5' }}>Email</label>
+                      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@example.com" required className="input-dark" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#A09FB5' }}>Password</label>
+                      <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+                        placeholder={mode === 'signup' ? 'Min 8 characters' : 'Your password'} required
+                        minLength={mode === 'signup' ? 8 : undefined} className="input-dark" />
+                    </div>
+                    {mode === 'login' && (
+                      <button type="button" onClick={() => setShowForgotPassword(true)} className="text-xs font-medium" style={{ color: '#8B5CF6' }}>Forgot password?</button>
+                    )}
+                    {mode === 'signup' && (
+                      <label className="flex items-start gap-2 cursor-pointer">
+                        <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} className="mt-0.5 rounded border-white/20 bg-white/5 accent-purple-600" />
+                        <span className="text-xs leading-relaxed" style={{ color: '#A09FB5' }}>
+                          I agree to the <a href="/terms" target="_blank" className="underline" style={{ color: '#8B5CF6' }}>Terms of Service</a> and <a href="/privacy" target="_blank" className="underline" style={{ color: '#8B5CF6' }}>Privacy Policy</a>
+                        </span>
+                      </label>
+                    )}
+                    {error && (
+                      <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">{error}</p>
+                    )}
+                    <button type="submit" disabled={loading} className="btn-primary mt-2">
+                      {loading ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Loading...
+                        </span>
+                      ) : mode === 'signup' ? 'Get Started →' : 'Log In →'}
+                    </button>
+                  </form>
+
+                  {googleEnabled && (
+                    <>
+                      <div className="flex items-center gap-3 my-4">
+                        <div className="flex-1 h-px bg-white/[0.06]" />
+                        <span className="text-xs" style={{ color: '#A09FB5' }}>or</span>
+                        <div className="flex-1 h-px bg-white/[0.06]" />
+                      </div>
+                      <a href="/api/auth/google"
+                        className="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-white/10 text-white/70 text-sm font-medium hover:bg-white/5 hover:border-white/20 transition">
+                        <svg width="18" height="18" viewBox="0 0 24 24">
+                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
+                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                        </svg>
+                        Continue with Google
+                      </a>
+                    </>
+                  )}
                 </>
               )}
             </div>
-
-            <p className="text-center text-xs mt-6" style={{ color: 'rgba(255,255,255,0.2)' }}>
-              By continuing, you agree to Cleo.ai&apos;s{' '}
-              <span className="cursor-pointer hover:text-white/50 transition" style={{ color: '#6D28D9' }}>Terms</span> and{' '}
-              <span className="cursor-pointer hover:text-white/50 transition" style={{ color: '#6D28D9' }}>Privacy Policy</span>.
-            </p>
           </div>
         </div>
       )}

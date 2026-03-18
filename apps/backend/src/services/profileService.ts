@@ -3,6 +3,15 @@ import { createAIService } from '@boardy/ai';
 import { generateAndStoreEmbedding } from '@boardy/api';
 import { AppError } from '../middleware/errorHandler';
 
+function stripHtml(str: string): string {
+  return str.replace(/<[^>]*>/g, '').replace(/&[a-z]+;/gi, ' ').trim();
+}
+
+function validateLinkedinUrl(url: string): boolean {
+  if (!url) return true;
+  return /^https?:\/\/(www\.)?linkedin\.com\/in\/[\w-]+\/?$/i.test(url);
+}
+
 export class ProfileService {
   private ai = createAIService();
 
@@ -149,6 +158,43 @@ export class ProfileService {
       if (data[key] !== undefined) {
         sanitized[key] = data[key];
       }
+    }
+
+    const textFields = [
+      'headline', 'bio', 'companyName', 'currentRole', 'location',
+      'businessDescription', 'keyTractionPoints', 'raiseAmount',
+      'amountRaisedToDate', 'fundName', 'fundSize', 'investmentRange',
+      'industryFocus', 'investmentThesis', 'cityBased', 'exampleInvestment',
+      'outreachMethod', 'founderAccessPitch', 'investmentAmount',
+    ];
+    for (const key of textFields) {
+      if (typeof sanitized[key] === 'string') {
+        sanitized[key] = stripHtml(sanitized[key]);
+      }
+    }
+
+    if (typeof sanitized.headline === 'string' && sanitized.headline.length > 150) {
+      sanitized.headline = sanitized.headline.substring(0, 150);
+    }
+    if (typeof sanitized.bio === 'string' && sanitized.bio.length > 1000) {
+      sanitized.bio = sanitized.bio.substring(0, 1000);
+    }
+    if (typeof sanitized.businessDescription === 'string' && sanitized.businessDescription.length > 2000) {
+      sanitized.businessDescription = sanitized.businessDescription.substring(0, 2000);
+    }
+
+    if (sanitized.linkedinUrl && !validateLinkedinUrl(sanitized.linkedinUrl)) {
+      throw new AppError(400, 'Invalid LinkedIn URL. Must be in format: https://linkedin.com/in/your-name', 'INVALID_LINKEDIN_URL');
+    }
+
+    if (Array.isArray(sanitized.skills)) {
+      sanitized.skills = sanitized.skills.map((s: any) => typeof s === 'string' ? stripHtml(s).substring(0, 100) : s);
+    }
+    if (Array.isArray(sanitized.interests)) {
+      sanitized.interests = sanitized.interests.map((s: any) => typeof s === 'string' ? stripHtml(s).substring(0, 100) : s);
+    }
+    if (Array.isArray(sanitized.industries)) {
+      sanitized.industries = sanitized.industries.map((s: any) => typeof s === 'string' ? stripHtml(s).substring(0, 100) : s);
     }
 
     const extraKeys = Object.keys(data).filter((k) => !allowed.includes(k));

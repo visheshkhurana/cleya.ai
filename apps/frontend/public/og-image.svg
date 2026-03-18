@@ -1,0 +1,18 @@
+<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#0B0918"/>
+  <circle cx="600" cy="200" r="400" fill="url(#glow)"/>
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#6D28D9" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#0B0918" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect x="80" y="80" width="56" height="56" rx="14" fill="#6D28D9"/>
+  <text x="108" y="118" text-anchor="middle" font-family="sans-serif" font-size="30" font-weight="bold" fill="white">C</text>
+  <text x="150" y="115" font-family="sans-serif" font-size="28" font-weight="bold" fill="white">Cleo.ai</text>
+  <text x="80" y="270" font-family="sans-serif" font-size="60" font-weight="bold" fill="white">AI Superconnector for</text>
+  <text x="80" y="345" font-family="sans-serif" font-size="60" font-weight="bold" fill="white">Founders, Investors</text>
+  <text x="80" y="420" font-family="sans-serif" font-size="60" font-weight="bold" fill="#8B5CF6">&amp; Operators</text>
+  <text x="80" y="480" font-family="sans-serif" font-size="22" fill="#A09FB5">Members-only · 94% match accuracy · 12,000+ professionals</text>
+  <rect x="80" y="520" width="200" height="4" fill="#6D28D9"/>
+</svg>

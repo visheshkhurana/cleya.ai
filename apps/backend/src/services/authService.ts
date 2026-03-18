@@ -153,6 +153,25 @@ export class AuthService {
     };
   }
 
+  async findUserByEmail(email: string) {
+    return prisma.user.findUnique({ where: { email } });
+  }
+
+  async resetPassword(email: string, newPassword: string) {
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await prisma.user.update({
+      where: { email },
+      data: { passwordHash },
+    });
+  }
+
+  async verifyEmail(userId: string) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { emailVerified: true },
+    });
+  }
+
   private generateToken(user: { id: string; email: string; role: string }): string {
     const payload: AuthPayload = {
       userId: user.id,

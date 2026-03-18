@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /matches
+Disallow: /chat
+Disallow: /profile
+Disallow: /settings
+Disallow: /admin
+Disallow: /api/
+
+Sitemap: https://boardy-ai-platform.replit.app/sitemap.xml

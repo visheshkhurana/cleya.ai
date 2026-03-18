@@ -158,10 +158,26 @@ export default function MatchesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0D0B1A' }}>
-        <div className="flex items-center gap-3">
-          <div className="w-5 h-5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
-          <p className="text-purple-300/60 text-sm">Loading matches...</p>
+      <div className="min-h-screen" style={{ background: '#0D0B1A' }}>
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-6 pb-12">
+          <div className="h-8 w-40 rounded-lg animate-pulse mb-6" style={{ background: 'rgba(255,255,255,0.05)' }} />
+          <div className="flex gap-2 mb-6">
+            {[1,2].map(i => <div key={i} className="h-9 w-28 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.05)' }} />)}
+          </div>
+          <div className="space-y-4">
+            {[1,2,3].map(i => (
+              <div key={i} className="rounded-2xl border border-white/5 p-5 animate-pulse" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                <div className="flex items-start gap-4">
+                  <div className="w-14 h-14 rounded-2xl" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-32 rounded" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                    <div className="h-3 w-48 rounded" style={{ background: 'rgba(255,255,255,0.04)' }} />
+                    <div className="h-3 w-64 rounded" style={{ background: 'rgba(255,255,255,0.04)' }} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );

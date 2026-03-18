@@ -191,9 +191,15 @@ Six persona types with tailored onboarding flows:
 10. **Admin Dashboard** — 5 tabs: Overview, Communications, Deals, Events, Analytics
 11. **Notification Center** — Bell icon in nav bar with unread count badge, dropdown with recent notifications, mark read/mark all read
 12. **Settings Page** — Account info, change password, session management, account deletion
-13. **Email Service** — Nodemailer (SMTP) for welcome, match proposed, match accepted, weekly digest emails (branded HTML templates)
-14. **Rate Limiting** — 100/15min general, 5/hr signup, 10/15min login, 50/hr match proposals (express-rate-limit)
+13. **Email Service** — Nodemailer (SMTP) for welcome, match proposed, match accepted, weekly digest, password reset, email verification emails (branded HTML templates)
+14. **Rate Limiting** — 100/15min general, 5/min auth, 5/min login, 3/15min password reset, 50/hr match proposals (express-rate-limit)
 15. **Error Handling** — Custom 404 page, global error boundary with retry
+16. **Security Headers** — CSP, HSTS, X-Frame-Options DENY, X-Content-Type-Options, Referrer-Policy (next.config.js)
+17. **SEO** — OG tags, Twitter cards, robots.txt, sitemap.xml, SVG favicon, OG image
+18. **Auth Flows** — Email verification (/verify-email), forgot/reset password (/reset-password), signup consent checkbox
+19. **Legal Pages** — Privacy Policy (/privacy), Terms of Service (/terms)
+20. **Input Validation** — HTML stripping, LinkedIn URL validation, headline ≤150 chars, bio ≤1000 chars
+21. **Skeleton Loaders** — Dashboard and matches pages show animated skeleton UI during data loading
 
 ### Vector-Based AI Matching (pgvector)
 - **Hybrid matching pipeline**: pgvector cosine similarity → rule-based + intent scoring → ranked results
