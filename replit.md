@@ -21,15 +21,11 @@ Monorepo with:
 - **Validation:** Zod schemas on all state-changing endpoints (profile, password, match, introduction)
 - **AI:** OpenAI for embeddings + chat (gpt-4-turbo-preview, text-embedding-3-small)
 
-## Environment Variables (set in Replit Secrets)
-- `DATABASE_URL` — runtime-managed by Replit
-- `JWT_SECRET` — set
-- `AI_PROVIDER` — openai
-- `OPENAI_API_KEY` — set
-- `NODE_ENV` — development
-- `PORT` — 3001
-- `GOOGLE_CLIENT_ID` — optional, for Google OAuth
-- `GOOGLE_CLIENT_SECRET` — optional, for Google OAuth
+## Environment Variables (see .env.example for full list)
+**Required:** `DATABASE_URL`, `JWT_SECRET` (min 32 chars; startup throws if missing)
+**Optional (graceful fallback):** `OPENAI_API_KEY` (AI chat → fallback responses), `TWILIO_*` (calls/SMS disabled), `SMTP_*` (emails logged only), `GOOGLE_CLIENT_*` (Google login hidden), `SENTRY_DSN` (no error tracking), `POSTHOG_KEY` (no analytics)
+**Admin seed:** `ADMIN_EMAIL` + `ADMIN_PASSWORD` — both must be set to create admin; no defaults in code
+**CORS:** `CORS_ORIGIN` env var → defaults to `FRONTEND_URL`; locked to single origin (not wildcard)
 
 ## Running the App
 ```

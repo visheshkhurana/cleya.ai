@@ -4,46 +4,50 @@ import { z } from 'zod';
 dotenv.config();
 
 const envSchema = z.object({
-  // Database
   DATABASE_URL: z.string().url(),
   REDIS_URL: z.string().default('redis://localhost:6379'),
 
-  // Auth
   JWT_SECRET: z.string().min(32),
   JWT_EXPIRES_IN: z.string().default('7d'),
 
-  // AI
   OPENAI_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
   AI_PROVIDER: z.enum(['openai', 'anthropic']).default('openai'),
   EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
 
-  // Twilio
   TWILIO_ACCOUNT_SID: z.string().optional(),
   TWILIO_AUTH_TOKEN: z.string().optional(),
   TWILIO_PHONE_NUMBER: z.string().optional(),
   TWILIO_WHATSAPP_NUMBER: z.string().optional(),
 
-  // App
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(3001),
   FRONTEND_URL: z.string().default('http://localhost:3000'),
   BACKEND_URL: z.string().default('http://localhost:3001'),
   WS_PORT: z.coerce.number().default(3002),
+  CORS_ORIGIN: z.string().optional(),
 
-  // Google OAuth
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
 
-  // Email (SMTP)
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   FROM_EMAIL: z.string().default('hello@cleo.ai'),
+
+  ADMIN_EMAIL: z.string().optional(),
+  ADMIN_PASSWORD: z.string().optional(),
+
+  SENTRY_DSN: z.string().optional(),
+  POSTHOG_KEY: z.string().optional(),
 });
 
 function validateEnv() {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET is required — set it as an environment variable (min 32 characters)');
+  }
+
   const parsed = envSchema.safeParse(process.env);
 
   if (!parsed.success) {

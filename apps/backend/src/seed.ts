@@ -1,5 +1,6 @@
 import { prisma } from '@boardy/db';
 import bcrypt from 'bcryptjs';
+import { env } from './config/env';
 
 export async function seedDatabase() {
   try {
@@ -9,12 +10,17 @@ export async function seedDatabase() {
       return;
     }
 
+    if (!env.ADMIN_EMAIL || !env.ADMIN_PASSWORD) {
+      console.log('No ADMIN_EMAIL/ADMIN_PASSWORD set — skipping admin seed');
+      return;
+    }
+
     console.log('Seeding database with admin user...');
 
-    const adminPassword = await bcrypt.hash('admin123456', 12);
+    const adminPassword = await bcrypt.hash(env.ADMIN_PASSWORD, 12);
     const admin = await prisma.user.create({
       data: {
-        email: 'admin@cleo.ai',
+        email: env.ADMIN_EMAIL,
         passwordHash: adminPassword,
         role: 'ADMIN',
         emailVerified: true,
