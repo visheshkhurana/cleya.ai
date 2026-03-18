@@ -33,12 +33,12 @@ export default function ResetPasswordPage() {
     return (
       <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#0B0918' }}>
         <div className="text-center max-w-sm">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: '#6D28D9' }}>
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: '#0D9488' }}>
             <span className="text-white text-xl font-bold">C</span>
           </div>
           <h1 className="text-xl font-semibold text-white mb-2">Invalid Reset Link</h1>
           <p className="text-sm mb-6" style={{ color: '#A09FB5' }}>This password reset link is invalid or has expired.</p>
-          <a href="/" className="inline-block px-6 py-2.5 rounded-lg text-sm font-medium text-white" style={{ background: '#6D28D9' }}>Back to Home</a>
+          <a href="/" className="inline-block px-6 py-2.5 rounded-lg text-sm font-medium text-white" style={{ background: '#0D9488' }}>Back to Home</a>
         </div>
       </div>
     );
@@ -53,7 +53,7 @@ export default function ResetPasswordPage() {
           </div>
           <h1 className="text-xl font-semibold text-white mb-2">Password Reset Successfully</h1>
           <p className="text-sm mb-6" style={{ color: '#A09FB5' }}>You can now log in with your new password.</p>
-          <a href="/" className="inline-block px-6 py-2.5 rounded-lg text-sm font-medium text-white" style={{ background: '#6D28D9' }}>Log In</a>
+          <a href="/" className="inline-block px-6 py-2.5 rounded-lg text-sm font-medium text-white" style={{ background: '#0D9488' }}>Log In</a>
         </div>
       </div>
     );
@@ -63,7 +63,7 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#0B0918' }}>
       <div className="w-full max-w-sm">
         <div className="text-center mb-6">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ background: '#6D28D9' }}>
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ background: '#0D9488' }}>
             <span className="text-white text-xl font-bold">C</span>
           </div>
           <h1 className="text-xl font-semibold text-white mb-1">Reset Your Password</h1>

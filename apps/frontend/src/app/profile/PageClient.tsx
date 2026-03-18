@@ -126,7 +126,7 @@ export default function ProfilePage() {
             {saved && <span className="text-xs text-green-400 hidden sm:inline">Saved ✓</span>}
             <button onClick={handleSave} disabled={saving}
               className="px-4 py-1.5 text-xs font-medium rounded-lg text-white transition disabled:opacity-40"
-              style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>
+              style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
               {saving ? 'Saving...' : 'Save'}
             </button>
             <div className="sm:hidden"><MobileNav /></div>
@@ -137,14 +137,14 @@ export default function ProfilePage() {
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
         <div className="rounded-2xl border border-white/5 p-6 flex items-center gap-4" style={{ background: 'rgba(26,18,48,0.6)' }}>
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl"
-            style={{ background: 'linear-gradient(135deg, #6C47FF20, #4E2FD820)', border: '1px solid rgba(108,71,255,0.15)' }}>
+            style={{ background: 'linear-gradient(135deg, #0D948820, #0F766E20)', border: '1px solid rgba(108,71,255,0.15)' }}>
             {personaIcon[persona] || '💬'}
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-white">{profile.currentRole || 'Your Profile'}</h2>
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium border"
-                style={{ background: 'rgba(108,71,255,0.1)', borderColor: 'rgba(108,71,255,0.2)', color: '#a78bfa' }}>
+                style={{ background: 'rgba(108,71,255,0.1)', borderColor: 'rgba(108,71,255,0.2)', color: '#5EEAD4' }}>
                 {personaLabel[persona] || persona}
               </span>
             </div>
@@ -283,7 +283,7 @@ export default function ProfilePage() {
         <div className="flex justify-end pt-4 pb-8">
           <button onClick={handleSave} disabled={saving}
             className="px-8 py-3 rounded-2xl text-white font-semibold text-sm transition-all disabled:opacity-40 shadow-lg shadow-purple-500/20"
-            style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>
+            style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
             {saving ? 'Saving...' : saved ? 'Saved ✓' : 'Save Changes'}
           </button>
         </div>

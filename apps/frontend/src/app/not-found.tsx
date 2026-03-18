@@ -35,7 +35,7 @@ export default function NotFound() {
             fontSize: '0.875rem',
             fontWeight: 500,
             color: 'white',
-            background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)',
+            background: 'linear-gradient(135deg, #0D9488, #0F766E)',
             textDecoration: 'none',
           }}>
             Go to Dashboard

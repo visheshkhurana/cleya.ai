@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import { env } from '../config/env';
 import { prisma } from '@boardy/db';
 
-const brandColor = '#6C47FF';
+const brandColor = '#0D9488';
 const bgColor = '#0D0B1A';
 const cardBg = '#1a1230';
 
@@ -14,7 +14,7 @@ function emailLayout(content: string): string {
 <tr><td align="center">
 <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;">
 <tr><td style="text-align:center;padding-bottom:30px;">
-<div style="display:inline-block;width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,${brandColor},#4E2FD8);text-align:center;line-height:40px;color:#fff;font-weight:bold;font-size:18px;">C</div>
+<div style="display:inline-block;width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,${brandColor},#0F766E);text-align:center;line-height:40px;color:#fff;font-weight:bold;font-size:18px;">C</div>
 <span style="color:#fff;font-size:20px;font-weight:600;vertical-align:middle;margin-left:10px;">Cleo.ai</span>
 </td></tr>
 <tr><td style="background:${cardBg};border-radius:16px;padding:40px;border:1px solid rgba(255,255,255,0.05);">
@@ -31,7 +31,7 @@ ${content}
 }
 
 function btn(text: string, url: string): string {
-  return `<a href="${url}" style="display:inline-block;padding:12px 32px;background:linear-gradient(135deg,${brandColor},#4E2FD8);color:#fff;text-decoration:none;border-radius:12px;font-weight:600;font-size:14px;">${text}</a>`;
+  return `<a href="${url}" style="display:inline-block;padding:12px 32px;background:linear-gradient(135deg,${brandColor},#0F766E);color:#fff;text-decoration:none;border-radius:12px;font-weight:600;font-size:14px;">${text}</a>`;
 }
 
 class EmailService {
@@ -102,7 +102,7 @@ class EmailService {
       </p>
       <div style="background:rgba(108,71,255,0.08);border:1px solid rgba(108,71,255,0.15);border-radius:12px;padding:20px;margin:0 0 24px;">
         <p style="color:#fff;font-size:16px;font-weight:600;margin:0 0 4px;">${matchName}</p>
-        <p style="color:#a78bfa;font-size:13px;margin:0 0 8px;">${matchPersona}</p>
+        <p style="color:#5EEAD4;font-size:13px;margin:0 0 8px;">${matchPersona}</p>
         <p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0;">Match Score: <span style="color:${scorePercent >= 70 ? '#6ee7b7' : '#fbbf24'};font-weight:600;">${scorePercent}%</span></p>
       </div>
       <div style="text-align:center;margin:32px 0 0;">
@@ -121,7 +121,7 @@ class EmailService {
       <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.15);border-radius:12px;padding:20px;margin:0 0 24px;">
         <p style="color:#6ee7b7;font-size:14px;font-weight:600;margin:0 0 8px;">Contact Details Revealed</p>
         <p style="color:#fff;font-size:15px;margin:0 0 4px;">${matchName}</p>
-        <p style="color:#a78bfa;font-size:13px;margin:0 0 8px;">${matchPersona}</p>
+        <p style="color:#5EEAD4;font-size:13px;margin:0 0 8px;">${matchPersona}</p>
         <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:0;">📧 ${matchEmail}</p>
       </div>
       <p style="color:rgba(255,255,255,0.4);font-size:13px;line-height:1.6;margin:0 0 24px;">
@@ -223,7 +223,7 @@ class EmailService {
       <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
         <tr>
           <td style="background:rgba(108,71,255,0.08);border:1px solid rgba(108,71,255,0.12);border-radius:12px;padding:16px;text-align:center;width:33%;">
-            <p style="color:#a78bfa;font-size:24px;font-weight:700;margin:0;">${newMatches}</p>
+            <p style="color:#5EEAD4;font-size:24px;font-weight:700;margin:0;">${newMatches}</p>
             <p style="color:rgba(255,255,255,0.4);font-size:11px;margin:4px 0 0;">New Matches</p>
           </td>
           <td style="width:8px;"></td>

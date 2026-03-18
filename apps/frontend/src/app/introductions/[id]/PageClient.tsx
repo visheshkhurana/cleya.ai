@@ -32,7 +32,7 @@ const personaIcon: Record<string, string> = {
 };
 
 const statusInfo: Record<string, { bg: string; border: string; text: string; label: string }> = {
-  SENT: { bg: 'rgba(108,71,255,0.08)', border: 'rgba(108,71,255,0.15)', text: '#a78bfa', label: 'Introduction Sent' },
+  SENT: { bg: 'rgba(108,71,255,0.08)', border: 'rgba(108,71,255,0.15)', text: '#5EEAD4', label: 'Introduction Sent' },
   VIEWED: { bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.15)', text: '#93c5fd', label: 'Viewed' },
   RESPONDED: { bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.15)', text: '#6ee7b7', label: 'Responded' },
   MEETING_SCHEDULED: { bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.15)', text: '#fbbf24', label: 'Meeting Scheduled' },
@@ -131,7 +131,7 @@ export default function IntroductionDetailPage() {
         <p className="text-[10px] uppercase tracking-wider text-white/20 mb-3">{label}</p>
         <div className="flex items-center gap-3 mb-3">
           <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl"
-            style={{ background: 'linear-gradient(135deg, #6C47FF15, #4E2FD815)', border: '1px solid rgba(108,71,255,0.12)' }}>
+            style={{ background: 'linear-gradient(135deg, #0D948815, #0F766E15)', border: '1px solid rgba(108,71,255,0.12)' }}>
             {personaIcon[p?.persona || 'OTHER']}
           </div>
           <div>
@@ -141,7 +141,7 @@ export default function IntroductionDetailPage() {
         </div>
         {p?.persona && (
           <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium border mb-2"
-            style={{ background: 'rgba(108,71,255,0.08)', borderColor: 'rgba(108,71,255,0.15)', color: '#a78bfa' }}>
+            style={{ background: 'rgba(108,71,255,0.08)', borderColor: 'rgba(108,71,255,0.15)', color: '#5EEAD4' }}>
             {personaLabel[p.persona]}
           </span>
         )}
@@ -188,7 +188,7 @@ export default function IntroductionDetailPage() {
             </span>
             <span className="px-2 py-1 rounded-full text-xs font-bold"
               style={{ background: scorePercent >= 70 ? 'rgba(16,185,129,0.12)' : 'rgba(108,71,255,0.12)',
-                color: scorePercent >= 70 ? '#6ee7b7' : '#a78bfa' }}>
+                color: scorePercent >= 70 ? '#6ee7b7' : '#5EEAD4' }}>
               {scorePercent}% match
             </span>
           </div>
@@ -198,7 +198,7 @@ export default function IntroductionDetailPage() {
           <UserCard user={intro.userA} label={intro.userAId === me.id ? 'You' : 'Connection'} />
           <div className="flex items-center justify-center">
             <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg"
-              style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>
+              style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
               🤝
             </div>
           </div>
@@ -219,7 +219,7 @@ export default function IntroductionDetailPage() {
               {intro.talkingPoints.map((point, i) => (
                 <div key={i} className="flex gap-3">
                   <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5"
-                    style={{ background: 'rgba(108,71,255,0.12)', color: '#a78bfa' }}>
+                    style={{ background: 'rgba(108,71,255,0.12)', color: '#5EEAD4' }}>
                     {i + 1}
                   </span>
                   <p className="text-sm text-white/50 leading-relaxed">{point}</p>
@@ -246,7 +246,7 @@ export default function IntroductionDetailPage() {
         <div className="flex flex-col sm:flex-row gap-3">
           <a href={calendarLink} target="_blank" rel="noopener noreferrer" onClick={markScheduled}
             className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-medium text-white transition"
-            style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>
+            style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
             📅 Schedule a Call
           </a>
           <a href={mailtoLink} onClick={markResponded}

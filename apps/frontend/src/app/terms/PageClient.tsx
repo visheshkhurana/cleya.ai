@@ -6,7 +6,7 @@ export default function TermsPage() {
       <nav className="border-b border-white/[0.06]">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold" style={{ background: '#6D28D9' }}>C</div>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold" style={{ background: '#0D9488' }}>C</div>
             <span className="text-white font-semibold">Cleo.ai</span>
           </a>
           <a href="/" className="text-sm hover:text-white transition" style={{ color: '#A09FB5' }}>Back to Home</a>
@@ -20,12 +20,12 @@ export default function TermsPage() {
         <div className="space-y-8 text-sm leading-relaxed" style={{ color: '#A09FB5' }}>
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">1. Acceptance of Terms</h2>
-            <p>By accessing or using Cleo.ai ("the Platform"), you agree to be bound by these Terms of Service. If you do not agree to these terms, you may not use the Platform. Cleo.ai reserves the right to update these terms at any time, and continued use constitutes acceptance of any changes.</p>
+            <p>By accessing or using Cleo.ai (&quot;the Platform&quot;), you agree to be bound by these Terms of Service. If you do not agree to these terms, you may not use the Platform. Cleo.ai reserves the right to update these terms at any time, and continued use constitutes acceptance of any changes.</p>
           </section>
 
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">2. Eligibility</h2>
-            <p>To use Cleo.ai, you must be at least 18 years old and a professional in good standing. The Platform is designed for founders, investors, talent, and operators seeking legitimate professional connections. Cleo.ai reserves the right to deny or revoke access at its sole discretion.</p>
+            <p>To use Cleo.ai, you must be at least 18 years old and a professional in good standing. The Platform is designed for founders, investors, talent, and operators seeking legitimate professional connections within India&apos;s startup ecosystem and beyond. Cleo.ai reserves the right to deny or revoke access at its sole discretion.</p>
           </section>
 
           <section>
@@ -47,14 +47,15 @@ export default function TermsPage() {
               <li>Misrepresent your identity, qualifications, or professional background</li>
               <li>Collect user data for unauthorized purposes</li>
               <li>Engage in any activity that is illegal or violates the rights of others</li>
-              <li>Attempt to reverse-engineer, scrape, or interfere with the Platform's systems</li>
+              <li>Attempt to reverse-engineer, scrape, or interfere with the Platform&apos;s systems</li>
               <li>Use the Platform for any form of discrimination</li>
+              <li>Share confidential information obtained through introductions without consent</li>
             </ul>
           </section>
 
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">5. AI-Powered Matching</h2>
-            <p>Cleo.ai uses artificial intelligence to suggest professional connections. While we strive for high-quality matches, we do not guarantee the outcome of any introduction or business relationship. Match scores and recommendations are algorithmic suggestions and should not be taken as endorsements of any individual or company.</p>
+            <p>Cleo.ai uses artificial intelligence to suggest professional connections. While we strive for high-quality matches, we do not guarantee the outcome of any introduction or business relationship. Match scores and recommendations are algorithmic suggestions and should not be taken as endorsements of any individual or company. AI-generated introductions are suggestions and users exercise their own judgment in pursuing any connection.</p>
           </section>
 
           <section>
@@ -64,27 +65,42 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">7. Intellectual Property</h2>
-            <p>All content, algorithms, designs, and technology comprising Cleo.ai are the intellectual property of Cleo.ai and its licensors. You retain ownership of the content you submit to the Platform but grant us a license to use it for providing and improving our services.</p>
+            <p>All content, algorithms, designs, and technology comprising Cleo.ai are the intellectual property of Cleo.ai and its licensors. You retain ownership of the content you submit to the Platform but grant us a non-exclusive, worldwide, royalty-free license to use it for providing and improving our services.</p>
           </section>
 
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">8. Limitation of Liability</h2>
-            <p>Cleo.ai is provided "as is" without warranties of any kind. We are not liable for any damages arising from your use of the Platform, including but not limited to lost profits, business opportunities, or data. Our total liability shall not exceed the amount you paid to us in the 12 months preceding the claim.</p>
+            <p>Cleo.ai is provided &quot;as is&quot; without warranties of any kind, express or implied. We are not liable for any direct, indirect, incidental, special, consequential, or punitive damages arising from your use of the Platform, including but not limited to lost profits, business opportunities, or data. Our total liability shall not exceed the amount you paid to us in the 12 months preceding the claim, or INR 10,000, whichever is higher.</p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-white mb-3">9. Termination</h2>
-            <p>You may deactivate your account at any time through Settings. Cleo.ai reserves the right to suspend or terminate accounts that violate these terms. Upon termination, your data will be handled in accordance with our Privacy Policy.</p>
+            <h2 className="text-lg font-semibold text-white mb-3">9. Indemnification</h2>
+            <p>You agree to indemnify and hold harmless Cleo.ai, its affiliates, officers, directors, employees, and agents from any claims, damages, losses, liabilities, and expenses (including legal fees) arising from your use of the Platform, your violation of these Terms, or your violation of any third-party rights.</p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-white mb-3">10. Governing Law</h2>
-            <p>These terms are governed by the laws of the State of Delaware, United States, without regard to conflict of law principles. Any disputes shall be resolved through binding arbitration.</p>
+            <h2 className="text-lg font-semibold text-white mb-3">10. Termination</h2>
+            <p>You may deactivate your account at any time through Settings. Cleo.ai reserves the right to suspend or terminate accounts that violate these terms, with or without prior notice. Upon termination, your data will be handled in accordance with our Privacy Policy. Sections relating to intellectual property, limitation of liability, indemnification, and governing law shall survive termination.</p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-white mb-3">11. Contact</h2>
-            <p>For questions about these terms, contact us at <a href="mailto:legal@cleo.ai" className="underline" style={{ color: '#8B5CF6' }}>legal@cleo.ai</a>.</p>
+            <h2 className="text-lg font-semibold text-white mb-3">11. Dispute Resolution</h2>
+            <p>In the event of any dispute arising out of or relating to these Terms, the parties shall first attempt to resolve the dispute through good-faith negotiation for a period of 30 days. If the dispute cannot be resolved through negotiation, it shall be referred to mediation under the rules of the Indian Council of Arbitration. If mediation is unsuccessful, the dispute shall be resolved through binding arbitration conducted in Bangalore, India.</p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-white mb-3">12. Governing Law</h2>
+            <p>These Terms shall be governed by and construed in accordance with the laws of India. The courts of Bangalore, Karnataka shall have exclusive jurisdiction over any disputes arising from these Terms or your use of the Platform, subject to the dispute resolution clause above.</p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-white mb-3">13. Changes to These Terms</h2>
+            <p>We may update these Terms from time to time. We will notify you of any material changes by posting the new Terms on the Platform and updating the &quot;Last updated&quot; date. Your continued use of the Platform after such changes constitutes acceptance of the updated Terms.</p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-white mb-3">14. Contact</h2>
+            <p>For questions about these terms, contact us at <a href="mailto:legal@cleo.ai" className="underline" style={{ color: '#2DD4BF' }}>legal@cleo.ai</a>.</p>
           </section>
         </div>
       </main>

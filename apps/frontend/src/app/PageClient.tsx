@@ -148,11 +148,11 @@ export default function Home() {
   }
 
   const testimonials = [
-    { initials: 'AV', quote: 'Met my Series A lead in 3 days.', name: 'Arjun V.', title: 'Founder · HealthTech' },
-    { initials: 'SK', quote: 'Best investor match I\'ve found outside warm intros.', name: 'Sarah K.', title: 'Investor · Series A' },
-    { initials: 'MR', quote: 'Cleo introduced me to my co-founder — it felt like magic.', name: 'Meera R.', title: 'Founder · Consumer Tech' },
-    { initials: 'JL', quote: 'Landed my dream role through a Cleo introduction.', name: 'James L.', title: 'Engineering Lead' },
-    { initials: 'DP', quote: 'The match quality is leagues ahead of LinkedIn.', name: 'Diana P.', title: 'VC Partner · Fintech' },
+    { initials: 'AM', quote: 'Met my lead investor within a week of joining.', name: 'Arjun M.', title: 'Founder · Fintech · Bangalore' },
+    { initials: 'MI', quote: 'The deal flow quality is leagues ahead of cold inbound.', name: 'Meera I.', title: 'Partner · Blume Ventures' },
+    { initials: 'PS', quote: 'Found a CTO match for my healthtech startup in Tier-2.', name: 'Priya S.', title: 'Founder · HealthTech · Delhi NCR' },
+    { initials: 'RV', quote: 'Landed my founding engineer role through a Cleo intro.', name: 'Rahul V.', title: 'Founding Engineer · Bangalore' },
+    { initials: 'NK', quote: 'Cleo connected me to 3 portfolio founders in one day.', name: 'Nandini R.', title: 'Venture Partner · Elevation Capital' },
   ];
 
   return (
@@ -179,7 +179,7 @@ export default function Home() {
               className="px-4 py-2 text-sm text-muted hover:text-white transition-colors">Log In</button>
             <button onClick={() => { setShowAuth(true); setMode('signup'); }}
               className="px-5 py-2.5 text-sm font-medium text-white rounded-[10px] transition-all hover:scale-[1.02]"
-              style={{ background: '#6D28D9', boxShadow: '0 0 20px rgba(109,40,217,0.2)' }}>
+              style={{ background: '#0D9488', boxShadow: '0 0 20px rgba(13,148,136,0.2)' }}>
               Get Started
             </button>
           </div>
@@ -190,30 +190,30 @@ export default function Home() {
       <section className="relative pt-28 sm:pt-36 pb-20 sm:pb-28 overflow-hidden">
         <div className="absolute inset-0 dot-grid pointer-events-none" />
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(109,40,217,0.15) 0%, transparent 70%)' }} />
+          style={{ background: 'radial-gradient(circle, rgba(13,148,136,0.15) 0%, transparent 70%)' }} />
 
         <div className="relative max-w-6xl mx-auto px-6">
           <div className="grid lg:grid-cols-[55%_45%] gap-12 lg:gap-16 items-center">
             <div>
               <div className="fade-up inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[11px] font-medium uppercase tracking-[0.15em] mb-8 border border-white/[0.08]"
-                style={{ background: 'rgba(109,40,217,0.06)', color: '#8B5CF6' }}>
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#6D28D9' }} />
+                style={{ background: 'rgba(13,148,136,0.06)', color: '#2DD4BF' }}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#0D9488' }} />
                 Members-only · Invite or apply
               </div>
 
               <h1 className="fade-up-d1 font-display text-[42px] sm:text-[56px] lg:text-[72px] font-bold text-white leading-[1.08] mb-6 tracking-tight">
                 Meet the right<br />people.{' '}
-                <span className="italic" style={{ color: '#8B5CF6' }}>Faster.</span>
+                <span className="italic" style={{ color: '#2DD4BF' }}>Faster.</span>
               </h1>
 
               <p className="fade-up-d2 text-base sm:text-lg leading-relaxed mb-8 max-w-[420px]" style={{ color: '#A09FB5' }}>
-                Cleo is your AI Superconnector — matching founders, investors, talent, and partners through intelligent conversations.
+                Cleo is your AI Superconnector — matching founders, investors, and talent across India's startup ecosystem.
               </p>
 
               <div className="fade-up-d3 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <button onClick={() => { setShowAuth(true); setMode('signup'); }}
                   className="px-8 py-[13px] rounded-[10px] text-white font-medium text-sm transition-all duration-200 hover:scale-[1.02]"
-                  style={{ background: '#6D28D9', boxShadow: '0 0 30px rgba(109,40,217,0.25)' }}>
+                  style={{ background: '#0D9488', boxShadow: '0 0 30px rgba(13,148,136,0.25)' }}>
                   Get Started →
                 </button>
                 <button onClick={() => scrollToSection('how-it-works')}
@@ -235,7 +235,7 @@ export default function Home() {
                 <div className="rounded-[28px] overflow-hidden" style={{ background: '#0B0918' }}>
                   <div className="px-3 py-2.5 flex items-center gap-2 border-b border-white/[0.06]">
                     <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
-                      style={{ background: '#6D28D9' }}>C</div>
+                      style={{ background: '#0D9488' }}>C</div>
                     <div>
                       <p className="text-white text-[11px] font-medium">Cleo.ai</p>
                       <div className="flex items-center gap-1">
@@ -247,19 +247,19 @@ export default function Home() {
                   <div className="p-3 space-y-2.5 h-[400px]">
                     <div className="flex gap-2 items-end">
                       <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] text-white font-bold flex-shrink-0"
-                        style={{ background: '#6D28D9' }}>C</div>
+                        style={{ background: '#0D9488' }}>C</div>
                       <div className="rounded-xl rounded-tl-sm px-3 py-2 max-w-[80%]" style={{ background: '#1A1730' }}>
                         <p className="text-[10px] text-white/80 leading-relaxed">Hey! I'm Cleo. What brings you here today?</p>
                       </div>
                     </div>
                     <div className="flex justify-end">
-                      <div className="rounded-xl rounded-tr-sm px-3 py-2 max-w-[80%]" style={{ background: '#7C3AED' }}>
-                        <p className="text-[10px] text-white leading-relaxed">I'm raising a seed round for my AI startup</p>
+                      <div className="rounded-xl rounded-tr-sm px-3 py-2 max-w-[80%]" style={{ background: '#14B8A6' }}>
+                        <p className="text-[10px] text-white leading-relaxed">I'm raising a seed round for my fintech startup in Bangalore</p>
                       </div>
                     </div>
                     <div className="flex gap-2 items-end">
                       <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] text-white font-bold flex-shrink-0"
-                        style={{ background: '#6D28D9' }}>C</div>
+                        style={{ background: '#0D9488' }}>C</div>
                       <div className="rounded-xl rounded-tl-sm px-3 py-2 max-w-[80%]" style={{ background: '#1A1730' }}>
                         <p className="text-[10px] text-white/80 leading-relaxed">I found 3 investors who match your profile perfectly.</p>
                       </div>
@@ -267,15 +267,15 @@ export default function Home() {
 
                     <div className="space-y-1.5 ml-7">
                       {[
-                        { name: 'Sarah Chen', role: 'Investor', sector: 'AI/ML · Seed', match: 94, delay: 'slide-in-r1' },
-                        { name: 'Marcus Rivera', role: 'VC Partner', sector: 'Enterprise · Pre-Seed-A', match: 91, delay: 'slide-in-r2' },
-                        { name: 'Priya Sharma', role: 'Angel Investor', sector: 'Consumer · Seed', match: 88, delay: 'slide-in-r3' },
+                        { name: 'Meera Iyer', role: 'VC Partner', sector: 'Fintech · Seed', match: 94, delay: 'slide-in-r1' },
+                        { name: 'Siddharth A.', role: 'Angel Investor', sector: 'SaaS · Pre-Seed', match: 91, delay: 'slide-in-r2' },
+                        { name: 'Ananya Bhat', role: 'Associate', sector: 'AI/ML · Seed-A', match: 88, delay: 'slide-in-r3' },
                       ].map((m) => (
                         <div key={m.name} className={`rounded-lg border border-white/[0.06] p-2 ${m.delay}`}
-                          style={{ background: 'rgba(109,40,217,0.04)' }}>
+                          style={{ background: 'rgba(13,148,136,0.04)' }}>
                           <div className="flex items-center gap-2">
                             <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold"
-                              style={{ background: 'rgba(109,40,217,0.2)', color: '#8B5CF6' }}>
+                              style={{ background: 'rgba(13,148,136,0.2)', color: '#2DD4BF' }}>
                               {m.name.split(' ').map(n => n[0]).join('')}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -283,7 +283,7 @@ export default function Home() {
                               <p className="text-[9px]" style={{ color: '#A09FB5' }}>{m.sector} · {m.match}% match</p>
                             </div>
                           </div>
-                          <div className="mt-1.5 h-[3px] rounded-full overflow-hidden" style={{ background: 'rgba(109,40,217,0.15)' }}>
+                          <div className="mt-1.5 h-[3px] rounded-full overflow-hidden" style={{ background: 'rgba(13,148,136,0.15)' }}>
                             <div className="h-full rounded-full animate-bar" style={{ width: `${m.match}%`, background: '#10B981' }} />
                           </div>
                         </div>
@@ -292,7 +292,7 @@ export default function Home() {
 
                     <div className="flex gap-2 items-end mt-2">
                       <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] text-white font-bold flex-shrink-0"
-                        style={{ background: '#6D28D9' }}>C</div>
+                        style={{ background: '#0D9488' }}>C</div>
                       <div className="rounded-xl rounded-tl-sm px-3 py-2 flex gap-1" style={{ background: '#1A1730' }}>
                         <div className="w-1.5 h-1.5 rounded-full typing-dot" style={{ background: '#A09FB5' }} />
                         <div className="w-1.5 h-1.5 rounded-full typing-dot" style={{ background: '#A09FB5' }} />
@@ -312,14 +312,14 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6 py-12 sm:py-16">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-0 md:divide-x md:divide-white/[0.06]">
             {[
-              { value: 12000, suffix: '+', label: 'Members' },
+              { value: 12000, suffix: '+', label: 'Members across India' },
               { value: 94, suffix: '%', label: 'Match accuracy' },
               { value: 48, suffix: ' hrs', label: 'Avg. intro time' },
-              { value: 2.4, suffix: 'B', label: 'Funding raised via Cleo', prefix: '$', decimals: 1 },
+              { value: 1800, suffix: '+', label: 'Crores raised via Cleo', prefix: '₹' },
             ].map((m, i) => (
               <div key={i} className="text-center md:px-8">
                 <p className="text-3xl sm:text-[44px] font-bold text-white tracking-tight leading-none mb-2">
-                  <CountUp target={m.value} suffix={m.suffix} prefix={m.prefix || ''} decimals={m.decimals || 0} />
+                  <CountUp target={m.value} suffix={m.suffix} prefix={m.prefix || ''} decimals={0} />
                 </p>
                 <p className="text-xs sm:text-[13px] font-medium" style={{ color: '#A09FB5' }}>{m.label}</p>
               </div>
@@ -333,7 +333,7 @@ export default function Home() {
             {[...testimonials, ...testimonials].map((t, i) => (
               <div key={i} className="inline-flex items-center gap-3 mx-6 flex-shrink-0">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
-                  style={{ background: 'rgba(109,40,217,0.15)', color: '#8B5CF6' }}>
+                  style={{ background: 'rgba(13,148,136,0.15)', color: '#2DD4BF' }}>
                   {t.initials}
                 </div>
                 <p className="text-sm italic" style={{ color: '#E8E4F0' }}>"{t.quote}"</p>
@@ -359,7 +359,7 @@ export default function Home() {
               {
                 num: '01',
                 icon: (
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                     <path d="M8 9h8M8 13h4" />
                   </svg>
@@ -370,19 +370,19 @@ export default function Home() {
               {
                 num: '02',
                 icon: (
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="11" cy="11" r="8" />
                     <path d="m21 21-4.35-4.35" />
                     <path d="M8 11h6M11 8v6" />
                   </svg>
                 ),
                 title: 'Cleo finds your matches',
-                desc: 'Our AI searches across 12,000+ verified members, weighing sector fit, stage, check size, and intent — not just keywords.',
+                desc: 'Our AI searches across 12,000+ verified members across India, weighing sector fit, stage, check size, and intent — not just keywords.',
               },
               {
                 num: '03',
                 icon: (
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                     <circle cx="9" cy="7" r="4" />
                     <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
@@ -395,9 +395,9 @@ export default function Home() {
               <div key={i} className="relative rounded-2xl border border-white/[0.06] p-8 group hover:border-boardy-400/20 transition-all duration-300"
                 style={{ background: '#13112A' }}>
                 <div className="absolute top-4 right-6 font-display text-[64px] font-bold leading-none pointer-events-none"
-                  style={{ color: 'rgba(109,40,217,0.06)' }}>{step.num}</div>
+                  style={{ color: 'rgba(13,148,136,0.06)' }}>{step.num}</div>
                 <div className="mb-5 w-12 h-12 rounded-xl flex items-center justify-center border border-white/[0.06]"
-                  style={{ background: 'rgba(109,40,217,0.06)' }}>
+                  style={{ background: 'rgba(13,148,136,0.06)' }}>
                   {step.icon}
                 </div>
                 <h3 className="font-semibold text-white text-lg mb-3">{step.title}</h3>
@@ -422,7 +422,7 @@ export default function Home() {
             {[
               {
                 icon: (
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z" />
                   </svg>
                 ),
@@ -433,18 +433,18 @@ export default function Home() {
               },
               {
                 icon: (
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
                   </svg>
                 ),
                 title: 'Investors',
                 tagline: 'Source deals before they\'re announced.',
-                desc: 'See pre-pitch founders in your thesis verticals before they\'re on AngelList.',
+                desc: 'See pre-pitch founders in your thesis verticals before they hit the market — from Bangalore to Tier-2 India.',
                 cta: 'I\'m an Investor →',
               },
               {
                 icon: (
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                     <circle cx="9" cy="7" r="4" />
                     <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
@@ -462,11 +462,11 @@ export default function Home() {
                 onClick={() => { setShowAuth(true); setMode('signup'); }}
               >
                 <div className="mb-5 w-12 h-12 rounded-xl flex items-center justify-center border border-white/[0.06]"
-                  style={{ background: 'rgba(109,40,217,0.06)' }}>
+                  style={{ background: 'rgba(13,148,136,0.06)' }}>
                   {persona.icon}
                 </div>
                 <h3 className="font-semibold text-white text-xl mb-1">{persona.title}</h3>
-                <p className="text-sm font-medium mb-3" style={{ color: '#8B5CF6' }}>{persona.tagline}</p>
+                <p className="text-sm font-medium mb-3" style={{ color: '#2DD4BF' }}>{persona.tagline}</p>
                 <p className="text-sm leading-relaxed mb-5" style={{ color: '#A09FB5' }}>{persona.desc}</p>
                 <span className="inline-flex items-center text-sm font-medium text-white/70 group-hover:text-white transition-colors">
                   {persona.cta}
@@ -481,19 +481,19 @@ export default function Home() {
       <section className="py-20 sm:py-28 border-t border-white/[0.04]">
         <div className="max-w-4xl mx-auto px-6">
           <div className="rounded-2xl border border-white/[0.06] p-8 sm:p-12 relative overflow-hidden"
-            style={{ background: '#13112A', borderLeftWidth: '4px', borderLeftColor: '#6D28D9' }}>
+            style={{ background: '#13112A', borderLeftWidth: '4px', borderLeftColor: '#0D9488' }}>
             <div className="absolute top-0 right-0 w-[300px] h-[300px] rounded-full pointer-events-none"
-              style={{ background: 'radial-gradient(circle, rgba(109,40,217,0.08) 0%, transparent 70%)' }} />
+              style={{ background: 'radial-gradient(circle, rgba(13,148,136,0.08) 0%, transparent 70%)' }} />
             <blockquote className="font-display text-xl sm:text-[28px] leading-snug text-white/90 mb-8 relative italic">
-              "Cleo introduced me to my lead investor in 48 hours. The match was so precise it felt like Cleo had read my deck."
+              "Cleo introduced me to my lead investor in 48 hours. The match was so precise it felt like Cleo had read my pitch deck."
             </blockquote>
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold"
-                style={{ background: 'rgba(109,40,217,0.15)', color: '#8B5CF6' }}>MR</div>
+                style={{ background: 'rgba(13,148,136,0.15)', color: '#2DD4BF' }}>PS</div>
               <div>
-                <p className="text-white font-semibold text-sm">Meera R.</p>
-                <p className="text-xs" style={{ color: '#A09FB5' }}>Founder, Numr · Raised Seed Round</p>
-                <p className="text-[11px] mt-0.5" style={{ color: '#6D28D9' }}>Matched with: Arjun Capital · Series Seed · Consumer Tech</p>
+                <p className="text-white font-semibold text-sm">Priya S.</p>
+                <p className="text-xs" style={{ color: '#A09FB5' }}>Founder, MedScan AI · Delhi NCR · Raised Series A</p>
+                <p className="text-[11px] mt-0.5" style={{ color: '#0D9488' }}>Matched with: Meera I. · Blume Ventures · HealthTech</p>
               </div>
             </div>
           </div>
@@ -506,7 +506,7 @@ export default function Home() {
           style={{ background: 'linear-gradient(180deg, #0B0918 0%, #13112A 50%, #0B0918 100%)' }} />
         <div className="absolute inset-0 pointer-events-none opacity-[0.03]"
           style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='10' cy='10' r='1' fill='%236D28D9'/%3E%3Ccircle cx='30' cy='30' r='1' fill='%236D28D9'/%3E%3Ccircle cx='50' cy='10' r='1' fill='%236D28D9'/%3E%3Ccircle cx='10' cy='50' r='1' fill='%236D28D9'/%3E%3Ccircle cx='50' cy='50' r='1' fill='%236D28D9'/%3E%3Cline x1='10' y1='10' x2='30' y2='30' stroke='%236D28D9' stroke-width='0.5'/%3E%3Cline x1='30' y1='30' x2='50' y2='10' stroke='%236D28D9' stroke-width='0.5'/%3E%3C/svg%3E")`,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='10' cy='10' r='1' fill='%230D9488'/%3E%3Ccircle cx='30' cy='30' r='1' fill='%230D9488'/%3E%3Ccircle cx='50' cy='10' r='1' fill='%230D9488'/%3E%3Ccircle cx='10' cy='50' r='1' fill='%230D9488'/%3E%3Ccircle cx='50' cy='50' r='1' fill='%230D9488'/%3E%3Cline x1='10' y1='10' x2='30' y2='30' stroke='%230D9488' stroke-width='0.5'/%3E%3Cline x1='30' y1='30' x2='50' y2='10' stroke='%230D9488' stroke-width='0.5'/%3E%3C/svg%3E")`,
           }} />
         <div className="relative max-w-3xl mx-auto px-6 text-center">
           <h2 className="font-display text-3xl sm:text-[44px] font-bold text-white mb-5 tracking-tight leading-tight">
@@ -518,7 +518,7 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <button onClick={() => { setShowAuth(true); setMode('signup'); }}
               className="px-10 py-[14px] rounded-[10px] text-white font-medium text-sm transition-all duration-200 hover:scale-[1.02]"
-              style={{ background: '#6D28D9', boxShadow: '0 0 40px rgba(109,40,217,0.3)' }}>
+              style={{ background: '#0D9488', boxShadow: '0 0 40px rgba(13,148,136,0.3)' }}>
               Apply for Access →
             </button>
             <button onClick={() => { setShowAuth(true); setMode('login'); }}
@@ -577,7 +577,7 @@ export default function Home() {
 
             <div className="text-center mb-6">
               <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-3"
-                style={{ background: '#6D28D9', boxShadow: '0 0 30px rgba(109,40,217,0.3)' }}>
+                style={{ background: '#0D9488', boxShadow: '0 0 30px rgba(13,148,136,0.3)' }}>
                 <span className="text-white text-xl font-bold">C</span>
               </div>
               <h2 className="font-display text-2xl font-bold text-white">Welcome to Cleo.ai</h2>
@@ -590,12 +590,12 @@ export default function Home() {
                   className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     mode === 'signup' ? 'text-white shadow-sm' : 'text-white/40 hover:text-white/70'
                   }`}
-                  style={mode === 'signup' ? { background: '#6D28D9' } : {}}>Sign Up</button>
+                  style={mode === 'signup' ? { background: '#0D9488' } : {}}>Sign Up</button>
                 <button onClick={() => setMode('login')}
                   className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     mode === 'login' ? 'text-white shadow-sm' : 'text-white/40 hover:text-white/70'
                   }`}
-                  style={mode === 'login' ? { background: '#6D28D9' } : {}}>Log In</button>
+                  style={mode === 'login' ? { background: '#0D9488' } : {}}>Log In</button>
               </div>
 
               {showForgotPassword ? (
@@ -606,7 +606,7 @@ export default function Home() {
                     </div>
                     <p className="text-white text-sm font-medium mb-1">Check your email</p>
                     <p className="text-xs mb-4" style={{ color: '#A09FB5' }}>If an account exists with that email, we sent a reset link.</p>
-                    <button type="button" onClick={() => { setShowForgotPassword(false); setForgotSent(false); }} className="text-xs font-medium" style={{ color: '#8B5CF6' }}>Back to Login</button>
+                    <button type="button" onClick={() => { setShowForgotPassword(false); setForgotSent(false); }} className="text-xs font-medium" style={{ color: '#2DD4BF' }}>Back to Login</button>
                   </div>
                 ) : (
                   <form onSubmit={handleForgotPassword} className="space-y-4">
@@ -616,7 +616,7 @@ export default function Home() {
                       <input type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} placeholder="you@example.com" required className="input-dark" />
                     </div>
                     <button type="submit" disabled={forgotLoading} className="btn-primary">{forgotLoading ? 'Sending...' : 'Send Reset Link'}</button>
-                    <button type="button" onClick={() => setShowForgotPassword(false)} className="w-full text-xs text-center font-medium" style={{ color: '#8B5CF6' }}>Back to Login</button>
+                    <button type="button" onClick={() => setShowForgotPassword(false)} className="w-full text-xs text-center font-medium" style={{ color: '#2DD4BF' }}>Back to Login</button>
                   </form>
                 )
               ) : (
@@ -634,13 +634,13 @@ export default function Home() {
                         minLength={mode === 'signup' ? 8 : undefined} className="input-dark" />
                     </div>
                     {mode === 'login' && (
-                      <button type="button" onClick={() => setShowForgotPassword(true)} className="text-xs font-medium" style={{ color: '#8B5CF6' }}>Forgot password?</button>
+                      <button type="button" onClick={() => setShowForgotPassword(true)} className="text-xs font-medium" style={{ color: '#2DD4BF' }}>Forgot password?</button>
                     )}
                     {mode === 'signup' && (
                       <label className="flex items-start gap-2 cursor-pointer">
-                        <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} className="mt-0.5 rounded border-white/20 bg-white/5 accent-purple-600" />
+                        <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} className="mt-0.5 rounded border-white/20 bg-white/5 accent-teal-600" />
                         <span className="text-xs leading-relaxed" style={{ color: '#A09FB5' }}>
-                          I agree to the <a href="/terms" target="_blank" className="underline" style={{ color: '#8B5CF6' }}>Terms of Service</a> and <a href="/privacy" target="_blank" className="underline" style={{ color: '#8B5CF6' }}>Privacy Policy</a>
+                          I agree to the <a href="/terms" target="_blank" className="underline" style={{ color: '#2DD4BF' }}>Terms of Service</a> and <a href="/privacy" target="_blank" className="underline" style={{ color: '#2DD4BF' }}>Privacy Policy</a>
                         </span>
                       </label>
                     )}

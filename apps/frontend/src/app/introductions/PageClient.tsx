@@ -25,7 +25,7 @@ const personaIcon: Record<string, string> = {
 };
 
 const statusColors: Record<string, { bg: string; text: string; label: string }> = {
-  SENT: { bg: 'rgba(108,71,255,0.1)', text: '#a78bfa', label: 'Sent' },
+  SENT: { bg: 'rgba(108,71,255,0.1)', text: '#5EEAD4', label: 'Sent' },
   VIEWED: { bg: 'rgba(59,130,246,0.1)', text: '#93c5fd', label: 'Viewed' },
   RESPONDED: { bg: 'rgba(16,185,129,0.1)', text: '#6ee7b7', label: 'Responded' },
   MEETING_SCHEDULED: { bg: 'rgba(245,158,11,0.1)', text: '#fbbf24', label: 'Meeting Scheduled' },
@@ -96,7 +96,7 @@ export default function IntroductionsPage() {
             <p className="text-white/40 text-sm mb-6">When both sides accept a match, introductions appear here</p>
             <button onClick={() => router.push('/matches')}
               className="px-5 py-2.5 rounded-xl text-sm font-medium text-white transition"
-              style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>
+              style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
               View Matches
             </button>
           </div>
@@ -115,7 +115,7 @@ export default function IntroductionsPage() {
                   style={{ background: 'rgba(26,18,48,0.6)' }}>
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                      style={{ background: 'linear-gradient(135deg, #6C47FF15, #4E2FD815)', border: '1px solid rgba(108,71,255,0.12)' }}>
+                      style={{ background: 'linear-gradient(135deg, #0D948815, #0F766E15)', border: '1px solid rgba(108,71,255,0.12)' }}>
                       {personaIcon[profile?.persona || 'OTHER'] || '💬'}
                     </div>
                     <div className="flex-1 min-w-0">

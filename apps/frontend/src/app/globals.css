@@ -42,12 +42,12 @@
     @apply w-full py-3 rounded-2xl text-white font-semibold text-sm
            transition-all duration-200
            disabled:opacity-40 disabled:cursor-not-allowed;
-    background: #6D28D9;
-    box-shadow: 0 0 20px rgba(109, 40, 217, 0.15);
+    background: #0D9488;
+    box-shadow: 0 0 20px rgba(13, 148, 136, 0.15);
   }
   .btn-primary:hover {
-    background: #5B21B6;
-    box-shadow: 0 0 30px rgba(109, 40, 217, 0.3);
+    background: #0F766E;
+    box-shadow: 0 0 30px rgba(13, 148, 136, 0.3);
   }
 
   .glass-card {
@@ -75,8 +75,8 @@
 }
 
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 20px rgba(109, 40, 217, 0.3); }
-  50% { box-shadow: 0 0 40px rgba(109, 40, 217, 0.6); }
+  0%, 100% { box-shadow: 0 0 20px rgba(13, 148, 136, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(13, 148, 136, 0.6); }
 }
 .glow-pulse {
   animation: glow-pulse 3s ease-in-out infinite;
@@ -144,7 +144,7 @@
 }
 
 .dot-grid {
-  background-image: radial-gradient(rgba(109,40,217,0.08) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(13,148,136,0.08) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 

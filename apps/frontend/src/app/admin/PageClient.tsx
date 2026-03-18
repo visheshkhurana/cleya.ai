@@ -807,11 +807,11 @@ export default function AdminDashboard() {
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  { label: 'Total Users', value: analyticsData.totalUsers, icon: '👥', color: '#a78bfa' },
+                  { label: 'Total Users', value: analyticsData.totalUsers, icon: '👥', color: '#5EEAD4' },
                   { label: 'Complete Profiles', value: analyticsData.completedProfiles, icon: '✅', color: '#6ee7b7' },
                   { label: 'Onboarding Rate', value: `${analyticsData.onboardingRate}%`, icon: '📈', color: '#fbbf24' },
                   { label: 'Signups (7d)', value: analyticsData.recentSignups, icon: '🆕', color: '#60a5fa' },
-                  { label: 'Total Matches', value: analyticsData.totalMatches, icon: '🎯', color: '#a78bfa' },
+                  { label: 'Total Matches', value: analyticsData.totalMatches, icon: '🎯', color: '#5EEAD4' },
                   { label: 'Accepted', value: analyticsData.acceptedMatches, icon: '✅', color: '#6ee7b7' },
                   { label: 'Accept Rate', value: `${analyticsData.matchAcceptRate}%`, icon: '📊', color: '#fbbf24' },
                   { label: 'Avg Score', value: `${analyticsData.avgMatchScore}%`, icon: '⭐', color: '#f472b6' },
@@ -838,7 +838,7 @@ export default function AdminDashboard() {
                           <span className="text-xs text-purple-300/40">{d.count}</span>
                           <div className="w-full rounded-t-md" style={{
                             height: `${Math.max(height, 4)}%`,
-                            background: 'linear-gradient(180deg, #6C47FF, #4E2FD8)',
+                            background: 'linear-gradient(180deg, #0D9488, #0F766E)',
                             minHeight: '4px',
                           }} />
                           <span className="text-[10px] text-purple-300/30">{d.date.slice(5)}</span>
@@ -863,7 +863,7 @@ export default function AdminDashboard() {
                           <div className="h-2 rounded-full bg-purple-900/30">
                             <div className="h-full rounded-full" style={{
                               width: `${pct}%`,
-                              background: 'linear-gradient(90deg, #6C47FF, #a78bfa)',
+                              background: 'linear-gradient(90deg, #0D9488, #5EEAD4)',
                             }} />
                           </div>
                         </div>

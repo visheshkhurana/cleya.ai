@@ -103,13 +103,13 @@ export default function SettingsPage() {
       <nav className="sticky top-0 z-10 border-b border-white/5 px-4 sm:px-8 py-3 flex items-center justify-between" style={{ background: 'rgba(13,11,26,0.9)', backdropFilter: 'blur(20px)' }}>
         <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => router.push('/dashboard')}>
           <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold"
-            style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>C</div>
+            style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>C</div>
           <span className="text-white font-semibold text-sm sm:text-base">Cleo.ai</span>
         </div>
         <div className="hidden sm:flex items-center gap-4">
           <button onClick={() => router.push('/dashboard')} className="text-sm text-white/50 hover:text-white/80 transition bg-transparent border-0 cursor-pointer">Dashboard</button>
           <button onClick={() => router.push('/profile')} className="text-sm text-white/50 hover:text-white/80 transition bg-transparent border-0 cursor-pointer">Profile</button>
-          <span className="text-sm font-semibold" style={{ color: '#6C47FF' }}>Settings</span>
+          <span className="text-sm font-semibold" style={{ color: '#0D9488' }}>Settings</span>
         </div>
         <div className="sm:hidden"><MobileNav /></div>
       </nav>
@@ -146,7 +146,7 @@ export default function SettingsPage() {
                   background: 'rgba(108,71,255,0.1)',
                   border: '1px solid rgba(108,71,255,0.2)',
                   borderRadius: '8px',
-                  color: '#a78bfa',
+                  color: '#5EEAD4',
                   fontSize: '13px',
                   display: 'inline-block',
                 }}>
@@ -222,7 +222,7 @@ export default function SettingsPage() {
               disabled={passwordLoading || !currentPassword || !newPassword}
               style={{
                 padding: '12px 24px',
-                background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)',
+                background: 'linear-gradient(135deg, #0D9488, #0F766E)',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '12px',

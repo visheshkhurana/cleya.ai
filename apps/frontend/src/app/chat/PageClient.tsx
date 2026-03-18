@@ -180,7 +180,7 @@ export default function ChatPage() {
       <div className="min-h-screen flex items-center justify-center" style={{ background: '#0D0B1A' }}>
         <div className="text-center">
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 glow-pulse"
-            style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>
+            style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
             <span className="text-white text-2xl font-bold">C</span>
           </div>
           <p className="text-sm text-white/40">Starting conversation...</p>
@@ -194,7 +194,7 @@ export default function ChatPage() {
       <header className="px-4 py-3 flex items-center gap-3 sticky top-0 z-10 border-b border-white/5"
         style={{ background: 'rgba(13,11,26,0.9)', backdropFilter: 'blur(20px)' }}>
         <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-          style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>
+          style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
           C
         </div>
         <div className="flex-1">
@@ -244,7 +244,7 @@ export default function ChatPage() {
                 <button
                   onClick={() => window.location.href = '/dashboard'}
                   className="px-5 py-2.5 rounded-xl text-sm font-medium text-white transition"
-                  style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>
+                  style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
                   Go to Dashboard
                 </button>
                 <button
@@ -283,7 +283,7 @@ export default function ChatPage() {
               type="submit"
               disabled={!inputText.trim()}
               className="px-5 py-3 rounded-2xl font-semibold text-sm transition-all duration-200 disabled:opacity-40"
-              style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}
+              style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}
             >
               ↑
             </button>

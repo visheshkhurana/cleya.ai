@@ -200,7 +200,7 @@ export default function DashboardPage() {
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-purple-500/20"
-              style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>
+              style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
               C
             </div>
             <h1 className="font-semibold text-white text-sm">Cleo.ai</h1>
@@ -274,7 +274,7 @@ export default function DashboardPage() {
         <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(26,18,48,0.6)' }}>
           <div className="flex items-start gap-4">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg, #6C47FF20, #4E2FD820)', border: '1px solid rgba(108,71,255,0.15)' }}>
+              style={{ background: 'linear-gradient(135deg, #0D948820, #0F766E20)', border: '1px solid rgba(108,71,255,0.15)' }}>
               {personaIcon[profile?.persona || 'OTHER'] || '💬'}
             </div>
             <div className="flex-1 min-w-0">
@@ -284,7 +284,7 @@ export default function DashboardPage() {
                 </h2>
                 {profile?.persona && (
                   <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium border"
-                    style={{ background: 'rgba(108,71,255,0.1)', borderColor: 'rgba(108,71,255,0.2)', color: '#a78bfa' }}>
+                    style={{ background: 'rgba(108,71,255,0.1)', borderColor: 'rgba(108,71,255,0.2)', color: '#5EEAD4' }}>
                     {personaLabel[profile.persona] || profile.persona}
                   </span>
                 )}
@@ -296,7 +296,7 @@ export default function DashboardPage() {
                 <div className="mt-3 flex items-center gap-3">
                   <div className="flex-1 h-1.5 rounded-full max-w-xs" style={{ background: 'rgba(108,71,255,0.15)' }}>
                     <div className="h-full rounded-full transition-all duration-700"
-                      style={{ width: `${(profile.completenessScore || 0) * 100}%`, background: 'linear-gradient(90deg, #6C47FF, #a78bfa)' }} />
+                      style={{ width: `${(profile.completenessScore || 0) * 100}%`, background: 'linear-gradient(90deg, #0D9488, #5EEAD4)' }} />
                   </div>
                   <span className="text-xs text-white/30">{Math.round((profile.completenessScore || 0) * 100)}% complete</span>
                 </div>
@@ -307,7 +307,7 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
-            { label: 'Total Matches', value: matchStats.total, icon: '🤝', color: '#6C47FF' },
+            { label: 'Total Matches', value: matchStats.total, icon: '🤝', color: '#0D9488' },
             { label: 'Pending Review', value: matchStats.pending, icon: '⏳', color: '#f59e0b' },
             { label: 'Accepted Intros', value: matchStats.accepted, icon: '✅', color: '#10b981' },
           ].map((stat) => (
@@ -342,7 +342,7 @@ export default function DashboardPage() {
                     style={{ background: 'rgba(26,18,48,0.6)' }}>
                     <div className="flex items-start gap-3 mb-3">
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
-                        style={{ background: 'linear-gradient(135deg, #6C47FF15, #4E2FD815)', border: '1px solid rgba(108,71,255,0.12)' }}>
+                        style={{ background: 'linear-gradient(135deg, #0D948815, #0F766E15)', border: '1px solid rgba(108,71,255,0.12)' }}>
                         {personaIcon[otherProfile?.persona || 'OTHER'] || '💬'}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -353,13 +353,13 @@ export default function DashboardPage() {
                           <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold"
                             style={{
                               background: scorePercent >= 70 ? 'rgba(16,185,129,0.12)' : scorePercent >= 50 ? 'rgba(245,158,11,0.12)' : 'rgba(108,71,255,0.12)',
-                              color: scorePercent >= 70 ? '#6ee7b7' : scorePercent >= 50 ? '#fbbf24' : '#a78bfa'
+                              color: scorePercent >= 70 ? '#6ee7b7' : scorePercent >= 50 ? '#fbbf24' : '#5EEAD4'
                             }}>
                             {scorePercent}%
                           </div>
                         </div>
                         {otherProfile?.persona && (
-                          <span className="text-[10px] font-medium" style={{ color: '#a78bfa' }}>
+                          <span className="text-[10px] font-medium" style={{ color: '#5EEAD4' }}>
                             {personaLabel[otherProfile.persona] || otherProfile.persona}
                           </span>
                         )}
@@ -372,7 +372,7 @@ export default function DashboardPage() {
                       {isPending ? (
                         <button onClick={() => router.push('/matches')}
                           className="flex-1 py-2 rounded-xl text-xs font-medium text-white transition"
-                          style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>
+                          style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
                           Review
                         </button>
                       ) : (
@@ -404,7 +404,7 @@ export default function DashboardPage() {
               <h3 className="font-semibold text-white text-sm mb-1">View Matches</h3>
               <p className="text-xs text-white/40">Review proposals</p>
               {matchStats.pending > 0 && (
-                <p className="text-[11px] mt-1" style={{ color: '#a78bfa' }}>{matchStats.pending} pending</p>
+                <p className="text-[11px] mt-1" style={{ color: '#5EEAD4' }}>{matchStats.pending} pending</p>
               )}
             </button>
 
@@ -458,7 +458,7 @@ export default function DashboardPage() {
             <div className="flex flex-wrap gap-2">
               {profile.industries.map((ind) => (
                 <span key={ind} className="px-2.5 py-1 rounded-full text-xs border"
-                  style={{ background: 'rgba(108,71,255,0.08)', borderColor: 'rgba(108,71,255,0.15)', color: '#a78bfa' }}>
+                  style={{ background: 'rgba(108,71,255,0.08)', borderColor: 'rgba(108,71,255,0.15)', color: '#5EEAD4' }}>
                   {ind.replace(/_/g, ' ')}
                 </span>
               ))}
@@ -484,7 +484,7 @@ export default function DashboardPage() {
         <button
           onClick={() => setShowAIChat(true)}
           className="fixed bottom-6 right-6 w-14 h-14 rounded-full flex items-center justify-center text-white text-xl shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all z-40 glow-pulse"
-          style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}
+          style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}
         >
           💬
         </button>
@@ -496,7 +496,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/5" style={{ background: 'rgba(26,18,48,0.9)' }}>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
-                style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>C</div>
+                style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>C</div>
               <div>
                 <h3 className="text-sm font-semibold text-white">Chat with Cleo</h3>
                 <div className="flex items-center gap-1">
@@ -516,7 +516,7 @@ export default function DashboardPage() {
             {aiMessages.length === 0 && (
               <div className="text-center py-8">
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
-                  style={{ background: 'linear-gradient(135deg, #6C47FF20, #4E2FD820)', border: '1px solid rgba(108,71,255,0.15)' }}>
+                  style={{ background: 'linear-gradient(135deg, #0D948820, #0F766E20)', border: '1px solid rgba(108,71,255,0.15)' }}>
                   <span className="text-2xl">✨</span>
                 </div>
                 <p className="text-sm text-white/60 mb-1">Ask Cleo anything!</p>
@@ -539,7 +539,7 @@ export default function DashboardPage() {
                     ? 'rounded-tr-sm text-white'
                     : 'rounded-tl-sm bg-white/5 text-white/80 border border-white/5'
                 }`}
-                  style={msg.role === 'user' ? { background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' } : {}}>
+                  style={msg.role === 'user' ? { background: 'linear-gradient(135deg, #0D9488, #0F766E)' } : {}}>
                   {msg.content}
                 </div>
               </div>
@@ -568,7 +568,7 @@ export default function DashboardPage() {
                 type="submit"
                 disabled={!aiInput.trim() || aiLoading}
                 className="px-4 py-2.5 rounded-2xl font-semibold text-sm text-white transition-all disabled:opacity-30"
-                style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}
+                style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}
               >
                 ↑
               </button>

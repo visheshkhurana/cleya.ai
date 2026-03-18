@@ -66,7 +66,7 @@ export default function MobileNav() {
             <div className="flex items-center justify-between p-4 border-b border-white/5">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
-                  style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>C</div>
+                  style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>C</div>
                 <span className="text-white font-semibold text-sm">Cleo.ai</span>
               </div>
               <div className="flex items-center gap-2">
@@ -88,7 +88,7 @@ export default function MobileNav() {
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${
                       isActive ? 'text-white' : 'text-white/50 hover:text-white/80'
                     }`}
-                    style={isActive ? { background: 'rgba(108,71,255,0.12)', borderLeft: '2px solid #6C47FF' } : {}}
+                    style={isActive ? { background: 'rgba(108,71,255,0.12)', borderLeft: '2px solid #0D9488' } : {}}
                   >
                     <span className="text-base">{item.icon}</span>
                     {item.label}

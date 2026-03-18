@@ -163,7 +163,7 @@ export default function NotificationCenter() {
               {unreadCount > 0 && (
                 <span style={{
                   background: 'rgba(108,71,255,0.15)',
-                  color: '#a78bfa',
+                  color: '#5EEAD4',
                   fontSize: '12px',
                   padding: '2px 8px',
                   borderRadius: '10px',
@@ -180,7 +180,7 @@ export default function NotificationCenter() {
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#6C47FF',
+                  color: '#0D9488',
                   fontSize: '12px',
                   cursor: 'pointer',
                   fontWeight: 500,
@@ -233,7 +233,7 @@ export default function NotificationCenter() {
                           width: '6px',
                           height: '6px',
                           borderRadius: '50%',
-                          background: '#6C47FF',
+                          background: '#0D9488',
                           flexShrink: 0,
                         }} />
                       )}

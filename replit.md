@@ -14,7 +14,7 @@ Monorepo with:
 - `packages/types` — Shared TypeScript types
 
 ## Stack
-- **Frontend:** Next.js 14, React 18, Tailwind CSS (dark purple theme)
+- **Frontend:** Next.js 14, React 18, Tailwind CSS (dark teal theme)
 - **Backend:** Express, TypeScript, WebSocket
 - **Database:** PostgreSQL (Replit built-in), Prisma ORM, pgvector
 - **Auth:** JWT (bcryptjs password hashing), CSRF double-submit cookie protection, email verification on signup
@@ -139,7 +139,7 @@ Six persona types with tailored onboarding flows:
 5. **Analytics** — Users by persona, onboarding rate, match stats, feedback distribution, daily signups chart, communications breakdown, recent activity feed, weekly digest trigger
 
 ### User-Facing Pages
-- **Landing Page** (`/`) — Redesigned "Precision Intelligence" aesthetic. Sections: frosted-glass nav, hero (Playfair Display serif headline + phone chat mockup with staggered match cards), metrics bar (count-up animation), testimonial ticker (marquee), How It Works (3-step cards), Who It's For (3 persona columns), featured match story (blockquote), final CTA, minimal footer. Fonts: Playfair Display (hero/quotes) + DM Sans (body). Colors: #0B0918 bg, #6D28D9 violet accent, #A09FB5 muted text. Animations respect prefers-reduced-motion. Auth modal has Escape/click-outside dismiss. Non-auth users see landing; auth users auto-redirect to dashboard/admin
+- **Landing Page** (`/`) — Redesigned "Precision Intelligence" aesthetic focused on India's startup ecosystem. Sections: frosted-glass nav, hero (Playfair Display serif headline + phone chat mockup with staggered match cards showing Indian names/context), metrics bar (count-up animation with ₹ crores), testimonial ticker (marquee with Indian startup testimonials), How It Works (3-step cards), Who It's For (3 persona columns), featured match story (blockquote), final CTA, minimal footer. Fonts: Playfair Display (hero/quotes) + DM Sans (body). Colors: #0B0918 bg, #0D9488 teal primary, #0F766E teal hover, #14B8A6 teal light, #2DD4BF teal accent, #A09FB5 muted text. Animations respect prefers-reduced-motion. Auth modal has Escape/click-outside dismiss. Non-auth users see landing; auth users auto-redirect to dashboard/admin
 - **Dashboard** (`/dashboard`) — Profile summary, match stats, recent match cards with scores + persona + reason, quick actions (View Matches, Find Matches, Edit Profile, Chat)
 - **Profile** (`/profile`) — Edit all profile fields per persona type (Founder/Investor/Talent sections), save via PATCH /api/users/profile
 - **Chat** (`/chat`) — AI chat with typing indicator, timestamps, smooth scroll, chat history persistence (localStorage, survives refresh, 24h expiry)
@@ -166,7 +166,7 @@ Six persona types with tailored onboarding flows:
 - **Introduction pages**: `/introductions` (list), `/introductions/:id` (detail with both user cards, match reason, AI-generated talking points, Google Calendar link, mailto link, status tracking)
 - **IntroductionRecord auto-creation**: When match accepted, introductionService creates record with AI-generated talking points (fallback to rule-based)
 - **Matches search**: Search bar on matches page filtering by name, persona, industry, company, role, skills across all tabs
-- **404 page**: Custom not-found.tsx with dark purple theme, navigation buttons
+- **404 page**: Custom not-found.tsx with dark teal theme, navigation buttons
 - **Error boundary**: error.tsx with retry button and dashboard link
 
 ## Features (all tested E2E)
@@ -188,7 +188,7 @@ Six persona types with tailored onboarding flows:
 16. **Security Headers** — CSP, HSTS, X-Frame-Options DENY, X-Content-Type-Options, Referrer-Policy (next.config.js)
 17. **SEO** — OG tags, Twitter cards, robots.txt, sitemap.xml, SVG favicon, OG image
 18. **Auth Flows** — Email verification (/verify-email), forgot/reset password (/reset-password), signup consent checkbox
-19. **Legal Pages** — Privacy Policy (/privacy), Terms of Service (/terms)
+19. **Legal Pages** — Privacy Policy (/privacy) with GDPR, CCPA, Indian DPDPA sections, DPO contact, children's privacy, cookies/tracking, data export rights; Terms of Service (/terms) with India jurisdiction (Bangalore courts), dispute resolution, indemnification clauses
 20. **Input Validation** — HTML stripping, LinkedIn URL validation, headline ≤150 chars, bio ≤1000 chars
 21. **Skeleton Loaders** — Dashboard and matches pages show animated skeleton UI during data loading
 

@@ -32,7 +32,7 @@ export default function VerifyEmailPage() {
             </div>
             <h1 className="text-xl font-semibold text-white mb-2">Email Verified!</h1>
             <p className="text-sm mb-6" style={{ color: '#A09FB5' }}>Your email has been verified successfully.</p>
-            <a href="/dashboard" className="inline-block px-6 py-2.5 rounded-lg text-sm font-medium text-white" style={{ background: '#6D28D9' }}>Go to Dashboard</a>
+            <a href="/dashboard" className="inline-block px-6 py-2.5 rounded-lg text-sm font-medium text-white" style={{ background: '#0D9488' }}>Go to Dashboard</a>
           </>
         )}
         {status === 'error' && (
@@ -42,7 +42,7 @@ export default function VerifyEmailPage() {
             </div>
             <h1 className="text-xl font-semibold text-white mb-2">Verification Failed</h1>
             <p className="text-sm mb-6" style={{ color: '#A09FB5' }}>{error}</p>
-            <a href="/" className="inline-block px-6 py-2.5 rounded-lg text-sm font-medium text-white" style={{ background: '#6D28D9' }}>Back to Home</a>
+            <a href="/" className="inline-block px-6 py-2.5 rounded-lg text-sm font-medium text-white" style={{ background: '#0D9488' }}>Back to Home</a>
           </>
         )}
       </div>

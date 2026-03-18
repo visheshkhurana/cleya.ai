@@ -195,7 +195,7 @@ export default function MatchesPage() {
         <div className="p-5">
           <div className="flex items-start gap-4">
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg, #6C47FF15, #4E2FD815)', border: '1px solid rgba(108,71,255,0.12)' }}>
+              style={{ background: 'linear-gradient(135deg, #0D948815, #0F766E15)', border: '1px solid rgba(108,71,255,0.12)' }}>
               {personaIcon[profile?.persona || 'OTHER'] || '💬'}
             </div>
             <div className="flex-1 min-w-0">
@@ -205,7 +205,7 @@ export default function MatchesPage() {
                 </h3>
                 <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
                   style={{ background: scorePercent >= 70 ? 'rgba(16,185,129,0.12)' : scorePercent >= 50 ? 'rgba(245,158,11,0.12)' : 'rgba(108,71,255,0.12)',
-                    color: scorePercent >= 70 ? '#6ee7b7' : scorePercent >= 50 ? '#fbbf24' : '#a78bfa' }}>
+                    color: scorePercent >= 70 ? '#6ee7b7' : scorePercent >= 50 ? '#fbbf24' : '#5EEAD4' }}>
                   {scorePercent}%
                 </div>
               </div>
@@ -214,7 +214,7 @@ export default function MatchesPage() {
               )}
               {profile?.persona && (
                 <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium border mt-1"
-                  style={{ background: 'rgba(108,71,255,0.08)', borderColor: 'rgba(108,71,255,0.15)', color: '#a78bfa' }}>
+                  style={{ background: 'rgba(108,71,255,0.08)', borderColor: 'rgba(108,71,255,0.15)', color: '#5EEAD4' }}>
                   {personaLabel[profile.persona] || profile.persona}
                 </span>
               )}
@@ -285,7 +285,7 @@ export default function MatchesPage() {
               onClick={() => handleRespond(match.id, 'ACCEPTED')}
               disabled={responding === match.id}
               className="flex-1 py-3 text-sm font-medium transition disabled:opacity-40"
-              style={{ color: '#a78bfa' }}
+              style={{ color: '#5EEAD4' }}
               onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(108,71,255,0.08)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
             >
@@ -320,7 +320,7 @@ export default function MatchesPage() {
                     ? 'text-white shadow-sm'
                     : 'text-white/40 hover:text-white/60'
                 }`}
-                style={activeTab === tab.id ? { background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' } : {}}
+                style={activeTab === tab.id ? { background: 'linear-gradient(135deg, #0D9488, #0F766E)' } : {}}
               >
                 {tab.label}
               </button>
@@ -362,7 +362,7 @@ export default function MatchesPage() {
                 <button
                   onClick={() => router.push('/dashboard')}
                   className="px-5 py-2.5 rounded-xl text-sm font-medium text-white transition"
-                  style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}
+                  style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}
                 >
                   Back to Dashboard
                 </button>
@@ -451,7 +451,7 @@ export default function MatchesPage() {
               <button onClick={submitFeedback}
                 disabled={feedbackPrompt.rating === 0 || submittingFeedback}
                 className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white transition disabled:opacity-40"
-                style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>
+                style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
                 {submittingFeedback ? 'Sending...' : 'Submit'}
               </button>
             </div>

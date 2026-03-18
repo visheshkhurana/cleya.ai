@@ -28,7 +28,7 @@ export default function Error({
           <button
             onClick={() => reset()}
             className="px-6 py-3 rounded-2xl text-sm font-medium text-white transition"
-            style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}>
+            style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
             Try Again
           </button>
           <a href="/dashboard"

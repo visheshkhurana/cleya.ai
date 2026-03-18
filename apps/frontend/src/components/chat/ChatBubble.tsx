@@ -15,7 +15,7 @@ export function ChatBubble({ sender, content, timestamp }: ChatBubbleProps) {
         {!isUser && (
           <div
             className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mb-1"
-            style={{ background: 'linear-gradient(135deg, #6C47FF, #4E2FD8)' }}
+            style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}
           >
             C
           </div>
