@@ -3,7 +3,7 @@ import { authenticate } from '../middleware/auth';
 import { profileService } from '../services/profileService';
 import { prisma } from '@boardy/db';
 import bcrypt from 'bcryptjs';
-import { z } from 'zod';
+import { validate, profileUpdateSchema, changePasswordSchema } from '../middleware/validation';
 
 export const userRouter = Router();
 
@@ -16,7 +16,7 @@ userRouter.get('/profile', authenticate, async (req: Request, res: Response, nex
   }
 });
 
-userRouter.put('/profile', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+userRouter.put('/profile', authenticate, validate(profileUpdateSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const profile = await profileService.updateProfile(req.user!.userId, req.body);
     res.json({ success: true, data: profile });
@@ -25,7 +25,7 @@ userRouter.put('/profile', authenticate, async (req: Request, res: Response, nex
   }
 });
 
-userRouter.patch('/profile', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+userRouter.patch('/profile', authenticate, validate(profileUpdateSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const profile = await profileService.updateProfile(req.user!.userId, req.body);
     res.json({ success: true, data: profile });
@@ -34,14 +34,9 @@ userRouter.patch('/profile', authenticate, async (req: Request, res: Response, n
   }
 });
 
-const changePasswordSchema = z.object({
-  currentPassword: z.string(),
-  newPassword: z.string().min(8),
-});
-
-userRouter.post('/change-password', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+userRouter.post('/change-password', authenticate, validate(changePasswordSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
+    const { currentPassword, newPassword } = req.body;
     const user = await prisma.user.findUnique({ where: { id: req.user!.userId } });
     if (!user) {
       res.status(404).json({ success: false, error: { message: 'User not found' } });

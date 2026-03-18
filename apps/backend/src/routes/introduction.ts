@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { authenticate } from '../middleware/auth';
 import { prisma } from '@boardy/db';
+import { validate, introductionStatusSchema } from '../middleware/validation';
 
 export const introductionRouter = Router();
 
@@ -57,14 +58,10 @@ introductionRouter.get('/:id', authenticate, async (req: Request, res: Response,
   }
 });
 
-introductionRouter.patch('/:id/status', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+introductionRouter.patch('/:id/status', authenticate, validate(introductionStatusSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.userId;
     const { status, scheduledAt, notes } = req.body;
-    const validStatuses = ['VIEWED', 'RESPONDED', 'MEETING_SCHEDULED'];
-    if (!status || !validStatuses.includes(status)) {
-      return res.status(400).json({ success: false, error: { message: 'Invalid status' } });
-    }
     const intro = await prisma.introductionRecord.findFirst({
       where: {
         id: req.params.id,

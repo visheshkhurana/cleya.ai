@@ -1,7 +1,15 @@
 const API_BASE = '/api';
 
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1') + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 class ApiClient {
   private token: string | null = null;
+  private csrfToken: string | null = null;
+  private csrfFetching: Promise<void> | null = null;
 
   setToken(token: string) {
     this.token = token;
@@ -25,22 +33,70 @@ class ApiClient {
     }
   }
 
+  private async ensureCsrfToken(): Promise<string | null> {
+    const existing = getCookie('cleo_csrf');
+    if (existing) {
+      this.csrfToken = existing;
+      return existing;
+    }
+    if (this.csrfFetching) {
+      await this.csrfFetching;
+      return this.csrfToken;
+    }
+    this.csrfFetching = (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/csrf-token`, { credentials: 'include' });
+        const json = await res.json();
+        if (json.data?.csrfToken) {
+          this.csrfToken = json.data.csrfToken;
+        }
+      } catch {
+        // non-fatal
+      } finally {
+        this.csrfFetching = null;
+      }
+    })();
+    await this.csrfFetching;
+    return this.csrfToken;
+  }
+
   private async fetch<T = any>(path: string, options: RequestInit = {}): Promise<T> {
     const token = this.getToken();
+    const method = (options.method || 'GET').toUpperCase();
+    const needsCsrf = !['GET', 'HEAD', 'OPTIONS'].includes(method);
+
+    let csrf: string | null = null;
+    if (needsCsrf) {
+      csrf = await this.ensureCsrfToken();
+    }
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(csrf ? { 'x-csrf-token': csrf } : {}),
       ...(options.headers as Record<string, string> || {}),
     };
 
     const res = await fetch(`${API_BASE}${path}`, {
       ...options,
       headers,
+      credentials: 'include',
     });
 
     const json = await res.json();
 
     if (!res.ok) {
+      if (json.error?.code === 'CSRF_MISSING' || json.error?.code === 'CSRF_MISMATCH' || json.error?.code === 'CSRF_INVALID') {
+        this.csrfToken = null;
+        const newCsrf = await this.ensureCsrfToken();
+        if (newCsrf) {
+          headers['x-csrf-token'] = newCsrf;
+          const retry = await fetch(`${API_BASE}${path}`, { ...options, headers, credentials: 'include' });
+          const retryJson = await retry.json();
+          if (!retry.ok) throw new Error(retryJson.error?.message || 'Request failed');
+          return retryJson.data;
+        }
+      }
       throw new Error(json.error?.message || 'Request failed');
     }
 

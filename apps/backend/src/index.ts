@@ -2,11 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
 import { env } from './config/env';
 import { errorHandler } from './middleware/errorHandler';
 import { setupWebSocket } from './websocket/server';
 import { seedDatabase } from './seed';
+import { csrfTokenProvider, csrfProtection } from './middleware/csrf';
 import { authRouter } from './routes/auth';
 import { userRouter } from './routes/user';
 import { conversationRouter } from './routes/conversation';
@@ -29,6 +31,7 @@ const server = createServer(app);
 app.use(helmet());
 app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
 app.use(morgan('dev'));
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/api', generalLimiter);
@@ -37,19 +40,21 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', env: env.NODE_ENV });
 });
 
+app.get('/api/csrf-token', csrfTokenProvider);
+
 app.use('/api/auth', authRouter);
-app.use('/api/users', userRouter);
+app.use('/api/users', csrfProtection, userRouter);
 app.use('/api/conversations', conversationRouter);
-app.use('/api/matches', matchRouter);
+app.use('/api/matches', csrfProtection, matchRouter);
 app.use('/api/calls', callRouter);
-app.use('/api/admin', adminRouter);
+app.use('/api/admin', csrfProtection, adminRouter);
 app.use('/api/notifications', notificationRouter);
 app.use('/api/messaging', messagingRouter);
 app.use('/api/twilio', twilioRouter);
-app.use('/api/deals', dealRouter);
-app.use('/api/events', eventRouter);
+app.use('/api/deals', csrfProtection, dealRouter);
+app.use('/api/events', csrfProtection, eventRouter);
 app.use('/api/ai-chat', aiChatRouter);
-app.use('/api/introductions', introductionRouter);
+app.use('/api/introductions', csrfProtection, introductionRouter);
 
 app.use(errorHandler);
 

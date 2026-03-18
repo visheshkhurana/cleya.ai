@@ -4,6 +4,7 @@ import { matchingService } from '../services/matchingService';
 import { vectorMatchingService } from '../services/vectorMatchingService';
 import { prisma } from '@boardy/db';
 import { matchProposalLimiter } from '../middleware/rateLimit';
+import { validate, matchResponseSchema, matchFeedbackSchema, matchProposeSchema } from '../middleware/validation';
 
 export const matchRouter = Router();
 
@@ -45,7 +46,7 @@ matchRouter.post('/find-and-propose', authenticate, matchProposalLimiter, async 
   }
 });
 
-matchRouter.post('/propose', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+matchRouter.post('/propose', authenticate, validate(matchProposeSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { userAId, userBId } = req.body;
     const match = await matchingService.proposeMatch(userAId, userBId);
@@ -55,12 +56,9 @@ matchRouter.post('/propose', authenticate, async (req: Request, res: Response, n
   }
 });
 
-matchRouter.post('/:id/feedback', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+matchRouter.post('/:id/feedback', authenticate, validate(matchFeedbackSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { rating, feedback } = req.body;
-    if (!rating || rating < 1 || rating > 5) {
-      return res.status(400).json({ success: false, error: { message: 'Rating must be between 1 and 5' } });
-    }
     const match = await prisma.match.findFirst({
       where: {
         id: req.params.id,
@@ -81,7 +79,7 @@ matchRouter.post('/:id/feedback', authenticate, async (req: Request, res: Respon
   }
 });
 
-matchRouter.post('/:id/respond', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+matchRouter.post('/:id/respond', authenticate, validate(matchResponseSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { response } = req.body;
     const match = await matchingService.respondToMatch(
