@@ -47,9 +47,14 @@ model User {
   introductionsAsB IntroductionRecord[] @relation("IntroUserB")
   communicationPreference CommunicationPreference?
 
+  onboardingComplete Boolean @default(false)
+
   utmSource    String?
   utmMedium    String?
   utmCampaign  String?
+
+  inviteCodesCreated InviteCode[] @relation("InviteCodeCreator")
+  inviteCodeUsed     InviteCode?  @relation("InviteCodeUser")
 
   @@index([email])
   @@index([phone])
@@ -623,4 +628,42 @@ model CommunicationPreference {
   updatedAt       DateTime @updatedAt
 
   @@map("communication_preferences")
+}
+
+// ─────────────────────────────────────────────
+// INVITE CODES
+// ─────────────────────────────────────────────
+
+model InviteCode {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  createdById String
+  createdBy   User      @relation("InviteCodeCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  usedById    String?   @unique
+  usedBy      User?     @relation("InviteCodeUser", fields: [usedById], references: [id], onDelete: SetNull)
+  usedAt      DateTime?
+  expiresAt   DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  @@index([code])
+  @@index([createdById])
+  @@map("invite_codes")
+}
+
+// ─────────────────────────────────────────────
+// WAITLIST
+// ─────────────────────────────────────────────
+
+model Waitlist {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  persona   String?
+  fullName  String?
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([approved])
+  @@map("waitlist")
 }
