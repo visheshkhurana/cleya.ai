@@ -194,7 +194,7 @@ Six persona types with tailored onboarding flows:
 22. **UTM Attribution** — Landing page captures utm_source/utm_medium/utm_campaign/utm_content/utm_term from URL params into localStorage; on signup, utmSource/utmMedium/utmCampaign are saved to User model in DB
 23. **Channel Attribution** — Onboarding "How did you hear about us?" with 9 options (LinkedIn, Twitter/X, WhatsApp Group, Friend Referral, Event The Pitch, Angel Network, VC Newsletter, Google Search, Other); stored as channelSource on Profile; breakdown chart in admin analytics
 24. **International Phone Input** — Custom PhoneInput component with country flag + dial code dropdown (36 countries, default India +91); integrated in onboarding common_details form, profile edit page, and admin trigger modal
-25. **PostHog Analytics** — Optional analytics via `NEXT_PUBLIC_POSTHOG_KEY` env var; silently skips if not set; tracks signup, login, onboarding completion, profile updates, match accept/decline, page views; identifies users; resets on logout; CSP allows posthog.com
+25. **PostHog Analytics** — Optional analytics loaded from CDN (`https://us.i.posthog.com/static/array.js`) via `NEXT_PUBLIC_POSTHOG_KEY` env var; silently skips if not set; tracks signup, login, onboarding completion, profile updates, match accept/decline, page views; identifies users; resets on logout; CSP allows posthog.com; no npm dependency
 
 ### Vector-Based AI Matching (pgvector)
 - **Hybrid matching pipeline**: pgvector cosine similarity → rule-based + intent scoring → ranked results

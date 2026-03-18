@@ -1,50 +1,30 @@
 'use client';
 
-import posthog from 'posthog-js';
+declare global {
+  interface Window {
+    posthog?: any;
+  }
+}
 
-const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY || '';
-const POSTHOG_HOST = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
-
-let initialized = false;
-
-export function initPostHog() {
-  if (initialized || !POSTHOG_KEY || typeof window === 'undefined') return;
-
-  posthog.init(POSTHOG_KEY, {
-    api_host: POSTHOG_HOST,
-    person_profiles: 'identified_only',
-    capture_pageview: true,
-    capture_pageleave: true,
-    autocapture: true,
-    persistence: 'localStorage+cookie',
-    loaded: (ph) => {
-      if (process.env.NODE_ENV === 'development') {
-        ph.debug(false);
-      }
-    },
-  });
-
-  initialized = true;
+function ph() {
+  if (typeof window === 'undefined') return null;
+  return window.posthog || null;
 }
 
 export function identifyUser(userId: string, properties?: Record<string, any>) {
-  if (!POSTHOG_KEY) return;
-  posthog.identify(userId, properties);
+  ph()?.identify(userId, properties);
 }
 
 export function resetUser() {
-  if (!POSTHOG_KEY) return;
-  posthog.reset();
+  ph()?.reset();
 }
 
 export function trackEvent(event: string, properties?: Record<string, any>) {
-  if (!POSTHOG_KEY) return;
-  posthog.capture(event, properties);
+  ph()?.capture(event, properties);
 }
 
 export function setUserProperties(properties: Record<string, any>) {
-  if (!POSTHOG_KEY) return;
-  posthog.people.set(properties);
+  ph()?.people?.set(properties);
 }
 
 export const analytics = {
@@ -87,5 +67,3 @@ export const analytics = {
   featureUsed: (feature: string, details?: Record<string, any>) =>
     trackEvent('feature_used', { feature, ...details }),
 };
-
-export { posthog };
