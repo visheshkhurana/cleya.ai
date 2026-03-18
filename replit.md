@@ -64,11 +64,8 @@ All frontend pages use a server/client wrapper pattern for build compatibility:
 
 ## Seed Users
 - `admin@cleo.ai` / `admin123456` (ADMIN role)
-- `sarah@techstartup.com` / `password123` (FOUNDER, priority=FUNDRAISING)
-- `alex@venturefund.com` / `password123` (INVESTOR, investmentAmount=$500K)
-- `priya@bigcorp.com` / `password123` (OPERATOR)
-- `marcus@advisors.io` / `password123` (ADVISOR)
-- `jessica@jobhunt.me` / `password123` (JOB_SEEKER, targetRole=FOUNDING_ENGINEER)
+- Sample/test users have been removed from production. The backend auto-seed only creates the admin user on empty databases.
+- To clean seed data: `npx tsx packages/db/src/clean-seed.ts`
 
 ## Phase 1: Multi-Persona Onboarding
 Six persona types with tailored onboarding flows:
