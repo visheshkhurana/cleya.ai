@@ -2,19 +2,22 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
+const nextDir = path.join(__dirname, '.next');
+
+let buildOutput = '';
 let buildFailed = false;
-let hasRealErrors = false;
 
 try {
-  execSync('npx next build', { stdio: 'inherit', cwd: __dirname });
+  buildOutput = execSync('npx next build 2>&1', { cwd: __dirname, encoding: 'utf-8' });
+  process.stdout.write(buildOutput);
 } catch (err) {
   buildFailed = true;
+  buildOutput = err.stdout || '';
+  process.stdout.write(buildOutput);
+  if (err.stderr) process.stderr.write(err.stderr);
 }
 
-const nextDir = path.join(__dirname, '.next');
 const manifestPath = path.join(nextDir, 'prerender-manifest.json');
-const routesManifestPath = path.join(nextDir, 'routes-manifest.json');
-
 if (!fs.existsSync(manifestPath) && fs.existsSync(nextDir)) {
   const manifest = {
     version: 4,
@@ -33,15 +36,22 @@ if (!fs.existsSync(manifestPath) && fs.existsSync(nextDir)) {
 }
 
 if (buildFailed) {
-  const serverAppDir = path.join(nextDir, 'server', 'app');
-  if (fs.existsSync(serverAppDir)) {
-    const appPages = fs.readdirSync(serverAppDir);
-    const hasPages = appPages.some(f => f !== '_not-found' && f !== '_error');
-    if (hasPages) {
-      console.log('Build completed (non-critical _not-found prerender warning suppressed)');
+  const exportErrors = buildOutput.match(/Export encountered errors on following paths:\n([\s\S]*?)(?:\n\n|\n$)/);
+  if (exportErrors) {
+    const errorPaths = exportErrors[1].trim().split('\n').map(l => l.trim());
+    const knownSafe = ['/_error: /404', '/_error: /500', '/_not-found/page: /_not-found'];
+    const unexpectedErrors = errorPaths.filter(p => !knownSafe.includes(p));
+
+    if (unexpectedErrors.length === 0) {
+      console.log('Build completed (non-critical prerender warnings for _not-found/_error suppressed)');
       process.exit(0);
     }
+
+    console.error('Build failed with unexpected export errors:');
+    unexpectedErrors.forEach(e => console.error('  ' + e));
+    process.exit(1);
   }
+
   console.error('Build failed');
   process.exit(1);
 }
