@@ -86,7 +86,7 @@ export default function DashboardPage() {
       if (userData?.id) {
         identifyUser(userData.id, { email: userData.email, persona: profileData?.persona });
       }
-      analytics.pageViewed('dashboard');
+      analytics.pageView('dashboard');
     } catch (err: any) {
       console.error('Dashboard load failed:', err);
       if (err.message?.includes('Unauthorized') || err.message?.includes('token')) {

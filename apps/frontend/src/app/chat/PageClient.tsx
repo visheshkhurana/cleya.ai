@@ -114,6 +114,7 @@ export default function ChatPage() {
       }
 
       const data = await api.startConversation('onboarding_v1');
+      analytics.onboardingStarted();
       setConversationId(data.conversationId);
       setCurrentNode(data.node);
       if (data.messages) {

@@ -67,8 +67,11 @@ export default function MatchesPage() {
         api.getMatches(),
         api.getMe(),
       ]);
-      setMatches(Array.isArray(matchesData) ? matchesData : []);
+      const matchArr = Array.isArray(matchesData) ? matchesData : [];
+      setMatches(matchArr);
       setMe(userData);
+      const pending = matchArr.filter((m: any) => m.status === 'PENDING');
+      pending.forEach((m: any) => analytics.matchProposed(m.id));
     } catch (err: any) {
       console.error('Load failed:', err);
       if (err.message?.includes('Unauthorized')) router.push('/');
@@ -82,7 +85,7 @@ export default function MatchesPage() {
     try {
       await api.respondToMatch(matchId, response);
       if (response === 'ACCEPTED') analytics.matchAccepted(matchId);
-      else analytics.matchDeclined(matchId);
+      else analytics.matchRejected(matchId);
       setFeedbackPrompt({ matchId, rating: 0, text: '', action: response });
       await loadData();
     } catch (err) {

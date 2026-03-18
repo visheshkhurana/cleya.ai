@@ -28,8 +28,8 @@ export function setUserProperties(properties: Record<string, any>) {
 }
 
 export const analytics = {
-  signup: (method: string, persona?: string) =>
-    trackEvent('user_signed_up', { method, persona }),
+  signupCompleted: (method: string, persona?: string) =>
+    trackEvent('signup_completed', { method, persona }),
 
   login: (method: string) =>
     trackEvent('user_logged_in', { method }),
@@ -43,14 +43,14 @@ export const analytics = {
   profileUpdated: (fields: string[]) =>
     trackEvent('profile_updated', { fields_changed: fields }),
 
-  matchViewed: (matchId: string) =>
-    trackEvent('match_viewed', { match_id: matchId }),
+  matchProposed: (matchId: string) =>
+    trackEvent('match_proposed', { match_id: matchId }),
 
   matchAccepted: (matchId: string) =>
     trackEvent('match_accepted', { match_id: matchId }),
 
-  matchDeclined: (matchId: string) =>
-    trackEvent('match_declined', { match_id: matchId }),
+  matchRejected: (matchId: string) =>
+    trackEvent('match_rejected', { match_id: matchId }),
 
   introRequested: (matchId: string) =>
     trackEvent('intro_requested', { match_id: matchId }),
@@ -58,8 +58,8 @@ export const analytics = {
   messagesSent: (channel: string) =>
     trackEvent('message_sent', { channel }),
 
-  pageViewed: (page: string) =>
-    trackEvent('page_viewed', { page }),
+  pageView: (page: string) =>
+    trackEvent('page_view', { page }),
 
   searchPerformed: (query: string) =>
     trackEvent('search_performed', { query_length: query.length }),

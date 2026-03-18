@@ -140,7 +140,7 @@ export default function Home() {
           utmCampaign: utmData.utm_campaign,
         });
         localStorage.removeItem('cleo_utm');
-        analytics.signup('email');
+        analytics.signupCompleted('email');
         window.location.href = '/chat';
       } else {
         const data = await api.login(email, password);
