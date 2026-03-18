@@ -68,6 +68,10 @@ app.use('/api/events', csrfProtection, eventRouter);
 app.use('/api/ai-chat', aiChatRouter);
 app.use('/api/introductions', csrfProtection, introductionRouter);
 
+if (env.SENTRY_DSN) {
+  Sentry.setupExpressErrorHandler(app);
+}
+
 app.use(errorHandler);
 
 setupWebSocket(server);
