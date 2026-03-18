@@ -196,6 +196,10 @@ Six persona types with tailored onboarding flows:
 24. **International Phone Input** — Custom PhoneInput component with country flag + dial code dropdown (36 countries, default India +91); integrated in onboarding common_details form, profile edit page, and admin trigger modal
 25. **PostHog Analytics** — Optional analytics loaded from CDN (`https://us.i.posthog.com/static/array.js`) via `NEXT_PUBLIC_POSTHOG_KEY` env var; silently skips if not set; tracks signup_completed, onboarding_started, onboarding_completed, match_proposed, match_accepted, match_rejected, profile_updated, page_view; identifies users; resets on logout; CSP allows posthog.com; no npm dependency
 26. **Sentry Error Monitoring** — Backend-only via `@sentry/node` + `SENTRY_DSN` env var; init before routes, `Sentry.setupExpressErrorHandler` after routes, `captureException` in error handler with request context; silently skips if not set; frontend has placeholder comment (no @sentry/nextjs to keep bundle light)
+27. **GDPR Data Export** — Settings page "Export My Data" buttons (JSON + CSV); backend `GET /api/users/export?format=json|csv` returns all user data (profile, matches, messages, notifications, feedback); satisfies GDPR Article 20 data portability
+28. **Health Endpoint** — `GET /health` returns `{ status, timestamp, version, uptime, env }`; documented in DEPLOYMENT.md for UptimeRobot/Better Uptime monitoring
+29. **Empty State Improvements** — Dashboard: welcome card with "Set Up Your Profile" CTA for new users; Chat: Cleo avatar + greeting + suggested prompts when no messages; Notifications: styled empty state with descriptive text
+30. **Database Backup** — `scripts/backup.sh` runs pg_dump with gzip compression, 7-day retention; documented in DEPLOYMENT.md with restore instructions
 
 ### Vector-Based AI Matching (pgvector)
 - **Hybrid matching pipeline**: pgvector cosine similarity → rule-based + intent scoring → ranked results

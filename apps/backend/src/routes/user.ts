@@ -140,6 +140,12 @@ userRouter.get('/export', authenticate, async (req: Request, res: Response, next
       notifications.forEach((n, i) => {
         Object.entries(n).forEach(([k, v]) => lines.push(`notification_${i + 1},${k},"${String(v ?? '')}"`));
       });
+      messages.forEach((m, i) => {
+        Object.entries(m).forEach(([k, v]) => lines.push(`message_${i + 1},${k},"${String(v ?? '')}"`));
+      });
+      feedbacks.forEach((f, i) => {
+        Object.entries(f).forEach(([k, v]) => lines.push(`feedback_${i + 1},${k},"${String(v ?? '')}"`));
+      });
 
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename=cleo-data-export.csv');

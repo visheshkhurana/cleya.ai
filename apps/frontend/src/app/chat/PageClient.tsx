@@ -224,6 +224,28 @@ export default function ChatPage() {
       </header>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto chat-scroll px-4 py-6 space-y-1">
+        {messages.length === 0 && !typing && !loading && (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-bold mb-4"
+              style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)', boxShadow: '0 4px 20px rgba(13,148,136,0.3)' }}>
+              C
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-2">Hey! I'm Cleo.</h3>
+            <p className="text-sm text-white/40 max-w-xs mb-6">Let's get you connected with the right people in India's startup ecosystem.</p>
+            <div className="flex flex-wrap gap-2 justify-center max-w-sm">
+              {['I\u2019m a founder raising funds', 'I\u2019m looking to invest', 'I\u2019m exploring new roles'].map((prompt) => (
+                <button
+                  key={prompt}
+                  onClick={() => { sendMessage({ textInput: prompt }); }}
+                  className="px-3 py-2 rounded-xl text-xs text-white/60 border border-white/10 hover:border-teal-500/30 hover:text-white/80 transition"
+                  style={{ background: 'rgba(13,148,136,0.06)' }}
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {messages.map((msg, i) => (
           <ChatBubble key={i} sender={msg.sender} content={msg.content} timestamp={msg.createdAt} />
         ))}

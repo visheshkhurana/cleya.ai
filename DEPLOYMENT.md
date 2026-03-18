@@ -112,6 +112,75 @@ npx prisma generate --schema=packages/db/prisma/schema.prisma
 npm run db:seed
 ```
 
+## Uptime Monitoring
+
+The backend exposes a health endpoint for uptime monitoring:
+
+```
+GET /health
+```
+
+Response:
+```json
+{
+  "status": "ok",
+  "timestamp": "2026-03-18T12:00:00.000Z",
+  "version": "1.0.0",
+  "uptime": 3600,
+  "env": "production"
+}
+```
+
+Set up [UptimeRobot](https://uptimerobot.com) or [Better Uptime](https://betteruptime.com) to ping `/health` every 5 minutes. Alert on any non-200 response or timeout.
+
+## Backup & Recovery
+
+### Replit PostgreSQL
+
+Replit manages PostgreSQL automatically. For manual backups:
+
+```bash
+# Export entire database
+pg_dump "$DATABASE_URL" > backup_$(date +%Y%m%d_%H%M%S).sql
+
+# Export specific tables
+pg_dump "$DATABASE_URL" -t users -t profiles -t matches > partial_backup.sql
+
+# Compressed backup
+pg_dump "$DATABASE_URL" | gzip > backup_$(date +%Y%m%d).sql.gz
+```
+
+### Restore
+
+```bash
+# Restore from a backup file
+psql "$DATABASE_URL" < backup_20260318_120000.sql
+
+# Restore from compressed backup
+gunzip -c backup_20260318.sql.gz | psql "$DATABASE_URL"
+
+# Restore specific tables from a backup
+pg_restore --data-only -t users backup_20260318_120000.sql -d "$DATABASE_URL"
+```
+
+### Automated Backup Script
+
+A backup script is provided at `scripts/backup.sh`:
+
+```bash
+# Run manually
+bash scripts/backup.sh
+
+# Set up a cron job (daily at 2 AM)
+0 2 * * * cd /path/to/project && bash scripts/backup.sh
+```
+
+The script creates timestamped backups in a `backups/` directory and retains the last 7 days.
+
+### GDPR Data Export
+
+Users can export their personal data from the Settings page (Export My Data). The backend endpoint `GET /api/users/export` returns all user data in JSON or CSV format, satisfying GDPR Article 20 data portability requirements.
+
 ## Troubleshooting
 
 ### Build fails with TypeScript errors
