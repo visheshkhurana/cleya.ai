@@ -44,7 +44,7 @@ export default function Home() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [checking, setChecking] = useState(true);
+  const [checking, setChecking] = useState(false);
   const [googleEnabled, setGoogleEnabled] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [consent, setConsent] = useState(false);

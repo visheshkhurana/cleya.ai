@@ -37,7 +37,7 @@ Starts both frontend (port 5000) and backend (port 3001) concurrently.
 ```
 npm run build
 ```
-Builds in dependency order: prisma generate → types → db → ai → matching → conversation-engine → api → backend (tsc) → frontend (next build). All packages compile TypeScript to `dist/` with `main` pointing to `./dist/index.js`. Frontend build script (`build.js`) handles the Next.js 14 `_not-found` prerender issue by generating `prerender-manifest.json` (with proper notFoundRoutes and preview keys), `_not-found.html`, and `_not-found.rsc` fallback files when prerendering fails.
+Builds in dependency order: prisma generate → types → db → ai → matching → conversation-engine → api → backend (tsc) → frontend (next build). All packages compile TypeScript to `dist/` with `main` pointing to `./dist/index.js`. Frontend build script (`build.js`) handles the Next.js 14 `_not-found` prerender bug: (1) generates fallback `prerender-manifest.json` with `notFoundRoutes: []` to prevent RSC contamination, (2) fixes `_buildManifest.js` by merging app routes from `app-build-manifest.json` into the client-side manifest (the build exits with error before writing page routes, leaving the manifest incomplete).
 
 ## Production Start
 ```
