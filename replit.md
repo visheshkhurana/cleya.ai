@@ -37,7 +37,7 @@ Starts both frontend (port 5000) and backend (port 3001) concurrently.
 ```
 npm run build
 ```
-Builds in dependency order: prisma generate → types → db → ai → matching → conversation-engine → api → backend (tsc) → frontend (next build). All packages compile TypeScript to `dist/` with `main` pointing to `./dist/index.js`. Frontend build script (`build.js`) handles the Next.js `_not-found` prerender issue and generates `prerender-manifest.json` if needed.
+Builds in dependency order: prisma generate → types → db → ai → matching → conversation-engine → api → backend (tsc) → frontend (next build). All packages compile TypeScript to `dist/` with `main` pointing to `./dist/index.js`. Frontend build script (`build.js`) handles the Next.js 14 `_not-found` prerender issue by generating `prerender-manifest.json` (with proper notFoundRoutes and preview keys), `_not-found.html`, and `_not-found.rsc` fallback files when prerendering fails.
 
 ## Production Start
 ```
@@ -225,7 +225,8 @@ Six persona types with tailored onboarding flows:
 - `apps/frontend/src/components/PhoneInput.tsx` — International phone input with country selector (36 countries, default India)
 - `apps/frontend/src/lib/posthog.ts` — PostHog analytics utility (identify, track, reset; no-ops if no key)
 - `apps/frontend/src/lib/sentry.ts` — Sentry error capture utility (captureException, setUser; no-ops if no DSN)
-- `apps/frontend/src/components/PostHogProvider.tsx` — PostHog CDN loader + pageview tracking
+- `apps/frontend/src/components/ClientProviders.tsx` — Client-side wrapper for PostHog, Sentry, CookieConsent; uses mounted guard for SSR safety
+- `apps/frontend/src/components/PostHogProvider.tsx` — PostHog CDN loader + pageview tracking (uses window.location instead of usePathname for SSR compat)
 - `apps/frontend/src/components/SentryProvider.tsx` — Sentry CDN loader + global error handlers
 - `apps/frontend/src/lib/api.ts` — API client (relative `/api` path, token as `cleo_token`)
 - `packages/matching/src/index.ts` — Enhanced matching engine with persona context matching

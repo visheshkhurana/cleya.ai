@@ -1,14 +1,11 @@
 'use client';
 
 import { useEffect } from 'react';
-import { usePathname } from 'next/navigation';
 import { trackEvent } from '@/lib/posthog';
 
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY || '';
 
 export default function PostHogProvider({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-
   useEffect(() => {
     if (!POSTHOG_KEY || typeof window === 'undefined') return;
     if ((window as any).posthog) return;
@@ -32,10 +29,15 @@ export default function PostHogProvider({ children }: { children: React.ReactNod
   }, []);
 
   useEffect(() => {
-    if (pathname) {
-      trackEvent('$pageview', { path: pathname });
-    }
-  }, [pathname]);
+    if (typeof window === 'undefined') return;
+    trackEvent('$pageview', { path: window.location.pathname });
+
+    const handleRouteChange = () => {
+      trackEvent('$pageview', { path: window.location.pathname });
+    };
+    window.addEventListener('popstate', handleRouteChange);
+    return () => window.removeEventListener('popstate', handleRouteChange);
+  }, []);
 
   return <>{children}</>;
 }
