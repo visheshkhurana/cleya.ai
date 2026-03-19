@@ -49,7 +49,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api', generalLimiter);
 
 const startTime = Date.now();
-app.get('/health', (_req, res) => {
+const healthHandler = (_req: any, res: any) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -57,7 +57,9 @@ app.get('/health', (_req, res) => {
     uptime: Math.floor((Date.now() - startTime) / 1000),
     env: env.NODE_ENV,
   });
-});
+};
+app.get('/health', healthHandler);
+app.get('/api/health', healthHandler);
 
 app.get('/api/csrf-token', csrfTokenProvider);
 

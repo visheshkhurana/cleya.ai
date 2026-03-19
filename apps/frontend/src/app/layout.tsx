@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { DM_Sans, Playfair_Display } from 'next/font/google';
 import './globals.css';
-import ClientProviders from '@/components/ClientProviders';
+import BootstrapClient from '@/components/BootstrapClient';
 
 const dmSans = DM_Sans({
   subsets: ['latin'],
@@ -63,9 +63,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${dmSans.variable} ${playfairDisplay.variable}`} suppressHydrationWarning>
       <body className="min-h-screen" suppressHydrationWarning>
         <a href="#main-content" className="skip-to-content">Skip to content</a>
-        <ClientProviders>
-          <main id="main-content" tabIndex={-1} style={{ outline: 'none' }}>{children}</main>
-        </ClientProviders>
+        <main id="main-content" tabIndex={-1} style={{ outline: 'none' }}>{children}</main>
+        <BootstrapClient />
       </body>
     </html>
   );

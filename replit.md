@@ -197,7 +197,7 @@ Six persona types with tailored onboarding flows:
 25. **PostHog Analytics** — Optional analytics loaded from CDN (`https://us.i.posthog.com/static/array.js`) via `NEXT_PUBLIC_POSTHOG_KEY` env var; silently skips if not set; tracks signup_completed, onboarding_started, onboarding_completed, match_proposed, match_accepted, match_rejected, profile_updated, page_view; identifies users; resets on logout; CSP allows posthog.com; no npm dependency
 26. **Sentry Error Monitoring** — Backend-only via `@sentry/node` + `SENTRY_DSN` env var; init before routes, `Sentry.setupExpressErrorHandler` after routes, `captureException` in error handler with request context; silently skips if not set; frontend has placeholder comment (no @sentry/nextjs to keep bundle light)
 27. **GDPR Data Export** — Settings page "Export My Data" buttons (JSON + CSV); backend `GET /api/users/export?format=json|csv` returns all user data (profile, matches, messages, notifications, feedback); satisfies GDPR Article 20 data portability
-28. **Health Endpoint** — `GET /health` returns `{ status, timestamp, version, uptime, env }`; documented in DEPLOYMENT.md for UptimeRobot/Better Uptime monitoring
+28. **Health Endpoint** — `GET /health` and `GET /api/health` both return `{ status, timestamp, version, uptime, env }`; documented in DEPLOYMENT.md for UptimeRobot/Better Uptime monitoring
 29. **Empty State Improvements** — Dashboard: welcome card with "Set Up Your Profile" CTA for new users; Chat: Cleo avatar + greeting + suggested prompts when no messages; Notifications: styled empty state with descriptive text
 30. **Database Backup** — `scripts/backup.sh` runs pg_dump with gzip compression, 7-day retention; documented in DEPLOYMENT.md with restore instructions
 31. **Cookie Consent Banner** — `CookieConsent` component in layout; appears after 1.5s on first visit; stores choice in `localStorage` (`cleo_cookie_consent`); "Accept all" or "Essential only" options; links to Privacy Policy; `role="dialog"` with ARIA label; dark theme matching app design
@@ -225,9 +225,7 @@ Six persona types with tailored onboarding flows:
 - `apps/frontend/src/components/PhoneInput.tsx` — International phone input with country selector (36 countries, default India)
 - `apps/frontend/src/lib/posthog.ts` — PostHog analytics utility (identify, track, reset; no-ops if no key)
 - `apps/frontend/src/lib/sentry.ts` — Sentry error capture utility (captureException, setUser; no-ops if no DSN)
-- `apps/frontend/src/components/ClientProviders.tsx` — Client-side wrapper for PostHog, Sentry, CookieConsent; uses mounted guard for SSR safety
-- `apps/frontend/src/components/PostHogProvider.tsx` — PostHog CDN loader + pageview tracking (uses window.location instead of usePathname for SSR compat)
-- `apps/frontend/src/components/SentryProvider.tsx` — Sentry CDN loader + global error handlers
+- `apps/frontend/src/components/BootstrapClient.tsx` — Client-side PostHog CDN loader + cookie consent banner; uses DOM manipulation only (no next/navigation imports) for SSR/prerender safety
 - `apps/frontend/src/lib/api.ts` — API client (relative `/api` path, token as `cleo_token`)
 - `packages/matching/src/index.ts` — Enhanced matching engine with persona context matching
 - `packages/api/src/services/matching.ts` — Shared matching API services

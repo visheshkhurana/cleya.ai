@@ -1,20 +1,4 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-
 export default function NotFound() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return (
-      <div style={{ background: '#0D0B1A', minHeight: '100vh' }} />
-    );
-  }
-
   return (
     <div style={{
       background: '#0D0B1A',
