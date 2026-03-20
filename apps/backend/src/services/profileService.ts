@@ -201,8 +201,17 @@ export class ProfileService {
     const extraKeys = Object.keys(data).filter((k) => !allowed.includes(k));
     if (extraKeys.length > 0) {
       sanitized.extraData = {};
-      for (const key of extraKeys) {
-        sanitized.extraData[key] = data[key];
+      for (const key of extraKeys.slice(0, 20)) {
+        const val = data[key];
+        if (typeof val === 'string') {
+          sanitized.extraData[key.substring(0, 100)] = stripHtml(val).substring(0, 500);
+        } else if (typeof val === 'number' || typeof val === 'boolean') {
+          sanitized.extraData[key.substring(0, 100)] = val;
+        } else if (Array.isArray(val)) {
+          sanitized.extraData[key.substring(0, 100)] = val.slice(0, 50).map((v: any) =>
+            typeof v === 'string' ? stripHtml(v).substring(0, 200) : v
+          );
+        }
       }
     }
 

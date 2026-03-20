@@ -53,6 +53,8 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [typing, setTyping] = useState(false);
   const [inputText, setInputText] = useState('');
+  const [isOnboarded, setIsOnboarded] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -66,6 +68,10 @@ export default function ChatPage() {
       if (urlToken) {
         api.setToken(urlToken);
         window.history.replaceState({}, '', '/chat');
+      }
+      if (!api.getToken()) {
+        window.location.href = '/';
+        return;
       }
     }
     startChat();
@@ -81,15 +87,13 @@ export default function ChatPage() {
     try {
       const existingProfile = await api.getProfile().catch(() => null);
       if (existingProfile?.isComplete) {
+        setIsOnboarded(true);
         setMessages([{
           sender: 'AI',
-          content: `Welcome back! Your profile is already set up as a ${(existingProfile.persona || '').replace(/_/g, ' ') || 'member'}. You can update your details from the Profile page, or head to your Dashboard to find matches.`,
+          content: `Welcome back! I'm Cleo, your AI networking assistant. Ask me anything — I can help you find connections, improve your profile, suggest networking strategies, or answer questions about India's startup ecosystem.`,
           createdAt: new Date(),
         }]);
-        setCurrentNode({
-          id: 'profile_complete',
-          type: 'profile_complete',
-        });
+        setCurrentNode({ id: 'ai_chat', type: 'ai_response' });
         setLoading(false);
         return;
       }
@@ -174,8 +178,29 @@ export default function ChatPage() {
   const handleTextSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim()) return;
-    sendMessage({ textInput: inputText.trim() });
+    if (isOnboarded) {
+      handleAIChat(inputText.trim());
+    } else {
+      sendMessage({ textInput: inputText.trim() });
+    }
     setInputText('');
+  };
+
+  const handleAIChat = async (msg: string) => {
+    const userMsg: Message = { sender: 'USER', content: msg, createdAt: new Date() };
+    setMessages(prev => [...prev, userMsg]);
+    setAiLoading(true);
+    setTyping(true);
+    try {
+      const history = messages.map(m => ({ role: m.sender === 'AI' ? 'assistant' as const : 'user' as const, content: m.content }));
+      const result = await api.sendAIChat(msg, history);
+      setMessages(prev => [...prev, { sender: 'AI', content: result.content, createdAt: new Date() }]);
+    } catch {
+      setMessages(prev => [...prev, { sender: 'AI', content: "Sorry, I couldn't process that right now. Please try again!", createdAt: new Date() }]);
+    } finally {
+      setAiLoading(false);
+      setTyping(false);
+    }
   };
 
   if (loading) {
@@ -264,21 +289,6 @@ export default function ChatPage() {
                 onSubmit={(data) => sendMessage({ formData: data })}
               />
             )}
-            {currentNode.type === 'profile_complete' && (
-              <div className="flex gap-2 justify-center mt-4">
-                <button
-                  onClick={() => window.location.href = '/dashboard'}
-                  className="px-5 py-2.5 rounded-xl text-sm font-medium text-white transition"
-                  style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
-                  Go to Dashboard
-                </button>
-                <button
-                  onClick={() => window.location.href = '/profile'}
-                  className="px-5 py-2.5 rounded-xl text-sm font-medium text-white/60 border border-white/10 hover:border-white/20 hover:text-white/80 transition">
-                  Edit Profile
-                </button>
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -294,7 +304,7 @@ export default function ChatPage() {
         </div>
       )}
 
-      {currentNode?.type === 'ai_response' && (
+      {(currentNode?.type === 'ai_response' || isOnboarded) && (
         <form onSubmit={handleTextSubmit} className="px-4 py-4 border-t border-white/5">
           <div className="flex gap-2">
             <input
@@ -303,10 +313,11 @@ export default function ChatPage() {
               onChange={(e) => setInputText(e.target.value)}
               placeholder="Message Cleo..."
               className="input-dark flex-1"
+              disabled={aiLoading}
             />
             <button
               type="submit"
-              disabled={!inputText.trim()}
+              disabled={!inputText.trim() || aiLoading}
               className="px-5 py-3 rounded-2xl font-semibold text-sm transition-all duration-200 disabled:opacity-40"
               style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}
             >

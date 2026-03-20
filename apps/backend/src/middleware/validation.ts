@@ -153,7 +153,7 @@ export const profileUpdateSchema = z.object({
   founderAccessPitch: optionalSanitizedString(500),
   channelSource: optionalSanitizedString(50),
   channelType: optionalSanitizedString(50),
-}).strict();
+}).passthrough();
 
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),

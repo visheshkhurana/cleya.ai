@@ -52,6 +52,7 @@ export default function DashboardPage() {
   const [aiLoading, setAiLoading] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
   const [sendingVerification, setSendingVerification] = useState(false);
+  const [matchFeedback, setMatchFeedback] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
   const aiScrollRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -112,17 +113,28 @@ export default function DashboardPage() {
 
   const handleFindMatches = async () => {
     setFindingMatches(true);
+    setMatchFeedback(null);
     try {
-      await api.findAndPropose(5);
+      const result = await api.findAndPropose(5);
       const [stats, matches] = await Promise.all([
         api.getMatchStats(),
         api.getMatches().catch(() => []),
       ]);
+      const prevTotal = matchStats.total;
       setMatchStats(stats);
       const matchArr = Array.isArray(matches) ? matches : [];
       setRecentMatches(matchArr.slice(0, 5));
-    } catch (err) {
+      const newCount = stats.total - prevTotal;
+      if (newCount > 0) {
+        setMatchFeedback({ type: 'success', message: `Found ${newCount} new match${newCount > 1 ? 'es' : ''}! Check them below.` });
+      } else {
+        setMatchFeedback({ type: 'info', message: 'No new matches found right now. Try updating your profile to improve results.' });
+      }
+      setTimeout(() => setMatchFeedback(null), 8000);
+    } catch (err: any) {
       console.error('Find matches failed:', err);
+      setMatchFeedback({ type: 'error', message: err.message || 'Failed to find matches. Please try again.' });
+      setTimeout(() => setMatchFeedback(null), 8000);
     } finally {
       setFindingMatches(false);
     }
@@ -350,6 +362,19 @@ export default function DashboardPage() {
             </div>
           ))}
         </div>
+
+        {matchFeedback && (
+          <div className={`rounded-xl p-4 text-sm border transition-all ${
+            matchFeedback.type === 'success' ? 'text-green-400 bg-green-500/10 border-green-500/20' :
+            matchFeedback.type === 'error' ? 'text-red-400 bg-red-500/10 border-red-500/20' :
+            'text-blue-400 bg-blue-500/10 border-blue-500/20'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span>{matchFeedback.message}</span>
+              <button onClick={() => setMatchFeedback(null)} className="text-white/30 hover:text-white/60 ml-3">×</button>
+            </div>
+          </div>
+        )}
 
         {recentMatches.length > 0 && (
           <div>

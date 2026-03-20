@@ -97,7 +97,13 @@ class ApiClient {
           return retryJson.data;
         }
       }
-      throw new Error(json.error?.message || 'Request failed');
+      const errMsg = json.error?.message || 'Request failed';
+      const details = json.error?.details;
+      if (details && Array.isArray(details) && details.length > 0) {
+        const detailStr = details.map((d: any) => d.field ? `${d.field}: ${d.message}` : d.message).join('; ');
+        throw new Error(`${errMsg} — ${detailStr}`);
+      }
+      throw new Error(errMsg);
     }
 
     return json.data;
