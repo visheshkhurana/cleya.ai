@@ -20,9 +20,12 @@ function useInView(ref: React.RefObject<HTMLElement | null>) {
 function CountUp({ target, suffix = '', prefix = '', decimals = 0 }: { target: number; suffix?: string; prefix?: string; decimals?: number }) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref);
-  const [val, setVal] = useState(0);
+  const [val, setVal] = useState(target);
+  const animatedRef = useRef(false);
   useEffect(() => {
-    if (!inView) return;
+    if (!inView || animatedRef.current) return;
+    animatedRef.current = true;
+    setVal(0);
     const duration = 1500;
     const steps = 40;
     const inc = target / steps;

@@ -54,6 +54,9 @@ export default function DashboardPage() {
   const [sendingVerification, setSendingVerification] = useState(false);
   const [matchFeedback, setMatchFeedback] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
   const aiScrollRef = useRef<HTMLDivElement>(null);
+  const feedbackRef = useRef<HTMLDivElement>(null);
+  const redirectTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const feedbackTimerRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -70,6 +73,19 @@ export default function DashboardPage() {
       return;
     }
     loadDashboard();
+  }, []);
+
+  useEffect(() => {
+    if (matchFeedback && feedbackRef.current) {
+      feedbackRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [matchFeedback]);
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+      if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+    };
   }, []);
 
   const loadDashboard = async () => {
@@ -125,16 +141,22 @@ export default function DashboardPage() {
       const matchArr = Array.isArray(matches) ? matches : [];
       setRecentMatches(matchArr.slice(0, 5));
       const newCount = stats.total - prevTotal;
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+      if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
       if (newCount > 0) {
-        setMatchFeedback({ type: 'success', message: `Found ${newCount} new match${newCount > 1 ? 'es' : ''}! Check them below.` });
+        setMatchFeedback({ type: 'success', message: `Found ${newCount} new match${newCount > 1 ? 'es' : ''}! View them in your Matches page.` });
+        redirectTimerRef.current = setTimeout(() => router.push('/matches'), 2000);
+      } else if (matchArr.length > 0) {
+        setMatchFeedback({ type: 'info', message: `You have ${matchArr.length} existing match${matchArr.length > 1 ? 'es' : ''}. No new matches found right now.` });
       } else {
-        setMatchFeedback({ type: 'info', message: 'No new matches found right now. Try updating your profile to improve results.' });
+        setMatchFeedback({ type: 'info', message: 'No matches found yet. Try updating your profile to improve results.' });
       }
-      setTimeout(() => setMatchFeedback(null), 8000);
+      feedbackTimerRef.current = setTimeout(() => setMatchFeedback(null), 10000);
     } catch (err: any) {
       console.error('Find matches failed:', err);
       setMatchFeedback({ type: 'error', message: err.message || 'Failed to find matches. Please try again.' });
-      setTimeout(() => setMatchFeedback(null), 8000);
+      if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+      feedbackTimerRef.current = setTimeout(() => setMatchFeedback(null), 8000);
     } finally {
       setFindingMatches(false);
     }
@@ -364,15 +386,21 @@ export default function DashboardPage() {
         </div>
 
         {matchFeedback && (
-          <div className={`rounded-xl p-4 text-sm border transition-all ${
+          <div ref={feedbackRef} className={`rounded-xl p-4 text-sm border transition-all animate-pulse-once ${
             matchFeedback.type === 'success' ? 'text-green-400 bg-green-500/10 border-green-500/20' :
             matchFeedback.type === 'error' ? 'text-red-400 bg-red-500/10 border-red-500/20' :
             'text-blue-400 bg-blue-500/10 border-blue-500/20'
           }`}>
-            <div className="flex items-center justify-between">
-              <span>{matchFeedback.message}</span>
-              <button onClick={() => setMatchFeedback(null)} className="text-white/30 hover:text-white/60 ml-3">×</button>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{matchFeedback.type === 'success' ? '✅' : matchFeedback.type === 'error' ? '❌' : 'ℹ️'}</span>
+                <span className="font-medium">{matchFeedback.message}</span>
+              </div>
+              <button onClick={() => { setMatchFeedback(null); if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current); if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current); }} className="text-white/30 hover:text-white/60 flex-shrink-0">×</button>
             </div>
+            {matchFeedback.type === 'success' && (
+              <p className="text-xs mt-2 opacity-70">Redirecting to matches page...</p>
+            )}
           </div>
         )}
 
