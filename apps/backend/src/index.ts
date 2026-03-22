@@ -61,6 +61,29 @@ const healthHandler = (_req: express.Request, res: express.Response) => {
 app.get('/health', healthHandler);
 app.get('/api/health', healthHandler);
 app.get('/api/csrf-token', csrfTokenProvider);
+
+app.get('/api/stats/public', async (_req: express.Request, res: express.Response) => {
+  try {
+    const { PrismaClient } = require('@prisma/client');
+    const p = new PrismaClient();
+    const [memberCount, matchCount, introCount] = await Promise.all([
+      p.user.count({ where: { isActive: true } }),
+      p.match.count(),
+      p.introductionRecord.count().catch(() => 0),
+    ]);
+    await p.$disconnect();
+    res.json({
+      success: true,
+      data: {
+        memberCount,
+        matchCount,
+        introductionCount: introCount,
+      },
+    });
+  } catch {
+    res.json({ success: true, data: { memberCount: 0, matchCount: 0, introductionCount: 0 } });
+  }
+});
 app.use('/api/auth', authRouter);
 app.use('/api/users', csrfProtection, userRouter);
 app.use('/api/conversations', conversationRouter);

@@ -72,6 +72,8 @@ export default function Home() {
   const [forgotSent, setForgotSent] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [platformStats, setPlatformStats] = useState<{ memberCount: number; matchCount: number; introductionCount: number } | null>(null);
+  const [selectedPersona, setSelectedPersona] = useState<string>('');
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 80);
@@ -411,12 +413,12 @@ export default function Home() {
       {/* SOCIAL PROOF — METRICS */}
       <section id="testimonials" className="border-y border-white/[0.04]" style={{ background: '#0D0B1E' }}>
         <div className="max-w-6xl mx-auto px-6 py-12 sm:py-16">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-0 md:divide-x md:divide-white/[0.06]">
+          {platformStats && platformStats.memberCount >= 10 ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-0 md:divide-x md:divide-white/[0.06]">
             {[
-              { value: 12000, suffix: '+', label: 'Members across India' },
-              { value: 94, suffix: '%', label: 'Match accuracy' },
-              { value: 48, suffix: ' hrs', label: 'Avg. intro time' },
-              { value: 1800, suffix: '+', label: 'Crores raised via Cleo', prefix: '₹' },
+              { value: platformStats.memberCount, suffix: '+', label: 'Members on Cleo' },
+              { value: platformStats.matchCount, suffix: '+', label: 'AI matches made' },
+              { value: platformStats.introductionCount, suffix: '', label: 'Introductions sent' },
             ].map((m, i) => (
               <div key={i} className="text-center md:px-8">
                 <p className="text-3xl sm:text-[44px] font-bold text-white tracking-tight leading-none mb-2">
@@ -426,6 +428,13 @@ export default function Home() {
               </div>
             ))}
           </div>
+          ) : (
+          <div className="text-center py-4">
+            <p className="text-lg sm:text-xl font-medium text-white/80 max-w-xl mx-auto leading-relaxed">
+              Join a growing community of founders, investors, and operators building India&apos;s startup future.
+            </p>
+          </div>
+          )}
         </div>
 
         {/* Testimonial Ticker */}
