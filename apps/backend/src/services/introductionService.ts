@@ -1,6 +1,7 @@
 import { prisma } from '@boardy/db';
 import { createAIService } from '@boardy/ai';
 import { messagingService } from './messagingService';
+import { activityService } from './activityService';
 
 export class IntroductionService {
   private ai = createAIService();
@@ -75,18 +76,25 @@ export class IntroductionService {
     try {
       await prisma.introductionRecord.upsert({
         where: { matchId },
-        update: { status: 'SENT', talkingPoints },
+        update: { status: 'SENT', talkingPoints, introText, sentAt: new Date() },
         create: {
           matchId,
           userAId: userA.id,
           userBId: userB.id,
           status: 'SENT',
+          introText,
           talkingPoints,
+          sentAt: new Date(),
         },
       });
     } catch (e) {
       console.log('[IntroService] IntroductionRecord creation failed:', e);
     }
+
+    await Promise.allSettled([
+      activityService.recordIntroSent(userA.id, userB.profile.currentRole || userB.email),
+      activityService.recordIntroSent(userB.id, userA.profile.currentRole || userA.email),
+    ]);
 
     console.log(`[IntroService] Introduction sent for match ${matchId}`);
   }

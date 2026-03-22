@@ -39,6 +39,19 @@ interface MatchData {
   userB: { id: string; email: string; profile?: any };
 }
 
+function getTimeAgo(dateStr: string): string {
+  const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+  if (seconds < 60) return 'Just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days} days ago`;
+  return new Date(dateStr).toLocaleDateString();
+}
+
 export default function DashboardPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [user, setUser] = useState<any>(null);
@@ -53,6 +66,9 @@ export default function DashboardPage() {
   const [verificationSent, setVerificationSent] = useState(false);
   const [sendingVerification, setSendingVerification] = useState(false);
   const [matchFeedback, setMatchFeedback] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
+  const [inviteCodes, setInviteCodes] = useState<{ id: string; code: string; used: boolean }[]>([]);
+  const [activities, setActivities] = useState<{ id: string; type: string; title: string; createdAt: string }[]>([]);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const aiScrollRef = useRef<HTMLDivElement>(null);
   const feedbackRef = useRef<HTMLDivElement>(null);
   const redirectTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -121,6 +137,18 @@ export default function DashboardPage() {
         setSentryUser({ id: userData.id, email: userData.email });
       }
       analytics.pageView('dashboard');
+
+      fetch('/api/invites/my-codes', {
+        headers: { Authorization: `Bearer ${api.getToken()}` },
+      }).then(r => r.json()).then(d => {
+        if (d.success) setInviteCodes(d.data);
+      }).catch(() => {});
+
+      fetch('/api/activities?limit=10', {
+        headers: { Authorization: `Bearer ${api.getToken()}` },
+      }).then(r => r.json()).then(d => {
+        if (d.success) setActivities(d.data);
+      }).catch(() => {});
     } catch (err: any) {
       console.error('Dashboard load failed:', err);
       if (err.message?.includes('Unauthorized') || err.message?.includes('token')) {
@@ -450,10 +478,10 @@ export default function DashboardPage() {
                           </h4>
                           <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold"
                             style={{
-                              background: scorePercent >= 70 ? 'rgba(16,185,129,0.12)' : scorePercent >= 50 ? 'rgba(245,158,11,0.12)' : 'rgba(108,71,255,0.12)',
-                              color: scorePercent >= 70 ? '#6ee7b7' : scorePercent >= 50 ? '#fbbf24' : '#5EEAD4'
+                              background: scorePercent >= 80 ? 'rgba(13,148,136,0.15)' : scorePercent >= 60 ? 'rgba(59,130,246,0.12)' : 'rgba(108,71,255,0.12)',
+                              color: scorePercent >= 80 ? '#2DD4BF' : scorePercent >= 60 ? '#93C5FD' : '#A09FB5'
                             }}>
-                            {scorePercent}%
+                            {scorePercent >= 80 ? 'Strong Match' : scorePercent >= 60 ? 'Good Fit' : 'Possible Fit'}
                           </div>
                         </div>
                         {otherProfile?.persona && (
@@ -548,6 +576,58 @@ export default function DashboardPage() {
               <p className="text-xs text-white/40">Start a conversation</p>
             </button>
           </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {inviteCodes.length > 0 && (
+            <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(26,18,48,0.6)' }}>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-xl">🎟️</span>
+                <h3 className="font-semibold text-white text-sm">Share Cleo</h3>
+                <span className="text-xs text-white/30 ml-auto">{inviteCodes.filter(c => !c.used).length} remaining</span>
+              </div>
+              <div className="space-y-2">
+                {inviteCodes.map((code) => (
+                  <div key={code.id} className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border ${code.used ? 'opacity-40' : ''}`}
+                    style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}>
+                    <span className="text-xs font-mono text-white/70 flex-1">cleo.ai/join/{code.code}</span>
+                    {!code.used && (
+                      <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/join/${code.code}`); setCopiedCode(code.code); setTimeout(() => setCopiedCode(null), 2000); }}
+                        className="text-xs px-2 py-1 rounded-lg transition" style={{ color: copiedCode === code.code ? '#10B981' : '#2DD4BF' }}>
+                        {copiedCode === code.code ? 'Copied!' : 'Copy'}
+                      </button>
+                    )}
+                    {code.used && <span className="text-[10px] text-white/30">Used</span>}
+                  </div>
+                ))}
+              </div>
+              <p className="text-[11px] text-white/30 mt-3">Share with founders, investors, or talent you think should be on Cleo.</p>
+            </div>
+          )}
+
+          {activities.length > 0 && (
+            <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(26,18,48,0.6)' }}>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-xl">📊</span>
+                <h3 className="font-semibold text-white text-sm">Your Activity</h3>
+              </div>
+              <div className="space-y-3">
+                {activities.map((a) => {
+                  const icon = a.type === 'MATCH_FOUND' ? '🟢' : a.type === 'INTRO_SENT' ? '✅' : a.type === 'INVITE_USED' ? '🎟️' : '📊';
+                  const timeAgo = getTimeAgo(a.createdAt);
+                  return (
+                    <div key={a.id} className="flex items-start gap-3">
+                      <span className="text-sm mt-0.5">{icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-white/70">{a.title}</p>
+                        <p className="text-[10px] text-white/30 mt-0.5">{timeAgo}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {profile?.industries && profile.industries.length > 0 && (

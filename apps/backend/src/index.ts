@@ -98,6 +98,11 @@ app.use('/api/events', csrfProtection, eventRouter);
 app.use('/api/ai-chat', aiChatRouter);
 app.use('/api/introductions', csrfProtection, introductionRouter);
 
+import { inviteRouter } from './routes/invite';
+import { activityRouter } from './routes/activity';
+app.use('/api/invites', csrfProtection, inviteRouter);
+app.use('/api/activities', csrfProtection, activityRouter);
+
 if (env.SENTRY_DSN) {
   Sentry.setupExpressErrorHandler(app);
 }

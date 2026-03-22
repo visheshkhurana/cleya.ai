@@ -333,6 +333,33 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {/* Notification Preferences */}
+        <section style={{
+          background: '#1a1230',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: '16px',
+          padding: '28px',
+        }}>
+          <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 600, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '20px' }}>📬</span> Notification Preferences
+          </h2>
+          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '13px', marginBottom: '20px' }}>
+            Choose how you want to be notified about matches and introductions.
+          </p>
+          <div style={{ display: 'grid', gap: '12px' }}>
+            {[
+              { key: 'emailMatches', label: 'New match notifications (Email)' },
+              { key: 'emailIntros', label: 'Introduction updates (Email)' },
+              { key: 'emailDigest', label: 'Weekly digest (Email)' },
+            ].map(({ key, label }) => (
+              <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
+                <input type="checkbox" defaultChecked={key === 'emailIntros'} className="rounded border-white/20 bg-white/5 accent-teal-600" />
+                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px' }}>{label}</span>
+              </label>
+            ))}
+          </div>
+        </section>
+
         {/* Danger Zone */}
         <section style={{
           background: '#1a1230',

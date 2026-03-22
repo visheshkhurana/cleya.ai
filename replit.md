@@ -51,19 +51,22 @@ All frontend pages use a server/client wrapper pattern for build compatibility:
 - `PageClient.tsx` — the actual `'use client'` component with hooks, state, and UI
 
 ### Pages
-- `/` — Landing page with auth modal (signup/login), mobile hamburger menu, hero stats, testimonials
+- `/` — Landing page with auth modal (signup/login), mobile hamburger menu, real stats from DB (qualitative fallback if <10 members), testimonials
 - `/about` — About page with mission, how-it-works, and personas
+- `/features` — Features overview (8 feature cards)
+- `/contact` — Contact form page
 - `/login` — Redirects to `/?action=login` to open login modal
-- `/dashboard` — User dashboard with stats, matches, AI chat; stats auto-refresh on visibility change
+- `/dashboard` — User dashboard with stats, matches, invite codes, activity feed, AI chat; stats auto-refresh on visibility change
 - `/profile` — Profile editor; merges `extraData` JSON for persona-specific fields (preferredRole, portfolioSize, etc.)
-- `/matches` — Match listing with feedback, search, and rationale display
-- `/chat` — AI onboarding conversation
-- `/settings` — Account settings with phone display (syncs from profile), password change
-- `/introductions` — Introduction records
+- `/matches` — Match listing with qualitative labels (Strong Match/Good Fit/Possible Fit instead of raw %), feedback, search
+- `/chat` — AI onboarding conversation with progress indicator (Step X of 5)
+- `/settings` — Account settings with phone display (syncs from profile), password change, notification preferences
+- `/introductions` — Introduction records with full status lifecycle (PENDING_APPROVAL → APPROVED → SENT → VIEWED → RESPONDED → COMPLETED)
 - `/admin` — Admin dashboard
 
 ### Auth Flow
-- Signup: Full Name (optional) + Email + Password (min 8 chars, letter + number required) + Confirm Password + Terms consent
+- Signup: Full Name (optional) + Persona selector (Founder/Investor/Talent) + Email + Password (min 8 chars, letter + number required) + Confirm Password + Terms consent
+- Persona stored on Profile model at signup time
 - Password strength indicator shown during signup
 - Backend returns 400 with detailed Zod validation errors (not 500)
 - Protected routes redirect unauthenticated users to `/?action=login` with a prompt message
@@ -73,7 +76,7 @@ All frontend pages use a server/client wrapper pattern for build compatibility:
 `apps/frontend/next.config.js` has rewrites proxying `/api/*` → `http://localhost:3001/api/*` so the browser can reach the backend through the Next.js dev server.
 
 ## Database
-- Schema: 15 models — User, Profile (with pgvector `profileEmbedding`), Conversation, Message, Match, MatchFeedback, IntroductionRecord, DealTracking, Event, EventParticipant, Notification, Call, MessageRecord, UserEmbedding, CommunicationPreference
+- Schema: 17+ models — User, Profile (with pgvector `profileEmbedding`), Conversation, Message, Match, MatchFeedback, IntroductionRecord (with introText, outcome, sentAt, followUpAt), DealTracking, Event, EventParticipant, Notification, Call, MessageRecord, UserEmbedding, CommunicationPreference, InviteCode, Activity, Waitlist
 - pgvector extension enabled for semantic similarity search
 - Schema pushed via `prisma db push`
 - Seed: `npx ts-node packages/db/src/seed.ts` — idempotent, skips existing emails

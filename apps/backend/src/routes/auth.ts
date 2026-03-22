@@ -24,6 +24,7 @@ const signupSchema = z.object({
     .regex(/[A-Za-z]/, 'Password must contain at least one letter')
     .regex(/[0-9]/, 'Password must contain at least one number'),
   name: z.string().min(2, 'Full name is required').max(100).optional(),
+  persona: z.enum(['FOUNDER', 'INVESTOR', 'TALENT']).optional(),
   phone: z.string().optional(),
   utmSource: z.string().optional(),
   utmMedium: z.string().optional(),

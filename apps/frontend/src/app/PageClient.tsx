@@ -82,6 +82,12 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    fetch('/api/stats/public').then(r => r.json()).then(d => {
+      if (d.success) setPlatformStats(d.data);
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
 
@@ -185,7 +191,7 @@ export default function Home() {
           utmSource: utmData.utm_source,
           utmMedium: utmData.utm_medium,
           utmCampaign: utmData.utm_campaign,
-        }, fullName || undefined);
+        }, fullName || undefined, selectedPersona || undefined);
         localStorage.removeItem('cleo_utm');
         analytics.signupCompleted('email');
         window.location.href = '/chat';
@@ -422,7 +428,7 @@ export default function Home() {
             ].map((m, i) => (
               <div key={i} className="text-center md:px-8">
                 <p className="text-3xl sm:text-[44px] font-bold text-white tracking-tight leading-none mb-2">
-                  <CountUp target={m.value} suffix={m.suffix} prefix={m.prefix || ''} decimals={0} />
+                  <CountUp target={m.value} suffix={m.suffix} prefix={''} decimals={0} />
                 </p>
                 <p className="text-xs sm:text-[13px] font-medium" style={{ color: '#A09FB5' }}>{m.label}</p>
               </div>
@@ -737,6 +743,28 @@ export default function Home() {
                         <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#A09FB5' }}>Full Name</label>
                         <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)}
                           placeholder="Your full name" className="input-dark" autoComplete="name" />
+                      </div>
+                    )}
+                    {mode === 'signup' && (
+                      <div>
+                        <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#A09FB5' }}>I am a</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            { value: 'FOUNDER', label: 'Founder', icon: '🚀' },
+                            { value: 'INVESTOR', label: 'Investor', icon: '💰' },
+                            { value: 'TALENT', label: 'Talent', icon: '⚡' },
+                          ].map((p) => (
+                            <button key={p.value} type="button" onClick={() => setSelectedPersona(p.value)}
+                              className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl border transition-all duration-200"
+                              style={{
+                                background: selectedPersona === p.value ? 'rgba(13,148,136,0.15)' : 'rgba(255,255,255,0.03)',
+                                borderColor: selectedPersona === p.value ? '#0D9488' : 'rgba(255,255,255,0.08)',
+                              }}>
+                              <span className="text-lg">{p.icon}</span>
+                              <span className="text-xs font-medium" style={{ color: selectedPersona === p.value ? '#2DD4BF' : '#A09FB5' }}>{p.label}</span>
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     )}
                     <div>

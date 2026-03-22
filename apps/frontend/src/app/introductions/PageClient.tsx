@@ -25,10 +25,15 @@ const personaIcon: Record<string, string> = {
 };
 
 const statusColors: Record<string, { bg: string; text: string; label: string }> = {
+  PENDING_APPROVAL: { bg: 'rgba(245,158,11,0.1)', text: '#fbbf24', label: 'Pending Approval' },
+  APPROVED: { bg: 'rgba(59,130,246,0.1)', text: '#93c5fd', label: 'Approved' },
   SENT: { bg: 'rgba(108,71,255,0.1)', text: '#5EEAD4', label: 'Sent' },
   VIEWED: { bg: 'rgba(59,130,246,0.1)', text: '#93c5fd', label: 'Viewed' },
   RESPONDED: { bg: 'rgba(16,185,129,0.1)', text: '#6ee7b7', label: 'Responded' },
   MEETING_SCHEDULED: { bg: 'rgba(245,158,11,0.1)', text: '#fbbf24', label: 'Meeting Scheduled' },
+  FOLLOWED_UP: { bg: 'rgba(16,185,129,0.1)', text: '#6ee7b7', label: 'Followed Up' },
+  COMPLETED: { bg: 'rgba(16,185,129,0.15)', text: '#10B981', label: 'Completed' },
+  CANCELLED: { bg: 'rgba(239,68,68,0.1)', text: '#f87171', label: 'Cancelled' },
 };
 
 export default function IntroductionsPage() {

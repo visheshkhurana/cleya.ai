@@ -25,6 +25,25 @@ interface FlowNode {
 
 const CHAT_STORAGE_KEY = 'cleo_chat_state';
 
+const ONBOARDING_STEP_MAP: Record<string, number> = {
+  welcome: 1,
+  persona_select: 1,
+  founder_details: 2,
+  talent_details: 2,
+  investor_details: 2,
+  event_details: 2,
+  deal_partner_details: 2,
+  other_details: 2,
+  founder_priority: 3,
+  founder_fundraising: 3,
+  talent_target_role: 3,
+  common_details: 4,
+  attribution: 5,
+  completion: 5,
+};
+const ONBOARDING_TOTAL_STEPS = 5;
+const ONBOARDING_STEP_LABELS = ['Welcome', 'Profile', 'Goals', 'Details', 'Finish'];
+
 function saveChatState(conversationId: string, messages: Message[]) {
   try {
     localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify({ conversationId, messages, savedAt: Date.now() }));
@@ -247,6 +266,26 @@ export default function ChatPage() {
           </button>
         </div>
       </header>
+
+      {!isOnboarded && currentNode && (
+        <div className="px-4 py-3 border-b border-white/5" style={{ background: 'rgba(13,11,26,0.95)' }}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-white/60">
+              Step {ONBOARDING_STEP_MAP[currentNode.id] || 1} of {ONBOARDING_TOTAL_STEPS}
+            </span>
+            <span className="text-xs text-white/40">
+              {ONBOARDING_STEP_LABELS[(ONBOARDING_STEP_MAP[currentNode.id] || 1) - 1]}
+            </span>
+          </div>
+          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+            <div className="h-full rounded-full transition-all duration-500 ease-out"
+              style={{
+                width: `${((ONBOARDING_STEP_MAP[currentNode.id] || 1) / ONBOARDING_TOTAL_STEPS) * 100}%`,
+                background: 'linear-gradient(90deg, #0D9488, #2DD4BF)',
+              }} />
+          </div>
+        </div>
+      )}
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto chat-scroll px-4 py-6 space-y-1">
         {messages.length === 0 && !typing && !loading && (

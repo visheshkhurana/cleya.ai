@@ -210,9 +210,9 @@ export default function MatchesPage() {
                   {profile?.currentRole || other.email.split('@')[0]}
                 </h3>
                 <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
-                  style={{ background: scorePercent >= 70 ? 'rgba(16,185,129,0.12)' : scorePercent >= 50 ? 'rgba(245,158,11,0.12)' : 'rgba(108,71,255,0.12)',
-                    color: scorePercent >= 70 ? '#6ee7b7' : scorePercent >= 50 ? '#fbbf24' : '#5EEAD4' }}>
-                  {scorePercent}%
+                  style={{ background: scorePercent >= 80 ? 'rgba(13,148,136,0.15)' : scorePercent >= 60 ? 'rgba(59,130,246,0.12)' : 'rgba(108,71,255,0.12)',
+                    color: scorePercent >= 80 ? '#2DD4BF' : scorePercent >= 60 ? '#93C5FD' : '#A09FB5' }}>
+                  {scorePercent >= 80 ? 'Strong Match' : scorePercent >= 60 ? 'Good Fit' : 'Possible Fit'}
                 </div>
               </div>
               {profile?.companyName && (

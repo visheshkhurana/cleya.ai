@@ -56,6 +56,7 @@ model User {
 
   inviteCodesCreated InviteCode[] @relation("InviteCodeCreator")
   inviteCodeUsed     InviteCode?  @relation("InviteCodeUser")
+  activities         Activity[]
 
   @@index([email])
   @@index([phone])
@@ -325,8 +326,14 @@ model IntroductionRecord {
   userA        User               @relation("IntroUserA", fields: [userAId], references: [id])
   userBId      String
   userB        User               @relation("IntroUserB", fields: [userBId], references: [id])
-  status       IntroductionStatus @default(SENT)
+  status       IntroductionStatus @default(PENDING_APPROVAL)
+  introText    String?
   talkingPoints String[]          @default([])
+  sentVia      String?
+  sentAt       DateTime?
+  followUpAt   DateTime?
+  outcome      String?
+  outcomeNotes String?
   scheduledAt  DateTime?
   notes        String?
   createdAt    DateTime           @default(now())
@@ -339,10 +346,29 @@ model IntroductionRecord {
 }
 
 enum IntroductionStatus {
+  PENDING_APPROVAL
+  APPROVED
   SENT
   VIEWED
   RESPONDED
   MEETING_SCHEDULED
+  FOLLOWED_UP
+  COMPLETED
+  CANCELLED
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("activities")
 }
 
 // ─────────────────────────────────────────────
