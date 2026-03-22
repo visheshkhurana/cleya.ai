@@ -1,0 +1,579 @@
+# Cleo.ai — Introduction Flow: Complete Technical Spec
+
+## The Lifecycle
+
+```
+MATCH GENERATED → USER ACTIONS → DOUBLE OPT-IN → INTRO GENERATED
+     → PREVIEW & APPROVE → EMAIL SENT → FOLLOW-UP → OUTCOME TRACKED
+```
+
+---
+
+## STAGE 1: Match Generated (Automatic)
+
+**Trigger:** User completes onboarding (profileComplete = true)
+**When:** Immediately after onboarding, then nightly batch at 2 AM IST for new potential matches
+**What happens:**
+1. System generates profile embedding via OpenAI text-embedding-3-small
+2. Runs cosine similarity against all other users (cross-persona: Founder↔Investor, Founder↔Talent)
+3. Filters by: industry overlap, stage fit, location preference
+4. Generates top 3-5 matches with score > 40%
+5. For each match, calls OpenAI to generate a personalized "Why Connect" reasoning
+6. Creates Match records with status = PENDING
+
+**Emails/Notifications triggered:** NONE at this point. Matches are generated silently.
+
+---
+
+## STAGE 2: Match Notification (Automatic)
+
+**Trigger:** New Match record created
+**When:** Immediately (within 1 minute of match generation)
+**Who receives:** Both users in the match
+
+### Notification via WhatsApp (Primary):
+```
+🤝 New Match Found
+
+Hi Arjun, I found someone you should meet:
+
+Priya Sharma
+Partner, Horizon Ventures
+Seed to Series A | AI/ML, SaaS, Fintech | Mumbai
+
+Why connect: Priya invests in Seed-stage AI companies and has backed 
+12 companies in your space. Your AI logistics platform at pre-seed 
+stage aligns with her thesis.
+
+[Connect ✓]  [Pass ✗]
+```
+
+### Notification via Email (Secondary, if user has email notifications on):
+**From:** Cleo <intros@cleo.ai> (or your Resend verified domain)
+**Subject:** "New match: Priya Sharma, Partner at Horizon Ventures"
+**Template:**
+
+```
+Hi Arjun,
+
+I found someone you should meet.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PRIYA SHARMA
+Partner, Horizon Ventures
+Seed to Series A | AI/ML, SaaS, Fintech | Mumbai
+
+Why I think you should connect:
+Priya invests in Seed-stage AI companies and has backed 12 companies 
+in your space. Your AI logistics platform at pre-seed stage aligns 
+with her thesis.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    [Connect ✓]     [Pass ✗]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+You're receiving this because you're a member of Cleo.
+Manage notifications: https://cleo.ai/settings
+```
+
+**Connect/Pass buttons:** Link to `https://cleo.ai/matches?action=connect&matchId=xxx&token=yyy` (signed token for security so the action can be taken without logging in)
+
+---
+
+## STAGE 3: User Takes Action (Manual)
+
+**Trigger:** User clicks Connect or Pass (via WhatsApp button, email link, or web UI)
+**What happens:**
+
+### If PASS:
+- Update Match: user1Action or user2Action = "PASS"
+- Update Match status = PASSED
+- Create Activity: "You passed on Priya Sharma"
+- **No email/notification sent to the other person.** They never know they were passed on.
+
+### If CONNECT:
+- Update Match: user1Action or user2Action = "CONNECT"
+- Check if the OTHER user has also connected:
+  - **If NO (one-sided so far):** Do nothing. Wait for the other user's action. Match remains PENDING.
+  - **If YES (both connected = DOUBLE OPT-IN achieved):** → Proceed to Stage 4
+
+---
+
+## STAGE 4: Double Opt-In Achieved → Generate Introduction (Automatic)
+
+**Trigger:** Both users on a match have clicked "Connect"
+**When:** Immediately (within 30 seconds)
+**What happens:**
+
+1. Update Match status = CONNECTED
+2. Call OpenAI to generate the warm introduction text:
+
+```javascript
+const prompt = `You are Cleo, an AI superconnector for India's startup ecosystem. 
+Write a warm introduction connecting these two professionals. 
+
+The tone should be warm, specific, and personal — like a well-connected friend 
+making an intro, not a corporate email. Reference specific details from both 
+profiles. Keep it under 120 words.
+
+Person 1:
+- Name: ${user1.name}
+- Title: ${user1.title} at ${user1.company}
+- Bio: ${user1.bio}
+- Goal: ${user1.goal}
+- Key details: ${user1.traction || user1.investorDetails}
+
+Person 2:
+- Name: ${user2.name}  
+- Title: ${user2.title} at ${user2.company}
+- Bio: ${user2.bio}
+- Goal: ${user2.goal}
+- Key details: ${user2.traction || user2.investorDetails}
+
+Format the intro as an email body. Start with "Hi [First Name 1] and [First Name 2],"
+End with "I'll let you two take it from here! — Cleo"
+Do NOT include a subject line.`;
+```
+
+3. Create Introduction record:
+   - matchId
+   - introText = AI-generated text
+   - status = PENDING_APPROVAL
+   
+4. **Notify both users that an intro is ready for review:**
+
+### WhatsApp notification:
+```
+✅ It's a match! Both you and Priya want to connect.
+
+I've drafted a warm introduction for you two. 
+Please review it before I send:
+
+[Review Introduction →]
+```
+
+### Email notification:
+**From:** Cleo <intros@cleo.ai>
+**Subject:** "✅ It's a match! Review your introduction to Priya Sharma"
+
+```
+Hi Arjun,
+
+Great news — both you and Priya Sharma want to connect!
+
+I've drafted a warm introduction. Here's a preview:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+"Hi Arjun and Priya,
+
+I'd love to connect you two. Arjun is building NexaFlow, an 
+AI-powered logistics platform for last-mile delivery — he's 
+raised $200K in a pre-seed round and is targeting a $2M seed. 
+Priya, your portfolio at Horizon Ventures has a strong AI/SaaS 
+focus, and Arjun's traction in Bangalore's logistics space 
+feels like a natural fit for your thesis.
+
+I'll let you two take it from here!
+— Cleo"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Looks good?
+
+    [Approve & Send ✓]     [Edit ✏️]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+---
+
+## STAGE 5: Review & Approve (Manual)
+
+**Trigger:** User clicks "Approve & Send" or "Edit"
+**Who needs to approve:** EITHER user can approve. Only one approval needed — we don't need both to approve the intro text (that would create too much friction). The double opt-in was the connect step.
+
+### If EDIT:
+- User is taken to /introductions page where they can edit the intro text
+- They can modify the text (their own part) and re-save
+- Then click "Approve & Send"
+
+### If APPROVE:
+- Update Introduction status = APPROVED
+- → Proceed immediately to Stage 6 (Send)
+
+### Auto-approve timeout:
+If neither user approves or edits within **48 hours**, auto-approve and send the intro. This prevents intros from going stale. Send a notification 24 hours in:
+
+**24-hour reminder (WhatsApp):**
+```
+⏰ Your introduction to Priya is ready to send. 
+I'll send it automatically tomorrow if you don't review it.
+
+[Review Now →]  [Cancel Introduction]
+```
+
+---
+
+## STAGE 6: Introduction Sent (Automatic)
+
+**Trigger:** Introduction approved (manually or auto-approved after 48 hours)
+**When:** Immediately upon approval
+**What happens:**
+
+1. Update Introduction status = SENT, sentAt = now()
+2. Set followUpAt = now() + 7 days
+3. Send the intro email to BOTH users
+
+### The Introduction Email:
+
+**From:** Cleo <intros@cleo.ai>
+**To:** arjun@nexaflow.com
+**CC:** priya@horizonvc.com
+**Subject:** "Introduction: Arjun Mehta ↔ Priya Sharma"
+**Reply-To:** Both user emails (so when either replies, the other gets it)
+
+```
+Hi Arjun and Priya,
+
+I'd love to connect you two.
+
+Arjun is building NexaFlow, an AI-powered logistics platform for 
+last-mile delivery. He's raised $200K in a pre-seed round and is 
+looking to raise a $2M seed — targeting Q3 2026. His AI-powered 
+route optimization has reduced delivery costs by 30% for pilot 
+customers in Bangalore.
+
+Priya, your portfolio at Horizon Ventures has a strong AI and SaaS 
+focus at Seed stage, and logistics-tech seems like a natural extension 
+of your thesis. Arjun's early traction and tech-first approach could 
+be interesting.
+
+I'll let you two take it from here!
+
+— Cleo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Arjun Mehta
+Co-Founder & CEO, NexaFlow Technologies
+📍 Bangalore | 🔗 linkedin.com/in/arjunmehta
+
+Priya Sharma
+Partner, Horizon Ventures  
+📍 Mumbai | 🔗 linkedin.com/in/priyasharma
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This introduction was made by Cleo.ai
+India's AI Superconnector for Founders & Investors
+```
+
+### WhatsApp notification to both:
+```
+📤 Introduction sent!
+
+I've connected you with Priya Sharma via email. 
+Check your inbox for the full introduction.
+
+Priya's email: priya@horizonvc.com
+Priya's LinkedIn: linkedin.com/in/priyasharma
+
+💡 Tip: Reply within 24 hours — first impressions matter!
+```
+
+4. Create Activity for both users: "Introduction sent: You're now connected with Priya Sharma"
+
+5. **If founder-investor match AND founder has a pitch deck uploaded:**
+   Send a follow-up to the founder 30 minutes later:
+   ```
+   💡 Quick tip: You can share your pitch deck with Priya in 
+   your Deal Room. 
+   
+   [Open Deal Room →]
+   ```
+
+---
+
+## STAGE 7: Follow-Up (Automatic, 7 Days Later)
+
+**Trigger:** Introduction.followUpAt = today (runs via daily cron job at 10 AM IST)
+**When:** 7 days after the intro was sent
+**Who receives:** Both users
+
+### Follow-up WhatsApp:
+```
+👋 Hi Arjun, it's been a week since I connected you with 
+Priya Sharma. How did it go?
+
+[Great meeting — talking next steps]
+[Good chat — staying in touch]
+[We didn't end up meeting]
+[Not a great fit]
+```
+
+### Follow-up Email:
+**From:** Cleo <intros@cleo.ai>
+**To:** arjun@nexaflow.com
+**Subject:** "How did your conversation with Priya go?"
+
+```
+Hi Arjun,
+
+It's been a week since I connected you with Priya Sharma 
+from Horizon Ventures. I'd love to know how it went!
+
+    [🎉 Great meeting]     [👍 Good chat]
+    [😕 Didn't meet]       [🤷 Not a fit]
+
+Your feedback helps me make better matches for you and 
+everyone on Cleo.
+
+— Cleo
+```
+
+**Button links:** `https://cleo.ai/introductions/{id}/feedback?outcome=GREAT_MEETING&token=xxx`
+
+---
+
+## STAGE 8: Outcome Recorded (Automatic)
+
+**Trigger:** User clicks a feedback button
+**What happens:**
+
+1. Update Introduction: outcome = selected option, status = COMPLETED
+2. Create Activity: "You rated your intro with Priya as 'Great meeting'"
+
+3. **Feed outcome into matching algorithm:**
+   - GREAT_MEETING: +0.2 boost to similar matches (same industry, stage, location)
+   - GOOD_CHAT: +0.1 boost
+   - DIDNT_MEET: No change (neutral)
+   - NOT_A_FIT: -0.1 penalty to similar matches + trigger analysis (why was this bad?)
+
+4. **If GREAT_MEETING or GOOD_CHAT → Trigger vouch prompt (24 hours later):**
+
+### Vouch request (WhatsApp):
+```
+🌟 Glad your conversation with Priya went well!
+
+Would you like to vouch for her? A vouch helps other 
+members trust her on the platform.
+
+[Vouch for Priya ✓]  [Not now]
+```
+
+5. **If DIDNT_MEET → Send nudge to the other person (3 days later):**
+
+### Nudge (WhatsApp to the person who didn't respond):
+```
+Hey Priya, Arjun mentioned you two haven't had a chance 
+to connect yet. Here's a quick reminder:
+
+Arjun Mehta — Co-Founder, NexaFlow (AI logistics)
+Raising $2M seed | 📍 Bangalore
+
+Would you still like to connect? I can help schedule a time.
+
+[Schedule a call →]  [I'll reach out myself]  [Pass]
+```
+
+---
+
+## COMPLETE EMAIL TRIGGER SUMMARY
+
+| # | Email | Trigger | Timing | From | To |
+|---|-------|---------|--------|------|-----|
+| 1 | Welcome email | User registers | Immediately | Cleo | New user |
+| 2 | Email verification | User registers | Immediately | Cleo | New user |
+| 3 | New match notification | Match generated | Immediately | Cleo | Both users |
+| 4 | "It's a match" + intro preview | Both users connect | Immediately | Cleo | Both users |
+| 5 | 24h approval reminder | Intro not reviewed | 24 hours after Stage 4 | Cleo | Both users |
+| 6 | Introduction email | Intro approved (or auto at 48h) | Immediately | Cleo | Both users (CC'd) |
+| 7 | 7-day follow-up | 7 days after intro sent | 10 AM IST | Cleo | Both users |
+| 8 | Vouch request | Positive outcome recorded | 24h after outcome | Cleo | Both users |
+| 9 | Nudge (didn't meet) | "Didn't meet" outcome | 3 days after outcome | Cleo | Non-responsive user |
+| 10 | Weekly digest | Every Monday | 9 AM IST | Cleo | All active users |
+
+---
+
+## WHATSAPP TRIGGER SUMMARY
+
+| # | Message | Trigger | Timing |
+|---|---------|---------|--------|
+| 1 | New match card | Match generated | Immediately |
+| 2 | "It's a match" + review link | Both connect | Immediately |
+| 3 | Approval reminder | Intro not reviewed | 24 hours |
+| 4 | Intro sent confirmation + contact details | Intro sent | Immediately |
+| 5 | Deal Room tip (founder-investor only) | Intro sent | 30 min after |
+| 6 | 7-day follow-up | 7 days post-intro | 10 AM IST |
+| 7 | Vouch request | Positive outcome | 24h after outcome |
+| 8 | Nudge (didn't meet) | "Didn't meet" outcome | 3 days after |
+| 9 | Weekly digest | Every Monday | 9 AM IST |
+
+---
+
+## EDGE CASES
+
+### What if one user approves the intro and the other edits?
+- Use the edited version. Last edit wins. If both edit, merge intelligently (keep each person's section).
+
+### What if a user deletes their account after an intro is drafted but before sent?
+- Cancel the introduction. Notify the other user: "This introduction has been cancelled."
+
+### What if the email bounces?
+- Log the bounce. Retry once after 1 hour. If still bouncing, notify the user via WhatsApp: "We couldn't deliver the introduction email to Priya. Please verify her email address."
+
+### What if both users mark "Didn't meet"?
+- Don't send a nudge to either. Log it as a missed connection. After 30 days, optionally resurface: "You were matched with Priya 30 days ago but didn't connect. Would you like to try again?"
+
+### What if a user has WhatsApp off and email off?
+- Always show notifications in the web app (activity feed + notification bell). Users can't turn off ALL notifications — web is always on.
+
+### What if there are no matches for a user?
+- Don't send empty notifications. Instead, after 7 days with no matches, send: "We're still looking for the right people for you. In the meantime, invite people from your network to improve your matches." (With invite codes)
+
+### Rate limiting:
+- Maximum 3 introductions sent per user per day (like Boardy's cap)
+- Maximum 5 match notifications per day (don't overwhelm)
+- Weekly digest replaces individual notifications if user has 5+ unreviewed matches
+
+---
+
+## TECHNICAL IMPLEMENTATION NOTES
+
+### Sending emails via Resend:
+You have Resend connected. Use it for ALL transactional emails.
+
+```javascript
+// Example: Send intro email via Resend API
+const response = await fetch('https://api.resend.com/emails', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    from: 'Cleo <intros@yourdomain.com>', // Must be verified domain on Resend
+    to: [user1.email],
+    cc: [user2.email],
+    subject: `Introduction: ${user1.name} ↔ ${user2.name}`,
+    html: introEmailHtml, // Use a nice HTML template
+    reply_to: [user1.email, user2.email]
+  })
+});
+```
+
+### Scheduling follow-ups:
+Use a cron job or delayed queue. Simple approach for Replit:
+
+```javascript
+// Daily cron at 10 AM IST (4:30 AM UTC)
+// Check for introductions needing follow-up
+const introsDueFollowUp = await prisma.introduction.findMany({
+  where: {
+    status: 'SENT',
+    followUpAt: { lte: new Date() },
+    outcome: null
+  }
+});
+
+// Check for intros needing auto-approval
+const introsNeedingAutoApproval = await prisma.introduction.findMany({
+  where: {
+    status: 'PENDING_APPROVAL',
+    createdAt: { lte: new Date(Date.now() - 48 * 60 * 60 * 1000) }
+  }
+});
+```
+
+### WhatsApp via Twilio:
+```javascript
+const client = require('twilio')(accountSid, authToken);
+
+await client.messages.create({
+  from: 'whatsapp:+14155238886', // Your Twilio WhatsApp number
+  to: `whatsapp:+91${user.phone}`,
+  body: `🤝 New Match Found\n\nHi ${user.name}, I found someone you should meet:\n\n${match.name}\n${match.title}\n\nWhy connect: ${match.reasoning}`
+});
+```
+
+### The notification queue pattern:
+Don't send notifications synchronously in API handlers. Use a simple queue:
+
+```javascript
+// When an event happens, queue the notification
+await prisma.notificationQueue.create({
+  data: {
+    userId: user.id,
+    type: 'MATCH_NOTIFICATION',
+    channel: 'WHATSAPP', // or EMAIL or BOTH
+    payload: { matchId, reasoning, matchName },
+    scheduledFor: new Date(), // or future date for delayed sends
+    status: 'PENDING'
+  }
+});
+
+// Worker process (cron every 1 minute):
+const pendingNotifications = await prisma.notificationQueue.findMany({
+  where: { status: 'PENDING', scheduledFor: { lte: new Date() } }
+});
+
+for (const notif of pendingNotifications) {
+  try {
+    await sendNotification(notif); // Routes to WhatsApp or Email
+    await prisma.notificationQueue.update({
+      where: { id: notif.id },
+      data: { status: 'SENT', sentAt: new Date() }
+    });
+  } catch (err) {
+    await prisma.notificationQueue.update({
+      where: { id: notif.id },
+      data: { status: 'FAILED', error: err.message, retryCount: { increment: 1 } }
+    });
+  }
+}
+```
+
+---
+
+## STATE MACHINE DIAGRAM
+
+```
+Match Created (PENDING)
+    │
+    ├── User 1 clicks PASS ──→ Match PASSED (end)
+    ├── User 2 clicks PASS ──→ Match PASSED (end)
+    │
+    ├── User 1 clicks CONNECT (waiting for User 2)
+    │       │
+    │       ├── User 2 clicks PASS ──→ Match PASSED (end)
+    │       └── User 2 clicks CONNECT ──→ DOUBLE OPT-IN ✓
+    │
+    └── User 2 clicks CONNECT (waiting for User 1)
+            │
+            ├── User 1 clicks PASS ──→ Match PASSED (end)
+            └── User 1 clicks CONNECT ──→ DOUBLE OPT-IN ✓
+
+DOUBLE OPT-IN ✓
+    │
+    └── Match status = CONNECTED
+        │
+        └── Introduction created (PENDING_APPROVAL)
+                │
+                ├── User approves ──→ APPROVED ──→ Email sent (SENT)
+                ├── User edits ──→ stays PENDING_APPROVAL
+                ├── 24h reminder sent
+                └── 48h auto-approve ──→ APPROVED ──→ Email sent (SENT)
+
+Introduction SENT
+    │
+    └── 7 days later: Follow-up sent (FOLLOWED_UP)
+            │
+            ├── User: "Great meeting" ──→ COMPLETED ──→ Vouch prompt (24h)
+            ├── User: "Good chat" ──→ COMPLETED ──→ Vouch prompt (24h)
+            ├── User: "Didn't meet" ──→ COMPLETED ──→ Nudge other user (3d)
+            └── User: "Not a fit" ──→ COMPLETED ──→ Matching penalty applied
+```

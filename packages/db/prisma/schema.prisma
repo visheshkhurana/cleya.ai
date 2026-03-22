@@ -467,6 +467,7 @@ enum NotificationChannel {
 enum NotificationEvent {
   MATCH_FOUND
   INTRO_REQUEST
+  INTRO_PENDING
   INTRO_ACCEPTED
   INTRO_REJECTED
   PROFILE_COMPLETE

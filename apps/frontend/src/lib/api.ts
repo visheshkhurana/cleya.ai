@@ -349,6 +349,28 @@ class ApiClient {
     });
   }
 
+  async approveIntroduction(id: string) {
+    return this.fetch(`/introductions/${id}/approve`, { method: 'POST' });
+  }
+
+  async editIntroductionText(id: string, introText: string) {
+    return this.fetch(`/introductions/${id}/edit`, {
+      method: 'PATCH',
+      body: JSON.stringify({ introText }),
+    });
+  }
+
+  async cancelIntroduction(id: string) {
+    return this.fetch(`/introductions/${id}/cancel`, { method: 'POST' });
+  }
+
+  async recordIntroOutcome(id: string, outcome: string, outcomeNotes?: string) {
+    return this.fetch(`/introductions/${id}/outcome`, {
+      method: 'POST',
+      body: JSON.stringify({ outcome, outcomeNotes }),
+    });
+  }
+
   async updateParticipant(eventId: string, userId: string, data: { status?: string; checkedIn?: boolean }) {
     return this.fetch(`/events/${eventId}/participants/${userId}`, {
       method: 'PATCH',

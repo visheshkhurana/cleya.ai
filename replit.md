@@ -122,8 +122,22 @@ Six persona types with tailored onboarding flows:
 
 ### Special Flows
 - **Auto-matching**: Profile completion triggers automatic match finding + proposal (5s delay)
-- **Introduction service**: After double opt-in acceptance, sends personalized intro via WhatsApp/SMS
 - **Find & Propose**: Single endpoint to find matches and auto-propose top N
+
+### Warm Introduction Lifecycle
+Full 8-stage lifecycle implemented:
+1. **Match Generated** — auto after onboarding or batch
+2. **Match Notification** — both users see on matches page (Connect/Pass buttons)
+3. **User Action** — Connect = ACCEPTED, Pass = REJECTED. Double opt-in required.
+4. **Double Opt-In → Generate Intro** — AI generates warm intro text (120 words, personal tone). Status = PENDING_APPROVAL. Both users notified to review.
+5. **Review & Approve** — Users can preview intro text, edit it, or approve. Approve triggers send. 48h auto-approve via hourly cron.
+6. **Introduction Sent** — Status = SENT, sentAt + followUpAt (7 days) set. WhatsApp/SMS sent with contact details.
+7. **Follow-Up** — 7 days later, cron sends follow-up asking "how did it go?"
+8. **Outcome Recorded** — User picks GREAT_MEETING / GOOD_CHAT / DIDNT_MEET / NOT_A_FIT → Status = COMPLETED
+
+**API endpoints**: `POST /approve`, `PATCH /edit`, `POST /cancel`, `POST /outcome`. Legacy `PATCH /status` locked to safe transitions only.
+**Cron jobs**: Hourly auto-approve stale intros (48h+), 6-hourly follow-up sends.
+**Race safety**: `approveAndSend` uses atomic `updateMany` with status check to prevent duplicate sends.
 
 ### Deal Partner (Scout) Special Flow
 - **Auto-scout on onboarding**: When a Deal Partner completes onboarding, automatically finds matching Founders, creates DealTracking records, and proposes matches (5s delay)

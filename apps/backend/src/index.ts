@@ -121,10 +121,34 @@ function logServiceStatus() {
   console.log('---------------------\n');
 }
 
+import { introductionService } from './services/introductionService';
+
+function startIntroCronJobs() {
+  setInterval(async () => {
+    try {
+      const autoApproved = await introductionService.autoApproveStaleIntros();
+      if (autoApproved > 0) console.log(`[Cron] Auto-approved ${autoApproved} stale introductions`);
+    } catch (e) {
+      console.log('[Cron] Auto-approve failed:', e);
+    }
+  }, 60 * 60 * 1000);
+
+  setInterval(async () => {
+    try {
+      const followed = await introductionService.sendFollowUps();
+      if (followed > 0) console.log(`[Cron] Sent ${followed} follow-ups`);
+    } catch (e) {
+      console.log('[Cron] Follow-up failed:', e);
+    }
+  }, 6 * 60 * 60 * 1000);
+}
+
 server.listen(env.PORT, async () => {
   console.log(`Cleo.ai Backend running on port ${env.PORT}`);
   console.log(`WebSocket ready`);
   console.log(`Environment: ${env.NODE_ENV}`);
   logServiceStatus();
   await seedDatabase();
+  startIntroCronJobs();
+  console.log('[Cron] Introduction auto-approve (hourly) + follow-ups (6h) started');
 });

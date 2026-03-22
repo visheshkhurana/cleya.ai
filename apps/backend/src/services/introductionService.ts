@@ -6,7 +6,7 @@ import { activityService } from './activityService';
 export class IntroductionService {
   private ai = createAIService();
 
-  async sendIntroduction(matchId: string) {
+  async generateIntroduction(matchId: string) {
     const match = await prisma.match.findUnique({
       where: { id: matchId },
       include: {
@@ -15,32 +15,108 @@ export class IntroductionService {
       },
     });
 
-    if (!match || match.status !== 'ACCEPTED') return;
+    if (!match || match.status !== 'ACCEPTED') return null;
 
     const userA = match.userA;
     const userB = match.userB;
-    if (!userA?.profile || !userB?.profile) return;
+    if (!userA?.profile || !userB?.profile) return null;
 
-    const introText = await this.generateIntroMessage(
-      userA.profile,
-      userB.profile,
-      match.reason || ''
-    );
+    const introText = await this.generateWarmIntro(userA, userB, match.reason || '');
+    const talkingPoints = await this.generateTalkingPoints(userA.profile, userB.profile, match.reason || '');
 
-    const introForA = `🤝 *Cleo Introduction*\n\nHey! Great news — your match with ${userB.profile.currentRole || 'a professional'} at ${userB.profile.companyName || 'their company'} is confirmed!\n\n${introText}\n\n📧 ${userB.email}${userB.profile.linkedinUrl ? `\n🔗 ${userB.profile.linkedinUrl}` : ''}\n\nReach out and mention Cleo made the intro!`;
+    const intro = await prisma.introductionRecord.upsert({
+      where: { matchId },
+      update: { introText, talkingPoints },
+      create: {
+        matchId,
+        userAId: userA.id,
+        userBId: userB.id,
+        status: 'PENDING_APPROVAL',
+        introText,
+        talkingPoints,
+      },
+    });
 
-    const introForB = `🤝 *Cleo Introduction*\n\nHey! Great news — your match with ${userA.profile.currentRole || 'a professional'} at ${userA.profile.companyName || 'their company'} is confirmed!\n\n${introText}\n\n📧 ${userA.email}${userA.profile.linkedinUrl ? `\n🔗 ${userA.profile.linkedinUrl}` : ''}\n\nReach out and mention Cleo made the intro!`;
+    try {
+      await prisma.notification.createMany({
+        data: [
+          {
+            userId: userA.id,
+            event: 'INTRO_PENDING',
+            channel: 'IN_APP',
+            title: "It's a match! Review your introduction",
+            body: `Both you and ${userB.profile.currentRole || userB.name || 'your match'} want to connect. Review the introduction before it's sent.`,
+          },
+          {
+            userId: userB.id,
+            event: 'INTRO_PENDING',
+            channel: 'IN_APP',
+            title: "It's a match! Review your introduction",
+            body: `Both you and ${userA.profile.currentRole || userA.name || 'your match'} want to connect. Review the introduction before it's sent.`,
+          },
+        ],
+      });
+    } catch (e) {
+      console.log('[IntroService] Notification creation failed:', e);
+    }
+
+    const sendNotify = async (userId: string, phone: string | null, otherName: string) => {
+      if (!phone) return;
+      const msg = `✅ It's a match! Both you and ${otherName} want to connect.\n\nI've drafted a warm introduction for you two. Please review it before I send.\n\nReview it on your Introductions page.`;
+      try {
+        await messagingService.sendWhatsApp(userId, phone, msg);
+      } catch {
+        try { await messagingService.sendSMS(userId, phone, msg); } catch {}
+      }
+    };
+
+    await Promise.allSettled([
+      sendNotify(userA.id, userA.phone, userB.profile.currentRole || userB.name || 'your match'),
+      sendNotify(userB.id, userB.phone, userA.profile.currentRole || userA.name || 'your match'),
+    ]);
+
+    console.log(`[IntroService] Introduction generated (PENDING_APPROVAL) for match ${matchId}`);
+    return intro;
+  }
+
+  async approveAndSend(introId: string) {
+    const updated = await prisma.introductionRecord.updateMany({
+      where: {
+        id: introId,
+        status: { in: ['PENDING_APPROVAL', 'APPROVED'] },
+      },
+      data: {
+        status: 'SENT',
+        sentAt: new Date(),
+        followUpAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+    });
+
+    if (updated.count === 0) return null;
+
+    const intro = await prisma.introductionRecord.findUnique({
+      where: { id: introId },
+      include: {
+        match: true,
+        userA: { include: { profile: true } },
+        userB: { include: { profile: true } },
+      },
+    });
+
+    if (!intro || !intro.introText) return null;
+
+    const userA = intro.userA;
+    const userB = intro.userB;
+
+    const introForA = `🤝 *Cleo Introduction*\n\nGreat news — your introduction has been sent!\n\n${intro.introText}\n\n📧 ${userB.email}${userB.profile?.linkedinUrl ? `\n🔗 ${userB.profile.linkedinUrl}` : ''}\n\n💡 Tip: Reply within 24 hours — first impressions matter!`;
+    const introForB = `🤝 *Cleo Introduction*\n\nGreat news — your introduction has been sent!\n\n${intro.introText}\n\n📧 ${userA.email}${userA.profile?.linkedinUrl ? `\n🔗 ${userA.profile.linkedinUrl}` : ''}\n\n💡 Tip: Reply within 24 hours — first impressions matter!`;
 
     const sendToUser = async (userId: string, phone: string | null, message: string) => {
       if (!phone) return;
       try {
         await messagingService.sendWhatsApp(userId, phone, message);
       } catch {
-        try {
-          await messagingService.sendSMS(userId, phone, message);
-        } catch (e) {
-          console.log(`[IntroService] Could not send intro to ${userId}:`, e);
-        }
+        try { await messagingService.sendSMS(userId, phone, message); } catch {}
       }
     };
 
@@ -57,46 +133,117 @@ export class IntroductionService {
             event: 'INTRO_ACCEPTED',
             channel: 'IN_APP',
             title: 'Introduction Sent!',
-            body: `You've been introduced to ${userB.profile.currentRole} at ${userB.profile.companyName}. Check your messages!`,
+            body: `You've been introduced to ${userB.profile?.currentRole || userB.email}. Check your messages!`,
           },
           {
             userId: userB.id,
             event: 'INTRO_ACCEPTED',
             channel: 'IN_APP',
             title: 'Introduction Sent!',
-            body: `You've been introduced to ${userA.profile.currentRole} at ${userA.profile.companyName}. Check your messages!`,
+            body: `You've been introduced to ${userA.profile?.currentRole || userA.email}. Check your messages!`,
           },
         ],
       });
-    } catch (e) {
-      console.log('[IntroService] Notification creation failed:', e);
-    }
-
-    const talkingPoints = await this.generateTalkingPoints(userA.profile, userB.profile, match.reason || '');
-    try {
-      await prisma.introductionRecord.upsert({
-        where: { matchId },
-        update: { status: 'SENT', talkingPoints, introText, sentAt: new Date() },
-        create: {
-          matchId,
-          userAId: userA.id,
-          userBId: userB.id,
-          status: 'SENT',
-          introText,
-          talkingPoints,
-          sentAt: new Date(),
-        },
-      });
-    } catch (e) {
-      console.log('[IntroService] IntroductionRecord creation failed:', e);
-    }
+    } catch {}
 
     await Promise.allSettled([
-      activityService.recordIntroSent(userA.id, userB.profile.currentRole || userB.email),
-      activityService.recordIntroSent(userB.id, userA.profile.currentRole || userA.email),
+      activityService.recordIntroSent(userA.id, userB.profile?.currentRole || userB.email),
+      activityService.recordIntroSent(userB.id, userA.profile?.currentRole || userA.email),
     ]);
 
-    console.log(`[IntroService] Introduction sent for match ${matchId}`);
+    console.log(`[IntroService] Introduction SENT for intro ${introId}`);
+    return updated;
+  }
+
+  async updateIntroText(introId: string, newText: string) {
+    return prisma.introductionRecord.update({
+      where: { id: introId },
+      data: { introText: newText },
+    });
+  }
+
+  async recordOutcome(introId: string, outcome: string, outcomeNotes?: string) {
+    const updated = await prisma.introductionRecord.update({
+      where: { id: introId },
+      data: {
+        outcome,
+        outcomeNotes: outcomeNotes || null,
+        status: 'COMPLETED',
+      },
+      include: {
+        userA: { include: { profile: true } },
+        userB: { include: { profile: true } },
+      },
+    });
+
+    await Promise.allSettled([
+      activityService.record(updated.userAId, 'INTRO_OUTCOME', `You rated your intro as "${outcome.replace(/_/g, ' ').toLowerCase()}"`),
+      activityService.record(updated.userBId, 'INTRO_OUTCOME', `Introduction outcome recorded: "${outcome.replace(/_/g, ' ').toLowerCase()}"`),
+    ]);
+
+    return updated;
+  }
+
+  async autoApproveStaleIntros() {
+    const staleIntros = await prisma.introductionRecord.findMany({
+      where: {
+        status: 'PENDING_APPROVAL',
+        createdAt: { lte: new Date(Date.now() - 48 * 60 * 60 * 1000) },
+      },
+    });
+
+    for (const intro of staleIntros) {
+      try {
+        await this.approveAndSend(intro.id);
+        console.log(`[IntroService] Auto-approved intro ${intro.id}`);
+      } catch (e) {
+        console.log(`[IntroService] Auto-approve failed for ${intro.id}:`, e);
+      }
+    }
+
+    return staleIntros.length;
+  }
+
+  async sendFollowUps() {
+    const dueFollowUps = await prisma.introductionRecord.findMany({
+      where: {
+        status: 'SENT',
+        followUpAt: { lte: new Date() },
+        outcome: null,
+      },
+      include: {
+        userA: { include: { profile: true } },
+        userB: { include: { profile: true } },
+      },
+    });
+
+    for (const intro of dueFollowUps) {
+      const sendFollowUp = async (userId: string, phone: string | null, otherName: string) => {
+        if (!phone) return;
+        const msg = `👋 Hi! It's been a week since I connected you with ${otherName}. How did it go?\n\nVisit your Introductions page to share feedback.`;
+        try {
+          await messagingService.sendWhatsApp(userId, phone, msg);
+        } catch {
+          try { await messagingService.sendSMS(userId, phone, msg); } catch {}
+        }
+      };
+
+      await Promise.allSettled([
+        sendFollowUp(intro.userAId, intro.userA.phone, intro.userB.profile?.currentRole || intro.userB.email),
+        sendFollowUp(intro.userBId, intro.userB.phone, intro.userA.profile?.currentRole || intro.userA.email),
+      ]);
+
+      await prisma.introductionRecord.update({
+        where: { id: intro.id },
+        data: { status: 'FOLLOWED_UP' },
+      });
+    }
+
+    return dueFollowUps.length;
+  }
+
+  async sendIntroduction(matchId: string) {
+    return this.generateIntroduction(matchId);
   }
 
   private async generateTalkingPoints(profileA: any, profileB: any, reason: string): Promise<string[]> {
@@ -123,34 +270,44 @@ Match reason: ${reason}`,
       if (sharedSkills.length > 0) points.push(`You share expertise in ${sharedSkills.join(', ')}. Compare approaches and best practices.`);
       if (reason) points.push(`The connection was made because: ${reason}`);
       points.push('Discuss your current goals and how you might help each other.');
-      if (points.length < 3) points.push('Share what you\'re most excited about working on right now.');
+      if (points.length < 3) points.push("Share what you're most excited about working on right now.");
       return points;
     }
   }
 
-  private async generateIntroMessage(
-    profileA: any,
-    profileB: any,
-    reason: string
-  ): Promise<string> {
+  private async generateWarmIntro(userA: any, userB: any, reason: string): Promise<string> {
     try {
+      const profA = userA.profile;
+      const profB = userB.profile;
       const response = await this.ai.chat([
         {
           role: 'system',
-          content:
-            'You write warm, professional introduction messages for networking matches. Keep it to 2-3 sentences. Be specific about the synergy. Do not include greetings or sign-offs.',
+          content: `You are Cleo, an AI superconnector for India's startup ecosystem. Write a warm introduction connecting these two professionals. The tone should be warm, specific, and personal — like a well-connected friend making an intro, not a corporate email. Reference specific details from both profiles. Keep it under 120 words. Start with "Hi [First Name 1] and [First Name 2]," and end with "I'll let you two take it from here!\n— Cleo"`,
         },
         {
           role: 'user',
-          content: `Write a brief intro blurb for a match between:
-Person A: ${profileA.persona} — ${profileA.headline || profileA.currentRole || ''} at ${profileA.companyName || ''}. Industries: ${profileA.industries?.join(', ') || 'N/A'}
-Person B: ${profileB.persona} — ${profileB.headline || profileB.currentRole || ''} at ${profileB.companyName || ''}. Industries: ${profileB.industries?.join(', ') || 'N/A'}
+          content: `Person 1:
+- Name: ${userA.name || userA.email.split('@')[0]}
+- Title: ${profA.currentRole || 'Professional'} at ${profA.companyName || 'their company'}
+- Bio: ${profA.bio || ''}
+- Goal: ${profA.lookingFor?.join(', ') || 'networking'}
+- Key details: ${profA.keyTractionPoints || profA.investmentThesis || profA.skills?.join(', ') || ''}
+
+Person 2:
+- Name: ${userB.name || userB.email.split('@')[0]}
+- Title: ${profB.currentRole || 'Professional'} at ${profB.companyName || 'their company'}
+- Bio: ${profB.bio || ''}
+- Goal: ${profB.lookingFor?.join(', ') || 'networking'}
+- Key details: ${profB.keyTractionPoints || profB.investmentThesis || profB.skills?.join(', ') || ''}
+
 Match reason: ${reason}`,
         },
       ]);
       return response.content;
     } catch {
-      return reason || 'Both of you share complementary backgrounds that could lead to a valuable connection.';
+      const nameA = userA.name || userA.email.split('@')[0];
+      const nameB = userB.name || userB.email.split('@')[0];
+      return `Hi ${nameA} and ${nameB},\n\nI'd love to connect you two. ${reason || 'You both have complementary backgrounds that could lead to a valuable connection.'}\n\nI'll let you two take it from here!\n— Cleo`;
     }
   }
 }
