@@ -40,11 +40,27 @@ function CountUp({ target, suffix = '', prefix = '', decimals = 0 }: { target: n
   return <span ref={ref}>{prefix}{decimals > 0 ? val.toFixed(decimals) : val.toLocaleString()}{suffix}</span>;
 }
 
+function getPasswordStrength(pw: string): { label: string; color: string; width: string } {
+  if (!pw) return { label: '', color: '', width: '0%' };
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (pw.length >= 12) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  if (score <= 1) return { label: 'Weak', color: '#ef4444', width: '20%' };
+  if (score === 2) return { label: 'Fair', color: '#f59e0b', width: '40%' };
+  if (score === 3) return { label: 'Good', color: '#2DD4BF', width: '65%' };
+  return { label: 'Strong', color: '#10b981', width: '100%' };
+}
+
 export default function Home() {
   const [showAuth, setShowAuth] = useState(false);
   const [mode, setMode] = useState<'login' | 'signup'>('signup');
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(false);
@@ -55,6 +71,7 @@ export default function Home() {
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 80);
@@ -83,6 +100,7 @@ export default function Home() {
 
       const urlToken = params.get('token');
       const urlError = params.get('error');
+      const urlAction = params.get('action');
       if (urlToken) {
         api.setToken(urlToken);
         window.history.replaceState({}, '', '/');
@@ -90,6 +108,12 @@ export default function Home() {
       if (urlError) {
         setError('Google sign-in failed. Please try again or use email.');
         setShowAuth(true);
+        window.history.replaceState({}, '', '/');
+      }
+      if (urlAction === 'login') {
+        setMode('login');
+        setShowAuth(true);
+        setError('Please log in to continue');
         window.history.replaceState({}, '', '/');
       }
     }
@@ -128,9 +152,27 @@ export default function Home() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (mode === 'signup' && !consent) {
-      setError('Please agree to the Terms of Service and Privacy Policy');
-      return;
+    if (mode === 'signup') {
+      if (!consent) {
+        setError('Please agree to the Terms of Service and Privacy Policy');
+        return;
+      }
+      if (password.length < 8) {
+        setError('Password must be at least 8 characters');
+        return;
+      }
+      if (!/[A-Za-z]/.test(password)) {
+        setError('Password must contain at least one letter');
+        return;
+      }
+      if (!/[0-9]/.test(password)) {
+        setError('Password must contain at least one number');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError('Passwords do not match');
+        return;
+      }
     }
     setLoading(true);
     try {
@@ -141,7 +183,7 @@ export default function Home() {
           utmSource: utmData.utm_source,
           utmMedium: utmData.utm_medium,
           utmCampaign: utmData.utm_campaign,
-        });
+        }, fullName || undefined);
         localStorage.removeItem('cleo_utm');
         analytics.signupCompleted('email');
         window.location.href = '/chat';
@@ -159,7 +201,11 @@ export default function Home() {
         }
       }
     } catch (err: any) {
-      setError(err.message || 'Something went wrong');
+      if (err.details) {
+        setError(err.details.map((d: any) => d.message).join('. '));
+      } else {
+        setError(err.message || 'Something went wrong');
+      }
     } finally {
       setLoading(false);
     }
@@ -204,7 +250,11 @@ export default function Home() {
             </svg>
             <span className="text-white font-semibold text-lg tracking-tight">Cleo.ai</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-3">
+            <button onClick={() => scrollToSection('how-it-works')}
+              className="px-3 py-2 text-sm text-white/50 hover:text-white transition-colors">How It Works</button>
+            <button onClick={() => scrollToSection('testimonials')}
+              className="px-3 py-2 text-sm text-white/50 hover:text-white transition-colors">Testimonials</button>
             <button onClick={() => { setShowAuth(true); setMode('login'); }}
               className="px-4 py-2 text-sm text-muted hover:text-white transition-colors">Log In</button>
             <button onClick={() => { setShowAuth(true); setMode('signup'); }}
@@ -213,7 +263,28 @@ export default function Home() {
               Get Started
             </button>
           </div>
+          <button className="sm:hidden p-2 text-white/60 hover:text-white transition" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle menu">
+            {mobileMenuOpen ? (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+            ) : (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+            )}
+          </button>
         </div>
+        {mobileMenuOpen && (
+          <div className="sm:hidden border-t border-white/[0.06] px-6 py-4 space-y-2" style={{ background: 'rgba(11,9,24,0.95)' }}>
+            <button onClick={() => { scrollToSection('how-it-works'); setMobileMenuOpen(false); }}
+              className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">How It Works</button>
+            <button onClick={() => { scrollToSection('testimonials'); setMobileMenuOpen(false); }}
+              className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">Testimonials</button>
+            <button onClick={() => { setShowAuth(true); setMode('login'); setMobileMenuOpen(false); }}
+              className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">Log In</button>
+            <button onClick={() => { setShowAuth(true); setMode('signup'); setMobileMenuOpen(false); }}
+              className="block w-full text-left px-3 py-3 text-sm font-medium rounded-lg min-h-[44px]"
+              style={{ background: '#0D9488', color: 'white' }}>Get Started</button>
+          </div>
+        )}
       </nav>
 
       {/* HERO */}
@@ -338,7 +409,7 @@ export default function Home() {
       </section>
 
       {/* SOCIAL PROOF — METRICS */}
-      <section className="border-y border-white/[0.04]" style={{ background: '#0D0B1E' }}>
+      <section id="testimonials" className="border-y border-white/[0.04]" style={{ background: '#0D0B1E' }}>
         <div className="max-w-6xl mx-auto px-6 py-12 sm:py-16">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-0 md:divide-x md:divide-white/[0.06]">
             {[
@@ -652,6 +723,13 @@ export default function Home() {
               ) : (
                 <>
                   <form onSubmit={handleSubmit} className="space-y-4">
+                    {mode === 'signup' && (
+                      <div>
+                        <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#A09FB5' }}>Full Name</label>
+                        <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)}
+                          placeholder="Your full name" className="input-dark" autoComplete="name" />
+                      </div>
+                    )}
                     <div>
                       <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#A09FB5' }}>Email</label>
                       <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
@@ -660,9 +738,30 @@ export default function Home() {
                     <div>
                       <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#A09FB5' }}>Password</label>
                       <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                        placeholder={mode === 'signup' ? 'Min 8 characters' : 'Your password'} required
+                        placeholder={mode === 'signup' ? 'Min 8 chars, letter + number' : 'Your password'} required
                         minLength={mode === 'signup' ? 8 : undefined} className="input-dark" />
+                      {mode === 'signup' && password.length > 0 && (() => {
+                        const strength = getPasswordStrength(password);
+                        return (
+                          <div className="mt-2">
+                            <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                              <div className="h-full rounded-full transition-all duration-300" style={{ width: strength.width, background: strength.color }} />
+                            </div>
+                            <p className="text-[10px] mt-1 text-right" style={{ color: strength.color }}>{strength.label}</p>
+                          </div>
+                        );
+                      })()}
                     </div>
+                    {mode === 'signup' && (
+                      <div>
+                        <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#A09FB5' }}>Confirm Password</label>
+                        <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Re-enter password" className="input-dark" />
+                        {confirmPassword && password !== confirmPassword && (
+                          <p className="text-[10px] mt-1 text-red-400">Passwords do not match</p>
+                        )}
+                      </div>
+                    )}
                     {mode === 'login' && (
                       <button type="button" onClick={() => setShowForgotPassword(true)} className="text-xs font-medium" style={{ color: '#2DD4BF' }}>Forgot password?</button>
                     )}

@@ -165,13 +165,14 @@ userRouter.get('/settings', authenticate, async (req: Request, res: Response, ne
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user!.userId },
-      select: { email: true, phone: true, createdAt: true },
+      select: { email: true, phone: true, name: true, createdAt: true },
     });
     const profile = await prisma.profile.findUnique({
       where: { userId: req.user!.userId },
-      select: { persona: true, currentRole: true, isComplete: true },
+      select: { persona: true, currentRole: true, isComplete: true, phoneNumber: true },
     });
-    res.json({ success: true, data: { ...user, profile } });
+    const phone = user?.phone || profile?.phoneNumber || null;
+    res.json({ success: true, data: { ...user, phone, profile } });
   } catch (error) {
     next(error);
   }

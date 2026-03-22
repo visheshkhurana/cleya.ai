@@ -19,7 +19,11 @@ setInterval(() => {
 
 const signupSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8),
+  password: z.string().min(8, 'Password must be at least 8 characters')
+    .max(128, 'Password must be less than 128 characters')
+    .regex(/[A-Za-z]/, 'Password must contain at least one letter')
+    .regex(/[0-9]/, 'Password must contain at least one number'),
+  name: z.string().min(2, 'Full name is required').max(100).optional(),
   phone: z.string().optional(),
   utmSource: z.string().optional(),
   utmMedium: z.string().optional(),
@@ -40,7 +44,18 @@ authRouter.post('/signup', signupLimiter, async (req: Request, res: Response, ne
     verifyTokens.set(verifyToken, { userId: result.user.id, createdAt: Date.now() });
     emailService.sendEmailVerification(data.email, verifyToken).catch(() => {});
     res.status(201).json({ success: true, data: result });
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({
+        success: false,
+        error: {
+          message: 'Validation failed',
+          code: 'VALIDATION_ERROR',
+          details: error.errors.map(e => ({ field: e.path.join('.'), message: e.message })),
+        },
+      });
+      return;
+    }
     next(error);
   }
 });

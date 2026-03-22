@@ -57,14 +57,18 @@ export default function ProfilePage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!api.getToken()) { router.push('/'); return; }
+    if (!api.getToken()) { router.push('/?action=login'); return; }
     loadProfile();
   }, []);
 
   const loadProfile = async () => {
     try {
       const data = await api.getProfile();
-      if (data) setProfile(data);
+      if (data) {
+        const { extraData, ...rest } = data;
+        const merged = { ...rest, ...(typeof extraData === 'object' && extraData ? extraData : {}) };
+        setProfile(merged);
+      }
     } catch (err: any) {
       if (err.message?.includes('Unauthorized')) router.push('/');
     } finally {
@@ -76,13 +80,27 @@ export default function ProfilePage() {
     setSaving(true);
     setError('');
     setSaved(false);
+    if (!profile.persona) {
+      setError('Please select a persona type before saving.');
+      setSaving(false);
+      return;
+    }
+    if (!profile.currentRole?.trim()) {
+      setError('Current Role is required.');
+      setSaving(false);
+      return;
+    }
     if (profile.phoneNumber) {
       const phoneErr = validatePhone(profile.phoneNumber);
       if (phoneErr) { setError(phoneErr); setSaving(false); return; }
     }
     try {
       const updated = await api.updateProfile(profile);
-      setProfile(updated);
+      if (updated) {
+        const { extraData, ...rest } = updated;
+        const merged = { ...rest, ...(typeof extraData === 'object' && extraData ? extraData : {}) };
+        setProfile(merged);
+      }
       setSaved(true);
       analytics.profileUpdated(Object.keys(profile));
       setTimeout(() => setSaved(false), 3000);
@@ -201,9 +219,12 @@ export default function ProfilePage() {
 
           <div>
             <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Bio</label>
-            <textarea value={profile.bio || ''} onChange={(e) => updateField('bio', e.target.value)}
+            <textarea value={profile.bio || ''} onChange={(e) => updateField('bio', e.target.value.slice(0, 1000))}
               placeholder="Tell people about yourself..." rows={3}
-              className="input-dark resize-none" />
+              className="input-dark resize-none" maxLength={1000} />
+            <p className="text-[10px] text-right mt-1" style={{ color: (profile.bio?.length || 0) > 900 ? '#ef4444' : '#A09FB5' }}>
+              {profile.bio?.length || 0}/1000
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

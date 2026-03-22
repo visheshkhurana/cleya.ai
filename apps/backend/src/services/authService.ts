@@ -6,7 +6,7 @@ import { AppError } from '../middleware/errorHandler';
 import { AuthPayload } from '../middleware/auth';
 
 export class AuthService {
-  async signup(data: { email: string; password: string; phone?: string; utmSource?: string; utmMedium?: string; utmCampaign?: string }) {
+  async signup(data: { email: string; password: string; name?: string; phone?: string; utmSource?: string; utmMedium?: string; utmCampaign?: string }) {
     // Check existing user
     const existing = await prisma.user.findFirst({
       where: {
@@ -27,6 +27,7 @@ export class AuthService {
       data: {
         email: data.email,
         phone: data.phone,
+        name: data.name,
         passwordHash,
         utmSource: data.utmSource,
         utmMedium: data.utmMedium,
@@ -44,6 +45,7 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
+        name: user.name,
         phone: user.phone,
         role: user.role,
         emailVerified: user.emailVerified,
@@ -78,6 +80,7 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
+        name: user.name,
         phone: user.phone,
         role: user.role,
         emailVerified: user.emailVerified,
@@ -100,6 +103,7 @@ export class AuthService {
     return {
       id: user.id,
       email: user.email,
+      name: user.name,
       phone: user.phone,
       role: user.role,
       emailVerified: user.emailVerified,

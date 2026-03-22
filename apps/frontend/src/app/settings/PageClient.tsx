@@ -21,10 +21,10 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const token = api.getToken();
-    if (!token) { router.push('/'); return; }
+    if (!token) { router.push('/?action=login'); return; }
     api.getSettings()
       .then(data => { setSettings(data); setLoading(false); })
-      .catch(() => { router.push('/'); });
+      .catch(() => { router.push('/?action=login'); });
   }, [router]);
 
   const handleChangePassword = async () => {

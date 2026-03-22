@@ -55,7 +55,7 @@ export default function MatchesPage() {
 
   useEffect(() => {
     if (!api.getToken()) {
-      router.push('/');
+      router.push('/?action=login');
       return;
     }
     loadData();

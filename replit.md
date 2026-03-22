@@ -50,6 +50,25 @@ All frontend pages use a server/client wrapper pattern for build compatibility:
 - `page.tsx` — server component that exports `dynamic = 'force-dynamic'` and re-exports the client component
 - `PageClient.tsx` — the actual `'use client'` component with hooks, state, and UI
 
+### Pages
+- `/` — Landing page with auth modal (signup/login), mobile hamburger menu, hero stats, testimonials
+- `/about` — About page with mission, how-it-works, and personas
+- `/login` — Redirects to `/?action=login` to open login modal
+- `/dashboard` — User dashboard with stats, matches, AI chat; stats auto-refresh on visibility change
+- `/profile` — Profile editor; merges `extraData` JSON for persona-specific fields (preferredRole, portfolioSize, etc.)
+- `/matches` — Match listing with feedback, search, and rationale display
+- `/chat` — AI onboarding conversation
+- `/settings` — Account settings with phone display (syncs from profile), password change
+- `/introductions` — Introduction records
+- `/admin` — Admin dashboard
+
+### Auth Flow
+- Signup: Full Name (optional) + Email + Password (min 8 chars, letter + number required) + Confirm Password + Terms consent
+- Password strength indicator shown during signup
+- Backend returns 400 with detailed Zod validation errors (not 500)
+- Protected routes redirect unauthenticated users to `/?action=login` with a prompt message
+- User model has `name` field (String?, added via db push)
+
 ## Frontend Proxy
 `apps/frontend/next.config.js` has rewrites proxying `/api/*` → `http://localhost:3001/api/*` so the browser can reach the backend through the Next.js dev server.
 

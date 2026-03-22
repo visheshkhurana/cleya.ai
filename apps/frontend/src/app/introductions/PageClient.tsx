@@ -38,7 +38,7 @@ export default function IntroductionsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!api.getToken()) { router.push('/'); return; }
+    if (!api.getToken()) { router.push('/?action=login'); return; }
     loadData();
   }, []);
 

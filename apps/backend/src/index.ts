@@ -14,6 +14,7 @@ if (env.SENTRY_DSN) {
     tracesSampleRate: env.NODE_ENV === 'production' ? 0.2 : 1.0,
   });
 }
+
 import { errorHandler } from './middleware/errorHandler';
 import { setupWebSocket } from './websocket/server';
 import { seedDatabase } from './seed';
@@ -38,10 +39,8 @@ app.set('trust proxy', 1);
 const server = createServer(app);
 
 app.use(helmet());
-
 const corsOrigin = env.CORS_ORIGIN || env.FRONTEND_URL;
 app.use(cors({ origin: corsOrigin, credentials: true }));
-
 app.use(morgan('dev'));
 app.use(cookieParser());
 app.use(express.json());
@@ -49,7 +48,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api', generalLimiter);
 
 const startTime = Date.now();
-const healthHandler = (_req: any, res: any) => {
+const healthHandler = (_req: express.Request, res: express.Response) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -58,11 +57,10 @@ const healthHandler = (_req: any, res: any) => {
     env: env.NODE_ENV,
   });
 };
+
 app.get('/health', healthHandler);
 app.get('/api/health', healthHandler);
-
 app.get('/api/csrf-token', csrfTokenProvider);
-
 app.use('/api/auth', authRouter);
 app.use('/api/users', csrfProtection, userRouter);
 app.use('/api/conversations', conversationRouter);
@@ -80,9 +78,7 @@ app.use('/api/introductions', csrfProtection, introductionRouter);
 if (env.SENTRY_DSN) {
   Sentry.setupExpressErrorHandler(app);
 }
-
 app.use(errorHandler);
-
 setupWebSocket(server);
 
 function logServiceStatus() {

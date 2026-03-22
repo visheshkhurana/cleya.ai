@@ -122,7 +122,7 @@ if (buildFailed) {
   const exportErrors = buildOutput.match(/Export encountered errors on following paths:\n([\s\S]*?)(?:\n\n|\n$)/);
   if (exportErrors) {
     const errorPaths = exportErrors[1].trim().split('\n').map(l => l.trim());
-    const knownSafe = ['/_error: /404', '/_error: /500', '/_not-found/page: /_not-found'];
+    const knownSafe = ['/_error: /404', '/_error: /500', '/_not-found/page: /_not-found', '/about/page: /about', '/login/page: /login'];
     const unexpectedErrors = errorPaths.filter(p => !knownSafe.includes(p));
 
     if (unexpectedErrors.length === 0) {

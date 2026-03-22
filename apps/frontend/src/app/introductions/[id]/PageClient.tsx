@@ -47,7 +47,7 @@ export default function IntroductionDetailPage() {
   const params = useParams();
 
   useEffect(() => {
-    if (!api.getToken()) { router.push('/'); return; }
+    if (!api.getToken()) { router.push('/?action=login'); return; }
     loadIntro();
   }, []);
 

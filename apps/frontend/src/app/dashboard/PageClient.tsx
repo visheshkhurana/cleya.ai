@@ -69,10 +69,25 @@ export default function DashboardPage() {
       }
     }
     if (!api.getToken()) {
-      router.push('/');
+      router.push('/?action=login');
       return;
     }
     loadDashboard();
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && api.getToken()) {
+        Promise.all([
+          api.getMatchStats().catch(() => null),
+          api.getMatches().catch(() => []),
+        ]).then(([stats, matches]) => {
+          if (stats) setMatchStats(stats);
+          const matchArr = Array.isArray(matches) ? matches : [];
+          setRecentMatches(matchArr.slice(0, 5));
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, []);
 
   useEffect(() => {
