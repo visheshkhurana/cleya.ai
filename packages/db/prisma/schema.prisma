@@ -326,7 +326,7 @@ model IntroductionRecord {
   userA        User               @relation("IntroUserA", fields: [userAId], references: [id])
   userBId      String
   userB        User               @relation("IntroUserB", fields: [userBId], references: [id])
-  status       IntroductionStatus @default(PENDING_APPROVAL)
+  status       IntroductionStatus @default(SENT)
   introText    String?
   talkingPoints String[]          @default([])
   sentVia      String?
