@@ -36,7 +36,7 @@ export default function BootstrapClient() {
       wrapper.id = 'cookie-consent-banner';
       wrapper.setAttribute('role', 'dialog');
       wrapper.setAttribute('aria-label', 'Cookie consent');
-      wrapper.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9998;width:100%;max-width:480px;padding:0 16px';
+      wrapper.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:40;width:100%;max-width:480px;padding:0 16px';
       wrapper.innerHTML = `
         <div style="background:#1A1730;border:1px solid rgba(13,148,136,0.2);border-radius:16px;padding:20px 24px;box-shadow:0 20px 60px rgba(0,0,0,0.5)">
           <div style="display:flex;align-items:flex-start;gap:12px">

@@ -60,7 +60,7 @@ All frontend pages use a server/client wrapper pattern for build compatibility:
 - `/profile` — Profile editor; merges `extraData` JSON for persona-specific fields (preferredRole, portfolioSize, etc.)
 - `/matches` — Match listing with qualitative labels (Strong Match/Good Fit/Possible Fit instead of raw %), feedback, search
 - `/chat` — AI onboarding conversation with progress indicator (Step X of 5)
-- `/settings` — Account settings with phone display (syncs from profile), password change, notification preferences
+- `/settings` — Account settings with phone display (syncs from profile), password change, notification preferences (persisted to CommunicationPreference model)
 - `/introductions` — Introduction records with full status lifecycle (PENDING_APPROVAL → APPROVED → SENT → VIEWED → RESPONDED → COMPLETED)
 - `/admin` — Admin dashboard
 

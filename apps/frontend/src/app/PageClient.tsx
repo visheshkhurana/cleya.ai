@@ -493,7 +493,7 @@ export default function Home() {
                   </svg>
                 ),
                 title: 'Cleo finds your matches',
-                desc: 'Our AI searches across 12,000+ verified members across India, weighing sector fit, stage, check size, and intent — not just keywords.',
+                desc: 'Our AI searches across verified members across India, weighing sector fit, stage, check size, and intent — not just keywords.',
               },
               {
                 num: '03',

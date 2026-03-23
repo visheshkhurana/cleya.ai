@@ -33,6 +33,8 @@ import { eventRouter } from './routes/event';
 import { aiChatRouter } from './routes/aiChat';
 import { introductionRouter } from './routes/introduction';
 import { generalLimiter } from './middleware/rateLimit';
+import { inviteRouter } from './routes/invite';
+import { activityRouter } from './routes/activity';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -62,7 +64,7 @@ app.get('/health', healthHandler);
 app.get('/api/health', healthHandler);
 app.get('/api/csrf-token', csrfTokenProvider);
 
-app.get('/api/stats/public', async (_req: express.Request, res: express.Response) => {
+app.get('/api/stats/public', async (_req, res) => {
   try {
     const { PrismaClient } = require('@prisma/client');
     const p = new PrismaClient();
@@ -84,6 +86,7 @@ app.get('/api/stats/public', async (_req: express.Request, res: express.Response
     res.json({ success: true, data: { memberCount: 0, matchCount: 0, introductionCount: 0 } });
   }
 });
+
 app.use('/api/auth', authRouter);
 app.use('/api/users', csrfProtection, userRouter);
 app.use('/api/conversations', conversationRouter);
@@ -97,9 +100,6 @@ app.use('/api/deals', csrfProtection, dealRouter);
 app.use('/api/events', csrfProtection, eventRouter);
 app.use('/api/ai-chat', aiChatRouter);
 app.use('/api/introductions', csrfProtection, introductionRouter);
-
-import { inviteRouter } from './routes/invite';
-import { activityRouter } from './routes/activity';
 app.use('/api/invites', csrfProtection, inviteRouter);
 app.use('/api/activities', csrfProtection, activityRouter);
 
@@ -121,34 +121,10 @@ function logServiceStatus() {
   console.log('---------------------\n');
 }
 
-import { introductionService } from './services/introductionService';
-
-function startIntroCronJobs() {
-  setInterval(async () => {
-    try {
-      const autoApproved = await introductionService.autoApproveStaleIntros();
-      if (autoApproved > 0) console.log(`[Cron] Auto-approved ${autoApproved} stale introductions`);
-    } catch (e) {
-      console.log('[Cron] Auto-approve failed:', e);
-    }
-  }, 60 * 60 * 1000);
-
-  setInterval(async () => {
-    try {
-      const followed = await introductionService.sendFollowUps();
-      if (followed > 0) console.log(`[Cron] Sent ${followed} follow-ups`);
-    } catch (e) {
-      console.log('[Cron] Follow-up failed:', e);
-    }
-  }, 6 * 60 * 60 * 1000);
-}
-
 server.listen(env.PORT, async () => {
   console.log(`Cleo.ai Backend running on port ${env.PORT}`);
   console.log(`WebSocket ready`);
   console.log(`Environment: ${env.NODE_ENV}`);
   logServiceStatus();
   await seedDatabase();
-  startIntroCronJobs();
-  console.log('[Cron] Introduction auto-approve (hourly) + follow-ups (6h) started');
 });

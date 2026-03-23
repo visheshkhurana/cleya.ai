@@ -637,7 +637,7 @@ export default function DashboardPage() {
               {profile.industries.map((ind) => (
                 <span key={ind} className="px-2.5 py-1 rounded-full text-xs border"
                   style={{ background: 'rgba(108,71,255,0.08)', borderColor: 'rgba(108,71,255,0.15)', color: '#5EEAD4' }}>
-                  {ind.replace(/_/g, ' ')}
+                  {ind.replace(/_/g, ' ').replace(/\b(ai|ml|saas|b2b|b2c|iot|ar|vr|hr|it|ui|ux|api|ev|nft|defi|d2c)\b/gi, (m) => m.toUpperCase()).replace(/\b[a-z]/g, (c) => c.toUpperCase())}
                 </span>
               ))}
             </div>

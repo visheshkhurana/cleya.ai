@@ -18,12 +18,24 @@ export default function SettingsPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
+  const [notifPrefs, setNotifPrefs] = useState({ matchNotify: true, introNotify: true, weeklyDigest: true });
+  const [notifSaving, setNotifSaving] = useState(false);
 
   useEffect(() => {
     const token = api.getToken();
     if (!token) { router.push('/?action=login'); return; }
     api.getSettings()
-      .then(data => { setSettings(data); setLoading(false); })
+      .then(data => {
+        setSettings(data);
+        if (data.notificationPrefs) {
+          setNotifPrefs({
+            matchNotify: data.notificationPrefs.matchNotify ?? true,
+            introNotify: data.notificationPrefs.introNotify ?? true,
+            weeklyDigest: data.notificationPrefs.weeklyDigest ?? true,
+          });
+        }
+        setLoading(false);
+      })
       .catch(() => { router.push('/?action=login'); });
   }, [router]);
 
@@ -348,16 +360,32 @@ export default function SettingsPage() {
           </p>
           <div style={{ display: 'grid', gap: '12px' }}>
             {[
-              { key: 'emailMatches', label: 'New match notifications (Email)' },
-              { key: 'emailIntros', label: 'Introduction updates (Email)' },
-              { key: 'emailDigest', label: 'Weekly digest (Email)' },
+              { key: 'matchNotify' as const, label: 'New match notifications (Email)' },
+              { key: 'introNotify' as const, label: 'Introduction updates (Email)' },
+              { key: 'weeklyDigest' as const, label: 'Weekly digest (Email)' },
             ].map(({ key, label }) => (
               <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
-                <input type="checkbox" defaultChecked={key === 'emailIntros'} className="rounded border-white/20 bg-white/5 accent-teal-600" />
+                <input
+                  type="checkbox"
+                  checked={notifPrefs[key]}
+                  onChange={async (e) => {
+                    const updated = { ...notifPrefs, [key]: e.target.checked };
+                    setNotifPrefs(updated);
+                    setNotifSaving(true);
+                    try {
+                      await api.updateNotificationPrefs({ [key]: e.target.checked });
+                    } catch {}
+                    setNotifSaving(false);
+                  }}
+                  className="rounded border-white/20 bg-white/5 accent-teal-600"
+                />
                 <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px' }}>{label}</span>
               </label>
             ))}
           </div>
+          {notifSaving && (
+            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', marginTop: '8px' }}>Saving...</p>
+          )}
         </section>
 
         {/* Danger Zone */}

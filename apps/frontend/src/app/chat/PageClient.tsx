@@ -349,10 +349,11 @@ export default function ChatPage() {
             <input
               type="text"
               value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
+              onChange={(e) => setInputText(e.target.value.slice(0, 500))}
               placeholder="Message Cleo..."
               className="input-dark flex-1"
               disabled={aiLoading}
+              maxLength={500}
             />
             <button
               type="submit"
@@ -363,6 +364,11 @@ export default function ChatPage() {
               ↑
             </button>
           </div>
+          {inputText.length > 0 && (
+            <p className="text-[10px] text-right mt-1" style={{ color: inputText.length >= 480 ? '#f59e0b' : 'rgba(255,255,255,0.2)' }}>
+              {inputText.length}/500
+            </p>
+          )}
         </form>
       )}
     </div>

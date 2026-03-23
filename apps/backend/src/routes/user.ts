@@ -171,8 +171,31 @@ userRouter.get('/settings', authenticate, async (req: Request, res: Response, ne
       where: { userId: req.user!.userId },
       select: { persona: true, currentRole: true, isComplete: true, phoneNumber: true },
     });
+    const prefs = await prisma.communicationPreference.findUnique({
+      where: { userId: req.user!.userId },
+    });
     const phone = user?.phone || profile?.phoneNumber || null;
-    res.json({ success: true, data: { ...user, phone, profile } });
+    res.json({ success: true, data: { ...user, phone, profile, notificationPrefs: prefs } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+userRouter.patch('/notification-preferences', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId;
+    const { matchNotify, introNotify, weeklyDigest } = req.body;
+    const data: any = {};
+    if (typeof matchNotify === 'boolean') data.matchNotify = matchNotify;
+    if (typeof introNotify === 'boolean') data.introNotify = introNotify;
+    if (typeof weeklyDigest === 'boolean') data.weeklyDigest = weeklyDigest;
+
+    const prefs = await prisma.communicationPreference.upsert({
+      where: { userId },
+      create: { userId, ...data },
+      update: data,
+    });
+    res.json({ success: true, data: prefs });
   } catch (error) {
     next(error);
   }

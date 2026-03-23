@@ -245,7 +245,7 @@ export default function MatchesPage() {
               {profile.industries.slice(0, 4).map((ind) => (
                 <span key={ind} className="px-2 py-0.5 rounded-full text-[10px] border"
                   style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)' }}>
-                  {ind.replace(/_/g, ' ')}
+                  {ind.replace(/_/g, ' ').replace(/\b(ai|ml|saas|b2b|b2c|iot|ar|vr|hr|it|ui|ux|api|ev|nft|defi|d2c)\b/gi, (m) => m.toUpperCase()).replace(/\b[a-z]/g, (c) => c.toUpperCase())}
                 </span>
               ))}
               {profile.industries.length > 4 && (

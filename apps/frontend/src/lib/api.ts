@@ -219,6 +219,13 @@ class ApiClient {
     return this.fetch('/users/settings');
   }
 
+  async updateNotificationPrefs(prefs: { matchNotify?: boolean; introNotify?: boolean; weeklyDigest?: boolean }) {
+    return this.fetch('/users/notification-preferences', {
+      method: 'PATCH',
+      body: JSON.stringify(prefs),
+    });
+  }
+
   async changePassword(currentPassword: string, newPassword: string) {
     return this.fetch('/users/change-password', {
       method: 'POST',
