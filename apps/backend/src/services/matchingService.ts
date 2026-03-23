@@ -68,7 +68,9 @@ export class MatchingService {
 
     const score = matchingEngine.score(profileA, profileB);
 
+    console.log(`[MatchingService] Generating AI reasoning for match: ${userAId} <-> ${userBId}`);
     const reason = await this.generateMatchReason(profileA, profileB);
+    console.log(`[MatchingService] Generated reasoning (${reason.length} chars): "${reason.substring(0, 80)}..."`);
 
     const match = await prisma.match.create({
       data: {

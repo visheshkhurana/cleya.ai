@@ -258,7 +258,7 @@ export default function Home() {
             </svg>
             <span className="text-white font-semibold text-lg tracking-tight">Cleo.ai</span>
           </div>
-          <div className="hidden sm:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-3">
             <button onClick={() => scrollToSection('how-it-works')}
               className="px-3 py-2 text-sm text-white/50 hover:text-white transition-colors">How It Works</button>
             <button onClick={() => scrollToSection('testimonials')}
@@ -271,7 +271,7 @@ export default function Home() {
               Get Started
             </button>
           </div>
-          <button className="sm:hidden p-2 text-white/60 hover:text-white transition" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          <button className="md:hidden p-2 text-white/60 hover:text-white transition" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle menu">
             {mobileMenuOpen ? (
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
@@ -281,7 +281,7 @@ export default function Home() {
           </button>
         </div>
         {mobileMenuOpen && (
-          <div className="sm:hidden border-t border-white/[0.06] px-6 py-4 space-y-2" style={{ background: 'rgba(11,9,24,0.95)' }}>
+          <div className="md:hidden border-t border-white/[0.06] px-6 py-4 space-y-2" style={{ background: 'rgba(11,9,24,0.95)' }}>
             <button onClick={() => { scrollToSection('how-it-works'); setMobileMenuOpen(false); }}
               className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">How It Works</button>
             <button onClick={() => { scrollToSection('testimonials'); setMobileMenuOpen(false); }}
