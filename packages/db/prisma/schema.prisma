@@ -648,6 +648,10 @@ model CommunicationPreference {
   weeklyDigest    Boolean  @default(true)
   marketingEmails Boolean  @default(false)
 
+  whatsappMatchNotify  Boolean @default(true)
+  whatsappIntroNotify  Boolean @default(true)
+  whatsappWeeklyDigest Boolean @default(true)
+
   quietHoursStart String?
   quietHoursEnd   String?
   timezone        String?  @default("Asia/Kolkata")

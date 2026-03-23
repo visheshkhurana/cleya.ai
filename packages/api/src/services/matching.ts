@@ -303,7 +303,18 @@ export async function hybridMatch(
 
   const validCandidates = candidateProfiles.filter(Boolean) as ProfileForMatching[];
 
-  const scored: HybridMatchResult[] = validCandidates.map((candidate) => {
+  const getMatchablePersonas = (persona: string): string[] => {
+    switch (persona) {
+      case 'FOUNDER': return ['INVESTOR', 'TALENT', 'ADVISOR', 'VENTURE_PARTNER', 'OPERATOR'];
+      case 'INVESTOR': return ['FOUNDER'];
+      case 'TALENT': return ['FOUNDER'];
+      default: return ['FOUNDER', 'INVESTOR', 'TALENT'];
+    }
+  };
+  const allowedPersonas = getMatchablePersonas(userProfile.persona);
+  const crossPersonaCandidates = validCandidates.filter(c => allowedPersonas.includes(c.persona));
+
+  const scored: HybridMatchResult[] = crossPersonaCandidates.map((candidate) => {
     const matchScore = matchingEngine.score(userProfile, candidate);
 
     return {

@@ -50,9 +50,8 @@ inviteRouter.get('/validate/:code', async (req: Request, res: Response) => {
       where: { code: req.params.code },
       include: {
         createdBy: {
-          select: { name: true, email: true },
           include: { profile: { select: { currentRole: true, companyName: true } } },
-        } as any,
+        },
       },
     });
 

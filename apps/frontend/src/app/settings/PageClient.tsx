@@ -18,7 +18,7 @@ export default function SettingsPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
-  const [notifPrefs, setNotifPrefs] = useState({ matchNotify: true, introNotify: true, weeklyDigest: true });
+  const [notifPrefs, setNotifPrefs] = useState({ matchNotify: true, introNotify: true, weeklyDigest: true, whatsappMatchNotify: true, whatsappIntroNotify: true, whatsappWeeklyDigest: true });
   const [notifSaving, setNotifSaving] = useState(false);
 
   useEffect(() => {
@@ -32,6 +32,9 @@ export default function SettingsPage() {
             matchNotify: data.notificationPrefs.matchNotify ?? true,
             introNotify: data.notificationPrefs.introNotify ?? true,
             weeklyDigest: data.notificationPrefs.weeklyDigest ?? true,
+            whatsappMatchNotify: data.notificationPrefs.whatsappMatchNotify ?? true,
+            whatsappIntroNotify: data.notificationPrefs.whatsappIntroNotify ?? true,
+            whatsappWeeklyDigest: data.notificationPrefs.whatsappWeeklyDigest ?? true,
           });
         }
         setLoading(false);
@@ -358,11 +361,38 @@ export default function SettingsPage() {
           <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '13px', marginBottom: '20px' }}>
             Choose how you want to be notified about matches and introductions.
           </p>
+          <h4 style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Email</h4>
+          <div style={{ display: 'grid', gap: '12px', marginBottom: '20px' }}>
+            {[
+              { key: 'matchNotify' as const, label: 'New match notifications' },
+              { key: 'introNotify' as const, label: 'Introduction updates' },
+              { key: 'weeklyDigest' as const, label: 'Weekly digest' },
+            ].map(({ key, label }) => (
+              <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={notifPrefs[key]}
+                  onChange={async (e) => {
+                    const updated = { ...notifPrefs, [key]: e.target.checked };
+                    setNotifPrefs(updated);
+                    setNotifSaving(true);
+                    try {
+                      await api.updateNotificationPrefs({ [key]: e.target.checked });
+                    } catch {}
+                    setNotifSaving(false);
+                  }}
+                  className="rounded border-white/20 bg-white/5 accent-teal-600"
+                />
+                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px' }}>{label}</span>
+              </label>
+            ))}
+          </div>
+          <h4 style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>WhatsApp</h4>
           <div style={{ display: 'grid', gap: '12px' }}>
             {[
-              { key: 'matchNotify' as const, label: 'New match notifications (Email)' },
-              { key: 'introNotify' as const, label: 'Introduction updates (Email)' },
-              { key: 'weeklyDigest' as const, label: 'Weekly digest (Email)' },
+              { key: 'whatsappMatchNotify' as const, label: 'New match notifications' },
+              { key: 'whatsappIntroNotify' as const, label: 'Introduction updates' },
+              { key: 'whatsappWeeklyDigest' as const, label: 'Weekly digest (Monday 9 AM)' },
             ].map(({ key, label }) => (
               <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
                 <input

@@ -90,6 +90,11 @@ export default function ProfilePage() {
       setSaving(false);
       return;
     }
+    if (profile.persona === 'FOUNDER' && !profile.companyName?.trim()) {
+      setError('Company Name is required for Founders.');
+      setSaving(false);
+      return;
+    }
     if (profile.phoneNumber) {
       const phoneErr = validatePhone(profile.phoneNumber);
       if (phoneErr) { setError(phoneErr); setSaving(false); return; }

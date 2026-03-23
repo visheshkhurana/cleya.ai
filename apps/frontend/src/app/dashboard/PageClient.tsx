@@ -295,6 +295,10 @@ export default function DashboardPage() {
                 className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-white/50 hover:text-white/80 hover:border-white/20 transition">
                 Matches {matchStats.pending > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-purple-500 text-white">{matchStats.pending}</span>}
               </button>
+              <button onClick={() => router.push('/introductions')}
+                className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-white/50 hover:text-white/80 hover:border-white/20 transition">
+                Introductions
+              </button>
               <button onClick={() => router.push('/chat')}
                 className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-white/50 hover:text-white/80 hover:border-white/20 transition">
                 Chat
@@ -605,12 +609,12 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {activities.length > 0 && (
-            <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(26,18,48,0.6)' }}>
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-xl">📊</span>
-                <h3 className="font-semibold text-white text-sm">Your Activity</h3>
-              </div>
+          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(26,18,48,0.6)' }}>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-xl">📊</span>
+              <h3 className="font-semibold text-white text-sm">Recent Activity</h3>
+            </div>
+            {activities.length > 0 ? (
               <div className="space-y-3">
                 {activities.map((a) => {
                   const icon = a.type === 'MATCH_FOUND' ? '🟢' : a.type === 'INTRO_SENT' ? '✅' : a.type === 'INVITE_USED' ? '🎟️' : '📊';
@@ -626,8 +630,10 @@ export default function DashboardPage() {
                   );
                 })}
               </div>
-            </div>
-          )}
+            ) : (
+              <p className="text-xs text-white/30">No activity yet. Start by finding matches or completing your profile!</p>
+            )}
+          </div>
         </div>
 
         {profile?.industries && profile.industries.length > 0 && (

@@ -89,7 +89,7 @@ export default function ChatPage() {
         window.history.replaceState({}, '', '/chat');
       }
       if (!api.getToken()) {
-        window.location.href = '/';
+        window.location.href = '/?action=login';
         return;
       }
     }

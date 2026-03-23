@@ -435,24 +435,44 @@ export class MatchingService {
   }
 
   private async generateMatchReason(a: ProfileForMatching, b: ProfileForMatching): Promise<string> {
+    const describeProfile = (p: ProfileForMatching) => {
+      const parts: string[] = [];
+      parts.push(`Persona: ${p.persona}`);
+      if (p.headline) parts.push(`Role: ${p.headline}`);
+      if (p.fundName) parts.push(`Fund: ${p.fundName}`);
+      if (p.industries.length) parts.push(`Industries: ${p.industries.join(', ')}`);
+      if (p.skills?.length) parts.push(`Skills: ${p.skills.join(', ')}`);
+      if (p.lookingFor.length) parts.push(`Looking for: ${p.lookingFor.join(', ')}`);
+      if (p.companyStage) parts.push(`Stage: ${p.companyStage}`);
+      if (p.bio) parts.push(`Bio: ${p.bio.slice(0, 150)}`);
+      if (p.businessDescription) parts.push(`Business: ${p.businessDescription.slice(0, 150)}`);
+      if (p.investmentThesis) parts.push(`Thesis: ${p.investmentThesis.slice(0, 150)}`);
+      if (p.raiseAmount) parts.push(`Raising: ${p.raiseAmount}`);
+      if (p.investmentRange) parts.push(`Invests: ${p.investmentRange}`);
+      if (p.location) parts.push(`Location: ${p.location}`);
+      return parts.join('. ');
+    };
+
     try {
       const response = await this.ai.chat([
         {
           role: 'system',
-          content: 'You write concise, warm introduction reasons for why two professionals should connect. Keep it to 1-2 sentences. Be specific about the synergy.',
+          content: 'You are Cleo, an AI networking assistant for India\'s startup ecosystem. Write exactly 2 sentences explaining why these two people should connect. Be specific — mention their actual roles, companies, industries, stages, and goals. Never be generic. Never say "complementary backgrounds."',
         },
         {
           role: 'user',
-          content: `Person A: ${a.persona} - ${a.headline || ''} at ${a.industries.join(', ')}
-Person B: ${b.persona} - ${b.headline || ''} at ${b.industries.join(', ')}
-A is looking for: ${a.lookingFor.join(', ')}
-B is looking for: ${b.lookingFor.join(', ')}
-Write a brief reason why they should connect.`,
+          content: `Person A: ${describeProfile(a)}\n\nPerson B: ${describeProfile(b)}\n\nWrite 2 specific sentences about why they should connect.`,
         },
       ]);
       return response.content;
     } catch {
-      return 'You both have complementary backgrounds and interests that could lead to a great connection.';
+      const aDesc = a.headline || a.persona;
+      const bDesc = b.headline || b.persona;
+      const shared = a.industries.filter(i => b.industries.includes(i));
+      if (shared.length > 0) {
+        return `Both active in ${shared.slice(0, 2).join(' and ')}, with ${aDesc} and ${bDesc} roles that create natural synergy for collaboration.`;
+      }
+      return `As a ${aDesc}, connecting with a ${bDesc} could open valuable opportunities across ${(a.industries[0] || b.industries[0] || 'the startup ecosystem')}.`;
     }
   }
 

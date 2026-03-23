@@ -18,6 +18,11 @@ userRouter.get('/profile', authenticate, async (req: Request, res: Response, nex
 
 userRouter.put('/profile', authenticate, validate(profileUpdateSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const persona = req.body.persona;
+    if (persona === 'FOUNDER' && !req.body.companyName?.trim()) {
+      res.status(400).json({ success: false, error: { message: 'Company name is required for founders' } });
+      return;
+    }
     const profile = await profileService.updateProfile(req.user!.userId, req.body);
     res.json({ success: true, data: profile });
   } catch (error) {
@@ -27,7 +32,20 @@ userRouter.put('/profile', authenticate, validate(profileUpdateSchema), async (r
 
 userRouter.patch('/profile', authenticate, validate(profileUpdateSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const profile = await profileService.updateProfile(req.user!.userId, req.body);
+    const userId = req.user!.userId;
+    const persona = req.body.persona;
+    if (persona === 'FOUNDER' && !req.body.companyName?.trim()) {
+      res.status(400).json({ success: false, error: { message: 'Company name is required for founders' } });
+      return;
+    }
+    if (!persona && req.body.companyName === '') {
+      const existing = await prisma.profile.findUnique({ where: { userId }, select: { persona: true } });
+      if (existing?.persona === 'FOUNDER') {
+        res.status(400).json({ success: false, error: { message: 'Company name is required for founders' } });
+        return;
+      }
+    }
+    const profile = await profileService.updateProfile(userId, req.body);
     res.json({ success: true, data: profile });
   } catch (error) {
     next(error);
@@ -184,11 +202,14 @@ userRouter.get('/settings', authenticate, async (req: Request, res: Response, ne
 userRouter.patch('/notification-preferences', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.userId;
-    const { matchNotify, introNotify, weeklyDigest } = req.body;
+    const { matchNotify, introNotify, weeklyDigest, whatsappMatchNotify, whatsappIntroNotify, whatsappWeeklyDigest } = req.body;
     const data: any = {};
     if (typeof matchNotify === 'boolean') data.matchNotify = matchNotify;
     if (typeof introNotify === 'boolean') data.introNotify = introNotify;
     if (typeof weeklyDigest === 'boolean') data.weeklyDigest = weeklyDigest;
+    if (typeof whatsappMatchNotify === 'boolean') data.whatsappMatchNotify = whatsappMatchNotify;
+    if (typeof whatsappIntroNotify === 'boolean') data.whatsappIntroNotify = whatsappIntroNotify;
+    if (typeof whatsappWeeklyDigest === 'boolean') data.whatsappWeeklyDigest = whatsappWeeklyDigest;
 
     const prefs = await prisma.communicationPreference.upsert({
       where: { userId },

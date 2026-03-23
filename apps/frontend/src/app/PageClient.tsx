@@ -419,7 +419,7 @@ export default function Home() {
       {/* SOCIAL PROOF — METRICS */}
       <section id="testimonials" className="border-y border-white/[0.04]" style={{ background: '#0D0B1E' }}>
         <div className="max-w-6xl mx-auto px-6 py-12 sm:py-16">
-          {platformStats && platformStats.memberCount >= 10 ? (
+          {platformStats && platformStats.memberCount >= 50 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-0 md:divide-x md:divide-white/[0.06]">
             {[
               { value: platformStats.memberCount, suffix: '+', label: 'Members on Cleo' },
@@ -437,7 +437,7 @@ export default function Home() {
           ) : (
           <div className="text-center py-4">
             <p className="text-lg sm:text-xl font-medium text-white/80 max-w-xl mx-auto leading-relaxed">
-              Join a growing community of founders, investors, and operators building India&apos;s startup future.
+              A growing community of founders, investors, and operators building India&apos;s startup future.
             </p>
           </div>
           )}
@@ -680,8 +680,7 @@ export default function Home() {
           style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}
           onKeyDown={(e) => { if (e.key === 'Escape') setShowAuth(false); }}
           onClick={(e) => { if (e.target === e.currentTarget) setShowAuth(false); }}
-          tabIndex={-1}
-          ref={(el) => el?.focus()}>
+          tabIndex={-1}>
           <div className="relative w-full max-w-sm mx-4 fade-up">
             <button onClick={() => setShowAuth(false)}
               className="absolute -top-12 right-0 text-white/40 hover:text-white/80 transition text-sm flex items-center gap-1">
@@ -770,13 +769,18 @@ export default function Home() {
                     <div>
                       <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#A09FB5' }}>Email</label>
                       <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                        placeholder="you@example.com" required className="input-dark" />
+                        placeholder="you@example.com" required className="input-dark"
+                        autoFocus
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()} />
                     </div>
                     <div>
                       <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#A09FB5' }}>Password</label>
                       <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
                         placeholder={mode === 'signup' ? 'Min 8 chars, letter + number' : 'Your password'} required
-                        minLength={mode === 'signup' ? 8 : undefined} className="input-dark" />
+                        minLength={mode === 'signup' ? 8 : undefined} className="input-dark"
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()} />
                       {mode === 'signup' && password.length > 0 && (() => {
                         const strength = getPasswordStrength(password);
                         return (

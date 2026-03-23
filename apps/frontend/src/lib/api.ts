@@ -136,6 +136,10 @@ class ApiClient {
     return this.fetch('/auth/me');
   }
 
+  async useInviteCode(code: string) {
+    return this.fetch(`/invites/use/${code}`, { method: 'POST' });
+  }
+
   // Conversations
   async startConversation(flowId?: string) {
     return this.fetch('/conversations/start', {
