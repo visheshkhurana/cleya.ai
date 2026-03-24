@@ -35,6 +35,10 @@ import { introductionRouter } from './routes/introduction';
 import { generalLimiter } from './middleware/rateLimit';
 import { inviteRouter } from './routes/invite';
 import { activityRouter } from './routes/activity';
+import { searchRouter } from './routes/search';
+import { verificationRouter } from './routes/verification';
+import { analyticsRouter } from './routes/analytics';
+import { referralRouter } from './routes/referral';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -91,7 +95,7 @@ app.get('/api/stats/public', async (_req: Request, res: Response) => {
 
 app.use('/api/auth', authRouter);
 app.use('/api/users', csrfProtection, userRouter);
-app.use('/api/conversations', conversationRouter);
+app.use('/api/conversations', csrfProtection, conversationRouter);
 app.use('/api/matches', csrfProtection, matchRouter);
 app.use('/api/calls', callRouter);
 app.use('/api/admin', csrfProtection, adminRouter);
@@ -104,6 +108,10 @@ app.use('/api/ai-chat', aiChatRouter);
 app.use('/api/introductions', csrfProtection, introductionRouter);
 app.use('/api/invites', csrfProtection, inviteRouter);
 app.use('/api/activities', csrfProtection, activityRouter);
+app.use('/api/search', csrfProtection, searchRouter);
+app.use('/api/verification', csrfProtection, verificationRouter);
+app.use('/api/analytics', csrfProtection, analyticsRouter);
+app.use('/api/referrals', csrfProtection, referralRouter);
 
 if (env.SENTRY_DSN) {
   Sentry.setupExpressErrorHandler(app);

@@ -64,6 +64,14 @@ All frontend pages use a server/client wrapper pattern for build compatibility:
 - `/introductions` — Introduction records with full status lifecycle (PENDING_APPROVAL → APPROVED → SENT → VIEWED → RESPONDED → COMPLETED)
 - `/admin` — Admin dashboard
 
+### API Endpoints (Backend)
+- `GET /api/search?q=&persona=&industry=&location=&limit=` — Search users by name, headline, company, bio; filter by persona/industry/location
+- `GET /api/conversations` — List all conversations for authenticated user with last message
+- `POST /api/conversations/:id/messages` — Send a message in a conversation (alias for `/message`)
+- `POST /api/verification/linkedin` — Validate and save LinkedIn URL to profile
+- `GET /api/analytics/overview` — User-facing analytics: match stats, intro counts, profile completeness, recent matches
+- `GET /api/referrals` — Invite code summary (total/used/available) with referred user details
+
 ### Auth Flow
 - Signup: Full Name (optional) + Persona selector (Founder/Investor/Talent) + Email + Password (min 8 chars, letter + number required) + Confirm Password + Terms consent
 - Persona stored on Profile model at signup time
