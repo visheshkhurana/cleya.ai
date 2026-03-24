@@ -54,7 +54,7 @@ All frontend pages use a server/client wrapper pattern for build compatibility:
 - `/` — Landing page with auth modal (signup/login), mobile hamburger menu, real stats from DB (qualitative fallback if <10 members), testimonials
 - `/about` — About page with mission, how-it-works, and personas
 - `/features` — Features overview (8 feature cards)
-- `/contact` — Contact form page
+- `/contact` — Contact form (Name, Email, Subject dropdown, Message) with FAQ accordion (7 items), loading spinner on submit, 24-48hr response time
 - `/login` — Redirects to `/?action=login` to open login modal
 - `/dashboard` — User dashboard with stats, matches, invite codes, activity feed, AI chat; stats auto-refresh on visibility change
 - `/profile` — Profile editor; merges `extraData` JSON for persona-specific fields (preferredRole, portfolioSize, etc.)
@@ -72,10 +72,18 @@ All frontend pages use a server/client wrapper pattern for build compatibility:
 - `GET /api/analytics/overview` — User-facing analytics: match stats, intro counts, profile completeness, recent matches
 - `GET /api/referrals` — Invite code summary (total/used/available) with referred user details
 
+### Shared Components
+- `Toast.tsx` — Global toast notification system (success/error/info/warning). Provider in `ClientProviders.tsx`, wrapped in layout. Max 3 visible, auto-dismiss 5s, accessible with role="alert".
+- `MobileNav.tsx` — Slide-out mobile navigation drawer
+- `NotificationCenter.tsx` — In-app notification dropdown
+- `PhoneInput.tsx` — Phone number input with validation
+
 ### Auth Flow
 - Signup: Full Name (optional) + Persona selector (Founder/Investor/Talent) + Email + Password (min 8 chars, letter + number required) + Confirm Password + Terms consent
 - Persona stored on Profile model at signup time
 - Password strength indicator shown during signup
+- OAuth: Google + LinkedIn (both optional, shown only when configured via env vars)
+- LinkedIn OAuth: `GET /api/auth/linkedin` → LinkedIn authorize → `GET /api/auth/linkedin/callback` → `findOrCreateLinkedInUser` (email-based lookup, auto-verifies email, saves LinkedIn URL)
 - Backend returns 400 with detailed Zod validation errors (not 500)
 - Protected routes redirect unauthenticated users to `/?action=login` with a prompt message
 - User model has `name` field (String?, added via db push)

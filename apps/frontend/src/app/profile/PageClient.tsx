@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import MobileNav from '@/components/MobileNav';
 import PhoneInput, { validatePhone } from '@/components/PhoneInput';
 import { analytics } from '@/lib/posthog';
+import { useToast } from '@/components/Toast';
 
 interface ProfileData {
   persona?: string;
@@ -54,6 +55,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const toast = useToast();
   const router = useRouter();
 
   useEffect(() => {
@@ -107,10 +109,12 @@ export default function ProfilePage() {
         setProfile(merged);
       }
       setSaved(true);
+      toast.success('Profile updated successfully!');
       analytics.profileUpdated(Object.keys(profile));
       setTimeout(() => setSaved(false), 3000);
     } catch (err: any) {
       setError(err.message || 'Failed to save');
+      toast.error(err.message || 'Failed to save profile');
     } finally {
       setSaving(false);
     }

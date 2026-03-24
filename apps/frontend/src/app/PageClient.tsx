@@ -254,7 +254,7 @@ export default function Home() {
     <div className="min-h-screen font-sans" style={{ background: '#0B0918' }}>
 
       {/* NAV */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      <nav role="navigation" aria-label="Main navigation" className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled ? 'border-b border-white/[0.06]' : 'border-b border-transparent'
       }`} style={{
         background: scrolled ? 'rgba(11,9,24,0.85)' : 'transparent',
@@ -657,7 +657,7 @@ export default function Home() {
       </section>
 
       {/* FOOTER */}
-      <footer className="border-t border-white/[0.04] py-10">
+      <footer role="contentinfo" className="border-t border-white/[0.04] py-10">
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">
@@ -672,7 +672,7 @@ export default function Home() {
               {[
                 { label: 'Privacy', href: '/privacy' },
                 { label: 'Terms', href: '/terms' },
-                { label: 'Contact', href: 'mailto:hello@cleo.ai' },
+                { label: 'Contact', href: '/contact' },
               ].map((link) => (
                 <a key={link.label} href={link.href} className="text-xs transition-colors hover:text-white/60" style={{ color: '#A09FB5' }}>{link.label}</a>
               ))}
@@ -832,7 +832,7 @@ export default function Home() {
                       {loading ? (
                         <span className="flex items-center justify-center gap-2">
                           <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          Loading...
+                          {mode === 'signup' ? 'Creating account...' : 'Signing in...'}
                         </span>
                       ) : mode === 'signup' ? 'Get Started →' : 'Log In →'}
                     </button>

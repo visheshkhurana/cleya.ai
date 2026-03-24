@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import NotificationCenter from '@/components/NotificationCenter';
 import MobileNav from '@/components/MobileNav';
 import { analytics } from '@/lib/posthog';
+import { useToast } from '@/components/Toast';
 
 interface MatchData {
   id: string;
@@ -50,6 +51,7 @@ export default function MatchesPage() {
   const [me, setMe] = useState<any>(null);
   const [feedbackPrompt, setFeedbackPrompt] = useState<FeedbackState | null>(null);
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const toast = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
 
@@ -84,12 +86,18 @@ export default function MatchesPage() {
     setResponding(matchId);
     try {
       await api.respondToMatch(matchId, response);
-      if (response === 'ACCEPTED') analytics.matchAccepted(matchId);
-      else analytics.matchRejected(matchId);
+      if (response === 'ACCEPTED') {
+        analytics.matchAccepted(matchId);
+        toast.success('Match accepted! An introduction will be facilitated.');
+      } else {
+        analytics.matchRejected(matchId);
+        toast.info('Match passed.');
+      }
       setFeedbackPrompt({ matchId, rating: 0, text: '', action: response });
       await loadData();
     } catch (err) {
       console.error('Respond failed:', err);
+      toast.error('Something went wrong. Please try again.');
     } finally {
       setResponding(null);
     }
