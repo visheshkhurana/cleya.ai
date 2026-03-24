@@ -89,6 +89,7 @@ export default function ChatPage() {
         window.history.replaceState({}, '', '/chat');
       }
       if (!api.getToken()) {
+        sessionStorage.setItem('cleo_login_toast', 'Please log in to access the chat');
         window.location.href = '/?action=login';
         return;
       }

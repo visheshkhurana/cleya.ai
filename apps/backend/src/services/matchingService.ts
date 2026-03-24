@@ -467,14 +467,33 @@ export class MatchingService {
         },
       ]);
       return response.content;
-    } catch {
-      const aDesc = a.headline || a.persona;
-      const bDesc = b.headline || b.persona;
+    } catch (err) {
+      console.log(`[MatchingService] AI reasoning failed, using profile-based fallback:`, err);
+      const aRole = a.headline || a.persona;
+      const bRole = b.headline || b.persona;
+      const aCompany = a.fundName || (a as any).companyName || '';
+      const bCompany = b.fundName || (b as any).companyName || '';
+      const aLoc = a.location || '';
+      const bLoc = b.location || '';
       const shared = a.industries.filter(i => b.industries.includes(i));
-      if (shared.length > 0) {
-        return `Both active in ${shared.slice(0, 2).join(' and ')}, with ${aDesc} and ${bDesc} roles that create natural synergy for collaboration.`;
+
+      const aLabel = aCompany ? `${aRole} at ${aCompany}` : aRole;
+      const bLabel = bCompany ? `${bRole} at ${bCompany}` : bRole;
+
+      if (a.persona === 'FOUNDER' && (b.persona === 'INVESTOR' || b.persona === 'VENTURE_PARTNER')) {
+        const stage = a.companyStage ? ` (${a.companyStage.replace(/_/g, ' ')})` : '';
+        const sector = shared.length > 0 ? ` in ${shared[0].replace(/_/g, ' ')}` : '';
+        return `${aLabel}${stage} is building${sector} and could benefit from ${bLabel}'s investment expertise. ${bLoc && aLoc ? `Both active in the ${aLoc.includes(bLoc) || bLoc.includes(aLoc) ? aLoc : 'Indian'} startup ecosystem.` : 'A strong cross-role match for deal flow.'}`;
       }
-      return `As a ${aDesc}, connecting with a ${bDesc} could open valuable opportunities across ${(a.industries[0] || b.industries[0] || 'the startup ecosystem')}.`;
+      if (b.persona === 'FOUNDER' && (a.persona === 'INVESTOR' || a.persona === 'VENTURE_PARTNER')) {
+        const stage = b.companyStage ? ` (${b.companyStage.replace(/_/g, ' ')})` : '';
+        const sector = shared.length > 0 ? ` in ${shared[0].replace(/_/g, ' ')}` : '';
+        return `${bLabel}${stage} is building${sector} and could benefit from ${aLabel}'s investment expertise. ${aLoc && bLoc ? `Both active in the ${aLoc.includes(bLoc) || bLoc.includes(aLoc) ? bLoc : 'Indian'} startup ecosystem.` : 'A strong cross-role match for deal flow.'}`;
+      }
+      if (shared.length > 0) {
+        return `${aLabel} and ${bLabel} are both active in ${shared.slice(0, 2).join(' and ').replace(/_/g, ' ')}, creating strong potential for collaboration. ${a.lookingFor.length > 0 ? `${aRole} is looking for ${a.lookingFor[0].replace(/_/g, ' ')}.` : ''}`;
+      }
+      return `${aLabel} and ${bLabel} bring different perspectives from ${(a.industries[0] || 'their sector').replace(/_/g, ' ')} and ${(b.industries[0] || 'their sector').replace(/_/g, ' ')}, opening up cross-sector collaboration opportunities.`;
     }
   }
 

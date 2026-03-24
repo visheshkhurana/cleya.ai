@@ -121,7 +121,9 @@ export default function Home() {
       if (urlAction === 'login') {
         setMode('login');
         setShowAuth(true);
-        setError('Please log in to continue');
+        const toastMsg = sessionStorage.getItem('cleo_login_toast');
+        setError(toastMsg || 'Please log in to continue');
+        sessionStorage.removeItem('cleo_login_toast');
         window.history.replaceState({}, '', '/');
       }
     }
@@ -218,6 +220,13 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const banner = document.getElementById('cookie-consent-banner');
+    if (banner) {
+      banner.style.display = showAuth ? 'none' : '';
+    }
+  }, [showAuth]);
 
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
@@ -683,11 +692,11 @@ export default function Home() {
           tabIndex={-1}>
           <div className="relative w-full max-w-sm mx-4 fade-up">
             <button onClick={() => setShowAuth(false)}
-              className="absolute -top-12 right-0 text-white/40 hover:text-white/80 transition text-sm flex items-center gap-1">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full text-white/40 hover:text-white/80 hover:bg-white/10 transition"
+              aria-label="Close">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M18 6L6 18M6 6l12 12" />
               </svg>
-              Close
             </button>
 
             <div className="text-center mb-6">
