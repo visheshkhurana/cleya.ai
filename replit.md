@@ -23,7 +23,7 @@ Monorepo with:
 
 ## Environment Variables (see .env.example for full list)
 **Required:** `DATABASE_URL`, `JWT_SECRET` (min 32 chars; startup throws if missing)
-**Optional (graceful fallback):** `OPENAI_API_KEY` (AI chat → fallback responses), `TWILIO_*` (calls/SMS disabled), `SMTP_*` (emails logged only), `GOOGLE_CLIENT_*` (Google login hidden), `SENTRY_DSN` (no error tracking), `POSTHOG_KEY` (no analytics)
+**Optional (graceful fallback):** `OPENAI_API_KEY` (AI chat → fallback responses), `TWILIO_*` (calls/SMS disabled), `SMTP_*` (emails logged only), `GOOGLE_CLIENT_*` (Google login hidden), `LINKEDIN_CLIENT_ID` + `LINKEDIN_CLIENT_SECRET` (LinkedIn login hidden), `SENTRY_DSN` (no error tracking), `POSTHOG_KEY` (no analytics)
 **Admin seed:** `ADMIN_EMAIL` + `ADMIN_PASSWORD` — both must be set to create admin; no defaults in code
 **CORS:** `CORS_ORIGIN` env var → defaults to `FRONTEND_URL`; locked to single origin (not wildcard)
 

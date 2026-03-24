@@ -173,6 +173,74 @@ export class AuthService {
     };
   }
 
+  async findOrCreateLinkedInUser(linkedinProfile: { email: string; name?: string; linkedinId: string; linkedinUrl?: string }) {
+    let user = await prisma.user.findUnique({
+      where: { email: linkedinProfile.email },
+      include: { profile: true },
+    });
+
+    if (user) {
+      if (!user.isActive) {
+        throw new AppError(403, 'Account is disabled', 'ACCOUNT_DISABLED');
+      }
+      if (!user.emailVerified) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { emailVerified: true },
+          include: { profile: true },
+        });
+      }
+      if (linkedinProfile.linkedinUrl && user.profile && !user.profile.linkedinUrl) {
+        await prisma.profile.update({
+          where: { userId: user.id },
+          data: { linkedinUrl: linkedinProfile.linkedinUrl },
+        });
+      }
+      const token = this.generateToken(user);
+      return {
+        user: {
+          id: user.id,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          emailVerified: user.emailVerified,
+          profile: user.profile,
+        },
+        token,
+        isNew: false,
+      };
+    }
+
+    user = await prisma.user.create({
+      data: {
+        email: linkedinProfile.email,
+        passwordHash: '',
+        emailVerified: true,
+        profile: {
+          create: {
+            ...(linkedinProfile.name ? { currentRole: linkedinProfile.name } : {}),
+            ...(linkedinProfile.linkedinUrl ? { linkedinUrl: linkedinProfile.linkedinUrl } : {}),
+          },
+        },
+      },
+      include: { profile: true },
+    });
+
+    const token = this.generateToken(user);
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        emailVerified: user.emailVerified,
+        profile: user.profile,
+      },
+      token,
+      isNew: true,
+    };
+  }
+
   async findUserByEmail(email: string) {
     return prisma.user.findUnique({ where: { email } });
   }

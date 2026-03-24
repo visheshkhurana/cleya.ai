@@ -169,6 +169,103 @@ authRouter.get('/google/status', (_req: Request, res: Response) => {
   });
 });
 
+authRouter.get('/linkedin', (req: Request, res: Response) => {
+  if (!env.LINKEDIN_CLIENT_ID || !env.LINKEDIN_CLIENT_SECRET) {
+    res.status(501).json({ success: false, error: { message: 'LinkedIn OAuth not configured' } });
+    return;
+  }
+  const state = crypto.randomBytes(32).toString('hex');
+  oauthStates.set(state, { createdAt: Date.now() });
+  const redirectUri = `${env.BACKEND_URL}/api/auth/linkedin/callback`;
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: env.LINKEDIN_CLIENT_ID,
+    redirect_uri: redirectUri,
+    state,
+    scope: 'openid profile email',
+  });
+  res.redirect(`https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`);
+});
+
+authRouter.get('/linkedin/callback', async (req: Request, res: Response) => {
+  try {
+    if (req.query.error) {
+      res.redirect(`${env.FRONTEND_URL}/?error=linkedin_auth_denied`);
+      return;
+    }
+    const code = typeof req.query.code === 'string' ? req.query.code : '';
+    const state = typeof req.query.state === 'string' ? req.query.state : '';
+    if (!code || !state || !oauthStates.has(state) || !env.LINKEDIN_CLIENT_ID || !env.LINKEDIN_CLIENT_SECRET) {
+      res.redirect(`${env.FRONTEND_URL}/?error=linkedin_auth_failed`);
+      return;
+    }
+    oauthStates.delete(state);
+    const redirectUri = `${env.BACKEND_URL}/api/auth/linkedin/callback`;
+    const tokenRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        client_id: env.LINKEDIN_CLIENT_ID,
+        client_secret: env.LINKEDIN_CLIENT_SECRET,
+        redirect_uri: redirectUri,
+      }).toString(),
+    });
+    if (!tokenRes.ok) {
+      console.error('LinkedIn token exchange HTTP error:', tokenRes.status);
+      res.redirect(`${env.FRONTEND_URL}/?error=linkedin_token_failed`);
+      return;
+    }
+    const tokenData: any = await tokenRes.json();
+    if (!tokenData.access_token) {
+      console.error('LinkedIn token exchange failed:', tokenData);
+      res.redirect(`${env.FRONTEND_URL}/?error=linkedin_token_failed`);
+      return;
+    }
+
+    const profileRes = await fetch('https://api.linkedin.com/v2/userinfo', {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    });
+    if (!profileRes.ok) {
+      console.error('LinkedIn userinfo HTTP error:', profileRes.status);
+      res.redirect(`${env.FRONTEND_URL}/?error=linkedin_no_email`);
+      return;
+    }
+    const profile: any = await profileRes.json();
+
+    if (!profile.email || !profile.sub) {
+      res.redirect(`${env.FRONTEND_URL}/?error=linkedin_no_email`);
+      return;
+    }
+
+    const result = await authService.findOrCreateLinkedInUser({
+      email: profile.email,
+      name: profile.name || `${profile.given_name || ''} ${profile.family_name || ''}`.trim(),
+      linkedinId: profile.sub,
+      linkedinUrl: profile.profile || undefined,
+    });
+
+    if (result.isNew) {
+      emailService.sendWelcome(profile.email).catch(() => {});
+    }
+
+    const profileComplete = result.user.profile?.isComplete;
+    const dest = (result.user.role as string).toLowerCase() === 'admin' ? '/admin' : profileComplete ? '/dashboard' : '/chat';
+    res.redirect(`${env.FRONTEND_URL}${dest}?token=${result.token}`);
+  } catch (err) {
+    console.error('LinkedIn OAuth error:', err);
+    res.redirect(`${env.FRONTEND_URL}/?error=linkedin_auth_error`);
+  }
+});
+
+authRouter.get('/linkedin/status', (_req: Request, res: Response) => {
+  res.json({
+    success: true,
+    data: { enabled: !!(env.LINKEDIN_CLIENT_ID && env.LINKEDIN_CLIENT_SECRET) },
+  });
+});
+
 const resetTokens = new Map<string, { email: string; createdAt: number }>();
 setInterval(() => {
   const now = Date.now();

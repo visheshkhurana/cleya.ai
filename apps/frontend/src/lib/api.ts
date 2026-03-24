@@ -113,6 +113,10 @@ class ApiClient {
     return this.fetch<{ enabled: boolean }>('/auth/google/status');
   }
 
+  async getLinkedInAuthStatus() {
+    return this.fetch<{ enabled: boolean }>('/auth/linkedin/status');
+  }
+
   // Auth
   async signup(email: string, password: string, phone?: string, utm?: { utmSource?: string; utmMedium?: string; utmCampaign?: string }, name?: string, persona?: string) {
     const data = await this.fetch<{ user: any; token: string }>('/auth/signup', {
