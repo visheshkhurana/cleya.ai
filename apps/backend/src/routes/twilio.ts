@@ -8,7 +8,7 @@ twilioRouter.post('/voice', (req: Request, res: Response) => {
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Amy">
-    Hey! This is Cleo, your AI Superconnector.
+    Hey! This is Cleya, your AI Superconnector.
     I'm calling to help connect you with the right people based on your profile.
     Tell me a bit about what you're working on and who you'd love to meet.
   </Say>

@@ -1,5 +1,5 @@
 // ============================================
-// Cleo.ai — Shared Type Definitions
+// Cleya.ai — Shared Type Definitions
 // ============================================
 
 // --- User & Profile ---

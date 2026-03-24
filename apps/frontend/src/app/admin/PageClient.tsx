@@ -213,13 +213,13 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-[#0f0a1e]">
-      <header className="bg-[#1a1230]/80 backdrop-blur-sm border-b border-purple-500/10 px-4 sm:px-6 py-3 sm:py-4 sticky top-0 z-10">
+      <header className="bg-[#1E293B]/80 backdrop-blur-sm border-b border-purple-500/10 px-4 sm:px-6 py-3 sm:py-4 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 text-white text-sm font-bold flex items-center justify-center shadow-lg shadow-purple-500/20">
               C
             </div>
-            <h1 className="text-base sm:text-lg font-bold text-white">Cleo.ai Admin</h1>
+            <h1 className="text-base sm:text-lg font-bold text-white">Cleya.ai Admin</h1>
           </div>
           <button
             onClick={() => { api.logout().then(() => router.push('/')); }}
@@ -269,7 +269,7 @@ export default function AdminDashboard() {
                 ].map((stat) => (
                   <div
                     key={stat.label}
-                    className="bg-[#1a1230]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 p-5 hover:border-purple-500/20 transition"
+                    className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 p-5 hover:border-purple-500/20 transition"
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-lg">{stat.icon}</span>
@@ -281,7 +281,7 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            <div className="bg-[#1a1230]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 p-6">
+            <div className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 p-6">
               <h2 className="text-sm font-semibold text-white mb-6">Conversion Funnel</h2>
               <div className="space-y-3">
                 {funnel.map((step, i) => (
@@ -305,7 +305,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="bg-[#1a1230]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 overflow-hidden">
+            <div className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 overflow-hidden">
               <div className="px-6 py-4 border-b border-purple-500/10 flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-white">Users ({users.length})</h2>
               </div>
@@ -385,7 +385,7 @@ export default function AdminDashboard() {
                 ].map((stat) => (
                   <div
                     key={stat.label}
-                    className="bg-[#1a1230]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 p-5"
+                    className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 p-5"
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-lg">{stat.icon}</span>
@@ -397,7 +397,7 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            <div className="bg-[#1a1230]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 overflow-hidden">
+            <div className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 overflow-hidden">
               <div className="px-6 py-4 border-b border-purple-500/10">
                 <h2 className="text-sm font-semibold text-white">Recent Calls</h2>
               </div>
@@ -444,7 +444,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="bg-[#1a1230]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 overflow-hidden">
+            <div className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 overflow-hidden">
               <div className="px-6 py-4 border-b border-purple-500/10">
                 <h2 className="text-sm font-semibold text-white">Recent Messages (WhatsApp + SMS)</h2>
               </div>
@@ -505,7 +505,7 @@ export default function AdminDashboard() {
                   { label: 'Open', value: dealData.stats.byStatus?.OPEN || 0, icon: '🔍' },
                   { label: 'Closed Won', value: dealData.stats.byStatus?.CLOSED_WON || 0, icon: '🏆' },
                 ].map((stat) => (
-                  <div key={stat.label} className="bg-[#1a1230]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 p-5">
+                  <div key={stat.label} className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 p-5">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-lg">{stat.icon}</span>
                       <p className="text-xs font-medium text-purple-300/60 uppercase tracking-wider">{stat.label}</p>
@@ -516,7 +516,7 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            <div className="bg-[#1a1230]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 overflow-hidden">
+            <div className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 overflow-hidden">
               <div className="px-6 py-4 border-b border-purple-500/10">
                 <h2 className="text-sm font-semibold text-white">Deal Pipeline ({dealData?.deals?.length || 0})</h2>
               </div>
@@ -624,7 +624,7 @@ export default function AdminDashboard() {
                   { label: 'Active', value: eventData.stats.active, icon: '🟢' },
                   { label: 'Total Participants', value: eventData.stats.totalParticipants, icon: '👥' },
                 ].map((stat) => (
-                  <div key={stat.label} className="bg-[#1a1230]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 p-5">
+                  <div key={stat.label} className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 p-5">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-lg">{stat.icon}</span>
                       <p className="text-xs font-medium text-purple-300/60 uppercase tracking-wider">{stat.label}</p>
@@ -635,7 +635,7 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            <div className="bg-[#1a1230]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 overflow-hidden">
+            <div className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 overflow-hidden">
               <div className="px-6 py-4 border-b border-purple-500/10 flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-white">Events ({eventData?.events?.length || 0})</h2>
                 <button
@@ -703,7 +703,7 @@ export default function AdminDashboard() {
 
       {showCreateEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#1a1230] border border-purple-500/20 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+          <div className="bg-[#1E293B] border border-purple-500/20 rounded-2xl p-6 w-full max-w-md shadow-2xl">
             <h3 className="text-white font-semibold mb-4">Create Event</h3>
             <div className="space-y-4">
               <div>
@@ -809,7 +809,7 @@ export default function AdminDashboard() {
                   { label: 'Accept Rate', value: `${analyticsData.matchAcceptRate}%`, icon: '📊', color: '#fbbf24' },
                   { label: 'Avg Score', value: `${analyticsData.avgMatchScore}%`, icon: '⭐', color: '#f472b6' },
                 ].map((s, i) => (
-                  <div key={i} className="rounded-xl border border-purple-500/10 p-4" style={{ background: 'rgba(26,18,48,0.6)' }}>
+                  <div key={i} className="rounded-xl border border-purple-500/10 p-4" style={{ background: 'rgba(30,41,59,0.6)' }}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-lg">{s.icon}</span>
                       <span className="text-xs text-purple-300/40 uppercase font-medium">{s.label}</span>
@@ -820,7 +820,7 @@ export default function AdminDashboard() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="rounded-xl border border-purple-500/10 p-5" style={{ background: 'rgba(26,18,48,0.6)' }}>
+                <div className="rounded-xl border border-purple-500/10 p-5" style={{ background: 'rgba(30,41,59,0.6)' }}>
                   <h3 className="text-white text-sm font-semibold mb-4">📊 Daily Signups (7 days)</h3>
                   <div className="flex items-end gap-2 h-32">
                     {analyticsData.dailySignups?.map((d: any, i: number) => {
@@ -841,7 +841,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-purple-500/10 p-5" style={{ background: 'rgba(26,18,48,0.6)' }}>
+                <div className="rounded-xl border border-purple-500/10 p-5" style={{ background: 'rgba(30,41,59,0.6)' }}>
                   <h3 className="text-white text-sm font-semibold mb-4">🎭 Personas</h3>
                   <div className="space-y-2">
                     {analyticsData.personaBreakdown?.map((p: any, i: number) => {
@@ -869,7 +869,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-purple-500/10 p-5" style={{ background: 'rgba(26,18,48,0.6)' }}>
+              <div className="rounded-xl border border-purple-500/10 p-5" style={{ background: 'rgba(30,41,59,0.6)' }}>
                 <h3 className="text-white text-sm font-semibold mb-4">📣 Channel Attribution</h3>
                 <div className="space-y-2">
                   {analyticsData.attributionBreakdown?.map((a: any, i: number) => {
@@ -891,7 +891,7 @@ export default function AdminDashboard() {
                         <div className="h-2 rounded-full bg-purple-900/30">
                           <div className="h-full rounded-full" style={{
                             width: `${pct}%`,
-                            background: 'linear-gradient(90deg, #14B8A6, #2DD4BF)',
+                            background: 'linear-gradient(90deg, #14B8A6, #5EEAD4)',
                           }} />
                         </div>
                       </div>
@@ -904,7 +904,7 @@ export default function AdminDashboard() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="rounded-xl border border-purple-500/10 p-5" style={{ background: 'rgba(26,18,48,0.6)' }}>
+                <div className="rounded-xl border border-purple-500/10 p-5" style={{ background: 'rgba(30,41,59,0.6)' }}>
                   <h3 className="text-white text-sm font-semibold mb-4">⭐ Feedback</h3>
                   <div className="flex items-center gap-4 mb-4">
                     <div className="text-center">
@@ -933,14 +933,14 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-purple-500/10 p-5" style={{ background: 'rgba(26,18,48,0.6)' }}>
+                <div className="rounded-xl border border-purple-500/10 p-5" style={{ background: 'rgba(30,41,59,0.6)' }}>
                   <h3 className="text-white text-sm font-semibold mb-4">📞 Communications</h3>
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-lg border border-purple-500/10 p-3 text-center" style={{ background: 'rgba(108,71,255,0.05)' }}>
+                    <div className="rounded-lg border border-purple-500/10 p-3 text-center" style={{ background: 'rgba(13,148,136,0.05)' }}>
                       <p className="text-xl font-bold text-purple-400">{analyticsData.totalCalls}</p>
                       <p className="text-xs text-purple-300/40">Calls</p>
                     </div>
-                    <div className="rounded-lg border border-purple-500/10 p-3 text-center" style={{ background: 'rgba(108,71,255,0.05)' }}>
+                    <div className="rounded-lg border border-purple-500/10 p-3 text-center" style={{ background: 'rgba(13,148,136,0.05)' }}>
                       <p className="text-xl font-bold text-blue-400">{analyticsData.totalMessages}</p>
                       <p className="text-xs text-purple-300/40">Messages</p>
                     </div>
@@ -956,11 +956,11 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-purple-500/10 p-5" style={{ background: 'rgba(26,18,48,0.6)' }}>
+              <div className="rounded-xl border border-purple-500/10 p-5" style={{ background: 'rgba(30,41,59,0.6)' }}>
                 <h3 className="text-white text-sm font-semibold mb-4">🔔 Recent Activity</h3>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {analyticsData.recentActivity?.map((a: any, i: number) => (
-                    <div key={i} className="flex items-center gap-3 px-3 py-2 rounded-lg" style={{ background: 'rgba(108,71,255,0.03)' }}>
+                    <div key={i} className="flex items-center gap-3 px-3 py-2 rounded-lg" style={{ background: 'rgba(13,148,136,0.03)' }}>
                       <span className="text-sm">
                         {a.type === 'MATCH_FOUND' ? '🎯' : a.type === 'INTRO_ACCEPTED' ? '✅' : a.type === 'INTRO_REQUEST' ? '🤝' : '🔔'}
                       </span>
@@ -985,7 +985,7 @@ export default function AdminDashboard() {
 
       {triggerModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#1a1230] border border-purple-500/20 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+          <div className="bg-[#1E293B] border border-purple-500/20 rounded-2xl p-6 w-full max-w-md shadow-2xl">
             <h3 className="text-white font-semibold mb-4">
               {triggerModal.type === 'call' ? 'Trigger Call' : 'Send Message'} — {triggerModal.user.email}
             </h3>

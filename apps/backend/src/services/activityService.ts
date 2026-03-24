@@ -20,7 +20,7 @@ export class ActivityService {
   }
 
   async recordInviteUsed(userId: string, inviteeName: string) {
-    await this.record(userId, 'INVITE_USED', `${inviteeName} joined Cleo using your invite code`);
+    await this.record(userId, 'INVITE_USED', `${inviteeName} joined Cleya using your invite code`);
   }
 }
 

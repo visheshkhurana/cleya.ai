@@ -64,7 +64,7 @@ export class CallService {
     return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Amy">
-    Hi! This is Cleo, your AI networking assistant.
+    Hi! This is Cleya, your AI networking assistant.
     Thanks for taking this call. I'd love to learn a bit more about you
     so I can find you amazing connections.
   </Say>
@@ -182,7 +182,7 @@ Only include fields that are clearly mentioned.`,
       const response = await this.ai.chat([
         {
           role: 'system',
-          content: `You are Cleo, a warm and conversational AI networking assistant on a phone call.
+          content: `You are Cleya, a warm and conversational AI networking assistant on a phone call.
 Generate a brief (1-2 sentence) follow-up response to what the user just said.
 Be encouraging, ask a relevant follow-up question about their professional goals.
 Keep it natural and conversational.`,

@@ -2,30 +2,30 @@
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen" style={{ background: '#0B0918' }}>
+    <div className="min-h-screen" style={{ background: '#0F172A' }}>
       <nav className="border-b border-white/[0.06]">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold" style={{ background: '#0D9488' }}>C</div>
-            <span className="text-white font-semibold">Cleo.ai</span>
+            <span className="text-white font-semibold">Cleya.ai</span>
           </a>
-          <a href="/" className="text-sm hover:text-white transition" style={{ color: '#A09FB5' }}>Back to Home</a>
+          <a href="/" className="text-sm hover:text-white transition" style={{ color: '#94A3B8' }}>Back to Home</a>
         </div>
       </nav>
 
       <main className="max-w-4xl mx-auto px-6 py-16">
         <h1 className="font-display text-3xl sm:text-4xl font-bold text-white mb-2">Terms of Service</h1>
-        <p className="text-sm mb-12" style={{ color: '#A09FB5' }}>Last updated: March 18, 2026</p>
+        <p className="text-sm mb-12" style={{ color: '#94A3B8' }}>Last updated: March 18, 2026</p>
 
-        <div className="space-y-8 text-sm leading-relaxed" style={{ color: '#A09FB5' }}>
+        <div className="space-y-8 text-sm leading-relaxed" style={{ color: '#94A3B8' }}>
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">1. Acceptance of Terms</h2>
-            <p>By accessing or using Cleo.ai (&quot;the Platform&quot;), you agree to be bound by these Terms of Service. If you do not agree to these terms, you may not use the Platform. Cleo.ai reserves the right to update these terms at any time, and continued use constitutes acceptance of any changes.</p>
+            <p>By accessing or using Cleya.ai (&quot;the Platform&quot;), you agree to be bound by these Terms of Service. If you do not agree to these terms, you may not use the Platform. Cleya.ai reserves the right to update these terms at any time, and continued use constitutes acceptance of any changes.</p>
           </section>
 
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">2. Eligibility</h2>
-            <p>To use Cleo.ai, you must be at least 18 years old and a professional in good standing. The Platform is designed for founders, investors, talent, and operators seeking legitimate professional connections within India&apos;s startup ecosystem and beyond. Cleo.ai reserves the right to deny or revoke access at its sole discretion.</p>
+            <p>To use Cleya.ai, you must be at least 18 years old and a professional in good standing. The Platform is designed for founders, investors, talent, and operators seeking legitimate professional connections within India&apos;s startup ecosystem and beyond. Cleya.ai reserves the right to deny or revoke access at its sole discretion.</p>
           </section>
 
           <section>
@@ -55,7 +55,7 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">5. AI-Powered Matching</h2>
-            <p>Cleo.ai uses artificial intelligence to suggest professional connections. While we strive for high-quality matches, we do not guarantee the outcome of any introduction or business relationship. Match scores and recommendations are algorithmic suggestions and should not be taken as endorsements of any individual or company. AI-generated introductions are suggestions and users exercise their own judgment in pursuing any connection.</p>
+            <p>Cleya.ai uses artificial intelligence to suggest professional connections. While we strive for high-quality matches, we do not guarantee the outcome of any introduction or business relationship. Match scores and recommendations are algorithmic suggestions and should not be taken as endorsements of any individual or company. AI-generated introductions are suggestions and users exercise their own judgment in pursuing any connection.</p>
           </section>
 
           <section>
@@ -65,22 +65,22 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">7. Intellectual Property</h2>
-            <p>All content, algorithms, designs, and technology comprising Cleo.ai are the intellectual property of Cleo.ai and its licensors. You retain ownership of the content you submit to the Platform but grant us a non-exclusive, worldwide, royalty-free license to use it for providing and improving our services.</p>
+            <p>All content, algorithms, designs, and technology comprising Cleya.ai are the intellectual property of Cleya.ai and its licensors. You retain ownership of the content you submit to the Platform but grant us a non-exclusive, worldwide, royalty-free license to use it for providing and improving our services.</p>
           </section>
 
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">8. Limitation of Liability</h2>
-            <p>Cleo.ai is provided &quot;as is&quot; without warranties of any kind, express or implied. We are not liable for any direct, indirect, incidental, special, consequential, or punitive damages arising from your use of the Platform, including but not limited to lost profits, business opportunities, or data. Our total liability shall not exceed the amount you paid to us in the 12 months preceding the claim, or INR 10,000, whichever is higher.</p>
+            <p>Cleya.ai is provided &quot;as is&quot; without warranties of any kind, express or implied. We are not liable for any direct, indirect, incidental, special, consequential, or punitive damages arising from your use of the Platform, including but not limited to lost profits, business opportunities, or data. Our total liability shall not exceed the amount you paid to us in the 12 months preceding the claim, or INR 10,000, whichever is higher.</p>
           </section>
 
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">9. Indemnification</h2>
-            <p>You agree to indemnify and hold harmless Cleo.ai, its affiliates, officers, directors, employees, and agents from any claims, damages, losses, liabilities, and expenses (including legal fees) arising from your use of the Platform, your violation of these Terms, or your violation of any third-party rights.</p>
+            <p>You agree to indemnify and hold harmless Cleya.ai, its affiliates, officers, directors, employees, and agents from any claims, damages, losses, liabilities, and expenses (including legal fees) arising from your use of the Platform, your violation of these Terms, or your violation of any third-party rights.</p>
           </section>
 
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">10. Termination</h2>
-            <p>You may deactivate your account at any time through Settings. Cleo.ai reserves the right to suspend or terminate accounts that violate these terms, with or without prior notice. Upon termination, your data will be handled in accordance with our Privacy Policy. Sections relating to intellectual property, limitation of liability, indemnification, and governing law shall survive termination.</p>
+            <p>You may deactivate your account at any time through Settings. Cleya.ai reserves the right to suspend or terminate accounts that violate these terms, with or without prior notice. Upon termination, your data will be handled in accordance with our Privacy Policy. Sections relating to intellectual property, limitation of liability, indemnification, and governing law shall survive termination.</p>
           </section>
 
           <section>
@@ -100,14 +100,14 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">14. Contact</h2>
-            <p>For questions about these terms, contact us at <a href="mailto:legal@cleo.ai" className="underline" style={{ color: '#2DD4BF' }}>legal@cleo.ai</a>.</p>
+            <p>For questions about these terms, contact us at <a href="mailto:legal@cleya.ai" className="underline" style={{ color: '#5EEAD4' }}>legal@cleya.ai</a>.</p>
           </section>
         </div>
       </main>
 
       <footer className="border-t border-white/[0.04] py-8">
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.2)' }}>&copy; {new Date().getFullYear()} Cleo.ai. All rights reserved.</p>
+          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.2)' }}>&copy; {new Date().getFullYear()} Cleya.ai. All rights reserved.</p>
         </div>
       </footer>
     </div>

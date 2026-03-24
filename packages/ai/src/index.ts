@@ -1,5 +1,5 @@
 // ============================================
-// Cleo.ai — LLM Abstraction Layer
+// Cleya.ai — LLM Abstraction Layer
 // Supports OpenAI and Anthropic with unified interface
 // ============================================
 

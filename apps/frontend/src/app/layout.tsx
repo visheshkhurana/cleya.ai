@@ -20,20 +20,20 @@ const playfairDisplay = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: 'Cleo.ai — AI Superconnector for Founders, Investors & Operators',
-  description: 'Cleo.ai is a members-only AI-powered professional networking platform. Matching founders, investors, talent, and partners with 94% accuracy through intelligent conversations. Join 12,000+ professionals.',
+  title: 'Cleya.ai — AI Superconnector for Founders, Investors & Operators',
+  description: 'Cleya.ai is a members-only AI-powered professional networking platform. Matching founders, investors, talent, and partners with 94% accuracy through intelligent conversations. Join 12,000+ professionals.',
   keywords: ['AI networking', 'founder matching', 'investor matching', 'professional networking', 'startup networking', 'AI matchmaking'],
   openGraph: {
-    title: 'Cleo.ai — AI Superconnector for Founders, Investors & Operators',
+    title: 'Cleya.ai — AI Superconnector for Founders, Investors & Operators',
     description: 'Members-only AI-powered networking. 94% match accuracy. Join 12,000+ founders, investors, and operators building meaningful connections through intelligent conversations.',
     url: 'https://boardy-ai-platform.replit.app',
-    siteName: 'Cleo.ai',
+    siteName: 'Cleya.ai',
     images: [
       {
         url: '/og-image.svg',
         width: 1200,
         height: 630,
-        alt: 'Cleo.ai — AI Superconnector',
+        alt: 'Cleya.ai — AI Superconnector',
       },
     ],
     locale: 'en_US',
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Cleo.ai — AI Superconnector for Founders, Investors & Operators',
+    title: 'Cleya.ai — AI Superconnector for Founders, Investors & Operators',
     description: 'Members-only AI-powered networking. 94% match accuracy. Join 12,000+ founders, investors, and operators.',
     images: ['/og-image.svg'],
   },
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#0B0918',
+  themeColor: '#0F172A',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

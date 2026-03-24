@@ -147,7 +147,7 @@ process.on('uncaughtException', (error: Error) => {
 });
 
 server.listen(env.PORT, async () => {
-  console.log(`Cleo.ai Backend running on port ${env.PORT}`);
+  console.log(`Cleya.ai Backend running on port ${env.PORT}`);
   console.log(`WebSocket ready`);
   console.log(`Environment: ${env.NODE_ENV}`);
   logServiceStatus();

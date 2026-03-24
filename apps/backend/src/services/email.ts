@@ -15,13 +15,13 @@ function emailLayout(content: string): string {
 <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;">
 <tr><td style="text-align:center;padding-bottom:30px;">
 <div style="display:inline-block;width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,${brandColor},#0F766E);text-align:center;line-height:40px;color:#fff;font-weight:bold;font-size:18px;">C</div>
-<span style="color:#fff;font-size:20px;font-weight:600;vertical-align:middle;margin-left:10px;">Cleo.ai</span>
+<span style="color:#fff;font-size:20px;font-weight:600;vertical-align:middle;margin-left:10px;">Cleya.ai</span>
 </td></tr>
 <tr><td style="background:${cardBg};border-radius:16px;padding:40px;border:1px solid rgba(255,255,255,0.05);">
 ${content}
 </td></tr>
 <tr><td style="text-align:center;padding-top:30px;">
-<p style="color:rgba(255,255,255,0.2);font-size:12px;margin:0;">&copy; ${new Date().getFullYear()} Cleo.ai. All rights reserved.</p>
+<p style="color:rgba(255,255,255,0.2);font-size:12px;margin:0;">&copy; ${new Date().getFullYear()} Cleya.ai. All rights reserved.</p>
 <p style="color:rgba(255,255,255,0.15);font-size:11px;margin:8px 0 0;">AI Superconnector — matching the right people, faster.</p>
 </td></tr>
 </table>
@@ -55,7 +55,7 @@ class EmailService {
     if (this.transporter) {
       try {
         await this.transporter.sendMail({
-          from: `"Cleo.ai" <${env.FROM_EMAIL}>`,
+          from: `"Cleya.ai" <${env.FROM_EMAIL}>`,
           to,
           subject,
           html,
@@ -74,15 +74,15 @@ class EmailService {
 
   async sendWelcome(email: string) {
     const html = emailLayout(`
-      <h1 style="color:#fff;font-size:24px;margin:0 0 16px;">Welcome to Cleo.ai! 🎉</h1>
+      <h1 style="color:#fff;font-size:24px;margin:0 0 16px;">Welcome to Cleya.ai! 🎉</h1>
       <p style="color:rgba(255,255,255,0.6);font-size:15px;line-height:1.6;margin:0 0 24px;">
-        You've just joined the smartest networking platform on the planet. Cleo uses AI to match you with founders, investors, talent, and partners who are the perfect fit for your goals.
+        You've just joined the smartest networking platform on the planet. Cleya uses AI to match you with founders, investors, talent, and partners who are the perfect fit for your goals.
       </p>
       <p style="color:rgba(255,255,255,0.6);font-size:15px;line-height:1.6;margin:0 0 24px;">
         <strong style="color:#fff;">Here's what happens next:</strong>
       </p>
       <ol style="color:rgba(255,255,255,0.5);font-size:14px;line-height:1.8;padding-left:20px;margin:0 0 24px;">
-        <li>Tell Cleo about yourself in a quick chat</li>
+        <li>Tell Cleya about yourself in a quick chat</li>
         <li>Our AI finds your best matches</li>
         <li>Accept intros and start connecting</li>
       </ol>
@@ -90,7 +90,7 @@ class EmailService {
         ${btn('Start Your Profile →', `${env.FRONTEND_URL}/chat`)}
       </div>
     `);
-    await this.send(email, 'Welcome to Cleo.ai — Your AI Superconnector', html);
+    await this.send(email, 'Welcome to Cleya.ai — Your AI Superconnector', html);
   }
 
   async sendMatchProposed(email: string, matchName: string, matchPersona: string, matchScore: number) {
@@ -98,7 +98,7 @@ class EmailService {
     const html = emailLayout(`
       <h1 style="color:#fff;font-size:24px;margin:0 0 16px;">New Match Found! 🎯</h1>
       <p style="color:rgba(255,255,255,0.6);font-size:15px;line-height:1.6;margin:0 0 24px;">
-        Cleo found someone great for you to connect with.
+        Cleya found someone great for you to connect with.
       </p>
       <div style="background:rgba(108,71,255,0.08);border:1px solid rgba(108,71,255,0.15);border-radius:12px;padding:20px;margin:0 0 24px;">
         <p style="color:#fff;font-size:16px;font-weight:600;margin:0 0 4px;">${matchName}</p>
@@ -125,7 +125,7 @@ class EmailService {
         <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:0;">📧 ${matchEmail}</p>
       </div>
       <p style="color:rgba(255,255,255,0.4);font-size:13px;line-height:1.6;margin:0 0 24px;">
-        We recommend reaching out within 48 hours while the connection is fresh. Mention Cleo to break the ice!
+        We recommend reaching out within 48 hours while the connection is fresh. Mention Cleya to break the ice!
       </p>
       <div style="text-align:center;margin:32px 0 0;">
         ${btn('View Connection →', `${env.FRONTEND_URL}/matches`)}
@@ -148,7 +148,7 @@ class EmailService {
         If you didn't request this reset, you can safely ignore this email. Your password will remain unchanged.
       </p>
     `);
-    await this.send(email, 'Reset Your Cleo.ai Password', html);
+    await this.send(email, 'Reset Your Cleya.ai Password', html);
   }
 
   async sendEmailVerification(email: string, token: string) {
@@ -156,16 +156,16 @@ class EmailService {
     const html = emailLayout(`
       <h1 style="color:#fff;font-size:24px;margin:0 0 16px;">Verify Your Email</h1>
       <p style="color:rgba(255,255,255,0.6);font-size:15px;line-height:1.6;margin:0 0 24px;">
-        Please verify your email address to complete your Cleo.ai account setup and unlock all features.
+        Please verify your email address to complete your Cleya.ai account setup and unlock all features.
       </p>
       <div style="text-align:center;margin:32px 0;">
         ${btn('Verify Email →', verifyUrl)}
       </div>
       <p style="color:rgba(255,255,255,0.3);font-size:12px;line-height:1.6;margin:0;">
-        This link expires in 24 hours. If you didn't create a Cleo.ai account, please ignore this email.
+        This link expires in 24 hours. If you didn't create a Cleya.ai account, please ignore this email.
       </p>
     `);
-    await this.send(email, 'Verify Your Cleo.ai Email', html);
+    await this.send(email, 'Verify Your Cleya.ai Email', html);
   }
 
   async sendNewMatch(email: string, matchName: string, matchScore: number) {
@@ -173,7 +173,7 @@ class EmailService {
     const html = emailLayout(`
       <h1 style="color:#fff;font-size:24px;margin:0 0 16px;">You Have a New Match! 🎯</h1>
       <p style="color:rgba(255,255,255,0.6);font-size:15px;line-height:1.6;margin:0 0 24px;">
-        Cleo found a new connection for you — <strong style="color:#fff;">${matchName}</strong> with a <strong style="color:#6ee7b7;">${scorePercent}%</strong> compatibility score.
+        Cleya found a new connection for you — <strong style="color:#fff;">${matchName}</strong> with a <strong style="color:#6ee7b7;">${scorePercent}%</strong> compatibility score.
       </p>
       <div style="text-align:center;margin:32px 0;">
         ${btn('Review Match →', `${env.FRONTEND_URL}/matches`)}
@@ -243,7 +243,7 @@ class EmailService {
         ${btn('View Dashboard →', `${env.FRONTEND_URL}/dashboard`)}
       </div>
     `);
-    await this.send(user.email, `Your Cleo.ai Weekly Update — ${newMatches} new match${newMatches !== 1 ? 'es' : ''}`, html);
+    await this.send(user.email, `Your Cleya.ai Weekly Update — ${newMatches} new match${newMatches !== 1 ? 'es' : ''}`, html);
   }
 
   async sendDigestToAll() {

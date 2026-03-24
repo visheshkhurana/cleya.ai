@@ -108,7 +108,7 @@ export default function ChatPage() {
         setIsOnboarded(true);
         setMessages([{
           sender: 'AI',
-          content: `Welcome back! I'm Cleo, your AI networking assistant. Ask me anything — I can help you find connections, improve your profile, suggest networking strategies, or answer questions about India's startup ecosystem.`,
+          content: `Welcome back! I'm Cleya, your AI networking assistant. Ask me anything — I can help you find connections, improve your profile, suggest networking strategies, or answer questions about India's startup ecosystem.`,
           createdAt: new Date(),
         }]);
         setCurrentNode({ id: 'ai_chat', type: 'ai_response' });
@@ -223,7 +223,7 @@ export default function ChatPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0D0B1A' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0F172A' }}>
         <div className="text-center">
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 glow-pulse"
             style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
@@ -236,7 +236,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#0D0B1A' }}>
+    <div className="min-h-screen flex flex-col" style={{ background: '#0F172A' }}>
       <header className="px-4 py-3 flex items-center gap-3 sticky top-0 z-10 border-b border-white/5"
         style={{ background: 'rgba(13,11,26,0.9)', backdropFilter: 'blur(20px)' }}>
         <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
@@ -244,7 +244,7 @@ export default function ChatPage() {
           C
         </div>
         <div className="flex-1">
-          <h1 className="font-semibold text-white text-sm">Cleo.ai</h1>
+          <h1 className="font-semibold text-white text-sm">Cleya.ai</h1>
           <div className="flex items-center gap-1.5">
             <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
             <p className="text-xs text-white/40">Active now</p>
@@ -280,7 +280,7 @@ export default function ChatPage() {
             <div className="h-full rounded-full transition-all duration-500 ease-out"
               style={{
                 width: `${((ONBOARDING_STEP_MAP[currentNode.id] || 1) / ONBOARDING_TOTAL_STEPS) * 100}%`,
-                background: 'linear-gradient(90deg, #0D9488, #2DD4BF)',
+                background: 'linear-gradient(90deg, #0D9488, #5EEAD4)',
               }} />
           </div>
         </div>
@@ -293,7 +293,7 @@ export default function ChatPage() {
               style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)', boxShadow: '0 4px 20px rgba(13,148,136,0.3)' }}>
               C
             </div>
-            <h3 className="text-lg font-semibold text-white mb-2">Hey! I'm Cleo.</h3>
+            <h3 className="text-lg font-semibold text-white mb-2">Hey! I'm Cleya.</h3>
             <p className="text-sm text-white/40 max-w-xs mb-6">Let's get you connected with the right people in India's startup ecosystem.</p>
             <div className="flex flex-wrap gap-2 justify-center max-w-sm">
               {['I\u2019m a founder raising funds', 'I\u2019m looking to invest', 'I\u2019m exploring new roles'].map((prompt) => (
@@ -349,7 +349,7 @@ export default function ChatPage() {
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value.slice(0, 500))}
-              placeholder="Message Cleo..."
+              placeholder="Message Cleya..."
               className="input-dark flex-1"
               disabled={aiLoading}
               maxLength={500}

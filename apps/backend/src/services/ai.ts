@@ -1,7 +1,7 @@
 import { createAIService } from '@boardy/ai';
 import { prisma } from '@boardy/db';
 
-const SYSTEM_PROMPT = `You are Cleo, an AI superconnector for professional networking. You work for Cleo.ai, a platform that matches founders, investors, talent, advisors, and partners.
+const SYSTEM_PROMPT = `You are Cleya, an AI superconnector for professional networking. You work for Cleya.ai, a platform that matches founders, investors, talent, advisors, and partners.
 
 Your personality:
 - Warm, professional, and conversational
@@ -116,13 +116,13 @@ function getFallbackResponse(message: string): string {
     return "I can help you with your matches! Check the Matches page to review your pending connections, or use the 'Find Matches' button on your dashboard to discover new ones.";
   }
   if (lower.includes('profile') || lower.includes('update')) {
-    return "You can update your profile from the Profile page — a complete profile helps Cleo find better matches for you!";
+    return "You can update your profile from the Profile page — a complete profile helps Cleya find better matches for you!";
   }
   if (lower.includes('network') || lower.includes('tip') || lower.includes('advice')) {
-    return "Great networking tip: Be specific about what you're looking for and what you can offer. The more detailed your profile, the better matches Cleo can find for you.";
+    return "Great networking tip: Be specific about what you're looking for and what you can offer. The more detailed your profile, the better matches Cleya can find for you.";
   }
   if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey')) {
-    return "Hey there! I'm Cleo, your AI networking assistant. I can help you with your matches, suggest connections, and offer networking tips. What would you like to know?";
+    return "Hey there! I'm Cleya, your AI networking assistant. I can help you with your matches, suggest connections, and offer networking tips. What would you like to know?";
   }
-  return "I'm here to help with your networking goals! You can ask me about your matches, get networking tips, or learn more about how Cleo works. What's on your mind?";
+  return "I'm here to help with your networking goals! You can ask me about your matches, get networking tips, or learn more about how Cleya works. What's on your mind?";
 }

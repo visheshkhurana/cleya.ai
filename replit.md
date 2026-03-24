@@ -1,4 +1,4 @@
-# Cleo.ai Platform
+# Cleya.ai Platform
 
 Imported from: https://github.com/visheshkhurana/boardy-ai-platform
 

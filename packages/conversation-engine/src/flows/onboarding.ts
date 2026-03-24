@@ -2,7 +2,7 @@ import { ConversationFlow } from '@boardy/types';
 
 export const onboardingFlow: ConversationFlow = {
   id: 'onboarding_v1',
-  name: 'Cleo.ai Onboarding',
+  name: 'Cleya.ai Onboarding',
   description: 'Multi-persona onboarding flow — 6 persona types with tailored forms',
   startNode: 'welcome',
   nodes: {
@@ -11,7 +11,7 @@ export const onboardingFlow: ConversationFlow = {
       id: 'welcome',
       type: 'message',
       content:
-        "Hey! I'm Cleo, an AI Superconnector! I match founders, investors, talent, and dealmakers with the right people.\n\nLet me learn a bit about you so I can find your best matches.",
+        "Hey! I'm Cleya, an AI Superconnector! I match founders, investors, talent, and dealmakers with the right people.\n\nLet me learn a bit about you so I can find your best matches.",
       next: 'persona_select',
     },
 
@@ -270,7 +270,7 @@ export const onboardingFlow: ConversationFlow = {
     attribution: {
       id: 'attribution',
       type: 'choices',
-      content: "How did you hear about Cleo.ai?",
+      content: "How did you hear about Cleya.ai?",
       choices: [
         { label: '💼 LinkedIn', value: 'linkedin', next: 'completion' },
         { label: '🐦 Twitter / X', value: 'twitter', next: 'completion' },

@@ -14,7 +14,7 @@ export default function NotFoundClient() {
 
   return (
     <div style={{
-      background: '#0D0B1A',
+      background: '#0F172A',
       minHeight: '100vh',
       display: 'flex',
       alignItems: 'center',
@@ -30,8 +30,8 @@ export default function NotFoundClient() {
           alignItems: 'center',
           justifyContent: 'center',
           fontSize: '2.25rem',
-          background: 'linear-gradient(135deg, rgba(108,71,255,0.08), rgba(78,47,216,0.08))',
-          border: '1px solid rgba(108,71,255,0.12)',
+          background: 'linear-gradient(135deg, rgba(13,148,136,0.08), rgba(78,47,216,0.08))',
+          border: '1px solid rgba(13,148,136,0.12)',
         }}>
           🔮
         </div>

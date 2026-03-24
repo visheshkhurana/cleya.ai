@@ -459,7 +459,7 @@ export class MatchingService {
       const response = await this.ai.chat([
         {
           role: 'system',
-          content: 'You are Cleo, an AI networking assistant for India\'s startup ecosystem. Write exactly 2 sentences explaining why these two people should connect. Be specific — mention their actual roles, companies, industries, stages, and goals. Never be generic. Never say "complementary backgrounds."',
+          content: 'You are Cleya, an AI networking assistant for India\'s startup ecosystem. Write exactly 2 sentences explaining why these two people should connect. Be specific — mention their actual roles, companies, industries, stages, and goals. Never be generic. Never say "complementary backgrounds."',
         },
         {
           role: 'user',

@@ -65,7 +65,7 @@ export default function IntroductionDetailPage() {
 
   if (loading || !intro) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0D0B1A' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0F172A' }}>
         <div className="w-5 h-5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -137,7 +137,7 @@ export default function IntroductionDetailPage() {
   const hoursUntilAuto = Math.max(0, Math.round((autoApproveDate.getTime() - Date.now()) / (60 * 60 * 1000)));
 
   return (
-    <div className="min-h-screen" style={{ background: '#0D0B1A' }}>
+    <div className="min-h-screen" style={{ background: '#0F172A' }}>
       <header className="sticky top-0 z-10 border-b border-white/5" style={{ background: 'rgba(13,11,26,0.9)', backdropFilter: 'blur(20px)' }}>
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -152,7 +152,7 @@ export default function IntroductionDetailPage() {
       </header>
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-        <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(26,18,48,0.6)' }}>
+        <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(30,41,59,0.6)' }}>
           <div className="flex items-center gap-4 mb-4">
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl"
               style={{ background: 'linear-gradient(135deg, #0D948815, #0F766E15)', border: '1px solid rgba(13,148,136,0.15)' }}>
@@ -188,7 +188,7 @@ export default function IntroductionDetailPage() {
         </div>
 
         {intro.introText && (
-          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(26,18,48,0.6)' }}>
+          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(30,41,59,0.6)' }}>
             <p className="text-[10px] uppercase tracking-wider text-white/30 mb-3 font-medium">
               {isPending ? 'Introduction Preview — Review before sending' : 'Introduction Text'}
             </p>
@@ -219,7 +219,7 @@ export default function IntroductionDetailPage() {
         )}
 
         {intro.talkingPoints?.length > 0 && !editMode && (
-          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(26,18,48,0.6)' }}>
+          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(30,41,59,0.6)' }}>
             <p className="text-[10px] uppercase tracking-wider text-white/30 mb-3 font-medium">Conversation Starters</p>
             <div className="space-y-3">
               {intro.talkingPoints.map((tp: string, i: number) => (
@@ -233,7 +233,7 @@ export default function IntroductionDetailPage() {
         )}
 
         {intro.status !== 'PENDING_APPROVAL' && intro.status !== 'CANCELLED' && (
-          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(26,18,48,0.6)' }}>
+          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(30,41,59,0.6)' }}>
             <p className="text-[10px] uppercase tracking-wider text-white/30 mb-3 font-medium">Contact Information</p>
             <div className="space-y-2">
               <p className="text-sm text-white/60">📧 {other.email}</p>
@@ -248,7 +248,7 @@ export default function IntroductionDetailPage() {
           </div>
         )}
 
-        <div className="rounded-2xl border border-white/5 p-6 space-y-3" style={{ background: 'rgba(26,18,48,0.6)' }}>
+        <div className="rounded-2xl border border-white/5 p-6 space-y-3" style={{ background: 'rgba(30,41,59,0.6)' }}>
           {isPending && !editMode && (
             <>
               <div className="flex gap-2">
@@ -285,7 +285,7 @@ export default function IntroductionDetailPage() {
                   <button key={key} onClick={() => handleOutcome(key)}
                     disabled={actionLoading === 'outcome'}
                     className="py-4 rounded-xl text-sm font-medium text-white/70 hover:text-white transition border border-white/10 hover:border-white/20 disabled:opacity-50"
-                    style={{ background: 'rgba(26,18,48,0.8)' }}>
+                    style={{ background: 'rgba(30,41,59,0.8)' }}>
                     <span className="block text-xl mb-1">{val.icon}</span>
                     {val.label}
                   </button>
@@ -299,7 +299,7 @@ export default function IntroductionDetailPage() {
 
           {intro.status === 'COMPLETED' && (
             <div className="text-center py-2">
-              <p className="text-xs text-white/30">Thanks for sharing! Your feedback helps Cleo make better matches.</p>
+              <p className="text-xs text-white/30">Thanks for sharing! Your feedback helps Cleya make better matches.</p>
             </div>
           )}
         </div>

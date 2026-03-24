@@ -111,15 +111,15 @@ export class MessagingService {
 
   getWelcomeMessage(userName?: string): string {
     const name = userName ? ` ${userName}` : '';
-    return `Hey${name}! Welcome to Cleo.ai — your AI Superconnector. We're already finding the best people for you to connect with. Stay tuned for your first match!`;
+    return `Hey${name}! Welcome to Cleya.ai — your AI Superconnector. We're already finding the best people for you to connect with. Stay tuned for your first match!`;
   }
 
   getMatchNotificationMessage(matchName: string): string {
-    return `Great news! Cleo.ai found a match for you: ${matchName}. Open the app to review and accept the introduction.`;
+    return `Great news! Cleya.ai found a match for you: ${matchName}. Open the app to review and accept the introduction.`;
   }
 
   getFollowUpMessage(): string {
-    return `Hi from Cleo.ai! Just checking in — have you had a chance to review your latest matches? Open the app to see who's waiting to connect with you.`;
+    return `Hi from Cleya.ai! Just checking in — have you had a chance to review your latest matches? Open the app to see who's waiting to connect with you.`;
   }
 
   async getMessageHistory(userId: string) {

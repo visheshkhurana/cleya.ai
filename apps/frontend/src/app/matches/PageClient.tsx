@@ -172,7 +172,7 @@ export default function MatchesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen" style={{ background: '#0D0B1A' }}>
+      <div className="min-h-screen" style={{ background: '#0F172A' }}>
         <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-6 pb-12">
           <div className="h-8 w-40 rounded-lg animate-pulse mb-6" style={{ background: 'rgba(255,255,255,0.05)' }} />
           <div className="flex gap-2 mb-6">
@@ -205,11 +205,11 @@ export default function MatchesPage() {
 
     return (
       <div className="rounded-2xl border border-white/5 overflow-hidden transition hover:border-purple-500/15"
-        style={{ background: 'rgba(26,18,48,0.6)' }}>
+        style={{ background: 'rgba(30,41,59,0.6)' }}>
         <div className="p-5">
           <div className="flex items-start gap-4">
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg, #0D948815, #0F766E15)', border: '1px solid rgba(108,71,255,0.12)' }}>
+              style={{ background: 'linear-gradient(135deg, #0D948815, #0F766E15)', border: '1px solid rgba(13,148,136,0.12)' }}>
               {personaIcon[profile?.persona || 'OTHER'] || '💬'}
             </div>
             <div className="flex-1 min-w-0">
@@ -218,8 +218,8 @@ export default function MatchesPage() {
                   {profile?.currentRole || other.email.split('@')[0]}
                 </h3>
                 <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
-                  style={{ background: scorePercent >= 80 ? 'rgba(13,148,136,0.15)' : scorePercent >= 60 ? 'rgba(59,130,246,0.12)' : 'rgba(108,71,255,0.12)',
-                    color: scorePercent >= 80 ? '#2DD4BF' : scorePercent >= 60 ? '#93C5FD' : '#A09FB5' }}>
+                  style={{ background: scorePercent >= 80 ? 'rgba(13,148,136,0.15)' : scorePercent >= 60 ? 'rgba(59,130,246,0.12)' : 'rgba(13,148,136,0.12)',
+                    color: scorePercent >= 80 ? '#5EEAD4' : scorePercent >= 60 ? '#93C5FD' : '#94A3B8' }}>
                   {scorePercent >= 80 ? 'Strong Match' : scorePercent >= 60 ? 'Good Fit' : 'Possible Fit'}
                 </div>
               </div>
@@ -228,7 +228,7 @@ export default function MatchesPage() {
               )}
               {profile?.persona && (
                 <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium border mt-1"
-                  style={{ background: 'rgba(108,71,255,0.08)', borderColor: 'rgba(108,71,255,0.15)', color: '#5EEAD4' }}>
+                  style={{ background: 'rgba(13,148,136,0.08)', borderColor: 'rgba(13,148,136,0.15)', color: '#5EEAD4' }}>
                   {personaLabel[profile.persona] || profile.persona}
                 </span>
               )}
@@ -240,7 +240,7 @@ export default function MatchesPage() {
           )}
 
           {match.reason && (
-            <div className="mt-3 p-3 rounded-xl" style={{ background: 'rgba(108,71,255,0.06)', border: '1px solid rgba(108,71,255,0.08)' }}>
+            <div className="mt-3 p-3 rounded-xl" style={{ background: 'rgba(13,148,136,0.06)', border: '1px solid rgba(13,148,136,0.08)' }}>
               <p className="text-xs text-white/50 leading-relaxed">
                 <span className="text-purple-300/70 font-medium">Why connect: </span>
                 {match.reason}
@@ -300,7 +300,7 @@ export default function MatchesPage() {
               disabled={responding === match.id}
               className="flex-1 py-3 text-sm font-medium transition disabled:opacity-40"
               style={{ color: '#5EEAD4' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(108,71,255,0.08)'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(13,148,136,0.08)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
             >
               {responding === match.id ? 'Sending...' : 'Connect ✓'}
@@ -312,7 +312,7 @@ export default function MatchesPage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: '#0D0B1A' }}>
+    <div className="min-h-screen" style={{ background: '#0F172A' }}>
       <header className="sticky top-0 z-10 border-b border-white/5" style={{ background: 'rgba(13,11,26,0.9)', backdropFilter: 'blur(20px)' }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -321,7 +321,7 @@ export default function MatchesPage() {
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
           <div className="hidden sm:block"><NotificationCenter /></div>
-          <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: 'rgba(108,71,255,0.08)' }}>
+          <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: 'rgba(13,148,136,0.08)' }}>
             {[
               { id: 'pending' as Tab, label: `Pending (${pendingMatches.length})` },
               { id: 'accepted' as Tab, label: `Accepted (${acceptedMatches.length})` },
@@ -355,7 +355,7 @@ export default function MatchesPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by name, persona, industry, company..."
               className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-white placeholder:text-white/20 border border-white/5 focus:border-purple-500/30 focus:outline-none transition"
-              style={{ background: 'rgba(26,18,48,0.6)' }}
+              style={{ background: 'rgba(30,41,59,0.6)' }}
             />
             {searchQuery && (
               <button onClick={() => setSearchQuery('')}
@@ -372,7 +372,7 @@ export default function MatchesPage() {
               <div className="text-center py-16">
                 <span className="text-5xl block mb-4">🔍</span>
                 <h3 className="text-white font-semibold mb-2">No pending matches</h3>
-                <p className="text-white/40 text-sm mb-6">Cleo is working on finding your best connections</p>
+                <p className="text-white/40 text-sm mb-6">Cleya is working on finding your best connections</p>
                 <button
                   onClick={() => router.push('/dashboard')}
                   className="px-5 py-2.5 rounded-xl text-sm font-medium text-white transition"
@@ -433,7 +433,7 @@ export default function MatchesPage() {
 
       {feedbackPrompt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
-          <div className="w-full max-w-sm mx-4 rounded-2xl border border-white/10 p-6 fade-up" style={{ background: '#1a1230' }}>
+          <div className="w-full max-w-sm mx-4 rounded-2xl border border-white/10 p-6 fade-up" style={{ background: '#1E293B' }}>
             <h3 className="text-lg font-semibold text-white mb-1">
               {feedbackPrompt.action === 'ACCEPTED' ? 'Great choice!' : 'Got it!'}
             </h3>

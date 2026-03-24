@@ -218,7 +218,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen" style={{ background: '#0D0B1A' }}>
+      <div className="min-h-screen" style={{ background: '#0F172A' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-12">
           <div className="h-8 w-48 rounded-lg animate-pulse mb-6" style={{ background: 'rgba(255,255,255,0.05)' }} />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
@@ -271,7 +271,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: '#0D0B1A' }}>
+    <div className="min-h-screen" style={{ background: '#0F172A' }}>
       <header role="banner" className="sticky top-0 z-10 border-b border-white/5" style={{ background: 'rgba(13,11,26,0.9)', backdropFilter: 'blur(20px)' }}>
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -279,7 +279,7 @@ export default function DashboardPage() {
               style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
               C
             </div>
-            <h1 className="font-semibold text-white text-sm">Cleo.ai</h1>
+            <h1 className="font-semibold text-white text-sm">Cleya.ai</h1>
           </div>
           <div className="flex items-center gap-2">
             <div className="hidden md:flex items-center gap-2">
@@ -359,8 +359,8 @@ export default function DashboardPage() {
                 C
               </div>
               <div className="flex-1">
-                <h2 className="text-lg font-bold text-white mb-1">Welcome to Cleo.ai!</h2>
-                <p className="text-sm text-white/50 mb-4">Start by telling Cleo about yourself. It takes about 2 minutes and helps us find your best connections in India's startup ecosystem.</p>
+                <h2 className="text-lg font-bold text-white mb-1">Welcome to Cleya.ai!</h2>
+                <p className="text-sm text-white/50 mb-4">Start by telling Cleya about yourself. It takes about 2 minutes and helps us find your best connections in India's startup ecosystem.</p>
                 <div className="flex items-center gap-3 flex-wrap">
                   <button onClick={() => router.push('/chat')}
                     className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition"
@@ -374,10 +374,10 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(26,18,48,0.6)' }}>
+        <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(30,41,59,0.6)' }}>
           <div className="flex items-start gap-4">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg, #0D948820, #0F766E20)', border: '1px solid rgba(108,71,255,0.15)' }}>
+              style={{ background: 'linear-gradient(135deg, #0D948820, #0F766E20)', border: '1px solid rgba(13,148,136,0.15)' }}>
               {personaIcon[profile?.persona || 'OTHER'] || '💬'}
             </div>
             <div className="flex-1 min-w-0">
@@ -387,7 +387,7 @@ export default function DashboardPage() {
                 </h2>
                 {profile?.persona && (
                   <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium border"
-                    style={{ background: 'rgba(108,71,255,0.1)', borderColor: 'rgba(108,71,255,0.2)', color: '#5EEAD4' }}>
+                    style={{ background: 'rgba(13,148,136,0.1)', borderColor: 'rgba(13,148,136,0.2)', color: '#5EEAD4' }}>
                     {personaLabel[profile.persona] || profile.persona}
                   </span>
                 )}
@@ -397,7 +397,7 @@ export default function DashboardPage() {
 
               {profile?.completenessScore !== undefined && (
                 <div className="mt-3 flex items-center gap-3">
-                  <div className="flex-1 h-1.5 rounded-full max-w-xs" style={{ background: 'rgba(108,71,255,0.15)' }}>
+                  <div className="flex-1 h-1.5 rounded-full max-w-xs" style={{ background: 'rgba(13,148,136,0.15)' }}>
                     <div className="h-full rounded-full transition-all duration-700"
                       style={{ width: `${(profile.completenessScore || 0) * 100}%`, background: 'linear-gradient(90deg, #0D9488, #5EEAD4)' }} />
                   </div>
@@ -414,7 +414,7 @@ export default function DashboardPage() {
             { label: 'Pending Review', value: matchStats.pending, icon: '⏳', color: '#f59e0b' },
             { label: 'Accepted Intros', value: matchStats.accepted, icon: '✅', color: '#10b981' },
           ].map((stat) => (
-            <div key={stat.label} className="rounded-2xl border border-white/5 p-5" style={{ background: 'rgba(26,18,48,0.6)' }}>
+            <div key={stat.label} className="rounded-2xl border border-white/5 p-5" style={{ background: 'rgba(30,41,59,0.6)' }}>
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-lg">{stat.icon}</span>
                 <p className="text-xs font-medium uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.35)' }}>{stat.label}</p>
@@ -461,10 +461,10 @@ export default function DashboardPage() {
 
                 return (
                   <div key={match.id} className="rounded-2xl border border-white/5 p-4 hover:border-purple-500/15 transition"
-                    style={{ background: 'rgba(26,18,48,0.6)' }}>
+                    style={{ background: 'rgba(30,41,59,0.6)' }}>
                     <div className="flex items-start gap-3 mb-3">
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
-                        style={{ background: 'linear-gradient(135deg, #0D948815, #0F766E15)', border: '1px solid rgba(108,71,255,0.12)' }}>
+                        style={{ background: 'linear-gradient(135deg, #0D948815, #0F766E15)', border: '1px solid rgba(13,148,136,0.12)' }}>
                         {personaIcon[otherProfile?.persona || 'OTHER'] || '💬'}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -474,8 +474,8 @@ export default function DashboardPage() {
                           </h4>
                           <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold"
                             style={{
-                              background: scorePercent >= 80 ? 'rgba(13,148,136,0.15)' : scorePercent >= 60 ? 'rgba(59,130,246,0.12)' : 'rgba(108,71,255,0.12)',
-                              color: scorePercent >= 80 ? '#2DD4BF' : scorePercent >= 60 ? '#93C5FD' : '#A09FB5'
+                              background: scorePercent >= 80 ? 'rgba(13,148,136,0.15)' : scorePercent >= 60 ? 'rgba(59,130,246,0.12)' : 'rgba(13,148,136,0.12)',
+                              color: scorePercent >= 80 ? '#5EEAD4' : scorePercent >= 60 ? '#93C5FD' : '#94A3B8'
                             }}>
                             {scorePercent >= 80 ? 'Strong Match' : scorePercent >= 60 ? 'Good Fit' : 'Possible Fit'}
                           </div>
@@ -517,7 +517,7 @@ export default function DashboardPage() {
             <button
               onClick={() => router.push('/matches')}
               className="rounded-2xl border border-white/5 p-5 text-left hover:border-purple-500/20 transition group"
-              style={{ background: 'rgba(26,18,48,0.6)' }}
+              style={{ background: 'rgba(30,41,59,0.6)' }}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-2xl">🎯</span>
@@ -534,7 +534,7 @@ export default function DashboardPage() {
               onClick={handleFindMatches}
               disabled={findingMatches}
               className="rounded-2xl border border-white/5 p-5 text-left hover:border-purple-500/20 transition group disabled:opacity-60"
-              style={{ background: 'rgba(26,18,48,0.6)' }}
+              style={{ background: 'rgba(30,41,59,0.6)' }}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-2xl">🔍</span>
@@ -549,7 +549,7 @@ export default function DashboardPage() {
             <button
               onClick={() => router.push('/profile')}
               className="rounded-2xl border border-white/5 p-5 text-left hover:border-purple-500/20 transition group"
-              style={{ background: 'rgba(26,18,48,0.6)' }}
+              style={{ background: 'rgba(30,41,59,0.6)' }}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-2xl">✏️</span>
@@ -562,13 +562,13 @@ export default function DashboardPage() {
             <button
               onClick={() => router.push('/chat')}
               className="rounded-2xl border border-white/5 p-5 text-left hover:border-purple-500/20 transition group"
-              style={{ background: 'rgba(26,18,48,0.6)' }}
+              style={{ background: 'rgba(30,41,59,0.6)' }}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-2xl">💬</span>
                 <span className="text-xs text-white/20 group-hover:text-white/40 transition">→</span>
               </div>
-              <h3 className="font-semibold text-white text-sm mb-1">Chat with Cleo</h3>
+              <h3 className="font-semibold text-white text-sm mb-1">Chat with Cleya</h3>
               <p className="text-xs text-white/40">Start a conversation</p>
             </button>
           </div>
@@ -576,10 +576,10 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {inviteCodes.length > 0 && (
-            <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(26,18,48,0.6)' }}>
+            <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(30,41,59,0.6)' }}>
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-xl">🎟️</span>
-                <h3 className="font-semibold text-white text-sm">Share Cleo</h3>
+                <h3 className="font-semibold text-white text-sm">Share Cleya</h3>
                 <span className="text-xs text-white/30 ml-auto">{inviteCodes.filter(c => !c.used).length} remaining</span>
               </div>
               <div className="space-y-2">
@@ -589,7 +589,7 @@ export default function DashboardPage() {
                     <span className="text-xs font-mono text-white/70 flex-1">cleo.ai/join/{code.code}</span>
                     {!code.used && (
                       <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/join/${code.code}`); setCopiedCode(code.code); setTimeout(() => setCopiedCode(null), 2000); }}
-                        className="text-xs px-2 py-1 rounded-lg transition" style={{ color: copiedCode === code.code ? '#10B981' : '#2DD4BF' }}>
+                        className="text-xs px-2 py-1 rounded-lg transition" style={{ color: copiedCode === code.code ? '#10B981' : '#5EEAD4' }}>
                         {copiedCode === code.code ? 'Copied!' : 'Copy'}
                       </button>
                     )}
@@ -597,11 +597,11 @@ export default function DashboardPage() {
                   </div>
                 ))}
               </div>
-              <p className="text-[11px] text-white/30 mt-3">Share with founders, investors, or talent you think should be on Cleo.</p>
+              <p className="text-[11px] text-white/30 mt-3">Share with founders, investors, or talent you think should be on Cleya.</p>
             </div>
           )}
 
-          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(26,18,48,0.6)' }}>
+          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(30,41,59,0.6)' }}>
             <div className="flex items-center gap-2 mb-4">
               <span className="text-xl">📊</span>
               <h3 className="font-semibold text-white text-sm">Recent Activity</h3>
@@ -629,12 +629,12 @@ export default function DashboardPage() {
         </div>
 
         {profile?.industries && profile.industries.length > 0 && (
-          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(26,18,48,0.6)' }}>
+          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(30,41,59,0.6)' }}>
             <h3 className="font-semibold text-white mb-3 text-sm">Your Industries</h3>
             <div className="flex flex-wrap gap-2">
               {profile.industries.map((ind) => (
                 <span key={ind} className="px-2.5 py-1 rounded-full text-xs border"
-                  style={{ background: 'rgba(108,71,255,0.08)', borderColor: 'rgba(108,71,255,0.15)', color: '#5EEAD4' }}>
+                  style={{ background: 'rgba(13,148,136,0.08)', borderColor: 'rgba(13,148,136,0.15)', color: '#5EEAD4' }}>
                   {ind.replace(/_/g, ' ').replace(/\b(ai|ml|saas|b2b|b2c|iot|ar|vr|hr|it|ui|ux|api|ev|nft|defi|d2c)\b/gi, (m) => m.toUpperCase()).replace(/\b[a-z]/g, (c) => c.toUpperCase())}
                 </span>
               ))}
@@ -668,13 +668,13 @@ export default function DashboardPage() {
 
       {showAIChat && (
         <div className="fixed inset-0 sm:inset-auto sm:bottom-6 sm:right-6 sm:w-96 sm:h-[500px] z-50 flex flex-col rounded-none sm:rounded-2xl border-0 sm:border border-white/10 shadow-2xl"
-          style={{ background: '#0D0B1A' }}>
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/5" style={{ background: 'rgba(26,18,48,0.9)' }}>
+          style={{ background: '#0F172A' }}>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/5" style={{ background: 'rgba(30,41,59,0.9)' }}>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
                 style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>C</div>
               <div>
-                <h3 className="text-sm font-semibold text-white">Chat with Cleo</h3>
+                <h3 className="text-sm font-semibold text-white">Chat with Cleya</h3>
                 <div className="flex items-center gap-1">
                   <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
                   <span className="text-[10px] text-white/30">AI Assistant</span>
@@ -692,16 +692,16 @@ export default function DashboardPage() {
             {aiMessages.length === 0 && (
               <div className="text-center py-8">
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
-                  style={{ background: 'linear-gradient(135deg, #0D948820, #0F766E20)', border: '1px solid rgba(108,71,255,0.15)' }}>
+                  style={{ background: 'linear-gradient(135deg, #0D948820, #0F766E20)', border: '1px solid rgba(13,148,136,0.15)' }}>
                   <span className="text-2xl">✨</span>
                 </div>
-                <p className="text-sm text-white/60 mb-1">Ask Cleo anything!</p>
+                <p className="text-sm text-white/60 mb-1">Ask Cleya anything!</p>
                 <p className="text-xs text-white/30">Get networking tips, match insights, or career advice</p>
                 <div className="mt-4 space-y-2">
                   {['Tell me about my matches', 'Give me networking tips', 'How can I improve my profile?'].map((q) => (
                     <button key={q} onClick={() => { setAiInput(q); }}
                       className="block w-full text-left px-3 py-2 rounded-xl text-xs text-white/40 border border-white/5 hover:border-purple-500/20 hover:text-white/60 transition"
-                      style={{ background: 'rgba(26,18,48,0.4)' }}>
+                      style={{ background: 'rgba(30,41,59,0.4)' }}>
                       {q}
                     </button>
                   ))}
@@ -737,7 +737,7 @@ export default function DashboardPage() {
                 type="text"
                 value={aiInput}
                 onChange={(e) => setAiInput(e.target.value)}
-                placeholder="Ask Cleo anything..."
+                placeholder="Ask Cleya anything..."
                 className="input-dark flex-1 !py-2.5 !text-sm"
               />
               <button

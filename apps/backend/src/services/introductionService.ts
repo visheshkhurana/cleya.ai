@@ -108,8 +108,8 @@ export class IntroductionService {
     const userA = intro.userA;
     const userB = intro.userB;
 
-    const introForA = `🤝 *Cleo Introduction*\n\nGreat news — your introduction has been sent!\n\n${intro.introText}\n\n📧 ${userB.email}${userB.profile?.linkedinUrl ? `\n🔗 ${userB.profile.linkedinUrl}` : ''}\n\n💡 Tip: Reply within 24 hours — first impressions matter!`;
-    const introForB = `🤝 *Cleo Introduction*\n\nGreat news — your introduction has been sent!\n\n${intro.introText}\n\n📧 ${userA.email}${userA.profile?.linkedinUrl ? `\n🔗 ${userA.profile.linkedinUrl}` : ''}\n\n💡 Tip: Reply within 24 hours — first impressions matter!`;
+    const introForA = `🤝 *Cleya Introduction*\n\nGreat news — your introduction has been sent!\n\n${intro.introText}\n\n📧 ${userB.email}${userB.profile?.linkedinUrl ? `\n🔗 ${userB.profile.linkedinUrl}` : ''}\n\n💡 Tip: Reply within 24 hours — first impressions matter!`;
+    const introForB = `🤝 *Cleya Introduction*\n\nGreat news — your introduction has been sent!\n\n${intro.introText}\n\n📧 ${userA.email}${userA.profile?.linkedinUrl ? `\n🔗 ${userA.profile.linkedinUrl}` : ''}\n\n💡 Tip: Reply within 24 hours — first impressions matter!`;
 
     const sendToUser = async (userId: string, phone: string | null, message: string) => {
       if (!phone) return;
@@ -282,7 +282,7 @@ Match reason: ${reason}`,
       const response = await this.ai.chat([
         {
           role: 'system',
-          content: `You are Cleo, an AI superconnector for India's startup ecosystem. Write a warm introduction connecting these two professionals. The tone should be warm, specific, and personal — like a well-connected friend making an intro, not a corporate email. Reference specific details from both profiles. Keep it under 120 words. Start with "Hi [First Name 1] and [First Name 2]," and end with "I'll let you two take it from here!\n— Cleo"`,
+          content: `You are Cleya, an AI superconnector for India's startup ecosystem. Write a warm introduction connecting these two professionals. The tone should be warm, specific, and personal — like a well-connected friend making an intro, not a corporate email. Reference specific details from both profiles. Keep it under 120 words. Start with "Hi [First Name 1] and [First Name 2]," and end with "I'll let you two take it from here!\n— Cleya"`,
         },
         {
           role: 'user',
@@ -307,7 +307,7 @@ Match reason: ${reason}`,
     } catch {
       const nameA = userA.name || userA.email.split('@')[0];
       const nameB = userB.name || userB.email.split('@')[0];
-      return `Hi ${nameA} and ${nameB},\n\nI'd love to connect you two. ${reason || 'You both have complementary backgrounds that could lead to a valuable connection.'}\n\nI'll let you two take it from here!\n— Cleo`;
+      return `Hi ${nameA} and ${nameB},\n\nI'd love to connect you two. ${reason || 'You both have complementary backgrounds that could lead to a valuable connection.'}\n\nI'll let you two take it from here!\n— Cleya`;
     }
   }
 }

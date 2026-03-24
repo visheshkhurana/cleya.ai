@@ -22,9 +22,9 @@ async function main() {
         profile: {
           create: {
             persona: 'OPERATOR',
-            headline: 'Cleo.ai Platform Admin',
+            headline: 'Cleya.ai Platform Admin',
             currentRole: 'Admin',
-            companyName: 'Cleo.ai',
+            companyName: 'Cleya.ai',
             location: 'San Francisco, CA',
             isComplete: true,
             completenessScore: 1.0,

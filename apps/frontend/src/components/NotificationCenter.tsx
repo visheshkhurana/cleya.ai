@@ -124,7 +124,7 @@ export default function NotificationCenter() {
           borderRadius: '10px',
           transition: 'background 0.2s',
         }}
-        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(108,71,255,0.1)')}
+        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(13,148,136,0.1)')}
         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
       >
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -146,7 +146,7 @@ export default function NotificationCenter() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            border: '2px solid #0D0B1A',
+            border: '2px solid #0F172A',
           }}>
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
@@ -163,8 +163,8 @@ export default function NotificationCenter() {
             right: 0,
             width: '380px',
             maxHeight: '480px',
-            background: '#1a1230',
-            border: '1px solid rgba(108,71,255,0.2)',
+            background: '#1E293B',
+            border: '1px solid rgba(13,148,136,0.2)',
             borderRadius: '16px',
             overflow: 'hidden',
             zIndex: 1000,
@@ -181,7 +181,7 @@ export default function NotificationCenter() {
               <span style={{ color: '#fff', fontWeight: 600, fontSize: '15px' }}>Notifications</span>
               {unreadCount > 0 && (
                 <span style={{
-                  background: 'rgba(108,71,255,0.15)',
+                  background: 'rgba(13,148,136,0.15)',
                   color: '#5EEAD4',
                   fontSize: '12px',
                   padding: '2px 8px',
@@ -243,7 +243,7 @@ export default function NotificationCenter() {
                     padding: '14px 20px',
                     borderBottom: '1px solid rgba(255,255,255,0.03)',
                     cursor: n.readAt ? 'default' : 'pointer',
-                    background: n.readAt ? 'transparent' : 'rgba(108,71,255,0.03)',
+                    background: n.readAt ? 'transparent' : 'rgba(13,148,136,0.03)',
                     transition: 'background 0.2s',
                     display: 'flex',
                     gap: '12px',

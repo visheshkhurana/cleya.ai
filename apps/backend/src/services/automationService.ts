@@ -195,8 +195,8 @@ export class AutomationService {
 
           const userName = (participant.user.profile as any)?.currentRole || participant.user.email.split('@')[0];
           const message = matchNames.length > 0
-            ? `Hi ${userName}! Thanks for attending "${event.name}"! Your top matches:\n\n${matchNames.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\nOpen Cleo.ai to review and accept introductions!`
-            : `Hi ${userName}! Thanks for attending "${event.name}"! We're finding connections for you — check Cleo.ai soon!`;
+            ? `Hi ${userName}! Thanks for attending "${event.name}"! Your top matches:\n\n${matchNames.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\nOpen Cleya.ai to review and accept introductions!`
+            : `Hi ${userName}! Thanks for attending "${event.name}"! We're finding connections for you — check Cleya.ai soon!`;
 
           try {
             const result = await messagingService.sendWhatsApp(participant.userId, phone, message);

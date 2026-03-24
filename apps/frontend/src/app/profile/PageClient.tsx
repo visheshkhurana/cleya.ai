@@ -138,7 +138,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0D0B1A' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0F172A' }}>
         <div className="flex items-center gap-3">
           <div className="w-5 h-5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
           <p className="text-purple-300/60 text-sm">Loading profile...</p>
@@ -153,7 +153,7 @@ export default function ProfilePage() {
   const isTalent = persona === 'TALENT' || persona === 'JOB_SEEKER' || persona === 'FREELANCER';
 
   return (
-    <div className="min-h-screen" style={{ background: '#0D0B1A' }}>
+    <div className="min-h-screen" style={{ background: '#0F172A' }}>
       <header className="sticky top-0 z-10 border-b border-white/5" style={{ background: 'rgba(13,11,26,0.9)', backdropFilter: 'blur(20px)' }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -173,16 +173,16 @@ export default function ProfilePage() {
       </header>
 
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
-        <div className="rounded-2xl border border-white/5 p-6 flex items-center gap-4" style={{ background: 'rgba(26,18,48,0.6)' }}>
+        <div className="rounded-2xl border border-white/5 p-6 flex items-center gap-4" style={{ background: 'rgba(30,41,59,0.6)' }}>
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl"
-            style={{ background: 'linear-gradient(135deg, #0D948820, #0F766E20)', border: '1px solid rgba(108,71,255,0.15)' }}>
+            style={{ background: 'linear-gradient(135deg, #0D948820, #0F766E20)', border: '1px solid rgba(13,148,136,0.15)' }}>
             {personaIcon[persona] || '💬'}
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-white">{profile.currentRole || 'Your Profile'}</h2>
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium border"
-                style={{ background: 'rgba(108,71,255,0.1)', borderColor: 'rgba(108,71,255,0.2)', color: '#5EEAD4' }}>
+                style={{ background: 'rgba(13,148,136,0.1)', borderColor: 'rgba(13,148,136,0.2)', color: '#5EEAD4' }}>
                 {personaLabel[persona] || persona}
               </span>
             </div>
@@ -194,7 +194,7 @@ export default function ProfilePage() {
           <div className="rounded-xl p-3 text-sm text-red-400 bg-red-500/10 border border-red-500/20">{error}</div>
         )}
 
-        <div className="rounded-2xl border border-white/5 p-6 space-y-5" style={{ background: 'rgba(26,18,48,0.6)' }}>
+        <div className="rounded-2xl border border-white/5 p-6 space-y-5" style={{ background: 'rgba(30,41,59,0.6)' }}>
           <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Basic Information</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -234,7 +234,7 @@ export default function ProfilePage() {
             <textarea value={profile.bio || ''} onChange={(e) => updateField('bio', e.target.value.slice(0, 1000))}
               placeholder="Tell people about yourself..." rows={3}
               className="input-dark resize-none" maxLength={1000} />
-            <p className="text-[10px] text-right mt-1" style={{ color: (profile.bio?.length || 0) > 900 ? '#ef4444' : '#A09FB5' }}>
+            <p className="text-[10px] text-right mt-1" style={{ color: (profile.bio?.length || 0) > 900 ? '#ef4444' : '#94A3B8' }}>
               {profile.bio?.length || 0}/1000
             </p>
           </div>
@@ -253,7 +253,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: 'rgba(26,18,48,0.6)' }}>
+        <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: 'rgba(30,41,59,0.6)' }}>
           <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Industries</h3>
           <div className="flex flex-wrap gap-2">
             {industryOptions.map((ind) => {
@@ -265,7 +265,7 @@ export default function ProfilePage() {
                       ? 'border-purple-500/40 text-purple-300'
                       : 'border-white/10 text-white/40 hover:border-white/20 hover:text-white/60'
                   }`}
-                  style={selected ? { background: 'rgba(108,71,255,0.15)' } : { background: 'rgba(255,255,255,0.03)' }}>
+                  style={selected ? { background: 'rgba(13,148,136,0.15)' } : { background: 'rgba(255,255,255,0.03)' }}>
                   {ind.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/\bAi Ml\b/, 'AI/ML').replace(/\bSaas\b/, 'SaaS').replace(/\bE Commerce\b/, 'E-Commerce')}
                 </button>
               );
@@ -274,7 +274,7 @@ export default function ProfilePage() {
         </div>
 
         {isFounder && (
-          <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: 'rgba(26,18,48,0.6)' }}>
+          <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: 'rgba(30,41,59,0.6)' }}>
             <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Founder Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -295,7 +295,7 @@ export default function ProfilePage() {
         )}
 
         {isInvestor && (
-          <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: 'rgba(26,18,48,0.6)' }}>
+          <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: 'rgba(30,41,59,0.6)' }}>
             <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Investor Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -313,7 +313,7 @@ export default function ProfilePage() {
         )}
 
         {isTalent && (
-          <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: 'rgba(26,18,48,0.6)' }}>
+          <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: 'rgba(30,41,59,0.6)' }}>
             <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Talent Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>

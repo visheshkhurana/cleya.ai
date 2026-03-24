@@ -50,7 +50,7 @@ function getPasswordStrength(pw: string): { label: string; color: string; width:
   if (/[^A-Za-z0-9]/.test(pw)) score++;
   if (score <= 1) return { label: 'Weak', color: '#ef4444', width: '20%' };
   if (score === 2) return { label: 'Fair', color: '#f59e0b', width: '40%' };
-  if (score === 3) return { label: 'Good', color: '#2DD4BF', width: '65%' };
+  if (score === 3) return { label: 'Good', color: '#5EEAD4', width: '65%' };
   return { label: 'Strong', color: '#10b981', width: '100%' };
 }
 
@@ -228,7 +228,7 @@ export default function Home() {
 
   if (checking) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0B0918' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0F172A' }}>
         <div className="w-10 h-10 border-2 border-boardy-400 border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -238,12 +238,12 @@ export default function Home() {
     { initials: 'AM', quote: 'Met my lead investor within a week of joining.', name: 'Arjun M.', title: 'Founder · Fintech · Bangalore' },
     { initials: 'MI', quote: 'The deal flow quality is leagues ahead of cold inbound.', name: 'Meera I.', title: 'Partner · Blume Ventures' },
     { initials: 'PS', quote: 'Found a CTO match for my healthtech startup in Tier-2.', name: 'Priya S.', title: 'Founder · HealthTech · Delhi NCR' },
-    { initials: 'RV', quote: 'Landed my founding engineer role through a Cleo intro.', name: 'Rahul V.', title: 'Founding Engineer · Bangalore' },
-    { initials: 'NK', quote: 'Cleo connected me to 3 portfolio founders in one day.', name: 'Nandini R.', title: 'Venture Partner · Elevation Capital' },
+    { initials: 'RV', quote: 'Landed my founding engineer role through a Cleya intro.', name: 'Rahul V.', title: 'Founding Engineer · Bangalore' },
+    { initials: 'NK', quote: 'Cleya connected me to 3 portfolio founders in one day.', name: 'Nandini R.', title: 'Venture Partner · Elevation Capital' },
   ];
 
   return (
-    <div className="min-h-screen font-sans" style={{ background: '#0B0918' }}>
+    <div className="min-h-screen font-sans" style={{ background: '#0F172A' }}>
 
       {/* NAV */}
       <nav role="navigation" aria-label="Main navigation" className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -259,7 +259,7 @@ export default function Home() {
               <circle cx="16" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
               <line x1="11" y1="12" x2="13" y2="12" stroke="currentColor" strokeWidth="1.5" />
             </svg>
-            <span className="text-white font-semibold text-lg tracking-tight">Cleo.ai</span>
+            <span className="text-white font-semibold text-lg tracking-tight">Cleya.ai</span>
           </div>
           <div className="hidden md:flex items-center gap-3">
             <button onClick={() => scrollToSection('how-it-works')}
@@ -308,18 +308,18 @@ export default function Home() {
           <div className="grid lg:grid-cols-[55%_45%] gap-12 lg:gap-16 items-center">
             <div>
               <div className="fade-up inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[11px] font-medium uppercase tracking-[0.15em] mb-8 border border-white/[0.08]"
-                style={{ background: 'rgba(13,148,136,0.06)', color: '#2DD4BF' }}>
+                style={{ background: 'rgba(13,148,136,0.06)', color: '#5EEAD4' }}>
                 <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#0D9488' }} />
                 Members-only · Invite or apply
               </div>
 
               <h1 className="fade-up-d1 font-display text-[42px] sm:text-[56px] lg:text-[72px] font-bold text-white leading-[1.08] mb-6 tracking-tight">
-                Meet the right<br />people.{' '}
-                <span className="italic" style={{ color: '#2DD4BF' }}>Faster.</span>
+                Meet the right<br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0D9488] to-[#5EEAD4] italic">people. Faster.</span>
               </h1>
 
-              <p className="fade-up-d2 text-base sm:text-lg leading-relaxed mb-8 max-w-[420px]" style={{ color: '#A09FB5' }}>
-                Cleo is your AI Superconnector — matching founders, investors, and talent across India's startup ecosystem.
+              <p className="fade-up-d2 text-base sm:text-lg leading-relaxed mb-8 max-w-[420px]" style={{ color: '#94A3B8' }}>
+                Cleya is your AI Superconnector — matching founders, investors, and talent across India's startup ecosystem.
               </p>
 
               <div className="fade-up-d3 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
@@ -330,7 +330,7 @@ export default function Home() {
                 </button>
                 <button onClick={() => scrollToSection('how-it-works')}
                   className="group flex items-center gap-1.5 px-4 py-3 text-sm font-medium transition-colors"
-                  style={{ color: '#A09FB5' }}>
+                  style={{ color: '#94A3B8' }}>
                   <span className="border-b border-transparent group-hover:border-white/40 transition-all">See How It Works</span>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="transition-transform group-hover:translate-x-0.5">
                     <path d="M5 12h14M12 5l7 7-7 7" />
@@ -342,17 +342,17 @@ export default function Home() {
             {/* Chat Mockup */}
             <div className="relative hidden md:flex justify-center fade-up-d4">
               <div className="relative w-[300px] rounded-[36px] border-[5px] p-2 shadow-boardy-glow"
-                style={{ borderColor: 'rgba(255,255,255,0.08)', background: '#0B0918' }}>
+                style={{ borderColor: 'rgba(255,255,255,0.08)', background: '#0F172A' }}>
                 <div className="w-20 h-5 bg-black rounded-full absolute top-2 left-1/2 -translate-x-1/2 z-10" />
-                <div className="rounded-[28px] overflow-hidden" style={{ background: '#0B0918' }}>
+                <div className="rounded-[28px] overflow-hidden" style={{ background: '#0F172A' }}>
                   <div className="px-3 py-2.5 flex items-center gap-2 border-b border-white/[0.06]">
                     <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
                       style={{ background: '#0D9488' }}>C</div>
                     <div>
-                      <p className="text-white text-[11px] font-medium">Cleo.ai</p>
+                      <p className="text-white text-[11px] font-medium">Cleya.ai</p>
                       <div className="flex items-center gap-1">
                         <div className="w-1 h-1 rounded-full bg-emerald-400" />
-                        <p className="text-[9px]" style={{ color: '#A09FB5' }}>Active now</p>
+                        <p className="text-[9px]" style={{ color: '#94A3B8' }}>Active now</p>
                       </div>
                     </div>
                   </div>
@@ -360,8 +360,8 @@ export default function Home() {
                     <div className="flex gap-2 items-end">
                       <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] text-white font-bold flex-shrink-0"
                         style={{ background: '#0D9488' }}>C</div>
-                      <div className="rounded-xl rounded-tl-sm px-3 py-2 max-w-[80%]" style={{ background: '#1A1730' }}>
-                        <p className="text-[10px] text-white/80 leading-relaxed">Hey! I'm Cleo. What brings you here today?</p>
+                      <div className="rounded-xl rounded-tl-sm px-3 py-2 max-w-[80%]" style={{ background: '#1E293B' }}>
+                        <p className="text-[10px] text-white/80 leading-relaxed">Hey! I'm Cleya. What brings you here today?</p>
                       </div>
                     </div>
                     <div className="flex justify-end">
@@ -372,7 +372,7 @@ export default function Home() {
                     <div className="flex gap-2 items-end">
                       <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] text-white font-bold flex-shrink-0"
                         style={{ background: '#0D9488' }}>C</div>
-                      <div className="rounded-xl rounded-tl-sm px-3 py-2 max-w-[80%]" style={{ background: '#1A1730' }}>
+                      <div className="rounded-xl rounded-tl-sm px-3 py-2 max-w-[80%]" style={{ background: '#1E293B' }}>
                         <p className="text-[10px] text-white/80 leading-relaxed">I found 3 investors who match your profile perfectly.</p>
                       </div>
                     </div>
@@ -387,12 +387,12 @@ export default function Home() {
                           style={{ background: 'rgba(13,148,136,0.04)' }}>
                           <div className="flex items-center gap-2">
                             <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold"
-                              style={{ background: 'rgba(13,148,136,0.2)', color: '#2DD4BF' }}>
+                              style={{ background: 'rgba(13,148,136,0.2)', color: '#5EEAD4' }}>
                               {m.name.split(' ').map(n => n[0]).join('')}
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-[10px] text-white font-medium">{m.name} — {m.role}</p>
-                              <p className="text-[9px]" style={{ color: '#A09FB5' }}>{m.sector} · {m.match}% match</p>
+                              <p className="text-[9px]" style={{ color: '#94A3B8' }}>{m.sector} · {m.match}% match</p>
                             </div>
                           </div>
                           <div className="mt-1.5 h-[3px] rounded-full overflow-hidden" style={{ background: 'rgba(13,148,136,0.15)' }}>
@@ -405,10 +405,10 @@ export default function Home() {
                     <div className="flex gap-2 items-end mt-2">
                       <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] text-white font-bold flex-shrink-0"
                         style={{ background: '#0D9488' }}>C</div>
-                      <div className="rounded-xl rounded-tl-sm px-3 py-2 flex gap-1" style={{ background: '#1A1730' }}>
-                        <div className="w-1.5 h-1.5 rounded-full typing-dot" style={{ background: '#A09FB5' }} />
-                        <div className="w-1.5 h-1.5 rounded-full typing-dot" style={{ background: '#A09FB5' }} />
-                        <div className="w-1.5 h-1.5 rounded-full typing-dot" style={{ background: '#A09FB5' }} />
+                      <div className="rounded-xl rounded-tl-sm px-3 py-2 flex gap-1" style={{ background: '#1E293B' }}>
+                        <div className="w-1.5 h-1.5 rounded-full typing-dot" style={{ background: '#94A3B8' }} />
+                        <div className="w-1.5 h-1.5 rounded-full typing-dot" style={{ background: '#94A3B8' }} />
+                        <div className="w-1.5 h-1.5 rounded-full typing-dot" style={{ background: '#94A3B8' }} />
                       </div>
                     </div>
                   </div>
@@ -420,12 +420,12 @@ export default function Home() {
       </section>
 
       {/* SOCIAL PROOF — METRICS */}
-      <section id="testimonials" className="border-y border-white/[0.04]" style={{ background: '#0D0B1E' }}>
+      <section id="testimonials" className="border-y border-white/[0.04]" style={{ background: '#0F172A' }}>
         <div className="max-w-6xl mx-auto px-6 py-12 sm:py-16">
           {platformStats && platformStats.memberCount >= 50 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-0 md:divide-x md:divide-white/[0.06]">
             {[
-              { value: platformStats.memberCount, suffix: '+', label: 'Members on Cleo' },
+              { value: platformStats.memberCount, suffix: '+', label: 'Members on Cleya' },
               { value: platformStats.matchCount, suffix: '+', label: 'AI matches made' },
               { value: platformStats.introductionCount, suffix: '', label: 'Introductions sent' },
             ].map((m, i) => (
@@ -433,7 +433,7 @@ export default function Home() {
                 <p className="text-3xl sm:text-[44px] font-bold text-white tracking-tight leading-none mb-2">
                   <CountUp target={m.value} suffix={m.suffix} prefix={''} decimals={0} />
                 </p>
-                <p className="text-xs sm:text-[13px] font-medium" style={{ color: '#A09FB5' }}>{m.label}</p>
+                <p className="text-xs sm:text-[13px] font-medium" style={{ color: '#94A3B8' }}>{m.label}</p>
               </div>
             ))}
           </div>
@@ -452,11 +452,11 @@ export default function Home() {
             {[...testimonials, ...testimonials].map((t, i) => (
               <div key={i} className="inline-flex items-center gap-3 mx-6 flex-shrink-0">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
-                  style={{ background: 'rgba(13,148,136,0.15)', color: '#2DD4BF' }}>
+                  style={{ background: 'rgba(13,148,136,0.15)', color: '#5EEAD4' }}>
                   {t.initials}
                 </div>
                 <p className="text-sm italic" style={{ color: '#E8E4F0' }}>"{t.quote}"</p>
-                <span className="text-xs font-medium" style={{ color: '#A09FB5' }}>— {t.name}, {t.title}</span>
+                <span className="text-xs font-medium" style={{ color: '#94A3B8' }}>— {t.name}, {t.title}</span>
               </div>
             ))}
           </div>
@@ -468,7 +468,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="font-display text-3xl sm:text-[40px] font-bold text-white mb-4 tracking-tight">How it works</h2>
-            <p className="text-base max-w-md mx-auto" style={{ color: '#A09FB5' }}>
+            <p className="text-base max-w-md mx-auto" style={{ color: '#94A3B8' }}>
               Three steps to start building meaningful professional connections.
             </p>
           </div>
@@ -478,41 +478,41 @@ export default function Home() {
               {
                 num: '01',
                 icon: (
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                     <path d="M8 9h8M8 13h4" />
                   </svg>
                 ),
-                title: 'Tell Cleo what you need',
-                desc: 'Describe your goals in plain language — raise a round, find a co-founder, hire engineers, or source deals. Cleo listens like a person.',
+                title: 'Tell Cleya what you need',
+                desc: 'Describe your goals in plain language — raise a round, find a co-founder, hire engineers, or source deals. Cleya listens like a person.',
               },
               {
                 num: '02',
                 icon: (
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="11" cy="11" r="8" />
                     <path d="m21 21-4.35-4.35" />
                     <path d="M8 11h6M11 8v6" />
                   </svg>
                 ),
-                title: 'Cleo finds your matches',
+                title: 'Cleya finds your matches',
                 desc: 'Our AI searches across verified members across India, weighing sector fit, stage, check size, and intent — not just keywords.',
               },
               {
                 num: '03',
                 icon: (
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                     <circle cx="9" cy="7" r="4" />
                     <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
                   </svg>
                 ),
                 title: 'Get warm intros, instantly',
-                desc: 'Cleo makes the introduction with context. No cold emails. No awkward LinkedIn DMs.',
+                desc: 'Cleya makes the introduction with context. No cold emails. No awkward LinkedIn DMs.',
               },
             ].map((step, i) => (
               <div key={i} className="relative rounded-2xl border border-white/[0.06] p-8 group hover:border-boardy-400/20 transition-all duration-300"
-                style={{ background: '#13112A' }}>
+                style={{ background: '#1E293B' }}>
                 <div className="absolute top-4 right-6 font-display text-[64px] font-bold leading-none pointer-events-none"
                   style={{ color: 'rgba(13,148,136,0.06)' }}>{step.num}</div>
                 <div className="mb-5 w-12 h-12 rounded-xl flex items-center justify-center border border-white/[0.06]"
@@ -520,7 +520,7 @@ export default function Home() {
                   {step.icon}
                 </div>
                 <h3 className="font-semibold text-white text-lg mb-3">{step.title}</h3>
-                <p className="text-sm leading-relaxed" style={{ color: '#A09FB5' }}>{step.desc}</p>
+                <p className="text-sm leading-relaxed" style={{ color: '#94A3B8' }}>{step.desc}</p>
               </div>
             ))}
           </div>
@@ -532,8 +532,8 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="font-display text-3xl sm:text-[40px] font-bold text-white mb-4 tracking-tight">Built for every side of the table</h2>
-            <p className="text-base max-w-md mx-auto" style={{ color: '#A09FB5' }}>
-              Whether you're raising, investing, or building — Cleo speaks your language.
+            <p className="text-base max-w-md mx-auto" style={{ color: '#94A3B8' }}>
+              Whether you're raising, investing, or building — Cleya speaks your language.
             </p>
           </div>
 
@@ -541,7 +541,7 @@ export default function Home() {
             {[
               {
                 icon: (
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z" />
                   </svg>
                 ),
@@ -552,7 +552,7 @@ export default function Home() {
               },
               {
                 icon: (
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
                   </svg>
                 ),
@@ -563,7 +563,7 @@ export default function Home() {
               },
               {
                 icon: (
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                     <circle cx="9" cy="7" r="4" />
                     <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
@@ -577,7 +577,7 @@ export default function Home() {
             ].map((persona, i) => (
               <button key={i}
                 className="rounded-2xl border border-white/[0.06] p-8 group hover:border-boardy-400/20 transition-all duration-300 cursor-pointer text-left"
-                style={{ background: '#13112A' }}
+                style={{ background: '#1E293B' }}
                 onClick={() => { setShowAuth(true); setMode('signup'); }}
               >
                 <div className="mb-5 w-12 h-12 rounded-xl flex items-center justify-center border border-white/[0.06]"
@@ -585,8 +585,8 @@ export default function Home() {
                   {persona.icon}
                 </div>
                 <h3 className="font-semibold text-white text-xl mb-1">{persona.title}</h3>
-                <p className="text-sm font-medium mb-3" style={{ color: '#2DD4BF' }}>{persona.tagline}</p>
-                <p className="text-sm leading-relaxed mb-5" style={{ color: '#A09FB5' }}>{persona.desc}</p>
+                <p className="text-sm font-medium mb-3" style={{ color: '#5EEAD4' }}>{persona.tagline}</p>
+                <p className="text-sm leading-relaxed mb-5" style={{ color: '#94A3B8' }}>{persona.desc}</p>
                 <span className="inline-flex items-center text-sm font-medium text-white/70 group-hover:text-white transition-colors">
                   {persona.cta}
                 </span>
@@ -600,18 +600,18 @@ export default function Home() {
       <section className="py-20 sm:py-28 border-t border-white/[0.04]">
         <div className="max-w-4xl mx-auto px-6">
           <div className="rounded-2xl border border-white/[0.06] p-8 sm:p-12 relative overflow-hidden"
-            style={{ background: '#13112A', borderLeftWidth: '4px', borderLeftColor: '#0D9488' }}>
+            style={{ background: '#1E293B', borderLeftWidth: '4px', borderLeftColor: '#0D9488' }}>
             <div className="absolute top-0 right-0 w-[300px] h-[300px] rounded-full pointer-events-none"
               style={{ background: 'radial-gradient(circle, rgba(13,148,136,0.08) 0%, transparent 70%)' }} />
             <blockquote className="font-display text-xl sm:text-[28px] leading-snug text-white/90 mb-8 relative italic">
-              "Cleo introduced me to my lead investor in 48 hours. The match was so precise it felt like Cleo had read my pitch deck."
+              "Cleya introduced me to my lead investor in 48 hours. The match was so precise it felt like Cleya had read my pitch deck."
             </blockquote>
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold"
-                style={{ background: 'rgba(13,148,136,0.15)', color: '#2DD4BF' }}>PS</div>
+                style={{ background: 'rgba(13,148,136,0.15)', color: '#5EEAD4' }}>PS</div>
               <div>
                 <p className="text-white font-semibold text-sm">Priya S.</p>
-                <p className="text-xs" style={{ color: '#A09FB5' }}>Founder, MedScan AI · Delhi NCR · Raised Series A</p>
+                <p className="text-xs" style={{ color: '#94A3B8' }}>Founder, MedScan AI · Delhi NCR · Raised Series A</p>
                 <p className="text-[11px] mt-0.5" style={{ color: '#0D9488' }}>Matched with: Meera I. · Blume Ventures · HealthTech</p>
               </div>
             </div>
@@ -622,16 +622,16 @@ export default function Home() {
       {/* FINAL CTA */}
       <section className="py-24 sm:py-32 relative overflow-hidden border-t border-white/[0.04]">
         <div className="absolute inset-0 pointer-events-none"
-          style={{ background: 'linear-gradient(180deg, #0B0918 0%, #13112A 50%, #0B0918 100%)' }} />
+          style={{ background: 'linear-gradient(180deg, #0F172A 0%, #1E293B 50%, #0F172A 100%)' }} />
         <div className="absolute inset-0 pointer-events-none opacity-[0.03]"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='10' cy='10' r='1' fill='%230D9488'/%3E%3Ccircle cx='30' cy='30' r='1' fill='%230D9488'/%3E%3Ccircle cx='50' cy='10' r='1' fill='%230D9488'/%3E%3Ccircle cx='10' cy='50' r='1' fill='%230D9488'/%3E%3Ccircle cx='50' cy='50' r='1' fill='%230D9488'/%3E%3Cline x1='10' y1='10' x2='30' y2='30' stroke='%230D9488' stroke-width='0.5'/%3E%3Cline x1='30' y1='30' x2='50' y2='10' stroke='%230D9488' stroke-width='0.5'/%3E%3C/svg%3E")`,
           }} />
         <div className="relative max-w-3xl mx-auto px-6 text-center">
           <h2 className="font-display text-3xl sm:text-[44px] font-bold text-white mb-5 tracking-tight leading-tight">
-            Your next co-founder, investor, or hire is already on Cleo.
+            Your next co-founder, investor, or hire is already on Cleya.
           </h2>
-          <p className="text-base mb-10 max-w-lg mx-auto" style={{ color: '#A09FB5' }}>
+          <p className="text-base mb-10 max-w-lg mx-auto" style={{ color: '#94A3B8' }}>
             Apply for early access or log in if you're already a member.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -658,7 +658,7 @@ export default function Home() {
                 <circle cx="16" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
                 <line x1="11" y1="12" x2="13" y2="12" stroke="currentColor" strokeWidth="1.5" />
               </svg>
-              <span className="text-white font-semibold text-sm">Cleo.ai</span>
+              <span className="text-white font-semibold text-sm">Cleya.ai</span>
             </div>
             <div className="flex items-center gap-6">
               {[
@@ -666,11 +666,19 @@ export default function Home() {
                 { label: 'Terms', href: '/terms' },
                 { label: 'Contact', href: '/contact' },
               ].map((link) => (
-                <a key={link.label} href={link.href} className="text-xs transition-colors hover:text-white/60" style={{ color: '#A09FB5' }}>{link.label}</a>
+                <a key={link.label} href={link.href} className="text-xs transition-colors hover:text-white/60" style={{ color: '#94A3B8' }}>{link.label}</a>
+              ))}
+              <span className="w-px h-3 bg-white/10" />
+              {[
+                { label: 'Twitter', href: 'https://twitter.com/cleyaai' },
+                { label: 'LinkedIn', href: 'https://linkedin.com/company/cleyaai' },
+                { label: 'Instagram', href: 'https://instagram.com/cleyaai' },
+              ].map((link) => (
+                <a key={link.label} href={link.href} target="_blank" rel="noopener noreferrer" className="text-xs transition-colors hover:text-white/60" style={{ color: '#94A3B8' }}>{link.label}</a>
               ))}
             </div>
             <p className="text-xs" style={{ color: 'rgba(255,255,255,0.2)' }}>
-              &copy; {new Date().getFullYear()} Cleo.ai — AI-Powered Professional Networking
+              &copy; {new Date().getFullYear()} Cleya.ai — AI-Powered Professional Networking
             </p>
           </div>
         </div>
@@ -698,11 +706,11 @@ export default function Home() {
                 style={{ background: '#0D9488', boxShadow: '0 0 30px rgba(13,148,136,0.3)' }}>
                 <span className="text-white text-xl font-bold">C</span>
               </div>
-              <h2 className="font-display text-2xl font-bold text-white">Welcome to Cleo.ai</h2>
-              <p className="text-sm mt-1" style={{ color: '#A09FB5' }}>AI Superconnector</p>
+              <h2 className="font-display text-2xl font-bold text-white">Welcome to Cleya.ai</h2>
+              <p className="text-sm mt-1" style={{ color: '#94A3B8' }}>AI Superconnector</p>
             </div>
 
-            <div className="rounded-2xl border border-white/[0.08] p-8" style={{ background: 'rgba(26,23,48,0.95)', backdropFilter: 'blur(20px)' }}>
+            <div className="rounded-2xl border border-white/[0.08] p-8" style={{ background: 'rgba(30,41,59,0.95)', backdropFilter: 'blur(20px)' }}>
               <div className="flex gap-1 mb-6 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
                 <button onClick={() => setMode('signup')}
                   className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -723,18 +731,18 @@ export default function Home() {
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2"><path d="M20 6L9 17l-5-5" /></svg>
                     </div>
                     <p className="text-white text-sm font-medium mb-1">Check your email</p>
-                    <p className="text-xs mb-4" style={{ color: '#A09FB5' }}>If an account exists with that email, we sent a reset link.</p>
-                    <button type="button" onClick={() => { setShowForgotPassword(false); setForgotSent(false); }} className="text-xs font-medium" style={{ color: '#2DD4BF' }}>Back to Login</button>
+                    <p className="text-xs mb-4" style={{ color: '#94A3B8' }}>If an account exists with that email, we sent a reset link.</p>
+                    <button type="button" onClick={() => { setShowForgotPassword(false); setForgotSent(false); }} className="text-xs font-medium" style={{ color: '#5EEAD4' }}>Back to Login</button>
                   </div>
                 ) : (
                   <form onSubmit={handleForgotPassword} className="space-y-4">
-                    <p className="text-sm mb-1" style={{ color: '#A09FB5' }}>Enter your email and we&apos;ll send you a reset link.</p>
+                    <p className="text-sm mb-1" style={{ color: '#94A3B8' }}>Enter your email and we&apos;ll send you a reset link.</p>
                     <div>
-                      <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#A09FB5' }}>Email</label>
+                      <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>Email</label>
                       <input type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} placeholder="you@example.com" required className="input-dark" />
                     </div>
                     <button type="submit" disabled={forgotLoading} className="btn-primary">{forgotLoading ? 'Sending...' : 'Send Reset Link'}</button>
-                    <button type="button" onClick={() => setShowForgotPassword(false)} className="w-full text-xs text-center font-medium" style={{ color: '#2DD4BF' }}>Back to Login</button>
+                    <button type="button" onClick={() => setShowForgotPassword(false)} className="w-full text-xs text-center font-medium" style={{ color: '#5EEAD4' }}>Back to Login</button>
                   </form>
                 )
               ) : (
@@ -742,14 +750,14 @@ export default function Home() {
                   <form onSubmit={handleSubmit} className="space-y-4">
                     {mode === 'signup' && (
                       <div>
-                        <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#A09FB5' }}>Full Name</label>
+                        <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>Full Name</label>
                         <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)}
                           placeholder="Your full name" className="input-dark" autoComplete="name" />
                       </div>
                     )}
                     {mode === 'signup' && (
                       <div>
-                        <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#A09FB5' }}>I am a</label>
+                        <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>I am a</label>
                         <div className="grid grid-cols-3 gap-2">
                           {[
                             { value: 'FOUNDER', label: 'Founder', icon: '🚀' },
@@ -763,14 +771,14 @@ export default function Home() {
                                 borderColor: selectedPersona === p.value ? '#0D9488' : 'rgba(255,255,255,0.08)',
                               }}>
                               <span className="text-lg">{p.icon}</span>
-                              <span className="text-xs font-medium" style={{ color: selectedPersona === p.value ? '#2DD4BF' : '#A09FB5' }}>{p.label}</span>
+                              <span className="text-xs font-medium" style={{ color: selectedPersona === p.value ? '#5EEAD4' : '#94A3B8' }}>{p.label}</span>
                             </button>
                           ))}
                         </div>
                       </div>
                     )}
                     <div>
-                      <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#A09FB5' }}>Email</label>
+                      <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>Email</label>
                       <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@example.com" required className="input-dark"
                         autoFocus
@@ -778,7 +786,7 @@ export default function Home() {
                         onKeyDown={(e) => e.stopPropagation()} />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#A09FB5' }}>Password</label>
+                      <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>Password</label>
                       <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
                         placeholder={mode === 'signup' ? 'Min 8 chars, letter + number' : 'Your password'} required
                         minLength={mode === 'signup' ? 8 : undefined} className="input-dark"
@@ -798,7 +806,7 @@ export default function Home() {
                     </div>
                     {mode === 'signup' && (
                       <div>
-                        <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#A09FB5' }}>Confirm Password</label>
+                        <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>Confirm Password</label>
                         <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
                           placeholder="Re-enter password" className="input-dark" />
                         {confirmPassword && password !== confirmPassword && (
@@ -807,13 +815,13 @@ export default function Home() {
                       </div>
                     )}
                     {mode === 'login' && (
-                      <button type="button" onClick={() => setShowForgotPassword(true)} className="text-xs font-medium" style={{ color: '#2DD4BF' }}>Forgot password?</button>
+                      <button type="button" onClick={() => setShowForgotPassword(true)} className="text-xs font-medium" style={{ color: '#5EEAD4' }}>Forgot password?</button>
                     )}
                     {mode === 'signup' && (
                       <label className="flex items-start gap-2 cursor-pointer">
                         <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} className="mt-0.5 rounded border-white/20 bg-white/5 accent-teal-600" />
-                        <span className="text-xs leading-relaxed" style={{ color: '#A09FB5' }}>
-                          I agree to the <a href="/terms" target="_blank" className="underline" style={{ color: '#2DD4BF' }}>Terms of Service</a> and <a href="/privacy" target="_blank" className="underline" style={{ color: '#2DD4BF' }}>Privacy Policy</a>
+                        <span className="text-xs leading-relaxed" style={{ color: '#94A3B8' }}>
+                          I agree to the <a href="/terms" target="_blank" className="underline" style={{ color: '#5EEAD4' }}>Terms of Service</a> and <a href="/privacy" target="_blank" className="underline" style={{ color: '#5EEAD4' }}>Privacy Policy</a>
                         </span>
                       </label>
                     )}
@@ -834,7 +842,7 @@ export default function Home() {
                     <>
                       <div className="flex items-center gap-3 my-4">
                         <div className="flex-1 h-px bg-white/[0.06]" />
-                        <span className="text-xs" style={{ color: '#A09FB5' }}>or</span>
+                        <span className="text-xs" style={{ color: '#94A3B8' }}>or</span>
                         <div className="flex-1 h-px bg-white/[0.06]" />
                       </div>
                       {googleEnabled && (

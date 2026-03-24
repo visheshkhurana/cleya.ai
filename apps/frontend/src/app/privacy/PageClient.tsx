@@ -2,25 +2,25 @@
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen" style={{ background: '#0B0918' }}>
+    <div className="min-h-screen" style={{ background: '#0F172A' }}>
       <nav className="border-b border-white/[0.06]">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold" style={{ background: '#0D9488' }}>C</div>
-            <span className="text-white font-semibold">Cleo.ai</span>
+            <span className="text-white font-semibold">Cleya.ai</span>
           </a>
-          <a href="/" className="text-sm hover:text-white transition" style={{ color: '#A09FB5' }}>Back to Home</a>
+          <a href="/" className="text-sm hover:text-white transition" style={{ color: '#94A3B8' }}>Back to Home</a>
         </div>
       </nav>
 
       <main className="max-w-4xl mx-auto px-6 py-16">
         <h1 className="font-display text-3xl sm:text-4xl font-bold text-white mb-2">Privacy Policy</h1>
-        <p className="text-sm mb-12" style={{ color: '#A09FB5' }}>Last updated: March 18, 2026</p>
+        <p className="text-sm mb-12" style={{ color: '#94A3B8' }}>Last updated: March 18, 2026</p>
 
-        <div className="space-y-8 text-sm leading-relaxed" style={{ color: '#A09FB5' }}>
+        <div className="space-y-8 text-sm leading-relaxed" style={{ color: '#94A3B8' }}>
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">1. Information We Collect</h2>
-            <p className="mb-3">When you use Cleo.ai, we collect information you provide directly to us, including:</p>
+            <p className="mb-3">When you use Cleya.ai, we collect information you provide directly to us, including:</p>
             <ul className="list-disc pl-5 space-y-1">
               <li>Account information (email address, password)</li>
               <li>Profile information (name, role, company, industry, skills, interests, bio, LinkedIn URL)</li>
@@ -48,7 +48,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">3. AI and Data Processing</h2>
-            <p>Cleo.ai uses artificial intelligence to analyze your profile data and match you with relevant professionals. This includes:</p>
+            <p>Cleya.ai uses artificial intelligence to analyze your profile data and match you with relevant professionals. This includes:</p>
             <ul className="list-disc pl-5 space-y-1 mt-2">
               <li>Generating vector embeddings from your profile information for similarity matching</li>
               <li>Processing conversation data to understand your networking goals</li>
@@ -96,7 +96,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">7. Cookies and Tracking Technologies</h2>
-            <p className="mb-2">Cleo.ai uses the following technologies:</p>
+            <p className="mb-2">Cleya.ai uses the following technologies:</p>
             <ul className="list-disc pl-5 space-y-1 mt-2">
               <li><strong className="text-white">Essential cookies:</strong> Required for authentication and session management. These cannot be disabled.</li>
               <li><strong className="text-white">Local storage:</strong> Used to maintain your authentication session and user preferences.</li>
@@ -128,7 +128,7 @@ export default function PrivacyPage() {
               <li><strong className="text-white">Withdraw consent:</strong> Where processing is based on consent, withdraw it at any time.</li>
               <li><strong className="text-white">Non-discrimination:</strong> Exercise your privacy rights without receiving discriminatory treatment.</li>
             </ul>
-            <p className="mt-2">To exercise any of these rights, contact our Data Protection Officer at <a href="mailto:dpo@cleo.ai" className="underline" style={{ color: '#2DD4BF' }}>dpo@cleo.ai</a>. We will respond to your request within 30 days.</p>
+            <p className="mt-2">To exercise any of these rights, contact our Data Protection Officer at <a href="mailto:dpo@cleya.ai" className="underline" style={{ color: '#5EEAD4' }}>dpo@cleya.ai</a>. We will respond to your request within 30 days.</p>
           </section>
 
           <section>
@@ -140,17 +140,17 @@ export default function PrivacyPage() {
               <li>The right to opt out of the sale of your personal information (we do not sell personal data).</li>
               <li>The right to non-discrimination for exercising your CCPA rights.</li>
             </ul>
-            <p className="mt-2">To submit a CCPA request, email <a href="mailto:privacy@cleo.ai" className="underline" style={{ color: '#2DD4BF' }}>privacy@cleo.ai</a> with the subject &quot;CCPA Request.&quot;</p>
+            <p className="mt-2">To submit a CCPA request, email <a href="mailto:privacy@cleya.ai" className="underline" style={{ color: '#5EEAD4' }}>privacy@cleya.ai</a> with the subject &quot;CCPA Request.&quot;</p>
           </section>
 
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">12. Indian Data Protection</h2>
-            <p>Cleo.ai complies with applicable Indian data protection laws, including the Digital Personal Data Protection Act, 2023 (DPDPA). As a data fiduciary, we process your personal data only for legitimate purposes with your consent. You have the right to access, correct, and erase your data, and to nominate a representative to exercise these rights on your behalf. You may file a complaint with the Data Protection Board of India if you believe your rights have been violated.</p>
+            <p>Cleya.ai complies with applicable Indian data protection laws, including the Digital Personal Data Protection Act, 2023 (DPDPA). As a data fiduciary, we process your personal data only for legitimate purposes with your consent. You have the right to access, correct, and erase your data, and to nominate a representative to exercise these rights on your behalf. You may file a complaint with the Data Protection Board of India if you believe your rights have been violated.</p>
           </section>
 
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">13. Children&apos;s Privacy</h2>
-            <p>Cleo.ai is not intended for use by anyone under the age of 18. We do not knowingly collect personal information from children. If we become aware that we have collected data from a person under 18, we will take steps to delete such information promptly. If you believe a child has provided us with personal information, please contact us immediately at <a href="mailto:privacy@cleo.ai" className="underline" style={{ color: '#2DD4BF' }}>privacy@cleo.ai</a>.</p>
+            <p>Cleya.ai is not intended for use by anyone under the age of 18. We do not knowingly collect personal information from children. If we become aware that we have collected data from a person under 18, we will take steps to delete such information promptly. If you believe a child has provided us with personal information, please contact us immediately at <a href="mailto:privacy@cleya.ai" className="underline" style={{ color: '#5EEAD4' }}>privacy@cleya.ai</a>.</p>
           </section>
 
           <section>
@@ -161,15 +161,15 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">15. Data Protection Officer</h2>
             <p className="mb-2">Our Data Protection Officer can be reached at:</p>
-            <p>Email: <a href="mailto:dpo@cleo.ai" className="underline" style={{ color: '#2DD4BF' }}>dpo@cleo.ai</a></p>
-            <p className="mt-2">For general privacy inquiries: <a href="mailto:privacy@cleo.ai" className="underline" style={{ color: '#2DD4BF' }}>privacy@cleo.ai</a></p>
+            <p>Email: <a href="mailto:dpo@cleya.ai" className="underline" style={{ color: '#5EEAD4' }}>dpo@cleya.ai</a></p>
+            <p className="mt-2">For general privacy inquiries: <a href="mailto:privacy@cleya.ai" className="underline" style={{ color: '#5EEAD4' }}>privacy@cleya.ai</a></p>
           </section>
         </div>
       </main>
 
       <footer className="border-t border-white/[0.04] py-8">
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.2)' }}>&copy; {new Date().getFullYear()} Cleo.ai. All rights reserved.</p>
+          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.2)' }}>&copy; {new Date().getFullYear()} Cleya.ai. All rights reserved.</p>
         </div>
       </footer>
     </div>

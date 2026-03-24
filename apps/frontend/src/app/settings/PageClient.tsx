@@ -98,7 +98,7 @@ export default function SettingsPage() {
     return (
       <div style={{
         minHeight: '100vh',
-        background: '#0D0B1A',
+        background: '#0F172A',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -130,12 +130,12 @@ export default function SettingsPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0D0B1A' }}>
+    <div style={{ minHeight: '100vh', background: '#0F172A' }}>
       <nav className="sticky top-0 z-10 border-b border-white/5 px-4 sm:px-8 py-3 flex items-center justify-between" style={{ background: 'rgba(13,11,26,0.9)', backdropFilter: 'blur(20px)' }}>
         <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => router.push('/dashboard')}>
           <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold"
             style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>C</div>
-          <span className="text-white font-semibold text-sm sm:text-base">Cleo.ai</span>
+          <span className="text-white font-semibold text-sm sm:text-base">Cleya.ai</span>
         </div>
         <div className="hidden sm:flex items-center gap-4">
           <button onClick={() => router.push('/dashboard')} className="text-sm text-white/50 hover:text-white/80 transition bg-transparent border-0 cursor-pointer">Dashboard</button>
@@ -151,7 +151,7 @@ export default function SettingsPage() {
 
         {/* Account Info */}
         <section style={{
-          background: '#1a1230',
+          background: '#1E293B',
           border: '1px solid rgba(255,255,255,0.05)',
           borderRadius: '16px',
           padding: '28px',
@@ -174,8 +174,8 @@ export default function SettingsPage() {
                 <label style={labelStyle}>Persona</label>
                 <div style={{
                   padding: '6px 12px',
-                  background: 'rgba(108,71,255,0.1)',
-                  border: '1px solid rgba(108,71,255,0.2)',
+                  background: 'rgba(13,148,136,0.1)',
+                  border: '1px solid rgba(13,148,136,0.2)',
                   borderRadius: '8px',
                   color: '#5EEAD4',
                   fontSize: '13px',
@@ -196,7 +196,7 @@ export default function SettingsPage() {
 
         {/* Change Password */}
         <section style={{
-          background: '#1a1230',
+          background: '#1E293B',
           border: '1px solid rgba(255,255,255,0.05)',
           borderRadius: '16px',
           padding: '28px',
@@ -271,7 +271,7 @@ export default function SettingsPage() {
 
         {/* Session */}
         <section style={{
-          background: '#1a1230',
+          background: '#1E293B',
           border: '1px solid rgba(255,255,255,0.05)',
           borderRadius: '16px',
           padding: '28px',
@@ -299,7 +299,7 @@ export default function SettingsPage() {
 
         {/* Export Data */}
         <section style={{
-          background: '#1a1230',
+          background: '#1E293B',
           border: '1px solid rgba(255,255,255,0.05)',
           borderRadius: '16px',
           padding: '28px',
@@ -351,7 +351,7 @@ export default function SettingsPage() {
 
         {/* Notification Preferences */}
         <section style={{
-          background: '#1a1230',
+          background: '#1E293B',
           border: '1px solid rgba(255,255,255,0.06)',
           borderRadius: '16px',
           padding: '28px',
@@ -421,7 +421,7 @@ export default function SettingsPage() {
 
         {/* Danger Zone */}
         <section style={{
-          background: '#1a1230',
+          background: '#1E293B',
           border: '1px solid rgba(239,68,68,0.15)',
           borderRadius: '16px',
           padding: '28px',

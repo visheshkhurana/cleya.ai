@@ -151,7 +151,7 @@ export default function IntroductionsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0D0B1A' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0F172A' }}>
         <div className="flex items-center gap-3">
           <div className="w-5 h-5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
           <p className="text-white/40 text-sm">Loading introductions...</p>
@@ -161,7 +161,7 @@ export default function IntroductionsPage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#0D0B1A' }}>
+    <div className="min-h-screen" style={{ background: '#0F172A' }}>
       <header className="sticky top-0 z-10 border-b border-white/5" style={{ background: 'rgba(13,11,26,0.9)', backdropFilter: 'blur(20px)' }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -185,7 +185,7 @@ export default function IntroductionsPage() {
           <div className="text-center py-16">
             <span className="text-5xl block mb-4">🤝</span>
             <h3 className="text-white font-semibold mb-2">No introductions yet</h3>
-            <p className="text-white/40 text-sm mb-2">When both sides accept a match, Cleo drafts a warm introduction.</p>
+            <p className="text-white/40 text-sm mb-2">When both sides accept a match, Cleya drafts a warm introduction.</p>
             <p className="text-white/30 text-xs mb-6">You'll be able to preview and approve it before it's sent.</p>
             <button onClick={() => router.push('/matches')}
               className="px-5 py-2.5 rounded-xl text-sm font-medium text-white transition"
@@ -226,7 +226,7 @@ export default function IntroductionsPage() {
                 return (
                   <button key={intro.id} onClick={() => { setSelectedIntro(intro); setEditMode(false); setShowOutcomeModal(false); }}
                     className="w-full text-left rounded-2xl border border-white/5 p-5 hover:border-teal-500/20 transition group"
-                    style={{ background: intro.status === 'PENDING_APPROVAL' ? 'rgba(245,158,11,0.03)' : 'rgba(26,18,48,0.6)' }}>
+                    style={{ background: intro.status === 'PENDING_APPROVAL' ? 'rgba(245,158,11,0.03)' : 'rgba(30,41,59,0.6)' }}>
                     <div className="flex items-start gap-4">
                       <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
                         style={{ background: 'linear-gradient(135deg, #0D948815, #0F766E15)', border: '1px solid rgba(13,148,136,0.12)' }}>
@@ -315,7 +315,7 @@ function IntroDetailModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
       <div className="w-full max-w-lg rounded-2xl border border-white/10 overflow-hidden max-h-[90vh] overflow-y-auto"
-        style={{ background: '#1A1230' }}>
+        style={{ background: '#1E293B' }}>
         <div className="p-5 border-b border-white/5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -447,7 +447,7 @@ function IntroDetailModal({
                   <button key={key} onClick={() => onRecordOutcome(key)}
                     disabled={actionLoading === 'outcome'}
                     className="py-3 rounded-xl text-sm font-medium text-white/70 hover:text-white transition border border-white/10 hover:border-white/20 disabled:opacity-50"
-                    style={{ background: 'rgba(26,18,48,0.8)' }}>
+                    style={{ background: 'rgba(30,41,59,0.8)' }}>
                     <span className="block text-lg mb-1">{val.icon}</span>
                     {val.label}
                   </button>
@@ -468,7 +468,7 @@ function IntroDetailModal({
 
           {intro.status === 'COMPLETED' && intro.outcome && (
             <div className="text-center py-2">
-              <p className="text-xs text-white/30">Thanks for your feedback! This helps Cleo make better matches.</p>
+              <p className="text-xs text-white/30">Thanks for your feedback! This helps Cleya make better matches.</p>
             </div>
           )}
         </div>

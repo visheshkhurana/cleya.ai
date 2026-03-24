@@ -14,7 +14,7 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: '#0D0B1A' }}>
+    <div className="min-h-screen flex items-center justify-center" style={{ background: '#0F172A' }}>
       <div className="text-center px-4">
         <div className="w-20 h-20 mx-auto mb-6 rounded-2xl flex items-center justify-center text-4xl"
           style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }}>

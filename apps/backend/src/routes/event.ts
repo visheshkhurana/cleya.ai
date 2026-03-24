@@ -126,8 +126,8 @@ eventRouter.post('/follow-up', authenticate, async (req: Request, res: Response,
 
       const userName = (participant.user.profile as any)?.currentRole || participant.user.email.split('@')[0];
       const message = matchSummaries.length > 0
-        ? `Hi ${userName}! Thanks for attending "${event.name}"! Here are your top matches from the event:\n\n${matchSummaries.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\nOpen Cleo.ai to review and accept introductions!`
-        : `Hi ${userName}! Thanks for attending "${event.name}"! We're still finding the best connections for you. Check back on Cleo.ai soon!`;
+        ? `Hi ${userName}! Thanks for attending "${event.name}"! Here are your top matches from the event:\n\n${matchSummaries.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\nOpen Cleya.ai to review and accept introductions!`
+        : `Hi ${userName}! Thanks for attending "${event.name}"! We're still finding the best connections for you. Check back on Cleya.ai soon!`;
 
       try {
         const result = await messagingService.sendWhatsApp(participant.userId, phone, message);
