@@ -75,11 +75,28 @@ userRouter.post('/change-password', authenticate, validate(changePasswordSchema)
 
 userRouter.delete('/account', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    await prisma.user.update({
-      where: { id: req.user!.userId },
-      data: { isActive: false },
+    const userId = req.user!.userId;
+
+    await prisma.$transaction(async (tx) => {
+      await tx.activity.deleteMany({ where: { userId } });
+      await tx.notification.deleteMany({ where: { userId } });
+      await tx.matchFeedback.deleteMany({ where: { userId } });
+      await tx.messageRecord.deleteMany({ where: { userId } });
+      await tx.communicationPreference.deleteMany({ where: { userId } });
+      await tx.eventParticipant.deleteMany({ where: { userId } });
+      await tx.introductionRecord.deleteMany({ where: { OR: [{ userAId: userId }, { userBId: userId }] } });
+      await tx.match.deleteMany({ where: { OR: [{ userAId: userId }, { userBId: userId }] } });
+      await tx.dealTracking.deleteMany({ where: { OR: [{ dealPartnerId: userId }, { founderId: userId }] } });
+      await tx.conversation.deleteMany({ where: { userId } });
+      await tx.call.deleteMany({ where: { userId } });
+      await tx.userEmbedding.deleteMany({ where: { userId } });
+      await tx.inviteCode.updateMany({ where: { usedById: userId }, data: { usedById: null, usedAt: null } });
+      await tx.inviteCode.deleteMany({ where: { createdById: userId } });
+      await tx.profile.deleteMany({ where: { userId } });
+      await tx.user.delete({ where: { id: userId } });
     });
-    res.json({ success: true, message: 'Account deactivated' });
+
+    res.json({ success: true, message: 'Account permanently deleted' });
   } catch (error) {
     next(error);
   }

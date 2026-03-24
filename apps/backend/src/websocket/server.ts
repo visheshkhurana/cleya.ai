@@ -31,9 +31,14 @@ export function setupWebSocket(server: HttpServer) {
   wss.on('close', () => clearInterval(interval));
 
   wss.on('connection', (ws: AuthenticatedSocket, req) => {
-    // Authenticate via query param token
     const url = new URL(req.url || '', `http://${req.headers.host}`);
-    const token = url.searchParams.get('token');
+    let token = url.searchParams.get('token');
+
+    if (!token) {
+      const cookieHeader = req.headers.cookie || '';
+      const match = cookieHeader.match(/cleo_auth=([^;]+)/);
+      if (match) token = match[1];
+    }
 
     if (!token) {
       ws.close(4001, 'Authentication required');

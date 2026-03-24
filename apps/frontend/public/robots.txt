@@ -2,6 +2,7 @@ User-agent: *
 Allow: /
 Disallow: /dashboard
 Disallow: /matches
+Disallow: /introductions
 Disallow: /chat
 Disallow: /profile
 Disallow: /settings

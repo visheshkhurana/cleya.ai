@@ -51,19 +51,11 @@ export default function AdminDashboard() {
   const router = useRouter();
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const urlToken = params.get('token');
-      if (urlToken) {
-        api.setToken(urlToken);
-        window.history.replaceState({}, '', '/admin');
-      }
-    }
-    if (!api.getToken()) {
-      router.push('/');
-      return;
-    }
-    loadDashboard();
+    api.getMe().then((user) => {
+      if (!user) { router.push('/'); return; }
+      api.setToken('authenticated');
+      loadDashboard();
+    }).catch(() => { router.push('/'); });
   }, []);
 
   const loadDashboard = async () => {
@@ -230,7 +222,7 @@ export default function AdminDashboard() {
             <h1 className="text-base sm:text-lg font-bold text-white">Cleo.ai Admin</h1>
           </div>
           <button
-            onClick={() => { api.clearToken(); router.push('/'); }}
+            onClick={() => { api.logout().then(() => router.push('/')); }}
             className="text-xs sm:text-sm text-purple-300/60 hover:text-purple-200 transition"
           >
             Sign out

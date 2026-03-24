@@ -129,10 +129,11 @@ export async function findSimilarByVector(
        AND ue2."userId" NOT IN (${placeholders})
        AND 1 - (ue1.vector <=> ue2.vector) >= $2
      ORDER BY ue1.vector <=> ue2.vector
-     LIMIT ${limit}`,
+     LIMIT $${allExcluded.length + 3}`,
     userId,
     minSimilarity,
-    ...allExcluded
+    ...allExcluded,
+    limit
   );
 
   return results.map((r) => ({
@@ -167,7 +168,9 @@ export async function findSimilarByText(
     params.push(...excludeUserIds);
   }
 
-  query += ` ORDER BY ue.vector <=> $1::vector LIMIT ${limit}`;
+  const limitParamIndex = params.length + 1;
+  query += ` ORDER BY ue.vector <=> $1::vector LIMIT $${limitParamIndex}`;
+  params.push(limit);
 
   const results = await prisma.$queryRawUnsafe<VectorSearchResult[]>(query, ...params);
 

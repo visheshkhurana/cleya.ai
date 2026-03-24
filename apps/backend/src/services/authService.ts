@@ -18,7 +18,7 @@ export class AuthService {
     });
 
     if (existing) {
-      throw new AppError(409, 'User already exists with this email or phone', 'USER_EXISTS');
+      throw new AppError(409, 'Unable to create account. Please try a different email.', 'SIGNUP_FAILED');
     }
 
     const passwordHash = await bcrypt.hash(data.password, 12);

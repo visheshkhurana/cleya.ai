@@ -59,8 +59,11 @@ export default function ProfilePage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!api.getToken()) { router.push('/?action=login'); return; }
-    loadProfile();
+    api.getMe().then((user) => {
+      if (!user) { router.push('/?action=login'); return; }
+      api.setToken('authenticated');
+      loadProfile();
+    }).catch(() => { router.push('/?action=login'); });
   }, []);
 
   const loadProfile = async () => {

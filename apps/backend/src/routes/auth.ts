@@ -36,6 +36,16 @@ const loginSchema = z.object({
   password: z.string(),
 });
 
+function setAuthCookie(res: Response, token: string) {
+  res.cookie('cleo_auth', token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+}
+
 authRouter.post('/signup', signupLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = signupSchema.parse(req.body);
@@ -50,6 +60,7 @@ authRouter.post('/signup', signupLimiter, async (req: Request, res: Response, ne
       await authService.verifyEmail(result.user.id);
       result.user.emailVerified = true;
     }
+    setAuthCookie(res, result.token);
     res.status(201).json({ success: true, data: result });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
@@ -71,10 +82,16 @@ authRouter.post('/login', loginLimiter, async (req: Request, res: Response, next
   try {
     const data = loginSchema.parse(req.body);
     const result = await authService.login(data);
+    setAuthCookie(res, result.token);
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
   }
+});
+
+authRouter.post('/logout', (_req: Request, res: Response) => {
+  res.clearCookie('cleo_auth', { httpOnly: true, secure: true, sameSite: 'lax', path: '/' });
+  res.json({ success: true, message: 'Logged out' });
 });
 
 authRouter.get('/me', authenticate, async (req: Request, res: Response, next: NextFunction) => {
@@ -153,9 +170,10 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
     if (result.isNew) {
       emailService.sendWelcome(profile.email).catch(() => {});
     }
+    setAuthCookie(res, result.token);
     const profileComplete = result.user.profile?.isComplete;
     const dest = (result.user.role as string).toLowerCase() === 'admin' ? '/admin' : profileComplete ? '/dashboard' : '/chat';
-    res.redirect(`${env.FRONTEND_URL}${dest}?token=${result.token}`);
+    res.redirect(`${env.FRONTEND_URL}${dest}`);
   } catch (err) {
     console.error('Google OAuth error:', err);
     res.redirect(`${env.FRONTEND_URL}/?error=google_auth_error`);
@@ -250,9 +268,10 @@ authRouter.get('/linkedin/callback', async (req: Request, res: Response) => {
       emailService.sendWelcome(profile.email).catch(() => {});
     }
 
+    setAuthCookie(res, result.token);
     const profileComplete = result.user.profile?.isComplete;
     const dest = (result.user.role as string).toLowerCase() === 'admin' ? '/admin' : profileComplete ? '/dashboard' : '/chat';
-    res.redirect(`${env.FRONTEND_URL}${dest}?token=${result.token}`);
+    res.redirect(`${env.FRONTEND_URL}${dest}`);
   } catch (err) {
     console.error('LinkedIn OAuth error:', err);
     res.redirect(`${env.FRONTEND_URL}/?error=linkedin_auth_error`);
@@ -270,7 +289,7 @@ const resetTokens = new Map<string, { email: string; createdAt: number }>();
 setInterval(() => {
   const now = Date.now();
   for (const [key, val] of resetTokens) {
-    if (now - val.createdAt > 30 * 60 * 1000) resetTokens.delete(key);
+    if (now - val.createdAt > 60 * 60 * 1000) resetTokens.delete(key);
   }
 }, 60 * 1000);
 
@@ -305,7 +324,7 @@ authRouter.post('/reset-password', passwordResetLimiter, async (req: Request, re
     }).parse(req.body);
 
     const entry = resetTokens.get(token);
-    if (!entry || Date.now() - entry.createdAt > 30 * 60 * 1000) {
+    if (!entry || Date.now() - entry.createdAt > 60 * 60 * 1000) {
       res.status(400).json({ success: false, error: { message: 'Invalid or expired reset token', code: 'INVALID_TOKEN' } });
       return;
     }

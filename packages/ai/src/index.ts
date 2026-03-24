@@ -63,23 +63,30 @@ export class AIService {
   private async chatOpenAI(messages: LLMMessage[], options?: Partial<LLMConfig>): Promise<LLMResponse> {
     if (!this.openai) throw new Error('OpenAI client not initialized');
 
-    const response = await this.openai.chat.completions.create({
-      model: options?.model || this.config.model || 'gpt-4-turbo-preview',
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
-      temperature: options?.temperature ?? this.config.temperature ?? 0.7,
-      max_tokens: options?.maxTokens ?? this.config.maxTokens ?? 2048,
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
 
-    return {
-      content: response.choices[0]?.message?.content || '',
-      usage: response.usage
-        ? {
-            promptTokens: response.usage.prompt_tokens,
-            completionTokens: response.usage.completion_tokens,
-            totalTokens: response.usage.total_tokens,
-          }
-        : undefined,
-    };
+    try {
+      const response = await this.openai.chat.completions.create({
+        model: options?.model || this.config.model || 'gpt-4-turbo-preview',
+        messages: messages.map((m) => ({ role: m.role, content: m.content })),
+        temperature: options?.temperature ?? this.config.temperature ?? 0.7,
+        max_tokens: options?.maxTokens ?? this.config.maxTokens ?? 2048,
+      }, { signal: controller.signal as any });
+
+      return {
+        content: response.choices[0]?.message?.content || '',
+        usage: response.usage
+          ? {
+              promptTokens: response.usage.prompt_tokens,
+              completionTokens: response.usage.completion_tokens,
+              totalTokens: response.usage.total_tokens,
+            }
+          : undefined,
+      };
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   private async chatAnthropic(messages: LLMMessage[], options?: Partial<LLMConfig>): Promise<LLMResponse> {

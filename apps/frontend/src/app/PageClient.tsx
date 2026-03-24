@@ -107,15 +107,10 @@ export default function Home() {
         localStorage.setItem('cleo_utm', JSON.stringify(utmData));
       }
 
-      const urlToken = params.get('token');
       const urlError = params.get('error');
       const urlAction = params.get('action');
-      if (urlToken) {
-        api.setToken(urlToken);
-        window.history.replaceState({}, '', '/');
-      }
       if (urlError) {
-        setError('Google sign-in failed. Please try again or use email.');
+        setError('Sign-in failed. Please try again or use email.');
         setShowAuth(true);
         window.history.replaceState({}, '', '/');
       }
@@ -130,25 +125,22 @@ export default function Home() {
     }
     api.getGoogleAuthStatus().then(d => setGoogleEnabled(d.enabled)).catch(() => {});
     api.getLinkedInAuthStatus().then(d => setLinkedinEnabled(d.enabled)).catch(() => {});
-    const token = api.getToken();
-    if (token) {
-      api.getMe().then(async (user) => {
-        if (user?.role === 'ADMIN') {
-          window.location.href = '/admin';
+    api.getMe().then(async (user) => {
+      if (!user) { setChecking(false); return; }
+      api.setToken('authenticated');
+      if (user?.role === 'ADMIN') {
+        window.location.href = '/admin';
+      } else {
+        const profile = await api.getProfile().catch(() => null);
+        if (profile?.isComplete) {
+          window.location.href = '/dashboard';
         } else {
-          const profile = await api.getProfile().catch(() => null);
-          if (profile?.isComplete) {
-            window.location.href = '/dashboard';
-          } else {
-            window.location.href = '/chat';
-          }
+          window.location.href = '/chat';
         }
-      }).catch(() => {
-        setChecking(false);
-      });
-    } else {
+      }
+    }).catch(() => {
       setChecking(false);
-    }
+    });
   }, []);
 
   const handleForgotPassword = async (e: React.FormEvent) => {

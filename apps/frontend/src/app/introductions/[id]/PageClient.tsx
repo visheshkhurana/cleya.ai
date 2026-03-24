@@ -41,8 +41,11 @@ export default function IntroductionDetailPage() {
   const params = useParams();
 
   useEffect(() => {
-    if (!api.getToken()) { router.push('/?action=login'); return; }
-    loadData();
+    api.getMe().then((user) => {
+      if (!user) { router.push('/?action=login'); return; }
+      api.setToken('authenticated');
+      loadData();
+    }).catch(() => { router.push('/?action=login'); });
   }, []);
 
   const loadData = async () => {

@@ -13,10 +13,9 @@ export function useWebSocket() {
   const [connected, setConnected] = useState(false);
 
   const connect = useCallback(() => {
-    const token = api.getToken();
-    if (!token) return;
+    if (!api.getToken()) return;
 
-    const ws = new WebSocket(`${WS_URL}?token=${token}`);
+    const ws = new WebSocket(WS_URL);
 
     ws.onopen = () => {
       setConnected(true);

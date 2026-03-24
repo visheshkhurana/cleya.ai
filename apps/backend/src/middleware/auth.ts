@@ -18,12 +18,20 @@ declare global {
 }
 
 export function authenticate(req: Request, _res: Response, next: NextFunction) {
+  let token: string | undefined;
+
   const header = req.headers.authorization;
-  if (!header?.startsWith('Bearer ')) {
-    throw new AppError(401, 'Missing or invalid authorization header', 'UNAUTHORIZED');
+  if (header?.startsWith('Bearer ')) {
+    token = header.split(' ')[1];
   }
 
-  const token = header.split(' ')[1];
+  if (!token && req.cookies?.cleo_auth) {
+    token = req.cookies.cleo_auth;
+  }
+
+  if (!token) {
+    throw new AppError(401, 'Missing or invalid authorization', 'UNAUTHORIZED');
+  }
 
   try {
     const payload = jwt.verify(token, env.JWT_SECRET) as AuthPayload;

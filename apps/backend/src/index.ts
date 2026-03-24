@@ -132,6 +132,20 @@ function logServiceStatus() {
   console.log('---------------------\n');
 }
 
+process.on('unhandledRejection', (reason: any) => {
+  console.error('[FATAL] Unhandled Promise Rejection:', reason?.message || reason);
+  if (env.SENTRY_DSN) {
+    Sentry.captureException(reason);
+  }
+});
+
+process.on('uncaughtException', (error: Error) => {
+  console.error('[FATAL] Uncaught Exception:', error.message);
+  if (env.SENTRY_DSN) {
+    Sentry.captureException(error);
+  }
+});
+
 server.listen(env.PORT, async () => {
   console.log(`Cleo.ai Backend running on port ${env.PORT}`);
   console.log(`WebSocket ready`);

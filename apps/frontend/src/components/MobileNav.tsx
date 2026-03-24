@@ -147,7 +147,7 @@ export default function MobileNav() {
 
             <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/5">
               <button
-                onClick={() => { api.clearToken(); router.push('/'); }}
+                onClick={() => { api.logout().then(() => router.push('/')); }}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400/60 hover:text-red-400 hover:bg-red-500/5 transition"
               >
                 <span className="text-base" aria-hidden="true">🚪</span>

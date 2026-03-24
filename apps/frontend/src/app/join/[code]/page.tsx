@@ -27,10 +27,9 @@ export default function JoinPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (api.getToken()) {
-      router.push('/dashboard');
-      return;
-    }
+    api.getMe().then((user) => {
+      if (user) { router.push('/dashboard'); return; }
+    }).catch(() => {});
     fetch(`/api/invites/validate/${code}`)
       .then(r => r.json())
       .then(d => {

@@ -7,30 +7,27 @@ function getCookie(name: string): string | null {
 }
 
 class ApiClient {
-  private token: string | null = null;
+  private _authenticated = false;
   private csrfToken: string | null = null;
   private csrfFetching: Promise<void> | null = null;
 
-  setToken(token: string) {
-    this.token = token;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cleo_token', token);
-    }
+  setToken(_token: string) {
+    this._authenticated = true;
   }
 
   getToken(): string | null {
-    if (this.token) return this.token;
-    if (typeof window !== 'undefined') {
-      this.token = localStorage.getItem('cleo_token');
-    }
-    return this.token;
+    return this._authenticated ? '__cookie__' : null;
   }
 
   clearToken() {
-    this.token = null;
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('cleo_token');
-    }
+    this._authenticated = false;
+  }
+
+  async logout() {
+    try {
+      await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
+    } catch {}
+    this._authenticated = false;
   }
 
   private async ensureCsrfToken(): Promise<string | null> {
@@ -61,7 +58,6 @@ class ApiClient {
   }
 
   private async fetch<T = any>(path: string, options: RequestInit = {}): Promise<T> {
-    const token = this.getToken();
     const method = (options.method || 'GET').toUpperCase();
     const needsCsrf = !['GET', 'HEAD', 'OPTIONS'].includes(method);
 
@@ -72,7 +68,6 @@ class ApiClient {
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(csrf ? { 'x-csrf-token': csrf } : {}),
       ...(options.headers as Record<string, string> || {}),
     };
@@ -119,21 +114,17 @@ class ApiClient {
 
   // Auth
   async signup(email: string, password: string, phone?: string, utm?: { utmSource?: string; utmMedium?: string; utmCampaign?: string }, name?: string, persona?: string) {
-    const data = await this.fetch<{ user: any; token: string }>('/auth/signup', {
+    return this.fetch<{ user: any; token: string }>('/auth/signup', {
       method: 'POST',
       body: JSON.stringify({ email, password, phone, name, persona, ...utm }),
     });
-    this.setToken(data.token);
-    return data;
   }
 
   async login(email: string, password: string) {
-    const data = await this.fetch<{ user: any; token: string }>('/auth/login', {
+    return this.fetch<{ user: any; token: string }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
-    this.setToken(data.token);
-    return data;
   }
 
   async getMe() {
@@ -246,9 +237,9 @@ class ApiClient {
   }
 
   async exportMyData(format: 'json' | 'csv' = 'json') {
-    const token = this.getToken();
     const res = await fetch(`${API_BASE}/users/export?format=${format}`, {
-      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), 'x-csrf-token': this.csrfToken || getCookie('cleo_csrf') || '' },
+      credentials: 'include',
+      headers: { 'x-csrf-token': this.csrfToken || getCookie('cleo_csrf') || '' },
     });
     if (!res.ok) throw new Error('Export failed');
     const blob = await res.blob();

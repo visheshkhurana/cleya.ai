@@ -76,19 +76,11 @@ export default function DashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const urlToken = params.get('token');
-      if (urlToken) {
-        api.setToken(urlToken);
-        window.history.replaceState({}, '', '/dashboard');
-      }
-    }
-    if (!api.getToken()) {
-      router.push('/?action=login');
-      return;
-    }
-    loadDashboard();
+    api.getMe().then((user) => {
+      if (!user) { router.push('/?action=login'); return; }
+      api.setToken('authenticated');
+      loadDashboard();
+    }).catch(() => { router.push('/?action=login'); });
 
     const handleVisibility = () => {
       if (document.visibilityState === 'visible' && api.getToken()) {
@@ -139,13 +131,13 @@ export default function DashboardPage() {
       analytics.pageView('dashboard');
 
       fetch('/api/invites/my-codes', {
-        headers: { Authorization: `Bearer ${api.getToken()}` },
+        credentials: 'include',
       }).then(r => r.json()).then(d => {
         if (d.success) setInviteCodes(d.data);
       }).catch(() => {});
 
       fetch('/api/activities?limit=10', {
-        headers: { Authorization: `Bearer ${api.getToken()}` },
+        credentials: 'include',
       }).then(r => r.json()).then(d => {
         if (d.success) setActivities(d.data);
       }).catch(() => {});
@@ -314,7 +306,7 @@ export default function DashboardPage() {
             </div>
             <NotificationCenter />
             <div className="hidden md:flex items-center">
-              <button onClick={() => { api.clearToken(); router.push('/'); }}
+              <button onClick={() => { api.logout().then(() => router.push('/')); }}
                 className="text-xs text-white/30 hover:text-white/60 transition px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20">
                 Sign out
               </button>

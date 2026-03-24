@@ -22,8 +22,10 @@ export default function SettingsPage() {
   const [notifSaving, setNotifSaving] = useState(false);
 
   useEffect(() => {
-    const token = api.getToken();
-    if (!token) { router.push('/?action=login'); return; }
+    api.getMe().then((user) => {
+      if (!user) { router.push('/?action=login'); return; }
+      api.setToken('authenticated');
+    }).catch(() => { router.push('/?action=login'); return; });
     api.getSettings()
       .then(data => {
         setSettings(data);
@@ -69,7 +71,7 @@ export default function SettingsPage() {
     setDeleteLoading(true);
     try {
       await api.deleteAccount();
-      api.clearToken();
+      await api.logout();
       router.push('/');
     } catch {
       setDeleteLoading(false);
@@ -89,8 +91,7 @@ export default function SettingsPage() {
   const handleLogout = () => {
     resetUser();
     setSentryUser(null);
-    api.clearToken();
-    router.push('/');
+    api.logout().then(() => router.push('/'));
   };
 
   if (loading) {

@@ -81,20 +81,18 @@ export default function ChatPage() {
   }, [messages, typing]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const urlToken = params.get('token');
-      if (urlToken) {
-        api.setToken(urlToken);
-        window.history.replaceState({}, '', '/chat');
-      }
-      if (!api.getToken()) {
+    api.getMe().then((user) => {
+      if (!user) {
         sessionStorage.setItem('cleo_login_toast', 'Please log in to access the chat');
         window.location.href = '/?action=login';
         return;
       }
-    }
-    startChat();
+      api.setToken('authenticated');
+      startChat();
+    }).catch(() => {
+      sessionStorage.setItem('cleo_login_toast', 'Please log in to access the chat');
+      window.location.href = '/?action=login';
+    });
   }, []);
 
   useEffect(() => {
@@ -260,7 +258,7 @@ export default function ChatPage() {
             Dashboard
           </button>
           <button
-            onClick={() => { api.clearToken(); localStorage.removeItem(CHAT_STORAGE_KEY); window.location.href = '/'; }}
+            onClick={() => { api.logout().then(() => { localStorage.removeItem(CHAT_STORAGE_KEY); window.location.href = '/'; }); }}
             className="text-xs text-white/30 hover:text-white/60 transition-colors px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20"
           >
             Sign out

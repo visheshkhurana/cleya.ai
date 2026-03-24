@@ -17,7 +17,7 @@ Monorepo with:
 - **Frontend:** Next.js 14, React 18, Tailwind CSS (dark teal theme)
 - **Backend:** Express, TypeScript, WebSocket
 - **Database:** PostgreSQL (Replit built-in), Prisma ORM, pgvector
-- **Auth:** JWT (bcryptjs password hashing), CSRF double-submit cookie protection, email verification on signup
+- **Auth:** JWT in httpOnly secure cookie (`cleo_auth`), bcryptjs password hashing, CSRF double-submit cookie protection, email verification on signup. No JWT in localStorage or URL params. WebSocket auth reads from cookie. Frontend auth checks use `/auth/me` endpoint.
 - **Validation:** Zod schemas on all state-changing endpoints (profile, password, match, introduction)
 - **AI:** OpenAI for embeddings + chat (gpt-4-turbo-preview, text-embedding-3-small)
 
