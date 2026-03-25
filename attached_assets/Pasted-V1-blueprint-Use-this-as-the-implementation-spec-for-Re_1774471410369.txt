@@ -1,0 +1,1980 @@
+V1 blueprint
+Use this as the implementation spec for Replit. I would keep V1 intentionally narrow: one clean operating system for dealflow, IC, portfolio, documents, KPIs, and tasks.
+
+V1 goals
+One company record as the source of truth
+
+One timeline per company
+
+One deal pipeline tied to companies
+
+One document intelligence layer
+
+One portfolio health layer
+
+One task system across all modules
+
+V1 non-goals
+LP portal
+
+cap table modeling
+
+accounting ledger
+
+legal workflow engine
+
+deep email sync on day one
+
+multi-fund waterfalls
+
+Recommended stack
+For Replit, this is the cleanest V1 stack:
+
+Frontend: React + TypeScript + Vite
+
+UI: Tailwind + shadcn/ui
+
+Backend: Express + TypeScript
+
+ORM: Prisma
+
+Database: SQLite for MVP, easy upgrade to Postgres later
+
+Charts: Recharts
+
+Uploads: local /uploads in dev, S3 later
+
+AI: mock service layer first, provider-agnostic interface
+
+V1 data schema
+Use this Prisma schema as the starting point.
+
+text
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  PARTNER
+  INVESTOR
+  ANALYST
+  PLATFORM
+  OPERATIONS
+}
+
+enum CompanyStatus {
+  PIPELINE
+  PORTFOLIO
+  PASSED
+  ARCHIVED
+}
+
+enum DealStage {
+  NEW
+  SCREENED
+  FIRST_MEETING
+  DILIGENCE
+  IC_REVIEW
+  INVESTED
+  PASSED
+}
+
+enum DealStatus {
+  ACTIVE
+  WON
+  LOST
+  ON_HOLD
+}
+
+enum InteractionType {
+  NOTE
+  EMAIL
+  CALL
+  MEETING
+  WHATSAPP
+  LINKEDIN
+  INTERNAL
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  DONE
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum DocumentType {
+  PITCH_DECK
+  MIS
+  FOUNDER_UPDATE
+  BOARD_DECK
+  FINANCIAL_MODEL
+  IC_MEMO
+  LEGAL
+  COMPLIANCE
+  OTHER
+}
+
+enum DocumentStatus {
+  UPLOADED
+  ANALYZING
+  READY
+  FAILED
+}
+
+enum InsightType {
+  COMPANY_OVERVIEW
+  TEAM
+  TRACTION
+  FINANCIAL
+  ROUND
+  RISK
+  KPI
+  CUSTOM
+}
+
+enum MemoStatus {
+  DRAFT
+  REVIEW
+  FINAL
+}
+
+enum Recommendation {
+  STRONG_NO
+  NO
+  WATCH
+  CONDITIONAL_YES
+  YES
+}
+
+enum DiligenceStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETE
+  BLOCKED
+}
+
+enum DiligenceCategory {
+  TEAM
+  MARKET
+  PRODUCT
+  FINANCIALS
+  LEGAL
+  COMPLIANCE
+  REFERENCES
+  TECHNOLOGY
+}
+
+enum OutreachChannel {
+  EMAIL
+  LINKEDIN
+  WARM_INTRO
+}
+
+enum OutreachStatus {
+  DRAFT
+  SCHEDULED
+  SENT
+  REPLIED
+  INTERESTED
+  NOT_NOW
+  CLOSED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum MetricUnit {
+  CURRENCY
+  PERCENT
+  NUMBER
+  MONTHS
+  TEXT
+}
+
+enum MetricDirection {
+  UP_GOOD
+  DOWN_GOOD
+  FLAT_GOOD
+  CONTEXTUAL
+}
+
+enum MetricScope {
+  FUND
+  SOURCING
+  PORTFOLIO
+  COMPANY
+}
+
+enum SupportRequestStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum SupportRequestPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ActivityType {
+  COMPANY_CREATED
+  DEAL_STAGE_CHANGED
+  NOTE_ADDED
+  INTERACTION_LOGGED
+  DOCUMENT_UPLOADED
+  DOCUMENT_ANALYZED
+  TASK_CREATED
+  TASK_COMPLETED
+  KPI_UPDATED
+  MEMO_UPDATED
+  OUTREACH_SENT
+  OUTREACH_REPLIED
+  PORTFOLIO_UPDATE_RECEIVED
+  SUPPORT_REQUEST_CREATED
+}
+
+model User {
+  id            String            @id @default(cuid())
+  name          String
+  email         String            @unique
+  role          UserRole
+  avatarUrl     String?
+  isActive      Boolean           @default(true)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  ownedDeals    Deal[]            @relation("DealOwner")
+  tasks         Task[]            @relation("TaskOwner")
+  interactions  Interaction[]     @relation("InteractionOwner")
+  memosCreated  InvestmentMemo[]  @relation("MemoCreator")
+  portfolioOwned PortfolioProfile[] @relation("PortfolioOwner")
+}
+
+model Company {
+  id                String             @id @default(cuid())
+  name              String
+  slug              String             @unique
+  website           String?
+  sector            String
+  subSector         String?
+  geography         String?
+  hqCity            String?
+  hqCountry         String?
+  businessModel     String?
+  foundedYear       Int?
+  oneLiner          String?
+  description       String?
+  sourceChannel     String?
+  sourceDetail      String?
+  thesisFitScore    Int?
+  thesisFitNotes    String?
+  riskLevel         RiskLevel          @default(LOW)
+  status            CompanyStatus      @default(PIPELINE)
+  currentRound      String?
+  roundAskUsd       Float?
+  lastInteractionAt DateTime?
+  nextActionAt      DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  founders          CompanyFounder[]
+  deals             Deal[]
+  interactions      Interaction[]
+  tasks             Task[]
+  documents         Document[]
+  memos             InvestmentMemo[]
+  portfolioProfile  PortfolioProfile?
+  outreachSequences OutreachSequence[]
+  kpiSnapshots      KpiSnapshot[]
+  supportRequests   SupportRequest[]
+  activityEvents    ActivityEvent[]
+
+  @@index([name])
+  @@index([sector])
+  @@index([status])
+}
+
+model Founder {
+  id                String           @id @default(cuid())
+  name              String
+  email             String?
+  phone             String?
+  linkedinUrl       String?
+  title             String?
+  backgroundSummary String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  companies         CompanyFounder[]
+}
+
+model CompanyFounder {
+  id         String   @id @default(cuid())
+  companyId  String
+  founderId  String
+  role       String?
+  isPrimary  Boolean  @default(false)
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  founder    Founder  @relation(fields: [founderId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, founderId])
+}
+
+model Deal {
+  id                String      @id @default(cuid())
+  companyId         String
+  ownerId           String
+  stage             DealStage
+  status            DealStatus  @default(ACTIVE)
+  roundType         String?
+  chequeMinUsd      Float?
+  chequeMaxUsd      Float?
+  targetOwnershipPct Float?
+  valuationUsd      Float?
+  probability       Int?
+  sourceChannel     String?
+  thesisFitScore    Int?
+  screeningNotes    String?
+  nextStep          String?
+  nextStepDueAt     DateTime?
+  firstMetAt        DateTime?
+  decisionAt        DateTime?
+  passedReason      String?
+  investedAt        DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  company           Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  owner             User        @relation("DealOwner", fields: [ownerId], references: [id])
+  interactions      Interaction[]
+  tasks             Task[]
+  memos             InvestmentMemo[]
+
+  @@index([stage])
+  @@index([ownerId])
+  @@index([companyId])
+}
+
+model Interaction {
+  id           String          @id @default(cuid())
+  companyId    String
+  dealId       String?
+  ownerId      String
+  type         InteractionType
+  title        String
+  notes        String?
+  channel      String?
+  outcome      String?
+  nextStep     String?
+  occurredAt   DateTime
+  createdAt    DateTime        @default(now())
+  company      Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  deal         Deal?           @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  owner        User            @relation("InteractionOwner", fields: [ownerId], references: [id])
+
+  @@index([companyId, occurredAt])
+}
+
+model Task {
+  id           String        @id @default(cuid())
+  title        String
+  description  String?
+  status       TaskStatus    @default(TODO)
+  priority     TaskPriority  @default(MEDIUM)
+  dueAt        DateTime?
+  completedAt  DateTime?
+  companyId    String?
+  dealId       String?
+  ownerId      String
+  sourceType   String?
+  sourceId     String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  company      Company?      @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  deal         Deal?         @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  owner        User          @relation("TaskOwner", fields: [ownerId], references: [id])
+
+  @@index([ownerId, status])
+  @@index([companyId])
+}
+
+model Document {
+  id             String          @id @default(cuid())
+  companyId      String
+  uploadedById   String?
+  title          String
+  type           DocumentType
+  fileName       String
+  fileUrl        String
+  mimeType       String?
+  sizeBytes      Int?
+  documentDate   DateTime?
+  status         DocumentStatus  @default(UPLOADED)
+  aiSummary      String?
+  aiConfidence   Int?
+  tagsJson       String?
+  metadataJson   String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  insights       DocumentInsight[]
+  kpiSnapshots   KpiSnapshot[]
+
+  @@index([companyId, type])
+}
+
+model DocumentInsight {
+  id            String       @id @default(cuid())
+  documentId    String
+  type          InsightType
+  label         String
+  value         String
+  confidence    Int?
+  evidenceText  String?
+  evidencePage  Int?
+  normalizedKey String?
+  createdAt     DateTime     @default(now())
+  document      Document     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, type])
+}
+
+model InvestmentMemo {
+  id                   String         @id @default(cuid())
+  companyId            String
+  dealId               String?
+  createdById          String
+  version              Int            @default(1)
+  status               MemoStatus     @default(DRAFT)
+  recommendation       Recommendation?
+  executiveSummary     String?
+  teamNotes            String?
+  marketNotes          String?
+  productNotes         String?
+  tractionNotes        String?
+  businessModelNotes   String?
+  financialNotes       String?
+  riskNotes            String?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  company              Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  deal                 Deal?          @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  createdBy            User           @relation("MemoCreator", fields: [createdById], references: [id])
+  diligenceItems       DiligenceItem[]
+
+  @@index([companyId])
+}
+
+model DiligenceItem {
+  id          String           @id @default(cuid())
+  memoId      String
+  category    DiligenceCategory
+  title       String
+  notes       String?
+  status      DiligenceStatus  @default(NOT_STARTED)
+  ownerName   String?
+  dueAt       DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  memo        InvestmentMemo   @relation(fields: [memoId], references: [id], onDelete: Cascade)
+
+  @@index([memoId, category])
+}
+
+model PortfolioProfile {
+  id                   String      @id @default(cuid())
+  companyId            String      @unique
+  partnerOwnerId       String
+  investmentDate       DateTime?
+  investedAmountUsd    Float?
+  ownershipPct         Float?
+  boardRole            String?
+  latestValuationUsd   Float?
+  lastUpdateReceivedAt DateTime?
+  runwayMonths         Float?
+  healthScore          Int?
+  notes                String?
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+  company              Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  partnerOwner         User        @relation("PortfolioOwner", fields: [partnerOwnerId], references: [id])
+
+  @@index([partnerOwnerId])
+}
+
+model KpiDefinition {
+  id            String           @id @default(cuid())
+  key           String           @unique
+  label         String
+  scope         MetricScope
+  unit          MetricUnit
+  direction     MetricDirection
+  category      String
+  description   String?
+  isCore        Boolean          @default(true)
+  createdAt     DateTime         @default(now())
+  snapshots     KpiSnapshot[]
+}
+
+model KpiSnapshot {
+  id              String         @id @default(cuid())
+  companyId       String?
+  documentId      String?
+  definitionId    String
+  periodMonth     DateTime
+  value           Float
+  previousValue   Float?
+  deltaPct        Float?
+  note            String?
+  createdAt       DateTime       @default(now())
+  company         Company?       @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  document        Document?      @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  definition      KpiDefinition  @relation(fields: [definitionId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, periodMonth])
+  @@index([definitionId, periodMonth])
+}
+
+model OutreachSequence {
+  id                String           @id @default(cuid())
+  companyId         String
+  ownerId           String
+  channel           OutreachChannel
+  status            OutreachStatus   @default(DRAFT)
+  personalization   String?
+  currentStep       Int              @default(0)
+  lastSentAt        DateTime?
+  nextFollowUpAt    DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  company           Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  messages          OutreachMessage[]
+
+  @@index([companyId, status])
+}
+
+model OutreachMessage {
+  id             String           @id @default(cuid())
+  sequenceId     String
+  stepNumber     Int
+  subject        String?
+  body           String
+  sentAt         DateTime?
+  replySnippet   String?
+  createdAt      DateTime         @default(now())
+  sequence       OutreachSequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+
+  @@index([sequenceId, stepNumber])
+}
+
+model SupportRequest {
+  id            String                  @id @default(cuid())
+  companyId     String
+  title         String
+  description   String?
+  category      String?
+  priority      SupportRequestPriority  @default(MEDIUM)
+  status        SupportRequestStatus    @default(OPEN)
+  ownerName     String?
+  requestedBy   String?
+  openedAt      DateTime                @default(now())
+  resolvedAt    DateTime?
+  company       Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, status])
+}
+
+model ActivityEvent {
+  id           String       @id @default(cuid())
+  companyId    String
+  actorName    String?
+  type         ActivityType
+  entityType   String
+  entityId     String?
+  title        String
+  summary      String?
+  metadataJson String?
+  createdAt    DateTime     @default(now())
+  company      Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, createdAt])
+}
+Schema design notes
+Why this schema works
+Company is the master record
+
+Deal handles pipeline mechanics
+
+PortfolioProfile only exists when a company becomes portfolio
+
+Document + DocumentInsight creates the AI layer
+
+ActivityEvent powers the unified timeline
+
+KpiDefinition + KpiSnapshot gives you a reusable metrics engine
+
+OutreachSequence is simple enough for V1 without becoming a full sales automation product
+
+Important V1 rules
+Do not create separate startup and portfolio company tables
+
+Do not store KPI fields directly on company
+
+Do not make AI outputs overwrite user-entered facts without review
+
+Do not over-model permissions in V1 beyond role-based UI
+
+Exact folder structure
+Use this repo structure.
+
+text
+tribe-os/
+├── client/
+│   ├── index.html
+│   └── src/
+│       ├── main.tsx
+│       ├── App.tsx
+│       ├── styles/
+│       │   ├── globals.css
+│       │   └── tokens.css
+│       ├── lib/
+│       │   ├── api.ts
+│       │   ├── format.ts
+│       │   ├── constants.ts
+│       │   ├── cn.ts
+│       │   └── mock-ai.ts
+│       ├── types/
+│       │   ├── api.ts
+│       │   ├── company.ts
+│       │   ├── deal.ts
+│       │   ├── document.ts
+│       │   ├── kpi.ts
+│       │   └── task.ts
+│       ├── hooks/
+│       │   ├── useCompanies.ts
+│       │   ├── useDeals.ts
+│       │   ├── useDocuments.ts
+│       │   ├── usePortfolio.ts
+│       │   ├── useTasks.ts
+│       │   └── useDashboard.ts
+│       ├── components/
+│       │   ├── layout/
+│       │   │   ├── AppShell.tsx
+│       │   │   ├── Sidebar.tsx
+│       │   │   ├── Topbar.tsx
+│       │   │   └── CommandPalette.tsx
+│       │   ├── dashboard/
+│       │   │   ├── KpiCard.tsx
+│       │   │   ├── ActivityFeed.tsx
+│       │   │   ├── QuickActions.tsx
+│       │   │   └── AlertPanel.tsx
+│       │   ├── pipeline/
+│       │   │   ├── PipelineBoard.tsx
+│       │   │   ├── PipelineTable.tsx
+│       │   │   ├── DealCard.tsx
+│       │   │   └── PipelineFilters.tsx
+│       │   ├── company/
+│       │   │   ├── CompanyHeader.tsx
+│       │   │   ├── CompanyOverview.tsx
+│       │   │   ├── FounderList.tsx
+│       │   │   ├── InteractionList.tsx
+│       │   │   ├── CompanyTimeline.tsx
+│       │   │   ├── RiskFlags.tsx
+│       │   │   └── NextActions.tsx
+│       │   ├── documents/
+│       │   │   ├── DocumentTable.tsx
+│       │   │   ├── UploadDocumentModal.tsx
+│       │   │   ├── DocumentSummaryPanel.tsx
+│       │   │   ├── InsightEvidencePanel.tsx
+│       │   │   └── AnalysisStatus.tsx
+│       │   ├── portfolio/
+│       │   │   ├── PortfolioTable.tsx
+│       │   │   ├── HealthBadge.tsx
+│       │   │   ├── MetricTrendCard.tsx
+│       │   │   └── SupportRequestList.tsx
+│       │   ├── kpis/
+│       │   │   ├── FundKpiSection.tsx
+│       │   │   ├── SourcingKpiSection.tsx
+│       │   │   ├── PortfolioKpiSection.tsx
+│       │   │   └── TrendChart.tsx
+│       │   ├── tasks/
+│       │   │   ├── TaskTable.tsx
+│       │   │   ├── TaskFilters.tsx
+│       │   │   └── TaskDrawer.tsx
+│       │   ├── ic/
+│       │   │   ├── MemoEditor.tsx
+│       │   │   ├── DiligenceChecklist.tsx
+│       │   │   └── RecommendationBadge.tsx
+│       │   └── ui/
+│       ├── pages/
+│       │   ├── HomePage.tsx
+│       │   ├── PipelinePage.tsx
+│       │   ├── CompanyPage.tsx
+│       │   ├── DocumentsPage.tsx
+│       │   ├── PortfolioPage.tsx
+│       │   ├── KpisPage.tsx
+│       │   ├── TasksPage.tsx
+│       │   ├── IcWorkspacePage.tsx
+│       │   ├── OutreachPage.tsx
+│       │   └── SettingsPage.tsx
+│       └── router/
+│           └── routes.tsx
+├── server/
+│   └── src/
+│       ├── index.ts
+│       ├── app.ts
+│       ├── config/
+│       │   └── env.ts
+│       ├── db/
+│       │   ├── prisma.ts
+│       │   └── seed.ts
+│       ├── middleware/
+│       │   ├── errorHandler.ts
+│       │   └── upload.ts
+│       ├── routes/
+│       │   ├── dashboard.routes.ts
+│       │   ├── companies.routes.ts
+│       │   ├── deals.routes.ts
+│       │   ├── documents.routes.ts
+│       │   ├── portfolio.routes.ts
+│       │   ├── kpis.routes.ts
+│       │   ├── tasks.routes.ts
+│       │   ├── memos.routes.ts
+│       │   ├── outreach.routes.ts
+│       │   └── search.routes.ts
+│       ├── controllers/
+│       │   ├── dashboard.controller.ts
+│       │   ├── companies.controller.ts
+│       │   ├── deals.controller.ts
+│       │   ├── documents.controller.ts
+│       │   ├── portfolio.controller.ts
+│       │   ├── kpis.controller.ts
+│       │   ├── tasks.controller.ts
+│       │   ├── memos.controller.ts
+│       │   ├── outreach.controller.ts
+│       │   └── search.controller.ts
+│       ├── services/
+│       │   ├── dashboard.service.ts
+│       │   ├── company.service.ts
+│       │   ├── deal.service.ts
+│       │   ├── document.service.ts
+│       │   ├── analysis.service.ts
+│       │   ├── kpi.service.ts
+│       │   ├── portfolio.service.ts
+│       │   ├── memo.service.ts
+│       │   ├── outreach.service.ts
+│       │   ├── task.service.ts
+│       │   ├── timeline.service.ts
+│       │   └── search.service.ts
+│       ├── validators/
+│       │   ├── company.schema.ts
+│       │   ├── deal.schema.ts
+│       │   ├── document.schema.ts
+│       │   ├── memo.schema.ts
+│       │   └── task.schema.ts
+│       └── utils/
+│           ├── pagination.ts
+│           ├── dates.ts
+│           └── activity.ts
+├── prisma/
+│   ├── schema.prisma
+│   └── migrations/
+├── seed/
+│   ├── users.ts
+│   ├── companies.ts
+│   ├── founders.ts
+│   ├── deals.ts
+│   ├── tasks.ts
+│   ├── documents.ts
+│   ├── memos.ts
+│   ├── kpis.ts
+│   ├── portfolio.ts
+│   └── activity.ts
+├── uploads/
+├── .env
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+└── README.md
+Sample seed data shape
+Keep seed data realistic and relational. Use stable IDs so timelines, documents, and tasks line up cleanly.
+
+Users
+ts
+export const users = [
+  {
+    id: "usr_partner_vishesh",
+    name: "Vishesh Khurana",
+    email: "vysheshk@gmail.com",
+    role: "PARTNER",
+    avatarUrl: "/avatars/vishesh.png"
+  },
+  {
+    id: "usr_analyst_asha",
+    name: "Asha Mehta",
+    email: "asha@tribeindia.in",
+    role: "ANALYST"
+  }
+];
+Companies
+ts
+export const companies = [
+  {
+    id: "cmp_rocketledger",
+    name: "RocketLedger",
+    slug: "rocketledger",
+    website: "https://rocketledger.ai",
+    sector: "Fintech",
+    subSector: "SME Accounting",
+    geography: "India",
+    hqCity: "Bengaluru",
+    hqCountry: "India",
+    businessModel: "B2B SaaS",
+    foundedYear: 2023,
+    oneLiner: "AI bookkeeping stack for Indian SMEs",
+    description: "Automates ledger reconciliation, GST categorization, and monthly close for SMEs.",
+    sourceChannel: "Inbound",
+    sourceDetail: "Founder outreach via warm intro",
+    thesisFitScore: 82,
+    thesisFitNotes: "Strong India SME wedge, early traction, compliance-heavy workflow.",
+    riskLevel: "MEDIUM",
+    status: "PIPELINE",
+    currentRound: "Seed",
+    roundAskUsd: 1500000,
+    lastInteractionAt: "2026-03-20T10:30:00.000Z",
+    nextActionAt: "2026-03-29T10:00:00.000Z"
+  }
+];
+Founders
+ts
+export const founders = [
+  {
+    id: "fnd_arjun",
+    name: "Arjun Rao",
+    email: "arjun@rocketledger.ai",
+    linkedinUrl: "https://linkedin.com/in/arjunrao",
+    title: "Co-founder & CEO",
+    backgroundSummary: "Ex-Razorpay finance automation lead."
+  },
+  {
+    id: "fnd_neha",
+    name: "Neha Menon",
+    email: "neha@rocketledger.ai",
+    linkedinUrl: "https://linkedin.com/in/nehamenon",
+    title: "Co-founder & CTO",
+    backgroundSummary: "Built ERP integrations at Zoho."
+  }
+];
+
+export const companyFounders = [
+  {
+    id: "cf_rocketledger_1",
+    companyId: "cmp_rocketledger",
+    founderId: "fnd_arjun",
+    role: "CEO",
+    isPrimary: true
+  },
+  {
+    id: "cf_rocketledger_2",
+    companyId: "cmp_rocketledger",
+    founderId: "fnd_neha",
+    role: "CTO",
+    isPrimary: false
+  }
+];
+Deals
+ts
+export const deals = [
+  {
+    id: "deal_rocketledger_seed",
+    companyId: "cmp_rocketledger",
+    ownerId: "usr_partner_vishesh",
+    stage: "DILIGENCE",
+    status: "ACTIVE",
+    roundType: "Seed",
+    chequeMinUsd: 150000,
+    chequeMaxUsd: 300000,
+    targetOwnershipPct: 2.5,
+    valuationUsd: 9000000,
+    probability: 62,
+    sourceChannel: "Warm Intro",
+    thesisFitScore: 82,
+    screeningNotes: "Promising early traction, needs deeper diligence on CAC and churn.",
+    nextStep: "Review MIS and conduct customer calls",
+    nextStepDueAt: "2026-03-29T10:00:00.000Z",
+    firstMetAt: "2026-03-10T06:30:00.000Z"
+  }
+];
+Interactions
+ts
+export const interactions = [
+  {
+    id: "int_rocketledger_meeting_1",
+    companyId: "cmp_rocketledger",
+    dealId: "deal_rocketledger_seed",
+    ownerId: "usr_partner_vishesh",
+    type: "MEETING",
+    title: "First diligence call",
+    notes: "Discussed customer retention, pricing, and GST workflow pain points.",
+    channel: "Google Meet",
+    outcome: "Proceed to deeper diligence",
+    nextStep: "Collect March MIS and customer references",
+    occurredAt: "2026-03-20T10:30:00.000Z"
+  }
+];
+Documents
+ts
+export const documents = [
+  {
+    id: "doc_rocketledger_deck",
+    companyId: "cmp_rocketledger",
+    title: "RocketLedger Seed Deck",
+    type: "PITCH_DECK",
+    fileName: "rocketledger-seed-deck.pdf",
+    fileUrl: "/uploads/rocketledger-seed-deck.pdf",
+    mimeType: "application/pdf",
+    sizeBytes: 4201880,
+    documentDate: "2026-03-18T00:00:00.000Z",
+    status: "READY",
+    aiSummary: "AI bookkeeping platform for Indian SMEs with 120 paying customers and strong GST automation wedge.",
+    aiConfidence: 86,
+    tagsJson: JSON.stringify(["fintech", "india", "seed", "smb"])
+  },
+  {
+    id: "doc_rocketledger_mis_mar",
+    companyId: "cmp_rocketledger",
+    title: "RocketLedger MIS - March 2026",
+    type: "MIS",
+    fileName: "rocketledger-mis-mar-2026.xlsx",
+    fileUrl: "/uploads/rocketledger-mis-mar-2026.xlsx",
+    mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    status: "READY",
+    aiSummary: "Revenue grew 18% MoM. Burn stable. Runway 13.2 months.",
+    aiConfidence: 79
+  }
+];
+Document insights
+ts
+export const documentInsights = [
+  {
+    id: "ins_deck_problem",
+    documentId: "doc_rocketledger_deck",
+    type: "COMPANY_OVERVIEW",
+    label: "Problem",
+    value: "Manual bookkeeping and GST workflow for Indian SMEs is fragmented and error-prone.",
+    confidence: 90,
+    evidenceText: "SMEs lose 3-5 days every month in reconciliation and tax prep.",
+    evidencePage: 3,
+    normalizedKey: "problem"
+  },
+  {
+    id: "ins_deck_traction",
+    documentId: "doc_rocketledger_deck",
+    type: "TRACTION",
+    label: "Paying Customers",
+    value: "120",
+    confidence: 84,
+    evidenceText: "120 paying SMEs across Bengaluru, Pune, and Chennai.",
+    evidencePage: 8,
+    normalizedKey: "paying_customers"
+  }
+];
+Investment memos
+ts
+export const memos = [
+  {
+    id: "memo_rocketledger_v1",
+    companyId: "cmp_rocketledger",
+    dealId: "deal_rocketledger_seed",
+    createdById: "usr_analyst_asha",
+    version: 1,
+    status: "REVIEW",
+    recommendation: "CONDITIONAL_YES",
+    executiveSummary: "Strong SME compliance wedge and positive early usage signals, but retention quality needs validation.",
+    teamNotes: "Founders have relevant fintech and ERP backgrounds.",
+    marketNotes: "Large SME digitization market in India.",
+    productNotes: "Clear workflow painkiller with compliance angle.",
+    tractionNotes: "Early but credible paid traction.",
+    businessModelNotes: "Subscription-led SaaS with potential upsell to advisory tooling.",
+    financialNotes: "Burn manageable. Need cohort validation.",
+    riskNotes: "Customer concentration and limited channel proof."
+  }
+];
+Diligence items
+ts
+export const diligenceItems = [
+  {
+    id: "dil_1",
+    memoId: "memo_rocketledger_v1",
+    category: "FINANCIALS",
+    title: "Validate revenue quality and churn",
+    notes: "Need cohort view by customer vintage",
+    status: "IN_PROGRESS",
+    ownerName: "Asha Mehta",
+    dueAt: "2026-03-30T00:00:00.000Z"
+  },
+  {
+    id: "dil_2",
+    memoId: "memo_rocketledger_v1",
+    category: "REFERENCES",
+    title: "Speak with 3 customers",
+    status: "NOT_STARTED",
+    ownerName: "Vishesh Khurana"
+  }
+];
+Portfolio profiles
+ts
+export const portfolioProfiles = [
+  {
+    id: "pf_neocheckout",
+    companyId: "cmp_neocheckout",
+    partnerOwnerId: "usr_partner_vishesh",
+    investmentDate: "2025-07-10T00:00:00.000Z",
+    investedAmountUsd: 250000,
+    ownershipPct: 2.1,
+    boardRole: "Observer",
+    latestValuationUsd: 12000000,
+    lastUpdateReceivedAt: "2026-03-15T00:00:00.000Z",
+    runwayMonths: 11.4,
+    healthScore: 73,
+    notes: "Healthy topline growth but hiring ahead of plan."
+  }
+];
+KPI definitions
+ts
+export const kpiDefinitions = [
+  {
+    id: "kpi_mrr",
+    key: "mrr",
+    label: "MRR",
+    scope: "COMPANY",
+    unit: "CURRENCY",
+    direction: "UP_GOOD",
+    category: "Revenue"
+  },
+  {
+    id: "kpi_burn",
+    key: "burn",
+    label: "Monthly Burn",
+    scope: "COMPANY",
+    unit: "CURRENCY",
+    direction: "DOWN_GOOD",
+    category: "Cash"
+  },
+  {
+    id: "kpi_runway",
+    key: "runway_months",
+    label: "Runway",
+    scope: "COMPANY",
+    unit: "MONTHS",
+    direction: "UP_GOOD",
+    category: "Cash"
+  }
+];
+KPI snapshots
+ts
+export const kpiSnapshots = [
+  {
+    id: "snap_rl_mrr_mar",
+    companyId: "cmp_rocketledger",
+    documentId: "doc_rocketledger_mis_mar",
+    definitionId: "kpi_mrr",
+    periodMonth: "2026-03-01T00:00:00.000Z",
+    value: 42000,
+    previousValue: 35600,
+    deltaPct: 17.98,
+    note: "Driven by 18 new customer adds"
+  },
+  {
+    id: "snap_rl_burn_mar",
+    companyId: "cmp_rocketledger",
+    documentId: "doc_rocketledger_mis_mar",
+    definitionId: "kpi_burn",
+    periodMonth: "2026-03-01T00:00:00.000Z",
+    value: 85000,
+    previousValue: 83000,
+    deltaPct: 2.41
+  },
+  {
+    id: "snap_rl_runway_mar",
+    companyId: "cmp_rocketledger",
+    documentId: "doc_rocketledger_mis_mar",
+    definitionId: "kpi_runway",
+    periodMonth: "2026-03-01T00:00:00.000Z",
+    value: 13.2,
+    previousValue: 12.8,
+    deltaPct: 3.13
+  }
+];
+Tasks
+ts
+export const tasks = [
+  {
+    id: "tsk_rl_1",
+    title: "Review March MIS",
+    description: "Check revenue quality, burn, and runway assumptions.",
+    status: "TODO",
+    priority: "HIGH",
+    dueAt: "2026-03-29T10:00:00.000Z",
+    companyId: "cmp_rocketledger",
+    dealId: "deal_rocketledger_seed",
+    ownerId: "usr_analyst_asha",
+    sourceType: "DOCUMENT",
+    sourceId: "doc_rocketledger_mis_mar"
+  },
+  {
+    id: "tsk_rl_2",
+    title: "Schedule customer reference calls",
+    status: "IN_PROGRESS",
+    priority: "MEDIUM",
+    companyId: "cmp_rocketledger",
+    dealId: "deal_rocketledger_seed",
+    ownerId: "usr_partner_vishesh"
+  }
+];
+Activity events
+ts
+export const activityEvents = [
+  {
+    id: "evt_rl_created",
+    companyId: "cmp_rocketledger",
+    actorName: "System",
+    type: "COMPANY_CREATED",
+    entityType: "company",
+    entityId: "cmp_rocketledger",
+    title: "Company created",
+    summary: "New inbound opportunity added to pipeline."
+  },
+  {
+    id: "evt_rl_doc",
+    companyId: "cmp_rocketledger",
+    actorName: "Asha Mehta",
+    type: "DOCUMENT_ANALYZED",
+    entityType: "document",
+    entityId: "doc_rocketledger_deck",
+    title: "Pitch deck analyzed",
+    summary: "AI extracted traction, round details, and risk flags."
+  }
+];
+Seed coverage targets
+Use this distribution for the demo database:
+
+6 users
+
+25 pipeline companies
+
+8 portfolio companies
+
+40 founders
+
+25 active deals
+
+80 interactions
+
+40 open tasks
+
+30 documents
+
+60 document insights
+
+6 investment memos
+
+25 diligence items
+
+120 KPI snapshots
+
+15 outreach sequences
+
+90 activity events
+
+API routes
+Build these routes first.
+
+Dashboard
+Method	Route	Purpose
+GET	/api/dashboard/summary	Top-level KPIs, counts, alerts
+GET	/api/dashboard/feed	Recent activity feed
+GET	/api/dashboard/agenda	Today’s meetings, follow-ups, due tasks
+Companies
+Method	Route	Purpose
+GET	/api/companies	List companies with filters/search
+POST	/api/companies	Create company
+GET	/api/companies/:companyId	Get company detail
+PATCH	/api/companies/:companyId	Update company
+GET	/api/companies/:companyId/timeline	Get unified timeline
+GET	/api/companies/:companyId/founders	Get founders
+POST	/api/companies/:companyId/founders	Add founder
+GET	/api/companies/:companyId/summary360	Combined company overview payload
+Deals / Pipeline
+Method	Route	Purpose
+GET	/api/deals	List deals with stage/owner filters
+POST	/api/deals	Create new deal
+GET	/api/deals/:dealId	Deal detail
+PATCH	/api/deals/:dealId	Update deal
+PATCH	/api/deals/:dealId/stage	Change stage
+GET	/api/pipeline/board	Kanban payload grouped by stage
+GET	/api/pipeline/table	Table payload with filters
+Interactions
+Method	Route	Purpose
+GET	/api/interactions	Filtered interaction list
+POST	/api/interactions	Log note/email/call/meeting
+GET	/api/companies/:companyId/interactions	Company interactions
+Tasks
+Method	Route	Purpose
+GET	/api/tasks	List tasks with filters
+POST	/api/tasks	Create task
+PATCH	/api/tasks/:taskId	Update task
+PATCH	/api/tasks/:taskId/status	Change status
+GET	/api/tasks/due	Due and overdue task list
+Documents
+Method	Route	Purpose
+GET	/api/documents	List documents with filters
+POST	/api/documents/upload	Upload file + metadata
+GET	/api/documents/:documentId	Document detail
+POST	/api/documents/:documentId/analyze	Trigger AI analysis
+GET	/api/documents/:documentId/insights	Structured insights
+GET	/api/companies/:companyId/documents	Company documents
+Memos / Diligence
+Method	Route	Purpose
+GET	/api/memos	List memos
+POST	/api/memos	Create memo
+GET	/api/memos/:memoId	Memo detail
+PATCH	/api/memos/:memoId	Update memo
+GET	/api/memos/:memoId/diligence	Diligence checklist
+POST	/api/memos/:memoId/diligence	Add diligence item
+PATCH	/api/diligence/:itemId	Update diligence item
+Portfolio
+Method	Route	Purpose
+GET	/api/portfolio	Portfolio list and health summary
+GET	/api/portfolio/:companyId	Portfolio company detail
+PATCH	/api/portfolio/:companyId	Update profile
+GET	/api/portfolio/:companyId/support-requests	Support tickets
+POST	/api/portfolio/:companyId/support-requests	Create support request
+KPIs
+Method	Route	Purpose
+GET	/api/kpis/fund	Fund dashboard metrics
+GET	/api/kpis/sourcing	Sourcing metrics
+GET	/api/kpis/portfolio	Portfolio metrics
+GET	/api/companies/:companyId/kpis	Company metric history
+POST	/api/kpis/snapshots	Create snapshot manually or from parser
+Outreach
+Method	Route	Purpose
+GET	/api/outreach/sequences	List outreach sequences
+POST	/api/outreach/sequences	Create sequence
+POST	/api/outreach/sequences/:sequenceId/generate	Generate draft
+POST	/api/outreach/sequences/:sequenceId/send	Mock send
+PATCH	/api/outreach/sequences/:sequenceId/status	Update sequence status
+Search
+Method	Route	Purpose
+GET	/api/search/global?q=	Global search across companies, docs, tasks
+GET	/api/search/documents?q=	Search docs and insight values
+Combined response payloads
+For frontend speed, add these composite routes.
+
+GET /api/companies/:companyId/summary360
+Return:
+
+company
+
+activeDeal
+
+founders
+
+recentInteractions
+
+openTasks
+
+recentDocuments
+
+latestMemo
+
+latestKpis
+
+timelinePreview
+
+GET /api/dashboard/summary
+Return:
+
+activeDealsCount
+
+dealsNeedingReviewCount
+
+overdueTasksCount
+
+meetingsTodayCount
+
+portfolioMissingUpdatesCount
+
+documentAnalysisPendingCount
+
+topFundKpis
+
+topSourcingKpis
+
+topPortfolioAlerts
+
+Page-by-page PRD
+Home page
+Purpose
+Single-screen command center for partners and investment team.
+
+User questions
+What needs my attention now
+
+Which deals moved
+
+Which tasks are overdue
+
+Which portfolio companies are risky
+
+What new documents were analyzed
+
+Layout
+Top row: 5 KPI cards
+
+Left main column: activity feed
+
+Center column: deals needing action
+
+Right rail: alerts and quick actions
+
+Bottom row: meetings today and portfolio watchlist
+
+Components
+KpiCard
+
+ActivityFeed
+
+NeedsReviewPanel
+
+QuickActions
+
+PortfolioAlertList
+
+TodaysAgenda
+
+Data
+/api/dashboard/summary
+
+/api/dashboard/feed
+
+/api/dashboard/agenda
+
+Actions
+open company
+
+create task
+
+upload document
+
+log interaction
+
+move deal to next stage
+
+Empty states
+no urgent items
+
+no meetings today
+
+no alerts
+
+Acceptance criteria
+User sees all urgent work in under 5 seconds
+
+Every card links to a relevant page
+
+Counts match backend seed data
+
+Pipeline page
+Purpose
+Primary dealflow management workspace.
+
+User questions
+Which deals are where
+
+Which deals are stale
+
+Which sectors are heating up
+
+Which deals need next steps
+
+Layout
+Sticky top filter bar
+
+View toggle: board or table
+
+Board: 7 stage columns
+
+Table: sortable dense rows
+
+Right drawer for quick company preview
+
+Components
+PipelineFilters
+
+PipelineBoard
+
+PipelineTable
+
+DealCard
+
+QuickPreviewDrawer
+
+Data
+/api/pipeline/board
+
+/api/pipeline/table
+
+Actions
+drag deal across stages
+
+assign owner
+
+add note
+
+create task
+
+open company 360
+
+filter by owner, sector, geography, source
+
+Empty states
+no deals in this stage
+
+no results after filtering
+
+Acceptance criteria
+Dragging a card updates stage and timeline
+
+Filters affect board and table consistently
+
+Stale deals visually stand out
+
+Company 360 page
+Purpose
+Single source of truth for one company.
+
+User questions
+What is this company
+
+Who are the founders
+
+What happened recently
+
+What is the current investment status
+
+What are the risks
+
+What documents and KPIs matter
+
+Tabs
+Overview
+
+Founders
+
+Interactions
+
+Documents
+
+Diligence
+
+KPI History
+
+Tasks
+
+Timeline
+
+Header
+company name
+
+sector
+
+current stage
+
+thesis fit
+
+risk badge
+
+owner
+
+last interaction
+
+next step
+
+quick actions
+
+Components
+CompanyHeader
+
+CompanyOverview
+
+FounderList
+
+InteractionList
+
+DocumentTable
+
+RiskFlags
+
+NextActions
+
+CompanyTimeline
+
+Data
+/api/companies/:companyId/summary360
+
+/api/companies/:companyId/timeline
+
+/api/companies/:companyId/kpis
+
+/api/companies/:companyId/documents
+
+Actions
+edit profile
+
+log meeting
+
+upload doc
+
+add task
+
+generate memo draft
+
+change stage
+
+Empty states
+no memo yet
+
+no documents yet
+
+no KPI history yet
+
+Acceptance criteria
+Page loads in one request for core overview
+
+User can understand company state without switching pages
+
+Timeline contains deal, doc, task, and interaction events
+
+Documents page
+Purpose
+AI-powered document intelligence center.
+
+User questions
+What new docs came in
+
+What do they say
+
+Which insights matter
+
+Which documents failed analysis
+
+Layout
+Left: document table
+
+Center: selected document summary
+
+Right: insight evidence and extracted fields
+
+Top: upload button and filters
+
+Components
+UploadDocumentModal
+
+DocumentTable
+
+DocumentSummaryPanel
+
+InsightEvidencePanel
+
+AnalysisStatus
+
+Data
+/api/documents
+
+/api/documents/:documentId
+
+/api/documents/:documentId/insights
+
+Actions
+upload file
+
+assign company
+
+trigger analyze
+
+search docs
+
+filter by type/company/date
+
+open related company
+
+Empty states
+no documents
+
+analysis pending
+
+no insights extracted
+
+Acceptance criteria
+Upload flow works end to end
+
+AI summary and evidence render clearly
+
+Company link is always visible
+
+Portfolio page
+Purpose
+Monitor portfolio health and support needs.
+
+User questions
+Which portfolio companies need attention
+
+Whose runway is falling
+
+Which metrics worsened
+
+Who needs platform help
+
+Layout
+Top: health KPI row
+
+Main: portfolio table
+
+Side panel: support requests
+
+Optional drill-down drawer per company
+
+Components
+PortfolioTable
+
+HealthBadge
+
+MetricTrendCard
+
+SupportRequestList
+
+Data
+/api/portfolio
+
+/api/portfolio/:companyId
+
+Actions
+open portfolio company
+
+log founder update
+
+upload MIS
+
+create support request
+
+assign owner
+
+Empty states
+no active alerts
+
+no support requests
+
+Acceptance criteria
+Health score clearly visible
+
+Runway, burn, revenue trend appear in one row
+
+Missing updates are highlighted
+
+KPI page
+Purpose
+Command cockpit for fund, sourcing, and portfolio performance.
+
+User questions
+Is the fund performing as expected
+
+Are sourcing channels productive
+
+Which portfolio metrics are worsening
+
+Layout
+Top tabs: Fund, Sourcing, Portfolio
+
+Each tab has KPI cards, charts, and small tables
+
+Sticky date-range bar
+
+Components
+FundKpiSection
+
+SourcingKpiSection
+
+PortfolioKpiSection
+
+TrendChart
+
+Data
+/api/kpis/fund
+
+/api/kpis/sourcing
+
+/api/kpis/portfolio
+
+Actions
+change time range
+
+switch KPI scope
+
+drill into a company or sector
+
+Empty states
+insufficient data for date range
+
+Acceptance criteria
+Metrics show current, delta, and trend
+
+Fund and portfolio metrics are visually separated
+
+Charts use consistent scales and labels
+
+Tasks page
+Purpose
+Cross-functional execution center.
+
+User questions
+What is due
+
+Who owns it
+
+Which company is blocked
+
+What came from diligence vs docs vs outreach
+
+Layout
+Dense task table
+
+Sticky filters
+
+Right-side detail drawer
+
+Components
+TaskTable
+
+TaskFilters
+
+TaskDrawer
+
+Data
+/api/tasks
+
+/api/tasks/due
+
+Actions
+create task
+
+reassign
+
+mark done
+
+open related company or deal
+
+Empty states
+no overdue tasks
+
+no tasks for filters
+
+Acceptance criteria
+Fast inline edits
+
+Clear priority hierarchy
+
+Strong linkage back to source entity
+
+IC workspace page
+Purpose
+Structured investment memo and diligence workspace.
+
+User questions
+What is the investment case
+
+What is missing
+
+What are the risks
+
+What is the current recommendation
+
+Layout
+Left: memo sections
+
+Right: diligence checklist and recommendation
+
+Sticky save bar
+
+Components
+MemoEditor
+
+DiligenceChecklist
+
+RecommendationBadge
+
+Data
+/api/memos
+
+/api/memos/:memoId
+
+/api/memos/:memoId/diligence
+
+Actions
+edit memo
+
+add diligence item
+
+change recommendation
+
+open supporting docs
+
+Empty states
+no memo created
+
+no diligence started
+
+Acceptance criteria
+Memo saves section by section
+
+Diligence checklist tied to memo
+
+Recommendation visible at all times
+
+Outreach page
+Purpose
+Simple founder outreach management, not a full sales tool.
+
+User questions
+Who should we contact
+
+What was sent
+
+who replied
+
+who needs follow-up
+
+Layout
+Left: sequence list
+
+Center: message thread
+
+Right: company context and thesis fit
+
+Components
+OutreachSequenceList
+
+OutreachMessageComposer
+
+OutreachStatusBadge
+
+CompanyContextPanel
+
+Data
+/api/outreach/sequences
+
+Actions
+generate draft
+
+mark sent
+
+mark replied
+
+set next follow-up
+
+Empty states
+no outreach sequences
+
+Acceptance criteria
+Message draft uses company context
+
+Status progression is visible
+
+Follow-up date is always shown
+
+Settings page
+Purpose
+Basic operational preferences.
+
+Include
+team roles
+
+metric labels
+
+default pipeline stages
+
+document type labels
+
+AI prompt templates
+
+upload limits
+
+Acceptance criteria
+Enough configuration for demo realism
+
+No enterprise admin complexity
+
+Replit build order
+Tell Replit to build in this order:
+
+Prisma schema and migrations
+
+Seed script
+
+Express app and base routes
+
+App shell and routing
+
+Home page
+
+Pipeline page
+
+Company 360 page
+
+Documents page
+
+Portfolio page
+
+KPI page
+
+Tasks page
+
+IC workspace page
+
+Outreach page
+
+Final polish, loading states, empty states, and timeline consistency
+
+Best implementation instruction to paste next
+Use this follow-up prompt in Replit:
+
+Implement Tribe OS using the provided Prisma schema, folder structure, API route plan, and page PRD. Start by generating the database, seed data, Express routes, and frontend shell. Then build the pages in order: Home, Pipeline, Company 360, Documents, Portfolio, KPIs, Tasks, IC Workspace, Outreach. Prioritize data realism, clean component architecture, and consistent activity timelines. Use mocked AI analysis for documents and memos, but structure services so a real LLM provider can be added later. Keep the interface premium, dense, calm, and venture-focused.
+
+If you want, I can next generate:
+
+the actual schema.prisma file cleaned for copy-paste
+
+a seed.ts starter file
+
+Express route stub code
+
+the exact TypeScript types for the frontend
+
