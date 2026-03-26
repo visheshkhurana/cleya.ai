@@ -26,7 +26,7 @@ dealRouter.post('/scout', authenticate, async (req: Request, res: Response, next
 
 dealRouter.get('/admin/all', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (req.user!.role !== 'ADMIN') {
+    if (req.user!.role !== 'admin') {
       return res.status(403).json({ success: false, error: 'Admin access required' });
     }
 
@@ -113,7 +113,7 @@ dealRouter.patch('/:id', authenticate, async (req: Request, res: Response, next:
     if (!deal) {
       return res.status(404).json({ success: false, error: 'Deal not found' });
     }
-    if (deal.dealPartnerId !== req.user!.userId && req.user!.role !== 'ADMIN') {
+    if (deal.dealPartnerId !== req.user!.userId && req.user!.role !== 'admin') {
       return res.status(403).json({ success: false, error: 'Not authorized' });
     }
 
@@ -159,7 +159,7 @@ dealRouter.delete('/:id', authenticate, async (req: Request, res: Response, next
     if (!deal) {
       return res.status(404).json({ success: false, error: 'Deal not found' });
     }
-    if (deal.dealPartnerId !== req.user!.userId && req.user!.role !== 'ADMIN') {
+    if (deal.dealPartnerId !== req.user!.userId && req.user!.role !== 'admin') {
       return res.status(403).json({ success: false, error: 'Not authorized' });
     }
 

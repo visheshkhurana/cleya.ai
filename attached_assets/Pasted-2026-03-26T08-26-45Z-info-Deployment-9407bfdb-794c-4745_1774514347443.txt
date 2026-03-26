@@ -1,0 +1,111 @@
+2026-03-26T08:26:45Z info: Deployment: 9407bfdb-794c-4745-9d4e-2e04c7b3b11a
+2026-03-26T08:26:45Z info: Build: e9b357d4-35e0-47eb-ad62-ac156dcb71f4
+2026-03-26T08:26:45Z info: Running Security Scan
+2026-03-26T08:26:58Z info: Security Scan Complete
+2026-03-26T08:26:58Z info: Connecting to builder
+2026-03-26T08:26:58Z info: Builder connected
+2026-03-26T08:26:59Z info: Installing packages
+--> npm install
+
+
+up to date, audited 447 packages in 3s
+
+58 packages are looking for funding
+  run `npm fund` for details
+
+
+2 high severity vulnerabilities
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 11.12.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.12.0
+npm notice To update run: npm install -g npm@11.12.0
+npm notice
+
+2026-03-26T08:27:02Z info: Starting Build
+
+> boardy-ai@1.0.0 build
+> npx prisma generate --schema=packages/db/prisma/schema.prisma && npm run build --workspace=packages/types && npm run build --workspace=packages/db && npm run build --workspace=packages/ai && npm run build --workspace=packages/matching && npm run build --workspace=packages/conversation-engine && npm run build --workspace=packages/api && npm run build --workspace=apps/backend && npm run build --workspace=apps/frontend
+
+
+Environment variables loaded from .env
+
+Prisma schema loaded from packages/db/prisma/schema.prisma
+
+
+✔ Generated Prisma Client (v5.22.0) to ./node_modules/@prisma/client in 228ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Want to turn off tips and other hints? https://pris.ly/tip-4-nohints
+
+
+
+> @boardy/types@1.0.0 build
+> tsc -p tsconfig.json
+
+
+
+> @boardy/db@1.0.0 build
+> tsc -p tsconfig.json
+
+
+
+> @boardy/ai@1.0.0 build
+> tsc -p tsconfig.json
+
+
+
+> @boardy/matching@1.0.0 build
+> tsc -p tsconfig.json
+
+
+
+> @boardy/conversation-engine@1.0.0 build
+> tsc -p tsconfig.json
+
+
+
+> @boardy/api@1.0.0 build
+> tsc -p tsconfig.json
+
+
+
+> @boardy/backend@1.0.0 build
+> tsc
+
+
+src/routes/deal.ts(29,9): error TS2367: This comparison appears to be unintentional because the types '"user" | "admin"' and '"ADMIN"' have no overlap.
+
+src/routes/deal.ts(116,52): error TS2367: This comparison appears to be unintentional because the types '"user" | "admin"' and '"ADMIN"' have no overlap.
+src/routes/deal.ts(162,52): error TS2367: This comparison appears to be unintentional because the types '"user" | "admin"' and '"ADMIN"' have no overlap.
+src/routes/event.ts(12,9): error TS2367: This comparison appears to be unintentional because the types '"user" | "admin"' and '"ADMIN"' have no overlap.
+src/routes/event.ts(45,9): error TS2367: This comparison appears to be unintentional because the types '"user" | "admin"' and '"ADMIN"' have no overlap.
+src/routes/event.ts(72,9): error TS2367: This comparison appears to be unintentional because the types '"user" | "admin"' and '"ADMIN"' have no overlap.
+src/routes/event.ts(221,9): error TS2367: This comparison appears to be unintentional because the types '"user" | "admin"' and '"ADMIN"' have no overlap.
+src/routes/event.ts(255,9): error TS2367: This comparison appears to be unintentional because the types '"user" | "admin"' and '"ADMIN"' have no overlap.
+src/routes/event.ts(291,9): error TS2367: This comparison appears to be unintentional because the types '"user" | "admin"' and '"ADMIN"' have no overlap.
+src/routes/event.ts(363,9): error TS2367: This comparison appears to be unintentional because the types '"user" | "admin"' and '"ADMIN"' have no overlap.
+src/routes/match.ts(136,9): error TS2367: This comparison appears to be unintentional because the types '"user" | "admin"' and '"ADMIN"' have no overlap.
+
+npm error Lifecycle script `build` failed with error:
+
+npm error code 2
+
+npm error path /home/runner/workspace/apps/backend
+
+npm error workspace @boardy/backend@1.0.0
+
+npm error location /home/runner/workspace/apps/backend
+npm error command failed
+
+npm error command sh -c tsc
+

@@ -9,7 +9,7 @@ export const eventRouter = Router();
 
 eventRouter.get('/admin/all', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (req.user!.role !== 'ADMIN') {
+    if (req.user!.role !== 'admin') {
       return res.status(403).json({ success: false, error: 'Admin access required' });
     }
 
@@ -42,7 +42,7 @@ eventRouter.get('/admin/all', authenticate, async (req: Request, res: Response, 
 
 eventRouter.post('/match-participants', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (req.user!.role !== 'ADMIN') {
+    if (req.user!.role !== 'admin') {
       return res.status(403).json({ success: false, error: 'Admin access required' });
     }
 
@@ -69,7 +69,7 @@ eventRouter.post('/match-participants', authenticate, async (req: Request, res: 
 
 eventRouter.post('/follow-up', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (req.user!.role !== 'ADMIN') {
+    if (req.user!.role !== 'admin') {
       return res.status(403).json({ success: false, error: 'Admin access required' });
     }
 
@@ -218,7 +218,7 @@ eventRouter.get('/:id', authenticate, async (req: Request, res: Response, next: 
 
 eventRouter.post('/', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (req.user!.role !== 'ADMIN') {
+    if (req.user!.role !== 'admin') {
       return res.status(403).json({ success: false, error: 'Admin access required' });
     }
 
@@ -252,7 +252,7 @@ eventRouter.post('/', authenticate, async (req: Request, res: Response, next: Ne
 
 eventRouter.patch('/:id', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (req.user!.role !== 'ADMIN') {
+    if (req.user!.role !== 'admin') {
       return res.status(403).json({ success: false, error: 'Admin access required' });
     }
 
@@ -288,7 +288,7 @@ eventRouter.patch('/:id', authenticate, async (req: Request, res: Response, next
 
 eventRouter.delete('/:id', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (req.user!.role !== 'ADMIN') {
+    if (req.user!.role !== 'admin') {
       return res.status(403).json({ success: false, error: 'Admin access required' });
     }
 
@@ -360,7 +360,7 @@ eventRouter.delete('/:id/leave', authenticate, async (req: Request, res: Respons
 
 eventRouter.patch('/:eventId/participants/:userId', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (req.user!.role !== 'ADMIN') {
+    if (req.user!.role !== 'admin') {
       return res.status(403).json({ success: false, error: 'Admin access required' });
     }
 
