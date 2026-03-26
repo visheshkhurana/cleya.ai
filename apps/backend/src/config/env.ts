@@ -37,7 +37,7 @@ const envSchema = z.object({
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
-  FROM_EMAIL: z.string().default('hello@cleo.ai'),
+  FROM_EMAIL: z.string().default('hello@cleya.ai'),
 
   ADMIN_EMAIL: z.string().optional(),
   ADMIN_PASSWORD: z.string().optional(),

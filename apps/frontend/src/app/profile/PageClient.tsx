@@ -140,8 +140,8 @@ export default function ProfilePage() {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: '#0F172A' }}>
         <div className="flex items-center gap-3">
-          <div className="w-5 h-5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
-          <p className="text-purple-300/60 text-sm">Loading profile...</p>
+          <div className="w-5 h-5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
+          <p className="text-slate-400 text-sm">Loading profile...</p>
         </div>
       </div>
     );
@@ -262,7 +262,7 @@ export default function ProfilePage() {
                 <button key={ind} onClick={() => toggleIndustry(ind)}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
                     selected
-                      ? 'border-purple-500/40 text-purple-300'
+                      ? 'border-teal-500/40 text-teal-300'
                       : 'border-white/10 text-white/40 hover:border-white/20 hover:text-white/60'
                   }`}
                   style={selected ? { background: 'rgba(13,148,136,0.15)' } : { background: 'rgba(255,255,255,0.03)' }}>
@@ -332,7 +332,7 @@ export default function ProfilePage() {
 
         <div className="flex justify-end pt-4 pb-8">
           <button onClick={handleSave} disabled={saving}
-            className="px-8 py-3 rounded-2xl text-white font-semibold text-sm transition-all disabled:opacity-40 shadow-lg shadow-purple-500/20"
+            className="px-8 py-3 rounded-2xl text-white font-semibold text-sm transition-all disabled:opacity-40 shadow-lg shadow-teal-500/20"
             style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
             {saving ? 'Saving...' : saved ? 'Saved ✓' : 'Save Changes'}
           </button>

@@ -183,13 +183,13 @@ userRouter.get('/export', authenticate, async (req: Request, res: Response, next
       });
 
       res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename=cleo-data-export.csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=cleya-data-export.csv');
       res.send(lines.join('\n'));
       return;
     }
 
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', 'attachment; filename=cleo-data-export.json');
+    res.setHeader('Content-Disposition', 'attachment; filename=cleya-data-export.json');
     res.json({ success: true, data: exportData });
   } catch (error) {
     next(error);

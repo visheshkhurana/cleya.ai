@@ -275,7 +275,7 @@ export default function DashboardPage() {
       <header role="banner" className="sticky top-0 z-10 border-b border-white/5" style={{ background: 'rgba(13,11,26,0.9)', backdropFilter: 'blur(20px)' }}>
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-purple-500/20"
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-teal-500/20"
               style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
               C
             </div>
@@ -285,7 +285,7 @@ export default function DashboardPage() {
             <div className="hidden md:flex items-center gap-2">
               <button onClick={() => router.push('/matches')}
                 className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-white/50 hover:text-white/80 hover:border-white/20 transition">
-                Matches {matchStats.pending > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-purple-500 text-white">{matchStats.pending}</span>}
+                Matches {matchStats.pending > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-teal-500 text-white">{matchStats.pending}</span>}
               </button>
               <button onClick={() => router.push('/introductions')}
                 className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-white/50 hover:text-white/80 hover:border-white/20 transition">
@@ -447,7 +447,7 @@ export default function DashboardPage() {
           <div>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Your Matches</h3>
-              <button onClick={() => router.push('/matches')} className="text-xs text-purple-400 hover:text-purple-300 transition">
+              <button onClick={() => router.push('/matches')} className="text-xs text-teal-400 hover:text-teal-300 transition">
                 View All →
               </button>
             </div>
@@ -460,7 +460,7 @@ export default function DashboardPage() {
                 const isPending = myResponse === 'PENDING' && match.status !== 'REJECTED' && match.status !== 'ACCEPTED';
 
                 return (
-                  <div key={match.id} className="rounded-2xl border border-white/5 p-4 hover:border-purple-500/15 transition"
+                  <div key={match.id} className="rounded-2xl border border-white/5 p-4 hover:border-teal-500/15 transition"
                     style={{ background: 'rgba(30,41,59,0.6)' }}>
                     <div className="flex items-start gap-3 mb-3">
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
@@ -516,7 +516,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <button
               onClick={() => router.push('/matches')}
-              className="rounded-2xl border border-white/5 p-5 text-left hover:border-purple-500/20 transition group"
+              className="rounded-2xl border border-white/5 p-5 text-left hover:border-teal-500/20 transition group"
               style={{ background: 'rgba(30,41,59,0.6)' }}
             >
               <div className="flex items-center justify-between mb-2">
@@ -533,12 +533,12 @@ export default function DashboardPage() {
             <button
               onClick={handleFindMatches}
               disabled={findingMatches}
-              className="rounded-2xl border border-white/5 p-5 text-left hover:border-purple-500/20 transition group disabled:opacity-60"
+              className="rounded-2xl border border-white/5 p-5 text-left hover:border-teal-500/20 transition group disabled:opacity-60"
               style={{ background: 'rgba(30,41,59,0.6)' }}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-2xl">🔍</span>
-                {findingMatches && <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />}
+                {findingMatches && <div className="w-4 h-4 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />}
               </div>
               <h3 className="font-semibold text-white text-sm mb-1">
                 {findingMatches ? 'Finding...' : 'Find Matches'}
@@ -548,7 +548,7 @@ export default function DashboardPage() {
 
             <button
               onClick={() => router.push('/profile')}
-              className="rounded-2xl border border-white/5 p-5 text-left hover:border-purple-500/20 transition group"
+              className="rounded-2xl border border-white/5 p-5 text-left hover:border-teal-500/20 transition group"
               style={{ background: 'rgba(30,41,59,0.6)' }}
             >
               <div className="flex items-center justify-between mb-2">
@@ -561,7 +561,7 @@ export default function DashboardPage() {
 
             <button
               onClick={() => router.push('/chat')}
-              className="rounded-2xl border border-white/5 p-5 text-left hover:border-purple-500/20 transition group"
+              className="rounded-2xl border border-white/5 p-5 text-left hover:border-teal-500/20 transition group"
               style={{ background: 'rgba(30,41,59,0.6)' }}
             >
               <div className="flex items-center justify-between mb-2">
@@ -586,7 +586,7 @@ export default function DashboardPage() {
                 {inviteCodes.map((code) => (
                   <div key={code.id} className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border ${code.used ? 'opacity-40' : ''}`}
                     style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}>
-                    <span className="text-xs font-mono text-white/70 flex-1">cleo.ai/join/{code.code}</span>
+                    <span className="text-xs font-mono text-white/70 flex-1">cleya.ai/join/{code.code}</span>
                     {!code.used && (
                       <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/join/${code.code}`); setCopiedCode(code.code); setTimeout(() => setCopiedCode(null), 2000); }}
                         className="text-xs px-2 py-1 rounded-lg transition" style={{ color: copiedCode === code.code ? '#10B981' : '#5EEAD4' }}>
@@ -659,7 +659,7 @@ export default function DashboardPage() {
       {!showAIChat && (
         <button
           onClick={() => setShowAIChat(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 rounded-full flex items-center justify-center text-white text-xl shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all z-40 glow-pulse"
+          className="fixed bottom-6 right-6 w-14 h-14 rounded-full flex items-center justify-center text-white text-xl shadow-lg shadow-teal-500/30 hover:shadow-teal-500/50 transition-all z-40 glow-pulse"
           style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}
         >
           💬
@@ -700,7 +700,7 @@ export default function DashboardPage() {
                 <div className="mt-4 space-y-2">
                   {['Tell me about my matches', 'Give me networking tips', 'How can I improve my profile?'].map((q) => (
                     <button key={q} onClick={() => { setAiInput(q); }}
-                      className="block w-full text-left px-3 py-2 rounded-xl text-xs text-white/40 border border-white/5 hover:border-purple-500/20 hover:text-white/60 transition"
+                      className="block w-full text-left px-3 py-2 rounded-xl text-xs text-white/40 border border-white/5 hover:border-teal-500/20 hover:text-white/60 transition"
                       style={{ background: 'rgba(30,41,59,0.4)' }}>
                       {q}
                     </button>

@@ -246,7 +246,7 @@ class ApiClient {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `cleo-data-export.${format === 'csv' ? 'csv' : 'json'}`;
+    a.download = `cleya-data-export.${format === 'csv' ? 'csv' : 'json'}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

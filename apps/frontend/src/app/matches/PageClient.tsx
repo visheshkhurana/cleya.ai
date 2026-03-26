@@ -204,7 +204,7 @@ export default function MatchesPage() {
     const isAccepted = match.status === 'ACCEPTED';
 
     return (
-      <div className="rounded-2xl border border-white/5 overflow-hidden transition hover:border-purple-500/15"
+      <div className="rounded-2xl border border-white/5 overflow-hidden transition hover:border-teal-500/15"
         style={{ background: 'rgba(30,41,59,0.6)' }}>
         <div className="p-5">
           <div className="flex items-start gap-4">
@@ -242,7 +242,7 @@ export default function MatchesPage() {
           {match.reason && (
             <div className="mt-3 p-3 rounded-xl" style={{ background: 'rgba(13,148,136,0.06)', border: '1px solid rgba(13,148,136,0.08)' }}>
               <p className="text-xs text-white/50 leading-relaxed">
-                <span className="text-purple-300/70 font-medium">Why connect: </span>
+                <span className="text-teal-300/70 font-medium">Why connect: </span>
                 {match.reason}
               </p>
             </div>
@@ -269,7 +269,7 @@ export default function MatchesPage() {
                 <p className="text-xs text-white/60">📧 {other.email}</p>
                 {profile?.linkedinUrl && (
                   <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer"
-                    className="text-xs text-purple-300 hover:text-purple-200 transition block">
+                    className="text-xs text-teal-300 hover:text-teal-200 transition block">
                     🔗 LinkedIn Profile
                   </a>
                 )}
@@ -278,7 +278,7 @@ export default function MatchesPage() {
                 )}
               </div>
               <button onClick={() => router.push('/introductions')}
-                className="mt-3 w-full py-2 rounded-lg text-xs font-medium text-purple-300 border border-purple-500/20 hover:bg-purple-500/5 transition">
+                className="mt-3 w-full py-2 rounded-lg text-xs font-medium text-teal-300 border border-teal-500/20 hover:bg-teal-500/5 transition">
                 View Introduction →
               </button>
             </div>
@@ -354,7 +354,7 @@ export default function MatchesPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by name, persona, industry, company..."
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-white placeholder:text-white/20 border border-white/5 focus:border-purple-500/30 focus:outline-none transition"
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-white placeholder:text-white/20 border border-white/5 focus:border-teal-500/30 focus:outline-none transition"
               style={{ background: 'rgba(30,41,59,0.6)' }}
             />
             {searchQuery && (

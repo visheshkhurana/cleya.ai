@@ -165,10 +165,10 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0f0a1e]">
+      <div className="min-h-screen flex items-center justify-center bg-[#0F172A]">
         <div className="flex items-center gap-3">
-          <div className="w-5 h-5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
-          <p className="text-purple-300">Loading dashboard...</p>
+          <div className="w-5 h-5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
+          <p className="text-teal-300">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -176,12 +176,12 @@ export default function AdminDashboard() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0f0a1e]">
+      <div className="min-h-screen flex items-center justify-center bg-[#0F172A]">
         <div className="text-center space-y-4">
           <p className="text-red-400">{error}</p>
           <button
             onClick={() => router.push('/')}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-500 transition"
+            className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-500 transition"
           >
             Back to Login
           </button>
@@ -208,22 +208,22 @@ export default function AdminDashboard() {
       FAILED: 'text-red-400 bg-red-500/10 border-red-500/20',
       NO_ANSWER: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
     };
-    return map[status] || 'text-purple-300 bg-purple-500/10 border-purple-500/20';
+    return map[status] || 'text-teal-300 bg-teal-500/10 border-teal-500/20';
   };
 
   return (
-    <div className="min-h-screen bg-[#0f0a1e]">
-      <header className="bg-[#1E293B]/80 backdrop-blur-sm border-b border-purple-500/10 px-4 sm:px-6 py-3 sm:py-4 sticky top-0 z-10">
+    <div className="min-h-screen bg-[#0F172A]">
+      <header className="bg-[#1E293B]/80 backdrop-blur-sm border-b border-teal-500/10 px-4 sm:px-6 py-3 sm:py-4 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 text-white text-sm font-bold flex items-center justify-center shadow-lg shadow-purple-500/20">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 text-white text-sm font-bold flex items-center justify-center shadow-lg shadow-teal-500/20">
               C
             </div>
             <h1 className="text-base sm:text-lg font-bold text-white">Cleya.ai Admin</h1>
           </div>
           <button
             onClick={() => { api.logout().then(() => router.push('/')); }}
-            className="text-xs sm:text-sm text-purple-300/60 hover:text-purple-200 transition"
+            className="text-xs sm:text-sm text-slate-400 hover:text-teal-200 transition"
           >
             Sign out
           </button>
@@ -231,7 +231,7 @@ export default function AdminDashboard() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
-        <div className="flex gap-1 mb-6 p-1 rounded-xl bg-purple-900/20 border border-purple-500/10 overflow-x-auto">
+        <div className="flex gap-1 mb-6 p-1 rounded-xl bg-teal-900/20 border border-teal-500/10 overflow-x-auto">
           {[
             { id: 'overview' as Tab, label: 'Overview', icon: '📊' },
             { id: 'communications' as Tab, label: 'Comms', icon: '📞' },
@@ -244,8 +244,8 @@ export default function AdminDashboard() {
               onClick={() => setActiveTab(tab.id)}
               className={`px-3 sm:px-5 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                 activeTab === tab.id
-                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/20'
-                  : 'text-purple-300/60 hover:text-purple-200'
+                  ? 'bg-teal-600 text-white shadow-lg shadow-teal-600/20'
+                  : 'text-slate-400 hover:text-teal-200'
               }`}
             >
               {tab.icon} {tab.label}
@@ -269,11 +269,11 @@ export default function AdminDashboard() {
                 ].map((stat) => (
                   <div
                     key={stat.label}
-                    className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 p-5 hover:border-purple-500/20 transition"
+                    className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-teal-500/10 p-5 hover:border-teal-500/20 transition"
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-lg">{stat.icon}</span>
-                      <p className="text-xs font-medium text-purple-300/60 uppercase tracking-wider">{stat.label}</p>
+                      <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">{stat.label}</p>
                     </div>
                     <p className="text-3xl font-bold text-white">{stat.value}</p>
                   </div>
@@ -281,22 +281,22 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            <div className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 p-6">
+            <div className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-teal-500/10 p-6">
               <h2 className="text-sm font-semibold text-white mb-6">Conversion Funnel</h2>
               <div className="space-y-3">
                 {funnel.map((step, i) => (
                   <div key={step.stage} className="flex items-center gap-4">
-                    <div className="w-44 text-xs font-medium text-purple-300/70 text-right">{step.stage}</div>
-                    <div className="flex-1 bg-purple-900/20 rounded-full h-8 overflow-hidden">
+                    <div className="w-44 text-xs font-medium text-teal-300/70 text-right">{step.stage}</div>
+                    <div className="flex-1 bg-teal-900/20 rounded-full h-8 overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-purple-600 to-indigo-500 rounded-full flex items-center justify-end pr-3 transition-all duration-700"
+                        className="h-full bg-gradient-to-r from-teal-600 to-teal-500 rounded-full flex items-center justify-end pr-3 transition-all duration-700"
                         style={{ width: `${Math.max((step.count / maxFunnel) * 100, 8)}%` }}
                       >
                         <span className="text-xs font-bold text-white">{step.count}</span>
                       </div>
                     </div>
                     {i > 0 && funnel[i - 1].count > 0 && (
-                      <div className="w-16 text-xs text-purple-400/50">
+                      <div className="w-16 text-xs text-teal-400/50">
                         {Math.round((step.count / funnel[i - 1].count) * 100)}%
                       </div>
                     )}
@@ -305,44 +305,44 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 overflow-hidden">
-              <div className="px-6 py-4 border-b border-purple-500/10 flex items-center justify-between">
+            <div className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-teal-500/10 overflow-hidden">
+              <div className="px-6 py-4 border-b border-teal-500/10 flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-white">Users ({users.length})</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-purple-900/10">
-                      <th className="text-left px-3 sm:px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Email</th>
-                      <th className="text-left px-3 sm:px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Persona</th>
-                      <th className="text-left px-3 sm:px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Company</th>
-                      <th className="text-left px-3 sm:px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Completeness</th>
-                      <th className="text-left px-3 sm:px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Actions</th>
+                    <tr className="bg-teal-900/10">
+                      <th className="text-left px-3 sm:px-6 py-3 text-xs font-medium text-slate-400 uppercase">Email</th>
+                      <th className="text-left px-3 sm:px-6 py-3 text-xs font-medium text-slate-400 uppercase">Persona</th>
+                      <th className="text-left px-3 sm:px-6 py-3 text-xs font-medium text-slate-400 uppercase">Company</th>
+                      <th className="text-left px-3 sm:px-6 py-3 text-xs font-medium text-slate-400 uppercase">Completeness</th>
+                      <th className="text-left px-3 sm:px-6 py-3 text-xs font-medium text-slate-400 uppercase">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-purple-500/5">
+                  <tbody className="divide-y divide-teal-500/5">
                     {users.map((user) => (
-                      <tr key={user.id} className="hover:bg-purple-900/10 transition">
+                      <tr key={user.id} className="hover:bg-teal-900/10 transition">
                         <td className="px-6 py-3 font-medium text-white">{user.email}</td>
                         <td className="px-6 py-3">
                           {user.profile?.persona ? (
-                            <span className="px-2.5 py-1 rounded-full text-xs bg-purple-500/15 text-purple-300 border border-purple-500/20">
+                            <span className="px-2.5 py-1 rounded-full text-xs bg-teal-500/15 text-teal-300 border border-teal-500/20">
                               {user.profile.persona}
                             </span>
                           ) : (
-                            <span className="text-purple-400/30">-</span>
+                            <span className="text-teal-400/30">-</span>
                           )}
                         </td>
-                        <td className="px-6 py-3 text-purple-200/70">{user.profile?.companyName || '-'}</td>
+                        <td className="px-6 py-3 text-teal-200/70">{user.profile?.companyName || '-'}</td>
                         <td className="px-6 py-3">
                           <div className="flex items-center gap-2">
-                            <div className="w-20 bg-purple-900/20 rounded-full h-1.5">
+                            <div className="w-20 bg-teal-900/20 rounded-full h-1.5">
                               <div
-                                className="bg-gradient-to-r from-purple-500 to-indigo-400 rounded-full h-1.5 transition-all"
+                                className="bg-gradient-to-r from-teal-500 to-teal-400 rounded-full h-1.5 transition-all"
                                 style={{ width: `${(user.profile?.completenessScore || 0) * 100}%` }}
                               />
                             </div>
-                            <span className="text-xs text-purple-300/50">
+                            <span className="text-xs text-teal-300/50">
                               {Math.round((user.profile?.completenessScore || 0) * 100)}%
                             </span>
                           </div>
@@ -351,13 +351,13 @@ export default function AdminDashboard() {
                           <div className="flex gap-2">
                             <button
                               onClick={() => { setTriggerModal({ type: 'call', user }); setTriggerPhone(user.phone || ''); }}
-                              className="px-2 py-1 text-xs rounded-md bg-purple-600/20 text-purple-300 hover:bg-purple-600/40 transition border border-purple-500/20"
+                              className="px-2 py-1 text-xs rounded-md bg-teal-600/20 text-teal-300 hover:bg-teal-600/40 transition border border-teal-500/20"
                             >
                               Call
                             </button>
                             <button
                               onClick={() => { setTriggerModal({ type: 'message', user }); setTriggerPhone(user.phone || ''); setTriggerMessage(''); }}
-                              className="px-2 py-1 text-xs rounded-md bg-purple-600/20 text-purple-300 hover:bg-purple-600/40 transition border border-purple-500/20"
+                              className="px-2 py-1 text-xs rounded-md bg-teal-600/20 text-teal-300 hover:bg-teal-600/40 transition border border-teal-500/20"
                             >
                               Message
                             </button>
@@ -385,11 +385,11 @@ export default function AdminDashboard() {
                 ].map((stat) => (
                   <div
                     key={stat.label}
-                    className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 p-5"
+                    className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-teal-500/10 p-5"
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-lg">{stat.icon}</span>
-                      <p className="text-xs font-medium text-purple-300/60 uppercase tracking-wider">{stat.label}</p>
+                      <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">{stat.label}</p>
                     </div>
                     <p className="text-2xl font-bold text-white">{stat.value}</p>
                   </div>
@@ -397,29 +397,29 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            <div className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 overflow-hidden">
-              <div className="px-6 py-4 border-b border-purple-500/10">
+            <div className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-teal-500/10 overflow-hidden">
+              <div className="px-6 py-4 border-b border-teal-500/10">
                 <h2 className="text-sm font-semibold text-white">Recent Calls</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-purple-900/10">
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">User</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Phone</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Direction</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Status</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Duration</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Date</th>
+                    <tr className="bg-teal-900/10">
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">User</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Phone</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Direction</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Status</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Duration</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Date</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-purple-500/5">
+                  <tbody className="divide-y divide-teal-500/5">
                     {(commData?.calls || []).map((call: any) => (
-                      <tr key={call.id} className="hover:bg-purple-900/10 transition">
+                      <tr key={call.id} className="hover:bg-teal-900/10 transition">
                         <td className="px-6 py-3 text-white">{call.user?.email || '-'}</td>
-                        <td className="px-6 py-3 text-purple-200/70">{call.phoneNumber}</td>
+                        <td className="px-6 py-3 text-teal-200/70">{call.phoneNumber}</td>
                         <td className="px-6 py-3">
-                          <span className={`text-xs ${call.direction === 'INBOUND' ? 'text-blue-400' : 'text-purple-300'}`}>
+                          <span className={`text-xs ${call.direction === 'INBOUND' ? 'text-blue-400' : 'text-teal-300'}`}>
                             {call.direction === 'INBOUND' ? '← In' : '→ Out'}
                           </span>
                         </td>
@@ -428,15 +428,15 @@ export default function AdminDashboard() {
                             {call.status}
                           </span>
                         </td>
-                        <td className="px-6 py-3 text-purple-200/70">
+                        <td className="px-6 py-3 text-teal-200/70">
                           {call.duration ? `${Math.floor(call.duration / 60)}m ${call.duration % 60}s` : '-'}
                         </td>
-                        <td className="px-6 py-3 text-purple-300/40 text-xs">{formatDate(call.createdAt)}</td>
+                        <td className="px-6 py-3 text-teal-300/40 text-xs">{formatDate(call.createdAt)}</td>
                       </tr>
                     ))}
                     {(!commData?.calls || commData.calls.length === 0) && (
                       <tr>
-                        <td colSpan={6} className="px-6 py-8 text-center text-purple-400/40">No call records yet</td>
+                        <td colSpan={6} className="px-6 py-8 text-center text-teal-400/40">No call records yet</td>
                       </tr>
                     )}
                   </tbody>
@@ -444,27 +444,27 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 overflow-hidden">
-              <div className="px-6 py-4 border-b border-purple-500/10">
+            <div className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-teal-500/10 overflow-hidden">
+              <div className="px-6 py-4 border-b border-teal-500/10">
                 <h2 className="text-sm font-semibold text-white">Recent Messages (WhatsApp + SMS)</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-purple-900/10">
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">User</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Phone</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Channel</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Content</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Status</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Date</th>
+                    <tr className="bg-teal-900/10">
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">User</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Phone</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Channel</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Content</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Status</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Date</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-purple-500/5">
+                  <tbody className="divide-y divide-teal-500/5">
                     {(commData?.messages || []).map((msg: any) => (
-                      <tr key={msg.id} className="hover:bg-purple-900/10 transition">
+                      <tr key={msg.id} className="hover:bg-teal-900/10 transition">
                         <td className="px-6 py-3 text-white">{msg.user?.email || '-'}</td>
-                        <td className="px-6 py-3 text-purple-200/70">{msg.recipientPhone}</td>
+                        <td className="px-6 py-3 text-teal-200/70">{msg.recipientPhone}</td>
                         <td className="px-6 py-3">
                           <span className={`px-2 py-0.5 rounded-full text-xs border ${
                             msg.channel === 'WHATSAPP'
@@ -474,18 +474,18 @@ export default function AdminDashboard() {
                             {msg.channel}
                           </span>
                         </td>
-                        <td className="px-6 py-3 text-purple-200/70 max-w-xs truncate">{msg.content}</td>
+                        <td className="px-6 py-3 text-teal-200/70 max-w-xs truncate">{msg.content}</td>
                         <td className="px-6 py-3">
                           <span className={`px-2 py-0.5 rounded-full text-xs border ${statusColor(msg.status)}`}>
                             {msg.status}
                           </span>
                         </td>
-                        <td className="px-6 py-3 text-purple-300/40 text-xs">{formatDate(msg.createdAt)}</td>
+                        <td className="px-6 py-3 text-teal-300/40 text-xs">{formatDate(msg.createdAt)}</td>
                       </tr>
                     ))}
                     {(!commData?.messages || commData.messages.length === 0) && (
                       <tr>
-                        <td colSpan={6} className="px-6 py-8 text-center text-purple-400/40">No message records yet</td>
+                        <td colSpan={6} className="px-6 py-8 text-center text-teal-400/40">No message records yet</td>
                       </tr>
                     )}
                   </tbody>
@@ -505,10 +505,10 @@ export default function AdminDashboard() {
                   { label: 'Open', value: dealData.stats.byStatus?.OPEN || 0, icon: '🔍' },
                   { label: 'Closed Won', value: dealData.stats.byStatus?.CLOSED_WON || 0, icon: '🏆' },
                 ].map((stat) => (
-                  <div key={stat.label} className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 p-5">
+                  <div key={stat.label} className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-teal-500/10 p-5">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-lg">{stat.icon}</span>
-                      <p className="text-xs font-medium text-purple-300/60 uppercase tracking-wider">{stat.label}</p>
+                      <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">{stat.label}</p>
                     </div>
                     <p className="text-2xl font-bold text-white">{stat.value}</p>
                   </div>
@@ -516,37 +516,37 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            <div className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 overflow-hidden">
-              <div className="px-6 py-4 border-b border-purple-500/10">
+            <div className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-teal-500/10 overflow-hidden">
+              <div className="px-6 py-4 border-b border-teal-500/10">
                 <h2 className="text-sm font-semibold text-white">Deal Pipeline ({dealData?.deals?.length || 0})</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-purple-900/10">
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Deal Partner</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Founder</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Industry</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Stage</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Status</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Deal Value</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Carry %</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Intro</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Actions</th>
+                    <tr className="bg-teal-900/10">
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Deal Partner</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Founder</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Industry</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Stage</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Status</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Deal Value</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Carry %</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Intro</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-purple-500/5">
+                  <tbody className="divide-y divide-teal-500/5">
                     {(dealData?.deals || []).map((deal: any) => (
-                      <tr key={deal.id} className="hover:bg-purple-900/10 transition">
+                      <tr key={deal.id} className="hover:bg-teal-900/10 transition">
                         <td className="px-6 py-3 text-white">{deal.dealPartner?.email || '-'}</td>
                         <td className="px-6 py-3">
                           <div>
                             <div className="text-white">{deal.founder?.email || '-'}</div>
-                            <div className="text-xs text-purple-300/50">{deal.founder?.profile?.companyName || ''}</div>
+                            <div className="text-xs text-teal-300/50">{deal.founder?.profile?.companyName || ''}</div>
                           </div>
                         </td>
-                        <td className="px-6 py-3 text-purple-200/70">{deal.industry || '-'}</td>
-                        <td className="px-6 py-3 text-purple-200/70">{deal.stage?.replace(/_/g, ' ') || '-'}</td>
+                        <td className="px-6 py-3 text-teal-200/70">{deal.industry || '-'}</td>
+                        <td className="px-6 py-3 text-teal-200/70">{deal.stage?.replace(/_/g, ' ') || '-'}</td>
                         <td className="px-6 py-3">
                           <select
                             value={deal.status}
@@ -556,7 +556,7 @@ export default function AdminDashboard() {
                                 loadDeals();
                               } catch (err) { console.error(err); }
                             }}
-                            className="bg-[#0f0a1e] border border-purple-500/20 rounded px-2 py-1 text-xs text-purple-200"
+                            className="bg-[#0F172A] border border-teal-500/20 rounded px-2 py-1 text-xs text-teal-200"
                           >
                             <option value="OPEN">Open</option>
                             <option value="INTRO_MADE">Intro Made</option>
@@ -564,20 +564,20 @@ export default function AdminDashboard() {
                             <option value="CLOSED_LOST">Closed Lost</option>
                           </select>
                         </td>
-                        <td className="px-6 py-3 text-purple-200/70">
+                        <td className="px-6 py-3 text-teal-200/70">
                           {deal.dealValue ? `$${Number(deal.dealValue).toLocaleString()}` : '-'}
                         </td>
-                        <td className="px-6 py-3 text-purple-200/70">
+                        <td className="px-6 py-3 text-teal-200/70">
                           {deal.carryPercentage ? `${deal.carryPercentage}%` : '-'}
                         </td>
                         <td className="px-6 py-3">
                           {deal.introSent ? (
                             <div>
                               <span className="text-green-400 text-xs">Sent</span>
-                              {deal.introDate && <div className="text-purple-300/40 text-xs">{formatDate(deal.introDate)}</div>}
+                              {deal.introDate && <div className="text-teal-300/40 text-xs">{formatDate(deal.introDate)}</div>}
                             </div>
                           ) : (
-                            <span className="text-purple-400/40 text-xs">-</span>
+                            <span className="text-teal-400/40 text-xs">-</span>
                           )}
                         </td>
                         <td className="px-6 py-3">
@@ -595,7 +595,7 @@ export default function AdminDashboard() {
                                 } catch (err) { console.error(err); }
                               }
                             }}
-                            className="px-2 py-1 text-xs bg-purple-600/20 text-purple-300 rounded hover:bg-purple-600/40 transition"
+                            className="px-2 py-1 text-xs bg-teal-600/20 text-teal-300 rounded hover:bg-teal-600/40 transition"
                           >
                             Set Value
                           </button>
@@ -604,7 +604,7 @@ export default function AdminDashboard() {
                     ))}
                     {(!dealData?.deals || dealData.deals.length === 0) && (
                       <tr>
-                        <td colSpan={9} className="px-6 py-8 text-center text-purple-400/40">No deals tracked yet</td>
+                        <td colSpan={9} className="px-6 py-8 text-center text-teal-400/40">No deals tracked yet</td>
                       </tr>
                     )}
                   </tbody>
@@ -624,10 +624,10 @@ export default function AdminDashboard() {
                   { label: 'Active', value: eventData.stats.active, icon: '🟢' },
                   { label: 'Total Participants', value: eventData.stats.totalParticipants, icon: '👥' },
                 ].map((stat) => (
-                  <div key={stat.label} className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 p-5">
+                  <div key={stat.label} className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-teal-500/10 p-5">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-lg">{stat.icon}</span>
-                      <p className="text-xs font-medium text-purple-300/60 uppercase tracking-wider">{stat.label}</p>
+                      <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">{stat.label}</p>
                     </div>
                     <p className="text-2xl font-bold text-white">{stat.value}</p>
                   </div>
@@ -635,12 +635,12 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            <div className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-purple-500/10 overflow-hidden">
-              <div className="px-6 py-4 border-b border-purple-500/10 flex items-center justify-between">
+            <div className="bg-[#1E293B]/60 backdrop-blur-sm rounded-xl border border-teal-500/10 overflow-hidden">
+              <div className="px-6 py-4 border-b border-teal-500/10 flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-white">Events ({eventData?.events?.length || 0})</h2>
                 <button
                   onClick={() => setShowCreateEvent(true)}
-                  className="px-3 py-1.5 text-xs rounded-lg bg-purple-600 text-white hover:bg-purple-500 transition shadow-lg shadow-purple-600/20"
+                  className="px-3 py-1.5 text-xs rounded-lg bg-teal-600 text-white hover:bg-teal-500 transition shadow-lg shadow-teal-600/20"
                 >
                   + New Event
                 </button>
@@ -648,26 +648,26 @@ export default function AdminDashboard() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-purple-900/10">
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Name</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Date</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Location</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Status</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Participants</th>
-                      <th className="text-left px-6 py-3 text-xs font-medium text-purple-300/60 uppercase">Capacity</th>
+                    <tr className="bg-teal-900/10">
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Name</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Date</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Location</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Status</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Participants</th>
+                      <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Capacity</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-purple-500/5">
+                  <tbody className="divide-y divide-teal-500/5">
                     {(eventData?.events || []).map((event: any) => (
-                      <tr key={event.id} className="hover:bg-purple-900/10 transition">
+                      <tr key={event.id} className="hover:bg-teal-900/10 transition">
                         <td className="px-6 py-3">
                           <div>
                             <div className="text-white font-medium">{event.name}</div>
-                            {event.description && <div className="text-xs text-purple-300/50 mt-0.5 max-w-xs truncate">{event.description}</div>}
+                            {event.description && <div className="text-xs text-teal-300/50 mt-0.5 max-w-xs truncate">{event.description}</div>}
                           </div>
                         </td>
-                        <td className="px-6 py-3 text-purple-200/70 text-xs">{formatDate(event.date)}</td>
-                        <td className="px-6 py-3 text-purple-200/70">
+                        <td className="px-6 py-3 text-teal-200/70 text-xs">{formatDate(event.date)}</td>
+                        <td className="px-6 py-3 text-teal-200/70">
                           {event.isVirtual ? (
                             <span className="text-blue-400 text-xs">Virtual</span>
                           ) : (
@@ -678,19 +678,19 @@ export default function AdminDashboard() {
                           <span className={`px-2 py-0.5 rounded-full text-xs border ${
                             event.status === 'UPCOMING' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' :
                             event.status === 'ACTIVE' ? 'text-green-400 bg-green-500/10 border-green-500/20' :
-                            event.status === 'COMPLETED' ? 'text-purple-300 bg-purple-500/10 border-purple-500/20' :
+                            event.status === 'COMPLETED' ? 'text-teal-300 bg-teal-500/10 border-teal-500/20' :
                             'text-red-400 bg-red-500/10 border-red-500/20'
                           }`}>
                             {event.status}
                           </span>
                         </td>
                         <td className="px-6 py-3 text-white">{event._count?.participants || event.participants?.length || 0}</td>
-                        <td className="px-6 py-3 text-purple-200/70">{event.maxCapacity || 'Unlimited'}</td>
+                        <td className="px-6 py-3 text-teal-200/70">{event.maxCapacity || 'Unlimited'}</td>
                       </tr>
                     ))}
                     {(!eventData?.events || eventData.events.length === 0) && (
                       <tr>
-                        <td colSpan={6} className="px-6 py-8 text-center text-purple-400/40">No events yet</td>
+                        <td colSpan={6} className="px-6 py-8 text-center text-teal-400/40">No events yet</td>
                       </tr>
                     )}
                   </tbody>
@@ -703,44 +703,44 @@ export default function AdminDashboard() {
 
       {showCreateEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#1E293B] border border-purple-500/20 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+          <div className="bg-[#1E293B] border border-teal-500/20 rounded-2xl p-6 w-full max-w-md shadow-2xl">
             <h3 className="text-white font-semibold mb-4">Create Event</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-purple-300/60 uppercase mb-1.5">Name</label>
+                <label className="block text-xs font-medium text-slate-400 uppercase mb-1.5">Name</label>
                 <input
                   value={newEvent.name}
                   onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })}
                   placeholder="Event name"
-                  className="w-full px-3 py-2.5 rounded-xl border border-purple-500/20 bg-purple-900/20 text-white placeholder-purple-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2.5 rounded-xl border border-teal-500/20 bg-teal-900/20 text-white placeholder-slate-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-purple-300/60 uppercase mb-1.5">Description</label>
+                <label className="block text-xs font-medium text-slate-400 uppercase mb-1.5">Description</label>
                 <textarea
                   value={newEvent.description}
                   onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
                   placeholder="Event description"
                   rows={2}
-                  className="w-full px-3 py-2.5 rounded-xl border border-purple-500/20 bg-purple-900/20 text-white placeholder-purple-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                  className="w-full px-3 py-2.5 rounded-xl border border-teal-500/20 bg-teal-900/20 text-white placeholder-slate-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-purple-300/60 uppercase mb-1.5">Date & Time</label>
+                <label className="block text-xs font-medium text-slate-400 uppercase mb-1.5">Date & Time</label>
                 <input
                   type="datetime-local"
                   value={newEvent.date}
                   onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl border border-purple-500/20 bg-purple-900/20 text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2.5 rounded-xl border border-teal-500/20 bg-teal-900/20 text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-purple-300/60 uppercase mb-1.5">Location</label>
+                <label className="block text-xs font-medium text-slate-400 uppercase mb-1.5">Location</label>
                 <input
                   value={newEvent.location}
                   onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
                   placeholder="Event location"
-                  className="w-full px-3 py-2.5 rounded-xl border border-purple-500/20 bg-purple-900/20 text-white placeholder-purple-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2.5 rounded-xl border border-teal-500/20 bg-teal-900/20 text-white placeholder-slate-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
               <div className="flex items-center gap-3">
@@ -749,33 +749,33 @@ export default function AdminDashboard() {
                     type="checkbox"
                     checked={newEvent.isVirtual}
                     onChange={(e) => setNewEvent({ ...newEvent, isVirtual: e.target.checked })}
-                    className="rounded border-purple-500/20 bg-purple-900/20 text-purple-600"
+                    className="rounded border-teal-500/20 bg-teal-900/20 text-teal-600"
                   />
-                  <span className="text-sm text-purple-300">Virtual event</span>
+                  <span className="text-sm text-teal-300">Virtual event</span>
                 </label>
               </div>
               <div>
-                <label className="block text-xs font-medium text-purple-300/60 uppercase mb-1.5">Max Capacity (optional)</label>
+                <label className="block text-xs font-medium text-slate-400 uppercase mb-1.5">Max Capacity (optional)</label>
                 <input
                   type="number"
                   value={newEvent.maxCapacity}
                   onChange={(e) => setNewEvent({ ...newEvent, maxCapacity: e.target.value })}
                   placeholder="No limit"
-                  className="w-full px-3 py-2.5 rounded-xl border border-purple-500/20 bg-purple-900/20 text-white placeholder-purple-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2.5 rounded-xl border border-teal-500/20 bg-teal-900/20 text-white placeholder-slate-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
             </div>
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => setShowCreateEvent(false)}
-                className="px-4 py-2 text-sm text-purple-300/60 hover:text-purple-200 transition"
+                className="px-4 py-2 text-sm text-slate-400 hover:text-teal-200 transition"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateEvent}
                 disabled={!newEvent.name || !newEvent.date}
-                className="px-4 py-2 text-sm bg-purple-600 text-white rounded-xl hover:bg-purple-500 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-purple-600/20"
+                className="px-4 py-2 text-sm bg-teal-600 text-white rounded-xl hover:bg-teal-500 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-teal-600/20"
               >
                 Create Event
               </button>
@@ -787,13 +787,13 @@ export default function AdminDashboard() {
       {activeTab === 'analytics' && (
         <div className="space-y-6">
           {!analyticsData ? (
-            <div className="text-center py-12 text-purple-300/40">Loading analytics...</div>
+            <div className="text-center py-12 text-teal-300/40">Loading analytics...</div>
           ) : (
             <>
               <div className="flex items-center justify-between">
                 <h2 className="text-white text-lg font-semibold">Platform Analytics</h2>
                 <button onClick={handleSendDigest} disabled={digestLoading}
-                  className="px-4 py-2 rounded-xl text-sm font-medium bg-purple-600 text-white hover:bg-purple-500 transition disabled:opacity-40">
+                  className="px-4 py-2 rounded-xl text-sm font-medium bg-teal-600 text-white hover:bg-teal-500 transition disabled:opacity-40">
                   {digestLoading ? 'Sending...' : '📧 Send Weekly Digest'}
                 </button>
               </div>
@@ -809,10 +809,10 @@ export default function AdminDashboard() {
                   { label: 'Accept Rate', value: `${analyticsData.matchAcceptRate}%`, icon: '📊', color: '#fbbf24' },
                   { label: 'Avg Score', value: `${analyticsData.avgMatchScore}%`, icon: '⭐', color: '#f472b6' },
                 ].map((s, i) => (
-                  <div key={i} className="rounded-xl border border-purple-500/10 p-4" style={{ background: 'rgba(30,41,59,0.6)' }}>
+                  <div key={i} className="rounded-xl border border-teal-500/10 p-4" style={{ background: 'rgba(30,41,59,0.6)' }}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-lg">{s.icon}</span>
-                      <span className="text-xs text-purple-300/40 uppercase font-medium">{s.label}</span>
+                      <span className="text-xs text-teal-300/40 uppercase font-medium">{s.label}</span>
                     </div>
                     <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
                   </div>
@@ -820,7 +820,7 @@ export default function AdminDashboard() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="rounded-xl border border-purple-500/10 p-5" style={{ background: 'rgba(30,41,59,0.6)' }}>
+                <div className="rounded-xl border border-teal-500/10 p-5" style={{ background: 'rgba(30,41,59,0.6)' }}>
                   <h3 className="text-white text-sm font-semibold mb-4">📊 Daily Signups (7 days)</h3>
                   <div className="flex items-end gap-2 h-32">
                     {analyticsData.dailySignups?.map((d: any, i: number) => {
@@ -828,20 +828,20 @@ export default function AdminDashboard() {
                       const height = (d.count / max) * 100;
                       return (
                         <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                          <span className="text-xs text-purple-300/40">{d.count}</span>
+                          <span className="text-xs text-teal-300/40">{d.count}</span>
                           <div className="w-full rounded-t-md" style={{
                             height: `${Math.max(height, 4)}%`,
                             background: 'linear-gradient(180deg, #0D9488, #0F766E)',
                             minHeight: '4px',
                           }} />
-                          <span className="text-[10px] text-purple-300/30">{d.date.slice(5)}</span>
+                          <span className="text-[10px] text-teal-300/30">{d.date.slice(5)}</span>
                         </div>
                       );
                     })}
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-purple-500/10 p-5" style={{ background: 'rgba(30,41,59,0.6)' }}>
+                <div className="rounded-xl border border-teal-500/10 p-5" style={{ background: 'rgba(30,41,59,0.6)' }}>
                   <h3 className="text-white text-sm font-semibold mb-4">🎭 Personas</h3>
                   <div className="space-y-2">
                     {analyticsData.personaBreakdown?.map((p: any, i: number) => {
@@ -850,10 +850,10 @@ export default function AdminDashboard() {
                       return (
                         <div key={i}>
                           <div className="flex justify-between text-xs mb-1">
-                            <span className="text-purple-200/60">{p.persona}</span>
-                            <span className="text-purple-300/40">{p.count} ({pct}%)</span>
+                            <span className="text-teal-200/60">{p.persona}</span>
+                            <span className="text-teal-300/40">{p.count} ({pct}%)</span>
                           </div>
-                          <div className="h-2 rounded-full bg-purple-900/30">
+                          <div className="h-2 rounded-full bg-teal-900/30">
                             <div className="h-full rounded-full" style={{
                               width: `${pct}%`,
                               background: 'linear-gradient(90deg, #0D9488, #5EEAD4)',
@@ -863,13 +863,13 @@ export default function AdminDashboard() {
                       );
                     })}
                     {(!analyticsData.personaBreakdown || analyticsData.personaBreakdown.length === 0) && (
-                      <p className="text-purple-300/30 text-xs">No persona data yet</p>
+                      <p className="text-teal-300/30 text-xs">No persona data yet</p>
                     )}
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-xl border border-purple-500/10 p-5" style={{ background: 'rgba(30,41,59,0.6)' }}>
+              <div className="rounded-xl border border-teal-500/10 p-5" style={{ background: 'rgba(30,41,59,0.6)' }}>
                 <h3 className="text-white text-sm font-semibold mb-4">📣 Channel Attribution</h3>
                 <div className="space-y-2">
                   {analyticsData.attributionBreakdown?.map((a: any, i: number) => {
@@ -885,10 +885,10 @@ export default function AdminDashboard() {
                     return (
                       <div key={i}>
                         <div className="flex justify-between text-xs mb-1">
-                          <span className="text-purple-200/60">{sourceLabels[a.source] || a.source}</span>
-                          <span className="text-purple-300/40">{a.count} ({pct}%)</span>
+                          <span className="text-teal-200/60">{sourceLabels[a.source] || a.source}</span>
+                          <span className="text-teal-300/40">{a.count} ({pct}%)</span>
                         </div>
-                        <div className="h-2 rounded-full bg-purple-900/30">
+                        <div className="h-2 rounded-full bg-teal-900/30">
                           <div className="h-full rounded-full" style={{
                             width: `${pct}%`,
                             background: 'linear-gradient(90deg, #14B8A6, #5EEAD4)',
@@ -898,22 +898,22 @@ export default function AdminDashboard() {
                     );
                   })}
                   {(!analyticsData.attributionBreakdown || analyticsData.attributionBreakdown.length === 0) && (
-                    <p className="text-purple-300/30 text-xs">No attribution data yet</p>
+                    <p className="text-teal-300/30 text-xs">No attribution data yet</p>
                   )}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="rounded-xl border border-purple-500/10 p-5" style={{ background: 'rgba(30,41,59,0.6)' }}>
+                <div className="rounded-xl border border-teal-500/10 p-5" style={{ background: 'rgba(30,41,59,0.6)' }}>
                   <h3 className="text-white text-sm font-semibold mb-4">⭐ Feedback</h3>
                   <div className="flex items-center gap-4 mb-4">
                     <div className="text-center">
                       <p className="text-3xl font-bold text-yellow-400">{analyticsData.feedbackStats?.avgRating || 0}</p>
-                      <p className="text-xs text-purple-300/40">Avg Rating</p>
+                      <p className="text-xs text-teal-300/40">Avg Rating</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-3xl font-bold text-purple-400">{analyticsData.feedbackStats?.total || 0}</p>
-                      <p className="text-xs text-purple-300/40">Total Reviews</p>
+                      <p className="text-3xl font-bold text-teal-400">{analyticsData.feedbackStats?.total || 0}</p>
+                      <p className="text-xs text-teal-300/40">Total Reviews</p>
                     </div>
                   </div>
                   <div className="space-y-1">
@@ -923,40 +923,40 @@ export default function AdminDashboard() {
                       return (
                         <div key={r} className="flex items-center gap-2">
                           <span className="text-xs text-yellow-400 w-6">{r}★</span>
-                          <div className="flex-1 h-2 rounded-full bg-purple-900/30">
+                          <div className="flex-1 h-2 rounded-full bg-teal-900/30">
                             <div className="h-full rounded-full bg-yellow-400/60" style={{ width: `${(count / total) * 100}%` }} />
                           </div>
-                          <span className="text-xs text-purple-300/40 w-6 text-right">{count}</span>
+                          <span className="text-xs text-teal-300/40 w-6 text-right">{count}</span>
                         </div>
                       );
                     })}
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-purple-500/10 p-5" style={{ background: 'rgba(30,41,59,0.6)' }}>
+                <div className="rounded-xl border border-teal-500/10 p-5" style={{ background: 'rgba(30,41,59,0.6)' }}>
                   <h3 className="text-white text-sm font-semibold mb-4">📞 Communications</h3>
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-lg border border-purple-500/10 p-3 text-center" style={{ background: 'rgba(13,148,136,0.05)' }}>
-                      <p className="text-xl font-bold text-purple-400">{analyticsData.totalCalls}</p>
-                      <p className="text-xs text-purple-300/40">Calls</p>
+                    <div className="rounded-lg border border-teal-500/10 p-3 text-center" style={{ background: 'rgba(13,148,136,0.05)' }}>
+                      <p className="text-xl font-bold text-teal-400">{analyticsData.totalCalls}</p>
+                      <p className="text-xs text-teal-300/40">Calls</p>
                     </div>
-                    <div className="rounded-lg border border-purple-500/10 p-3 text-center" style={{ background: 'rgba(13,148,136,0.05)' }}>
+                    <div className="rounded-lg border border-teal-500/10 p-3 text-center" style={{ background: 'rgba(13,148,136,0.05)' }}>
                       <p className="text-xl font-bold text-blue-400">{analyticsData.totalMessages}</p>
-                      <p className="text-xs text-purple-300/40">Messages</p>
+                      <p className="text-xs text-teal-300/40">Messages</p>
                     </div>
                   </div>
                   <div className="mt-3 space-y-1.5">
                     {analyticsData.channelBreakdown?.map((c: any, i: number) => (
                       <div key={i} className="flex justify-between text-xs">
-                        <span className="text-purple-200/60">{c.channel}</span>
-                        <span className="text-purple-300/40">{c.count}</span>
+                        <span className="text-teal-200/60">{c.channel}</span>
+                        <span className="text-teal-300/40">{c.count}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-xl border border-purple-500/10 p-5" style={{ background: 'rgba(30,41,59,0.6)' }}>
+              <div className="rounded-xl border border-teal-500/10 p-5" style={{ background: 'rgba(30,41,59,0.6)' }}>
                 <h3 className="text-white text-sm font-semibold mb-4">🔔 Recent Activity</h3>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {analyticsData.recentActivity?.map((a: any, i: number) => (
@@ -966,15 +966,15 @@ export default function AdminDashboard() {
                       </span>
                       <div className="flex-1 min-w-0">
                         <span className="text-xs text-white/70 truncate block">{a.title}</span>
-                        {a.email && <span className="text-[10px] text-purple-300/30">{a.email}</span>}
+                        {a.email && <span className="text-[10px] text-teal-300/30">{a.email}</span>}
                       </div>
-                      <span className="text-[10px] text-purple-300/20 flex-shrink-0">
+                      <span className="text-[10px] text-teal-300/20 flex-shrink-0">
                         {new Date(a.createdAt).toLocaleDateString()}
                       </span>
                     </div>
                   ))}
                   {(!analyticsData.recentActivity || analyticsData.recentActivity.length === 0) && (
-                    <p className="text-purple-300/30 text-xs text-center py-4">No recent activity</p>
+                    <p className="text-teal-300/30 text-xs text-center py-4">No recent activity</p>
                   )}
                 </div>
               </div>
@@ -985,14 +985,14 @@ export default function AdminDashboard() {
 
       {triggerModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#1E293B] border border-purple-500/20 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+          <div className="bg-[#1E293B] border border-teal-500/20 rounded-2xl p-6 w-full max-w-md shadow-2xl">
             <h3 className="text-white font-semibold mb-4">
               {triggerModal.type === 'call' ? 'Trigger Call' : 'Send Message'} — {triggerModal.user.email}
             </h3>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-purple-300/60 uppercase mb-1.5">Phone Number</label>
+                <label className="block text-xs font-medium text-slate-400 uppercase mb-1.5">Phone Number</label>
                 <PhoneInput
                   value={triggerPhone}
                   onChange={setTriggerPhone}
@@ -1003,7 +1003,7 @@ export default function AdminDashboard() {
               {triggerModal.type === 'message' && (
                 <>
                   <div>
-                    <label className="block text-xs font-medium text-purple-300/60 uppercase mb-1.5">Channel</label>
+                    <label className="block text-xs font-medium text-slate-400 uppercase mb-1.5">Channel</label>
                     <div className="flex gap-2">
                       {(['WHATSAPP', 'SMS'] as const).map((ch) => (
                         <button
@@ -1011,8 +1011,8 @@ export default function AdminDashboard() {
                           onClick={() => setTriggerChannel(ch)}
                           className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${
                             triggerChannel === ch
-                              ? 'bg-purple-600 text-white border-purple-500'
-                              : 'border-purple-500/20 text-purple-300/60 hover:text-purple-200'
+                              ? 'bg-teal-600 text-white border-teal-500'
+                              : 'border-teal-500/20 text-slate-400 hover:text-teal-200'
                           }`}
                         >
                           {ch === 'WHATSAPP' ? '📱 WhatsApp' : '💬 SMS'}
@@ -1021,13 +1021,13 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-purple-300/60 uppercase mb-1.5">Message</label>
+                    <label className="block text-xs font-medium text-slate-400 uppercase mb-1.5">Message</label>
                     <textarea
                       value={triggerMessage}
                       onChange={(e) => setTriggerMessage(e.target.value)}
                       placeholder="Type your message..."
                       rows={3}
-                      className="w-full px-3 py-2.5 rounded-xl border border-purple-500/20 bg-purple-900/20 text-white placeholder-purple-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                      className="w-full px-3 py-2.5 rounded-xl border border-teal-500/20 bg-teal-900/20 text-white placeholder-slate-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
                     />
                   </div>
                 </>
@@ -1037,14 +1037,14 @@ export default function AdminDashboard() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setTriggerModal(null)}
-                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-purple-300/60 border border-purple-500/20 hover:text-purple-200 transition"
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-400 border border-teal-500/20 hover:text-teal-200 transition"
               >
                 Cancel
               </button>
               <button
                 onClick={handleTrigger}
                 disabled={triggerLoading || !triggerPhone || (triggerModal.type === 'message' && !triggerMessage)}
-                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium bg-purple-600 text-white hover:bg-purple-500 transition disabled:opacity-40"
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium bg-teal-600 text-white hover:bg-teal-500 transition disabled:opacity-40"
               >
                 {triggerLoading ? 'Sending...' : triggerModal.type === 'call' ? 'Call Now' : 'Send'}
               </button>
