@@ -264,8 +264,10 @@ export default function Home() {
           <div className="hidden md:flex items-center gap-3">
             <button onClick={() => scrollToSection('how-it-works')}
               className="px-3 py-2 text-sm text-white/50 hover:text-white transition-colors">How It Works</button>
-            <button onClick={() => scrollToSection('testimonials')}
-              className="px-3 py-2 text-sm text-white/50 hover:text-white transition-colors">Testimonials</button>
+            <a href="/pricing"
+              className="px-3 py-2 text-sm text-white/50 hover:text-white transition-colors">Pricing</a>
+            <a href="/blog"
+              className="px-3 py-2 text-sm text-white/50 hover:text-white transition-colors">Blog</a>
             <button onClick={() => { setShowAuth(true); setMode('login'); }}
               className="px-4 py-2 text-sm text-muted hover:text-white transition-colors">Log In</button>
             <button onClick={() => { setShowAuth(true); setMode('signup'); }}
@@ -287,8 +289,10 @@ export default function Home() {
           <div className="md:hidden border-t border-white/[0.06] px-6 py-4 space-y-2" style={{ background: 'rgba(11,9,24,0.95)' }}>
             <button onClick={() => { scrollToSection('how-it-works'); setMobileMenuOpen(false); }}
               className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">How It Works</button>
-            <button onClick={() => { scrollToSection('testimonials'); setMobileMenuOpen(false); }}
-              className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">Testimonials</button>
+            <a href="/pricing"
+              className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">Pricing</a>
+            <a href="/blog"
+              className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">Blog</a>
             <button onClick={() => { setShowAuth(true); setMode('login'); setMobileMenuOpen(false); }}
               className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">Log In</button>
             <button onClick={() => { setShowAuth(true); setMode('signup'); setMobileMenuOpen(false); }}
@@ -660,8 +664,11 @@ export default function Home() {
               </svg>
               <span className="text-white font-semibold text-sm">Cleya.ai</span>
             </div>
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-6 flex-wrap justify-center">
               {[
+                { label: 'About', href: '/about' },
+                { label: 'Pricing', href: '/pricing' },
+                { label: 'Blog', href: '/blog' },
                 { label: 'Privacy', href: '/privacy' },
                 { label: 'Terms', href: '/terms' },
                 { label: 'Contact', href: '/contact' },

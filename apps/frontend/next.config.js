@@ -4,6 +4,8 @@ const nextConfig = {
   experimental: {
     missingSuspenseWithCSRBailout: false,
   },
+  compress: true,
+  poweredByHeader: false,
   async rewrites() {
     return [
       {
@@ -27,14 +29,26 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://us.i.posthog.com",
+              "script-src 'self' 'unsafe-inline' https://us.i.posthog.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https:",
-              "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com https://us.i.posthog.com https://us.posthog.com",
+              "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com https://us.i.posthog.com https://us.posthog.com wss:",
               "frame-ancestors 'none'",
             ].join('; '),
           },
+        ],
+      },
+      {
+        source: '/_next/static/(.*)',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      {
+        source: '/icon.svg',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' },
         ],
       },
     ];

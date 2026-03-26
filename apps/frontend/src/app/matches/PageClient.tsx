@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import NotificationCenter from '@/components/NotificationCenter';
 import MobileNav from '@/components/MobileNav';
+import VerificationBadge from '@/components/VerificationBadge';
 import { analytics } from '@/lib/posthog';
 import { useToast } from '@/components/Toast';
 
@@ -197,11 +198,44 @@ export default function MatchesPage() {
     );
   }
 
+  const ScoreBreakdown = ({ breakdown }: { breakdown: any }) => {
+    if (!breakdown || typeof breakdown !== 'object') return null;
+    const factors = [
+      { key: 'industryScore', label: 'Industry Fit', icon: '🏭' },
+      { key: 'stageScore', label: 'Stage Match', icon: '📊' },
+      { key: 'locationScore', label: 'Location', icon: '📍' },
+      { key: 'goalsScore', label: 'Goal Alignment', icon: '🎯' },
+      { key: 'skillsScore', label: 'Skills Match', icon: '💡' },
+      { key: 'personaScore', label: 'Role Fit', icon: '👤' },
+    ];
+    const validFactors = factors.filter(f => breakdown[f.key] !== undefined && breakdown[f.key] !== null);
+    if (validFactors.length === 0) return null;
+    return (
+      <div className="mt-3 space-y-1.5">
+        <p className="text-[10px] font-medium uppercase tracking-wider text-white/25">Match Breakdown</p>
+        {validFactors.map(f => {
+          const val = Math.round((breakdown[f.key] || 0) * 100);
+          return (
+            <div key={f.key} className="flex items-center gap-2">
+              <span className="text-xs w-4">{f.icon}</span>
+              <span className="text-[10px] w-20 text-white/40">{f.label}</span>
+              <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                <div className="h-full rounded-full" style={{ width: `${val}%`, background: val >= 70 ? '#0D9488' : val >= 40 ? '#3B82F6' : '#64748B' }} />
+              </div>
+              <span className="text-[10px] w-8 text-right" style={{ color: val >= 70 ? '#5EEAD4' : '#94A3B8' }}>{val}%</span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   const MatchCard = ({ match, showActions }: { match: MatchData; showActions: boolean }) => {
     const other = getOtherUser(match);
     const profile = other.profile;
     const scorePercent = Math.round((match.score || 0) * 100);
     const isAccepted = match.status === 'ACCEPTED';
+    const [showBreakdown, setShowBreakdown] = useState(false);
 
     return (
       <div className="rounded-2xl border border-white/5 overflow-hidden transition hover:border-teal-500/15"
@@ -217,11 +251,20 @@ export default function MatchesPage() {
                 <h3 className="font-semibold text-white text-sm truncate">
                   {profile?.currentRole || other.email.split('@')[0]}
                 </h3>
-                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
+                {(profile as any)?.verificationScore > 0 && (
+                  <VerificationBadge score={(profile as any).verificationScore} size="sm" showLabel={false} />
+                )}
+                <button
+                  onClick={() => setShowBreakdown(!showBreakdown)}
+                  className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold transition hover:opacity-80"
+                  title="Click to see score breakdown"
                   style={{ background: scorePercent >= 80 ? 'rgba(13,148,136,0.15)' : scorePercent >= 60 ? 'rgba(59,130,246,0.12)' : 'rgba(13,148,136,0.12)',
                     color: scorePercent >= 80 ? '#5EEAD4' : scorePercent >= 60 ? '#93C5FD' : '#94A3B8' }}>
-                  {scorePercent >= 80 ? 'Strong Match' : scorePercent >= 60 ? 'Good Fit' : 'Possible Fit'}
-                </div>
+                  {scorePercent}% · {scorePercent >= 80 ? 'Strong Match' : scorePercent >= 60 ? 'Good Fit' : 'Possible Fit'}
+                  <svg className={`w-3 h-3 transition-transform ${showBreakdown ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
               </div>
               {profile?.companyName && (
                 <p className="text-xs text-white/40 mb-0.5">{profile.companyName}</p>
@@ -238,6 +281,8 @@ export default function MatchesPage() {
           {profile?.headline && (
             <p className="text-sm text-white/50 mt-3 line-clamp-2">{profile.headline}</p>
           )}
+
+          {showBreakdown && <ScoreBreakdown breakdown={match.scoreBreakdown} />}
 
           {match.reason && (
             <div className="mt-3 p-3 rounded-xl" style={{ background: 'rgba(13,148,136,0.06)', border: '1px solid rgba(13,148,136,0.08)' }}>
@@ -277,10 +322,17 @@ export default function MatchesPage() {
                   <p className="text-xs text-white/40">📍 {profile.location}</p>
                 )}
               </div>
-              <button onClick={() => router.push('/introductions')}
-                className="mt-3 w-full py-2 rounded-lg text-xs font-medium text-teal-300 border border-teal-500/20 hover:bg-teal-500/5 transition">
-                View Introduction →
-              </button>
+              <div className="flex gap-2 mt-3">
+                <button onClick={() => router.push('/messages')}
+                  className="flex-1 py-2 rounded-lg text-xs font-medium text-white border border-teal-500/20 hover:bg-teal-500/5 transition"
+                  style={{ background: 'rgba(13,148,136,0.1)' }}>
+                  💬 Message
+                </button>
+                <button onClick={() => router.push('/introductions')}
+                  className="flex-1 py-2 rounded-lg text-xs font-medium text-teal-300 border border-teal-500/20 hover:bg-teal-500/5 transition">
+                  View Intro →
+                </button>
+              </div>
             </div>
           )}
         </div>

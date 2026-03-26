@@ -86,8 +86,21 @@ function handleMessage(ws: AuthenticatedSocket, message: any) {
 
   switch (type) {
     case 'chat:message':
-      // Handled by conversation service
       break;
+    case 'dm:typing': {
+      const recipientId = payload?.recipientId;
+      if (recipientId && ws.userId) {
+        sendToUser(recipientId, 'dm:typing', { userId: ws.userId });
+      }
+      break;
+    }
+    case 'dm:stop_typing': {
+      const recipientId = payload?.recipientId;
+      if (recipientId && ws.userId) {
+        sendToUser(recipientId, 'dm:stop_typing', { userId: ws.userId });
+      }
+      break;
+    }
     case 'ping':
       ws.send(JSON.stringify({ type: 'pong' }));
       break;

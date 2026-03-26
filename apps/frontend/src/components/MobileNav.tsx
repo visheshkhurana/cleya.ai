@@ -6,8 +6,9 @@ import { api } from '@/lib/api';
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: '📊' },
   { href: '/matches', label: 'Matches', icon: '🤝' },
-  { href: '/introductions', label: 'Introductions', icon: '🤝' },
-  { href: '/chat', label: 'Onboarding Chat', icon: '💬' },
+  { href: '/messages', label: 'Messages', icon: '💬' },
+  { href: '/introductions', label: 'Introductions', icon: '📨' },
+  { href: '/chat', label: 'Onboarding Chat', icon: '🤖' },
   { href: '/profile', label: 'Profile', icon: '👤' },
   { href: '/settings', label: 'Settings', icon: '⚙️' },
 ];

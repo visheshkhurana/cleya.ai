@@ -58,6 +58,11 @@ model User {
   inviteCodeUsed     InviteCode?  @relation("InviteCodeUser")
   activities         Activity[]
 
+  sentDirectMessages     DirectMessage[] @relation("DirectMessageSender")
+  receivedDirectMessages DirectMessage[] @relation("DirectMessageRecipient")
+  organizedMeetings      Meeting[]       @relation("MeetingOrganizer")
+  participantMeetings    Meeting[]       @relation("MeetingParticipant")
+
   @@index([email])
   @@index([phone])
   @@map("users")
@@ -135,6 +140,10 @@ model Profile {
 
   // AI matching — pgvector embedding
   profileEmbedding Unsupported("vector(1536)")?
+
+  // Verification
+  linkedinVerified   Boolean    @default(false)
+  verificationScore  Float      @default(0)
 
   // Computed
   completenessScore Float       @default(0)
@@ -681,6 +690,65 @@ model InviteCode {
   @@index([code])
   @@index([createdById])
   @@map("invite_codes")
+}
+
+// ─────────────────────────────────────────────
+// DIRECT MESSAGES (P2P chat between matched users)
+// ─────────────────────────────────────────────
+
+model DirectMessage {
+  id          String   @id @default(cuid())
+  senderId    String
+  sender      User     @relation("DirectMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipientId String
+  recipient   User     @relation("DirectMessageRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  matchId     String?
+  content     String
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([matchId])
+  @@index([createdAt])
+  @@map("direct_messages")
+}
+
+// ─────────────────────────────────────────────
+// MEETINGS (scheduling between matched users)
+// ─────────────────────────────────────────────
+
+model Meeting {
+  id            String        @id @default(cuid())
+  organizerId   String
+  organizer     User          @relation("MeetingOrganizer", fields: [organizerId], references: [id], onDelete: Cascade)
+  participantId String
+  participant   User          @relation("MeetingParticipant", fields: [participantId], references: [id], onDelete: Cascade)
+  matchId       String?
+  title         String
+  description   String?
+  proposedTimes DateTime[]
+  confirmedTime DateTime?
+  duration      Int           @default(30)
+  location      String?
+  meetingUrl    String?
+  status        MeetingStatus @default(PROPOSED)
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([organizerId])
+  @@index([participantId])
+  @@index([status])
+  @@map("meetings")
+}
+
+enum MeetingStatus {
+  PROPOSED
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  RESCHEDULED
 }
 
 // ─────────────────────────────────────────────

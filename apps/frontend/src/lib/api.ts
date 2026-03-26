@@ -408,6 +408,60 @@ class ApiClient {
       body: JSON.stringify({ token }),
     });
   }
+
+  async getConversations() {
+    return this.fetch('/dm/conversations');
+  }
+
+  async getDirectMessages(partnerId: string, limit = 50, before?: string) {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (before) params.set('before', before);
+    return this.fetch(`/dm/${partnerId}?${params}`);
+  }
+
+  async sendDirectMessage(partnerId: string, content: string) {
+    return this.fetch(`/dm/${partnerId}`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    });
+  }
+
+  async markConversationRead(partnerId: string) {
+    return this.fetch(`/dm/${partnerId}/read`, { method: 'POST' });
+  }
+
+  async getMeetings() {
+    return this.fetch('/meetings');
+  }
+
+  async proposeMeeting(data: { participantId: string; title: string; description?: string; proposedTimes: string[]; duration?: number; location?: string; meetingUrl?: string }) {
+    return this.fetch('/meetings', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async confirmMeeting(meetingId: string, confirmedTime: string) {
+    return this.fetch(`/meetings/${meetingId}/confirm`, {
+      method: 'PUT',
+      body: JSON.stringify({ confirmedTime }),
+    });
+  }
+
+  async cancelMeeting(meetingId: string) {
+    return this.fetch(`/meetings/${meetingId}/cancel`, { method: 'PUT' });
+  }
+
+  async getVerificationStatus() {
+    return this.fetch('/verification/status');
+  }
+
+  async verifyLinkedin(linkedinUrl: string) {
+    return this.fetch('/verification/linkedin', {
+      method: 'POST',
+      body: JSON.stringify({ linkedinUrl }),
+    });
+  }
 }
 
 export const api = new ApiClient();

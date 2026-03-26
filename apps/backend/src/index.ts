@@ -39,6 +39,9 @@ import { searchRouter } from './routes/search';
 import { verificationRouter } from './routes/verification';
 import { analyticsRouter } from './routes/analytics';
 import { referralRouter } from './routes/referral';
+import { directMessageRouter } from './routes/directMessage';
+import { meetingRouter } from './routes/meeting';
+import compression from 'compression';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -48,6 +51,7 @@ const server = createServer(app);
 app.use(helmet());
 const corsOrigin = env.CORS_ORIGIN || env.FRONTEND_URL;
 app.use(cors({ origin: corsOrigin, credentials: true }));
+app.use(compression());
 app.use(morgan('dev'));
 app.use(cookieParser());
 app.use(express.json());
@@ -112,6 +116,8 @@ app.use('/api/search', csrfProtection, searchRouter);
 app.use('/api/verification', csrfProtection, verificationRouter);
 app.use('/api/analytics', csrfProtection, analyticsRouter);
 app.use('/api/referrals', csrfProtection, referralRouter);
+app.use('/api/dm', csrfProtection, directMessageRouter);
+app.use('/api/meetings', csrfProtection, meetingRouter);
 
 if (env.SENTRY_DSN) {
   Sentry.setupExpressErrorHandler(app);

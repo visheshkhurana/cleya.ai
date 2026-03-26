@@ -52,13 +52,18 @@ All frontend pages use a server/client wrapper pattern for build compatibility:
 
 ### Pages
 - `/` — Landing page with auth modal (signup/login), mobile hamburger menu, real stats from DB (qualitative fallback if <10 members), testimonials
-- `/about` — About page with mission, how-it-works, and personas
+- `/about` — About page with mission, team section, investor/backer logos, stats, contact info
+- `/pricing` — 3 tiers (Free/Professional ₹999/Growth ₹2999) + Enterprise + FAQ, monthly/annual toggle
+- `/blog` — Blog listing with 5 posts (fundraising, investors, networking, AI matching, co-founders)
+- `/blog/[slug]` — Blog post detail page with reading time, author, related posts
+- `/cities/[city]` — City landing pages (Bangalore, Mumbai, Delhi, Hyderabad, Pune, Chennai) with local stats, investors, sectors
+- `/messages` — P2P messaging between accepted matches with real-time chat, typing indicators via WebSocket
 - `/features` — Features overview (8 feature cards)
 - `/contact` — Contact form (Name, Email, Subject dropdown, Message) with FAQ accordion (7 items), loading spinner on submit, 24-48hr response time
 - `/login` — Redirects to `/?action=login` to open login modal
 - `/dashboard` — User dashboard with stats, matches, invite codes, activity feed, AI chat; stats auto-refresh on visibility change
 - `/profile` — Profile editor; merges `extraData` JSON for persona-specific fields (preferredRole, portfolioSize, etc.)
-- `/matches` — Match listing with qualitative labels (Strong Match/Good Fit/Possible Fit instead of raw %), feedback, search
+- `/matches` — Match listing with qualitative labels + expandable score breakdown (industry/stage/location/goals/skills/role), verification badges, Message button for accepted matches, feedback, search
 - `/chat` — AI onboarding conversation with progress indicator (Step X of 5)
 - `/settings` — Account settings with phone display (syncs from profile), password change, notification preferences (persisted to CommunicationPreference model)
 - `/introductions` — Introduction records with full status lifecycle (PENDING_APPROVAL → APPROVED → SENT → VIEWED → RESPONDED → COMPLETED)
@@ -68,15 +73,26 @@ All frontend pages use a server/client wrapper pattern for build compatibility:
 - `GET /api/search?q=&persona=&industry=&location=&limit=` — Search users by name, headline, company, bio; filter by persona/industry/location
 - `GET /api/conversations` — List all conversations for authenticated user with last message
 - `POST /api/conversations/:id/messages` — Send a message in a conversation (alias for `/message`)
-- `POST /api/verification/linkedin` — Validate and save LinkedIn URL to profile
+- `POST /api/verification/linkedin` — Validate and save LinkedIn URL to profile (linkedinVerified stays false until OAuth implemented)
+- `GET /api/verification/status` — Get verification score, tier, badge, and factor breakdown
+- `GET /api/dm/conversations` — List P2P message conversations for authenticated user
+- `GET /api/dm/:partnerId` — Get direct messages with a partner (paginated)
+- `POST /api/dm/:partnerId` — Send direct message to an accepted match partner
+- `POST /api/dm/:partnerId/read` — Mark conversation as read
+- `GET /api/meetings` — List meetings for authenticated user
+- `POST /api/meetings` — Propose meeting with time slots
+- `PUT /api/meetings/:id/confirm` — Confirm a meeting with selected time
+- `PUT /api/meetings/:id/cancel` — Cancel a meeting
+- `GET /api/meetings/:id/ics` — Download ICS calendar file for meeting
 - `GET /api/analytics/overview` — User-facing analytics: match stats, intro counts, profile completeness, recent matches
 - `GET /api/referrals` — Invite code summary (total/used/available) with referred user details
 
 ### Shared Components
 - `Toast.tsx` — Global toast notification system (success/error/info/warning). Provider in `ClientProviders.tsx`, wrapped in layout. Max 3 visible, auto-dismiss 5s, accessible with role="alert".
-- `MobileNav.tsx` — Slide-out mobile navigation drawer
+- `MobileNav.tsx` — Slide-out mobile navigation drawer (Dashboard, Matches, Messages, Introductions, Chat, Profile, Settings)
 - `NotificationCenter.tsx` — In-app notification dropdown
 - `PhoneInput.tsx` — Phone number input with validation
+- `VerificationBadge.tsx` — Tier-based verification badge (Trusted/Verified/Basic) shown on match cards
 
 ### Auth Flow
 - Signup: Full Name (optional) + Persona selector (Founder/Investor/Talent) + Email + Password (min 8 chars, letter + number required) + Confirm Password + Terms consent
@@ -92,7 +108,7 @@ All frontend pages use a server/client wrapper pattern for build compatibility:
 `apps/frontend/next.config.js` has rewrites proxying `/api/*` → `http://localhost:3001/api/*` so the browser can reach the backend through the Next.js dev server.
 
 ## Database
-- Schema: 17+ models — User, Profile (with pgvector `profileEmbedding`), Conversation, Message, Match, MatchFeedback, IntroductionRecord (with introText, outcome, sentAt, followUpAt), DealTracking, Event, EventParticipant, Notification, Call, MessageRecord, UserEmbedding, CommunicationPreference, InviteCode, Activity, Waitlist
+- Schema: 20+ models — User, Profile (with pgvector `profileEmbedding`, `linkedinVerified`, `verificationScore`), Conversation, Message, Match (with `scoreBreakdown` JsonB), MatchFeedback, IntroductionRecord (with introText, outcome, sentAt, followUpAt), DealTracking, Event, EventParticipant, Notification, Call, MessageRecord, UserEmbedding, CommunicationPreference, InviteCode, Activity, Waitlist, DirectMessage (P2P messaging), Meeting (scheduling with ICS support)
 - pgvector extension enabled for semantic similarity search
 - Schema pushed via `prisma db push`
 - Seed: `npx ts-node packages/db/src/seed.ts` — idempotent, skips existing emails

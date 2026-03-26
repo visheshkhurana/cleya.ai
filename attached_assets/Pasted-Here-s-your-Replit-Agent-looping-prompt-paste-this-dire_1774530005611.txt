@@ -1,0 +1,206 @@
+Here's your Replit Agent looping prompt — paste this directly into the Replit Agent chat:
+
+---
+
+**REPLIT AGENT PROMPT — LOOPING BUG FIX CYCLE FOR CLEYA.AI**
+
+You are a Senior Full-Stack Engineer performing a fix-test-verify loop on the Cleya.ai Next.js application. You must fix ALL bugs listed below, then test each fix, and if any bug persists or a regression is introduced, loop back and fix again. Do NOT stop until every single bug passes verification.
+
+---
+
+LOOP PROTOCOL:
+
+```
+REPEAT {
+  1. Pick the next unfixed bug from the list
+  2. Locate the relevant source files
+  3. Implement the fix
+  4. Test the fix by running the app and verifying the exact acceptance criteria
+  5. If the fix passes → mark it DONE, move to next bug
+  6. If the fix fails or introduces a regression → revert/adjust and retry
+  7. After all bugs are marked DONE → run a FULL regression pass across all 14 bugs
+  8. If any regression is found → fix it and re-run the full pass
+} UNTIL all 14 bugs pass simultaneously with zero regressions
+```
+
+---
+
+BUG LIST WITH EXACT FIX INSTRUCTIONS AND ACCEPTANCE CRITERIA:
+
+---
+
+BUG-01: SIGN-UP FORM ACCEPTS INVALID EMAIL WITHOUT ERROR
+- Severity: P0 CRITICAL
+- Location: Sign-up modal component (likely `components/AuthModal.tsx` or similar)
+- Problem: Entering "notanemail" in the email field and submitting shows no error. The field keeps a green/teal border as if valid.
+- Fix: Add explicit email regex validation (must contain `@` and a domain with `.`) in the form's `onSubmit` handler AND on blur of the email field. Display a red error message below the email field saying "Please enter a valid email address". Change the field border to red when invalid.
+- Acceptance Criteria: Type "notanemail" → click submit → see red error "Please enter a valid email address" below the email field with a red border. Type "test@test.com" → error disappears, border returns to normal.
+
+---
+
+BUG-02: FORM STATE PERSISTS AFTER MODAL CLOSE
+- Severity: P0 CRITICAL
+- Location: Auth modal component + all places that open the modal
+- Problem: Closing the modal (clicking outside / X button) and reopening it shows previously entered name, email, password, and role selection.
+- Fix: In the modal's `onClose` handler (or an `useEffect` that fires when `isOpen` changes to `false`), reset ALL form state: name to "", email to "", password to "", confirmPassword to "", role to null/undefined, checkbox to false, and clear ALL error messages. Make sure this reset runs regardless of how the modal is closed (X button, overlay click, or programmatic close).
+- Acceptance Criteria: Fill out the sign-up form with any data → close the modal by clicking outside → reopen via any CTA button → ALL fields are empty, no role is selected, checkbox is unchecked, no error messages shown.
+
+---
+
+BUG-03: LOGIN ERROR LEAKS INTO SIGN-UP FORM
+- Severity: P0 CRITICAL
+- Location: Auth modal — shared error state between tabs
+- Problem: After a failed login ("Invalid credentials"), switching to the Sign-Up tab or reopening the modal shows the "Invalid credentials" error on the Sign-Up form.
+- Fix: Clear all error messages when switching between Sign-Up and Log-In tabs. Each tab should maintain its own independent error state, OR a single shared error state that gets cleared on tab switch. In the tab switch handler, set `error` to `null`/empty string.
+- Acceptance Criteria: Go to Login tab → enter wrong credentials → see "Invalid credentials" → switch to Sign Up tab → NO error message visible. Switch back to Login tab → error should also be cleared.
+
+---
+
+BUG-04: NO VISIBLE VALIDATION ERRORS ON EMPTY FORM SUBMISSION (ALL FORMS)
+- Severity: P1 MAJOR
+- Location: Sign-up form, Login form, Forgot Password form, Contact page form
+- Problem: Submitting any form with all fields empty shows zero visual feedback. The form just silently does nothing.
+- Fix for Sign-Up: On submit, validate ALL required fields. If name is empty → show "Name is required". If no role selected → show "Please select a role". If email empty → show "Email is required". If password empty → show "Password is required". If confirm password empty → show "Please confirm your password". If checkbox unchecked → show "You must agree to the terms". Display these as red text below each respective field.
+- Fix for Login: If email empty → show "Email is required". If password empty → show "Password is required".
+- Fix for Forgot Password: If email empty → show "Email is required".
+- Fix for Contact form (`/contact`): If name empty → show "Name is required". If email empty → show "Email is required". If subject not selected → show "Please select a topic". If message empty → show "Message is required".
+- Acceptance Criteria: On every form, clicking submit with empty fields shows clear red error messages under each empty required field. Filling in a field and re-submitting clears that field's error.
+
+---
+
+BUG-05: FOOTER "LOG IN" BUTTON OPENS SIGN-UP TAB
+- Severity: P1 MAJOR
+- Location: Bottom CTA section of the homepage — the "Log In" button (not the nav one)
+- Problem: The "Log In" button in the "Your next co-founder, investor, or hire is already on Cleya" section opens the modal on the Sign-Up tab.
+- Fix: The onClick handler for this "Log In" button should open the modal AND set the active tab to "login" (not "signup"). Find where this button calls the modal open function and pass the correct initial tab parameter.
+- Acceptance Criteria: Scroll to the bottom CTA → click "Log In" → modal opens showing the Log In form (not Sign Up).
+
+---
+
+BUG-06: PERSONA CARDS DON'T PRE-SELECT THE ROLE
+- Severity: P1 MAJOR
+- Location: "Built for every side of the table" section — Founders, Investors, Talent cards
+- Problem: Clicking "I'm a Founder →" opens the sign-up modal but doesn't pre-select the "Founder" role. Same for Investor and Talent.
+- Fix: Each persona card's onClick handler should open the sign-up modal AND set the role state to the corresponding value ("founder", "investor", or "talent"). The modal open function should accept an optional `defaultRole` parameter.
+- Acceptance Criteria: Click "I'm a Founder →" → modal opens with Founder button highlighted/selected. Click "I'm an Investor →" → Investor is pre-selected. Click "I'm looking for a role →" → Talent is pre-selected.
+
+---
+
+BUG-07: NAVIGATION INCONSISTENCY ACROSS PAGES
+- Severity: P1 MAJOR
+- Location: Navigation components on `/`, `/about`, `/features`, `/contact`, `/privacy`, `/terms`
+- Problem: Each page has completely different nav links. Homepage has "How It Works, Testimonials, Log In, Get Started". Contact has "About, Features". Features has "About, Contact". About has only "Get Started".
+- Fix: Create ONE consistent navigation component used across ALL pages. It should include: Logo (links to /), About, Features, Contact, Log In, Get Started (CTA button). On the homepage, "How It Works" and "Testimonials" can additionally appear as scroll-anchor links but the core nav should be consistent. The secondary pages (about, features, contact, privacy, terms) should all use the same nav bar with the same links.
+- Acceptance Criteria: Visit /about, /features, /contact → all have the same nav bar with the same links. Logo always links to homepage. "Get Started" button is always present.
+
+---
+
+BUG-08: ESCAPE KEY DOESN'T CLOSE THE MODAL
+- Severity: P1 MAJOR
+- Location: Auth modal component
+- Problem: Pressing Escape while the modal is open does nothing.
+- Fix: Add a `useEffect` in the modal component that listens for `keydown` events. When `Escape` is pressed and the modal is open, call the close handler (which should also trigger the state reset from BUG-02). Remember to clean up the event listener on unmount.
+- Code pattern:
+```typescript
+useEffect(() => {
+  const handleEsc = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') onClose();
+  };
+  if (isOpen) document.addEventListener('keydown', handleEsc);
+  return () => document.removeEventListener('keydown', handleEsc);
+}, [isOpen, onClose]);
+```
+- Acceptance Criteria: Open the modal → press Escape → modal closes and form state is reset.
+
+---
+
+BUG-09: FORGOT PASSWORD BACK TO LOGIN PRESERVES STALE ERROR
+- Severity: P1 MAJOR
+- Location: Auth modal — forgot password view transition
+- Problem: Login fails → "Invalid credentials" shown → click "Forgot password?" → click "Back to Login" → the "Invalid credentials" error is still visible.
+- Fix: In the "Back to Login" button's onClick handler, clear the error state before switching back to the login view. Also clear error when clicking "Forgot password?".
+- Acceptance Criteria: Fail a login → see error → click "Forgot password?" → NO error shown on forgot password view → click "Back to Login" → NO error shown on login view.
+
+---
+
+BUG-10: NAME FIELD ACCEPTS HTML/SCRIPT TAGS
+- Severity: P2 IMPROVEMENT
+- Location: Sign-up form name input
+- Problem: The name field accepts `<script>alert('xss')</script>` as a valid name.
+- Fix: Add client-side validation that rejects HTML angle brackets (`<` and `>`) in the name field. Show error: "Name cannot contain special characters like < or >". Also strip/reject any other clearly non-name characters.
+- Acceptance Criteria: Type `<script>` in name → see error message. Type "Priya Sharma" → no error.
+
+---
+
+BUG-11: NO ERROR TRACKING
+- Severity: P2 IMPROVEMENT
+- Fix: This is a suggestion, not a code fix. Skip this one.
+
+---
+
+BUG-12: CONTACT FORM EMPTY SUBMISSION
+- Severity: P2
+- Covered by BUG-04. No separate fix needed.
+
+---
+
+BUG-13: DUPLICATE TESTIMONIALS FOR SCREEN READERS
+- Severity: P2 IMPROVEMENT
+- Location: Testimonials marquee/carousel section
+- Problem: The testimonial carousel has duplicate DOM content for the infinite scroll animation, which screen readers will read twice.
+- Fix: Add `aria-hidden="true"` to the SECOND (duplicate) set of testimonials. Keep the first set accessible.
+- Acceptance Criteria: Inspect the DOM → the second copy of testimonials has `aria-hidden="true"`.
+
+---
+
+BUG-14: PASSWORD FIELD STATE CONTAMINATION ON TAB SWITCH
+- Severity: P2
+- Covered by BUG-02 and BUG-03 fixes. The tab switch should clear all form fields and errors.
+
+---
+
+FULL REGRESSION TEST CHECKLIST (run after all fixes):
+
+After implementing all fixes, verify EVERY item below passes. If ANY fails, loop back and fix:
+
+```
+[ ] Sign-up: Empty submit → red errors under each field
+[ ] Sign-up: Invalid email "notanemail" → red error on email field
+[ ] Sign-up: Valid email → no error
+[ ] Sign-up: Weak password → "Weak" indicator (already working, don't break)
+[ ] Sign-up: Mismatched passwords → "Passwords do not match" (already working, don't break)
+[ ] Sign-up: Strong matching passwords → no error
+[ ] Sign-up: HTML in name field → error shown
+[ ] Sign-up: Close modal → reopen → all fields empty, no role selected, no errors
+[ ] Login: Empty submit → red errors under each field
+[ ] Login: Invalid credentials → "Invalid credentials" error
+[ ] Login: Switch to Sign-Up tab → error cleared
+[ ] Login: Switch back to Login tab → error cleared
+[ ] Forgot password: Empty submit → red error on email
+[ ] Forgot password: "Back to Login" → no stale error
+[ ] Modal: Press Escape → modal closes, state resets
+[ ] Modal: Click outside → modal closes, state resets
+[ ] Modal: Close button (X) → modal closes, state resets
+[ ] Footer "Log In" button → opens modal on Login tab
+[ ] Persona "I'm a Founder" → modal opens with Founder selected
+[ ] Persona "I'm an Investor" → modal opens with Investor selected
+[ ] Persona "I'm looking for a role" → modal opens with Talent selected
+[ ] Nav on /about → has consistent links (Logo, About, Features, Contact, Log In, Get Started)
+[ ] Nav on /features → same consistent links
+[ ] Nav on /contact → same consistent links
+[ ] Contact form: Empty submit → red errors under each field
+[ ] Testimonial duplicate set → has aria-hidden="true"
+[ ] 404 page → still works (don't break)
+[ ] Homepage hero, "How It Works" scroll, "Testimonials" scroll → still works
+[ ] FAQ accordion on /contact → still works
+[ ] Password strength indicator → still works
+[ ] All pages load without JS console errors
+```
+
+Do NOT consider yourself done until every single checkbox above passes. If you fix one bug and break another, that counts as a regression — fix it.
+
+START NOW. Pick BUG-01 and begin the loop.
+
+---
+
+Copy-paste that entire block into your Replit Agent. It gives the agent a clear fix-test-refix loop structure with exact file locations to look for, precise code patterns, and a 30+ item regression checklist it must fully pass before stopping.

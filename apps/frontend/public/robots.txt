@@ -7,6 +7,8 @@ Disallow: /chat
 Disallow: /profile
 Disallow: /settings
 Disallow: /admin
+Disallow: /admin/
 Disallow: /api/
+Disallow: /api/internal/
 
-Sitemap: https://boardy-ai-platform.replit.app/sitemap.xml
+Sitemap: https://cleya.ai/sitemap.xml

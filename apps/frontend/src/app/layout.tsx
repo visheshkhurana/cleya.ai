@@ -20,34 +20,50 @@ const playfairDisplay = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: 'Cleya.ai — AI Superconnector for Founders, Investors & Operators',
-  description: 'Cleya.ai is a members-only AI-powered professional networking platform. Matching founders, investors, talent, and partners with 94% accuracy through intelligent conversations. Join 12,000+ professionals.',
-  keywords: ['AI networking', 'founder matching', 'investor matching', 'professional networking', 'startup networking', 'AI matchmaking'],
+  metadataBase: new URL('https://cleya.ai'),
+  title: 'Cleya.ai — AI Superconnector for Indian Startups',
+  description: 'Meet the right investors, founders, and operators. AI-powered warm intros for India\'s startup ecosystem. Join 12,000+ professionals.',
+  keywords: ['AI networking', 'founder matching', 'investor matching', 'professional networking', 'startup networking', 'AI matchmaking', 'India startups', 'seed funding India'],
   openGraph: {
-    title: 'Cleya.ai — AI Superconnector for Founders, Investors & Operators',
-    description: 'Members-only AI-powered networking. 94% match accuracy. Join 12,000+ founders, investors, and operators building meaningful connections through intelligent conversations.',
-    url: 'https://boardy-ai-platform.replit.app',
+    type: 'website',
+    url: 'https://cleya.ai',
     siteName: 'Cleya.ai',
+    title: 'Cleya.ai — AI Superconnector for Indian Startups',
+    description: 'Members-only AI-powered networking. 94% match accuracy. Join 12,000+ founders, investors, and operators building meaningful connections.',
     images: [
       {
-        url: '/og-image.svg',
+        url: 'https://cleya.ai/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Cleya.ai — AI Superconnector',
+        alt: 'Cleya.ai — AI Superconnector for Indian Startups',
       },
     ],
-    locale: 'en_US',
-    type: 'website',
+    locale: 'en_IN',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Cleya.ai — AI Superconnector for Founders, Investors & Operators',
-    description: 'Members-only AI-powered networking. 94% match accuracy. Join 12,000+ founders, investors, and operators.',
-    images: ['/og-image.svg'],
+    site: '@cleyaai',
+    creator: '@cleyaai',
+    title: 'Cleya.ai — AI Superconnector for Indian Startups',
+    description: 'Meet the right investors, founders, and operators. AI-powered warm intros for India\'s startup ecosystem.',
+    images: ['https://cleya.ai/og-image.png'],
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large' as const,
+      'max-snippet': -1,
+    },
+  },
+  alternates: {
+    canonical: 'https://cleya.ai',
+  },
+  verification: {
+    google: 'YOUR_GOOGLE_SEARCH_CONSOLE_VERIFICATION_CODE',
   },
   icons: {
     icon: '/icon.svg',
