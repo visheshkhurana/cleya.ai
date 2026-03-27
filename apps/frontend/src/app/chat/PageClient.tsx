@@ -236,7 +236,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#0F172A' }}>
+    <div className="min-h-screen flex flex-col overflow-x-hidden" style={{ background: '#0F172A' }}>
       <header className="px-4 py-3 flex items-center gap-3 sticky top-0 z-10 border-b border-white/5"
         style={{ background: 'rgba(13,11,26,0.9)', backdropFilter: 'blur(20px)' }}>
         <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
@@ -286,7 +286,7 @@ export default function ChatPage() {
         </div>
       )}
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto chat-scroll px-4 py-6 space-y-1">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden chat-scroll px-4 py-6 space-y-1 w-full">
         {messages.length === 0 && !typing && !loading && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-bold mb-4"

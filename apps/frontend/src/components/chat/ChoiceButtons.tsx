@@ -25,7 +25,7 @@ export function ChoiceButtons({ choices, onSelect, disabled }: ChoiceButtonsProp
   };
 
   return (
-    <div className="flex flex-col gap-2 mb-3 max-w-[85%] fade-up">
+    <div className="flex flex-col gap-2 mb-3 fade-up" style={{ maxWidth: 'min(85%, calc(100vw - 3rem))' }}>
       {choices.map((choice, i) => (
         <button
           key={choice.value}
