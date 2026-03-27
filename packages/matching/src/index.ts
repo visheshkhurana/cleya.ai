@@ -362,8 +362,8 @@ export class MatchingEngine {
         }
 
         if (founder.raiseAmount && candidate.investmentAmount) {
-          const raiseNum = parseFloat(founder.raiseAmount.replace(/[^0-9.]/g, ''));
-          const investNum = parseFloat(candidate.investmentAmount.replace(/[^0-9.]/g, ''));
+          const raiseNum = this.parseMoneyValue(founder.raiseAmount);
+          const investNum = this.parseMoneyValue(candidate.investmentAmount);
           if (raiseNum > 0 && investNum > 0 && investNum <= raiseNum) {
             score += 0.1;
           }
@@ -443,8 +443,8 @@ export class MatchingEngine {
         }
 
         if (founder.investmentAmount && candidate.raiseAmount) {
-          const investNum = parseFloat(founder.investmentAmount.replace(/[^0-9.]/g, ''));
-          const raiseNum = parseFloat(candidate.raiseAmount.replace(/[^0-9.]/g, ''));
+          const investNum = this.parseMoneyValue(founder.investmentAmount);
+          const raiseNum = this.parseMoneyValue(candidate.raiseAmount);
           if (investNum > 0 && raiseNum > 0 && investNum <= raiseNum) {
             score += 0.20;
           }
@@ -643,12 +643,30 @@ export class MatchingEngine {
   }
 
   private parseMoneyValue(value: string): number {
-    const cleaned = value.replace(/[^0-9.kKmMbB]/g, '').toLowerCase();
-    let num = parseFloat(cleaned.replace(/[kmb]/g, ''));
+    const t = value.toLowerCase().trim();
+    if (!t) return 0;
+
+    const croreMatch = t.match(/([\d.]+)\s*(?:cr|crore|crores)/);
+    if (croreMatch) {
+      const num = parseFloat(croreMatch[1]);
+      return isNaN(num) ? 0 : num * 10_000_000;
+    }
+
+    const lakhMatch = t.match(/([\d.]+)\s*(?:lakh|lakhs|lac|lacs|l)\b/);
+    if (lakhMatch) {
+      const num = parseFloat(lakhMatch[1]);
+      return isNaN(num) ? 0 : num * 100_000;
+    }
+
+    const stripped = t.replace(/,/g, '');
+    const suffixMatch = stripped.match(/([\d.]+)\s*([kmb])?/);
+    if (!suffixMatch) return 0;
+    let num = parseFloat(suffixMatch[1]);
     if (isNaN(num)) return 0;
-    if (cleaned.includes('b')) num *= 1_000_000_000;
-    else if (cleaned.includes('m')) num *= 1_000_000;
-    else if (cleaned.includes('k')) num *= 1_000;
+    const suffix = suffixMatch[2];
+    if (suffix === 'b') num *= 1_000_000_000;
+    else if (suffix === 'm') num *= 1_000_000;
+    else if (suffix === 'k') num *= 1_000;
     return num;
   }
 

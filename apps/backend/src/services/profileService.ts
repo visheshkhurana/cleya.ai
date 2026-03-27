@@ -7,6 +7,47 @@ function stripHtml(str: string): string {
   return str.replace(/<[^>]*>/g, '').replace(/&[a-z]+;/gi, ' ').trim();
 }
 
+function parseSingleMoneyToken(token: string): number {
+  const t = token.toLowerCase().trim();
+  if (!t) return 0;
+
+  const croreMatch = t.match(/([\d.]+)\s*(?:cr|crore|crores)/);
+  if (croreMatch) {
+    const num = parseFloat(croreMatch[1]);
+    return isNaN(num) ? 0 : num * 10_000_000;
+  }
+
+  const lakhMatch = t.match(/([\d.]+)\s*(?:lakh|lakhs|lac|lacs|l)\b/);
+  if (lakhMatch) {
+    const num = parseFloat(lakhMatch[1]);
+    return isNaN(num) ? 0 : num * 100_000;
+  }
+
+  const stripped = t.replace(/,/g, '');
+  const suffixMatch = stripped.match(/([\d.]+)\s*([kmb])?/);
+  if (!suffixMatch) return 0;
+  let num = parseFloat(suffixMatch[1]);
+  if (isNaN(num)) return 0;
+  const suffix = suffixMatch[2];
+  if (suffix === 'b') num *= 1_000_000_000;
+  else if (suffix === 'm') num *= 1_000_000;
+  else if (suffix === 'k') num *= 1_000;
+  return num;
+}
+
+function normalizeMoneyValue(value: string | undefined | null): string | undefined {
+  if (!value || !value.trim()) return undefined;
+  const lower = value.toLowerCase().trim();
+
+  const isRange = /[-–—]/.test(lower) && lower.split(/[-–—]/).filter(p => /\d/.test(p)).length === 2;
+  if (isRange) {
+    return value.trim();
+  }
+
+  const num = parseSingleMoneyToken(lower);
+  return num > 0 ? String(num) : value;
+}
+
 function validateLinkedinUrl(url: string): boolean {
   if (!url) return true;
   return /^https?:\/\/(www\.)?linkedin\.com\/in\/[\w-]+\/?$/i.test(url);
@@ -71,8 +112,8 @@ export class ProfileService {
       profileData.priority = founderPriority;
       profileData.businessDescription = context.businessDescription;
       profileData.keyTractionPoints = context.keyTractionPoints;
-      profileData.raiseAmount = context.raiseAmount;
-      profileData.amountRaisedToDate = context.amountRaisedToDate;
+      profileData.raiseAmount = normalizeMoneyValue(context.raiseAmount) || context.raiseAmount;
+      profileData.amountRaisedToDate = normalizeMoneyValue(context.amountRaisedToDate) || context.amountRaisedToDate;
       profileData.roundCloseDate = context.roundCloseDate;
       profileData.lookingFor = founderPriority ? [founderPriority] : [];
     }
@@ -84,7 +125,7 @@ export class ProfileService {
 
     if (persona === 'INVESTOR') {
       profileData.investorType = context.investorType;
-      profileData.investmentAmount = context.investmentAmount;
+      profileData.investmentAmount = normalizeMoneyValue(context.investmentAmount) || context.investmentAmount;
     }
 
     if (persona === 'DEAL_PARTNER') {
@@ -171,6 +212,13 @@ export class ProfileService {
     for (const key of textFields) {
       if (typeof sanitized[key] === 'string') {
         sanitized[key] = stripHtml(sanitized[key]);
+      }
+    }
+
+    const moneyFields = ['raiseAmount', 'amountRaisedToDate', 'investmentAmount', 'fundSize'];
+    for (const key of moneyFields) {
+      if (typeof sanitized[key] === 'string') {
+        sanitized[key] = normalizeMoneyValue(sanitized[key]) || sanitized[key];
       }
     }
 
