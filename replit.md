@@ -52,7 +52,7 @@ All frontend pages use a server/client wrapper pattern for build compatibility:
 
 ### Pages
 - `/` — Landing page with auth modal (signup/login), mobile hamburger menu, real stats from DB (qualitative fallback if <10 members), testimonials
-- `/about` — About page with mission, team section, investor/backer logos, stats, contact info
+- `/about` — About page with mission, team section, investor/backer logos, qualitative highlights (no fake numbers), contact info
 - `/pricing` — 3 tiers (Free/Professional ₹999/Growth ₹2999) + Enterprise + FAQ, monthly/annual toggle
 - `/blog` — Blog listing with 5 posts (fundraising, investors, networking, AI matching, co-founders)
 - `/blog/[slug]` — Blog post detail page with reading time, author, related posts

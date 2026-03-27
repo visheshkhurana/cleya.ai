@@ -307,7 +307,7 @@ Match reason: ${reason}`,
     } catch {
       const nameA = userA.name || userA.email.split('@')[0];
       const nameB = userB.name || userB.email.split('@')[0];
-      return `Hi ${nameA} and ${nameB},\n\nI'd love to connect you two. ${reason || 'You both have complementary backgrounds that could lead to a valuable connection.'}\n\nI'll let you two take it from here!\n— Cleya`;
+      return `Hi ${nameA} and ${nameB},\n\nI'd love to connect you two. ${reason || `Based on your profiles, there's strong potential for a valuable connection.`}\n\nI'll let you two take it from here!\n— Cleya`;
     }
   }
 }

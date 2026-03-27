@@ -66,6 +66,10 @@ export class MatchingService {
     const profileB = await vectorMatchingService.getProfileForMatching(userBId);
     if (!profileA || !profileB) throw new AppError(404, 'Profile not found');
 
+    if (profileA.persona === profileB.persona) {
+      throw new AppError(400, 'Same-persona matches are not allowed', 'SAME_PERSONA');
+    }
+
     const score = matchingEngine.score(profileA, profileB);
 
     console.log(`[MatchingService] Generating AI reasoning for match: ${userAId} <-> ${userBId}`);

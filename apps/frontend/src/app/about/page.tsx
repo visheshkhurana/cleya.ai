@@ -8,11 +8,11 @@ const team = [
   { name: 'Arjun Mehta', role: 'Head of Engineering', bio: 'Full-stack engineer passionate about AI/ML and matchmaking algorithms.' },
 ];
 
-const stats = [
-  { value: '6', label: 'Cities' },
-  { value: '12,000+', label: 'Professionals' },
-  { value: '94%', label: 'Match Accuracy' },
-  { value: '5,000+', label: 'Intros Made' },
+const highlights = [
+  { value: 'Multi-City', label: 'Presence across India\'s key startup hubs' },
+  { value: 'AI-Powered', label: 'Semantic matching beyond keywords' },
+  { value: 'Curated', label: 'Members-only, invite-driven network' },
+  { value: 'Cross-Role', label: 'Founders, investors & talent matched' },
 ];
 
 const backers = ['Sequoia Scouts', 'Antler India', 'TiE Delhi', 'Nasscom', 'T-Hub'];
@@ -40,10 +40,10 @@ export default function AboutPage() {
         </section>
 
         <section className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {stats.map((s, i) => (
+          {highlights.map((h, i) => (
             <div key={i} className="text-center rounded-2xl border border-white/5 p-5" style={{ background: 'rgba(30,41,59,0.4)' }}>
-              <div className="text-2xl sm:text-3xl font-bold" style={{ color: '#5EEAD4' }}>{s.value}</div>
-              <div className="text-xs mt-1" style={{ color: '#94A3B8' }}>{s.label}</div>
+              <div className="text-lg sm:text-xl font-bold" style={{ color: '#5EEAD4' }}>{h.value}</div>
+              <div className="text-[11px] mt-1 leading-relaxed" style={{ color: '#94A3B8' }}>{h.label}</div>
             </div>
           ))}
         </section>
