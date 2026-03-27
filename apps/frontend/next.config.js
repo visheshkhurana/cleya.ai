@@ -6,6 +6,10 @@ const nextConfig = {
   },
   compress: true,
   poweredByHeader: false,
+  images: {
+    formats: ['image/webp', 'image/avif'],
+    minimumCacheTTL: 60,
+  },
   async rewrites() {
     return [
       {
@@ -40,15 +44,22 @@ const nextConfig = {
         ],
       },
       {
+        source: '/:all*(svg|jpg|jpeg|png|webp|avif|woff2|woff|ttf)',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      {
         source: '/_next/static/(.*)',
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],
       },
       {
-        source: '/icon.svg',
+        source: '/:path*',
+        has: [{ type: 'header', key: 'accept', value: '.*text/html.*' }],
         headers: [
-          { key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' },
+          { key: 'Cache-Control', value: 'public, max-age=3600, stale-while-revalidate=86400' },
         ],
       },
     ];
