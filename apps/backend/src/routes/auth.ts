@@ -110,7 +110,7 @@ authRouter.get('/google', (req: Request, res: Response) => {
   }
   const state = crypto.randomBytes(32).toString('hex');
   oauthStates.set(state, { createdAt: Date.now() });
-  const redirectUri = `${env.BACKEND_URL}/api/auth/google/callback`;
+  const redirectUri = `${env.FRONTEND_URL}/api/auth/google/callback`;
   const params = new URLSearchParams({
     client_id: env.GOOGLE_CLIENT_ID,
     redirect_uri: redirectUri,
@@ -136,7 +136,7 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
       return;
     }
     oauthStates.delete(state);
-    const redirectUri = `${env.BACKEND_URL}/api/auth/google/callback`;
+    const redirectUri = `${env.FRONTEND_URL}/api/auth/google/callback`;
     const tokenBody = new URLSearchParams({
       code,
       client_id: env.GOOGLE_CLIENT_ID,
@@ -194,7 +194,7 @@ authRouter.get('/linkedin', (req: Request, res: Response) => {
   }
   const state = crypto.randomBytes(32).toString('hex');
   oauthStates.set(state, { createdAt: Date.now() });
-  const redirectUri = `${env.BACKEND_URL}/api/auth/linkedin/callback`;
+  const redirectUri = `${env.FRONTEND_URL}/api/auth/linkedin/callback`;
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: env.LINKEDIN_CLIENT_ID,
@@ -218,7 +218,7 @@ authRouter.get('/linkedin/callback', async (req: Request, res: Response) => {
       return;
     }
     oauthStates.delete(state);
-    const redirectUri = `${env.BACKEND_URL}/api/auth/linkedin/callback`;
+    const redirectUri = `${env.FRONTEND_URL}/api/auth/linkedin/callback`;
     const tokenRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
