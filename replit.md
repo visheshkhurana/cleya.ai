@@ -88,6 +88,7 @@ All frontend pages use a server/client wrapper pattern for build compatibility:
 - `GET /api/referrals` — Invite code summary (total/used/available) with referred user details
 
 ### Shared Components
+- `PublicNav.tsx` — Shared navigation bar for all public pages (About, Features, Contact, Log In, Get Started). Used by: about, features, contact, privacy, terms, pricing, blog, blog/[slug], cities/[city]. Homepage uses its own inline nav with section-specific links (How It Works, Pricing, Blog).
 - `Toast.tsx` — Global toast notification system (success/error/info/warning). Provider in `ClientProviders.tsx`, wrapped in layout. Max 3 visible, auto-dismiss 5s, accessible with role="alert".
 - `MobileNav.tsx` — Slide-out mobile navigation drawer (Dashboard, Matches, Messages, Introductions, Chat, Profile, Settings)
 - `NotificationCenter.tsx` — In-app notification dropdown

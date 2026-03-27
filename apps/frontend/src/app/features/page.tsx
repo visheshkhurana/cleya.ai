@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import PublicNav from '@/components/PublicNav';
 
 const features = [
   {
@@ -47,18 +48,7 @@ const features = [
 export default function FeaturesPage() {
   return (
     <div className="min-h-screen" style={{ background: '#0F172A' }}>
-      <nav className="px-6 py-4 flex items-center justify-between max-w-6xl mx-auto">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#0D9488' }}>
-            <span className="text-white font-bold text-sm">C</span>
-          </div>
-          <span className="font-bold text-white">Cleya.ai</span>
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link href="/about" className="text-sm text-white/50 hover:text-white/80 transition">About</Link>
-          <Link href="/contact" className="text-sm text-white/50 hover:text-white/80 transition">Contact</Link>
-        </div>
-      </nav>
+      <PublicNav />
 
       <main className="max-w-6xl mx-auto px-6 py-16">
         <div className="text-center mb-16">

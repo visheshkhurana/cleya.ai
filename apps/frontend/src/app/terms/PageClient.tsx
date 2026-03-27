@@ -1,17 +1,10 @@
 'use client';
+import PublicNav from '@/components/PublicNav';
 
 export default function TermsPage() {
   return (
     <div className="min-h-screen" style={{ background: '#0F172A' }}>
-      <nav className="border-b border-white/[0.06]">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold" style={{ background: '#0D9488' }}>C</div>
-            <span className="text-white font-semibold">Cleya.ai</span>
-          </a>
-          <a href="/" className="text-sm hover:text-white transition" style={{ color: '#94A3B8' }}>Back to Home</a>
-        </div>
-      </nav>
+      <PublicNav />
 
       <main className="max-w-4xl mx-auto px-6 py-16">
         <h1 className="font-display text-3xl sm:text-4xl font-bold text-white mb-2">Terms of Service</h1>

@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import PublicNav from '@/components/PublicNav';
 
 const FAQ_ITEMS = [
   { q: 'How does Cleya.ai match me with the right people?', a: 'Cleya uses AI-powered matching that considers your industry, stage, goals, and preferences to find highly relevant connections. Our algorithm achieves 94% match accuracy.' },
@@ -31,18 +32,7 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen" style={{ background: '#0F172A' }}>
-      <nav className="px-6 py-4 flex items-center justify-between max-w-6xl mx-auto" role="navigation" aria-label="Contact page navigation">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#0D9488' }}>
-            <span className="text-white font-bold text-sm">C</span>
-          </div>
-          <span className="font-bold text-white">Cleya.ai</span>
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link href="/about" className="text-sm text-white/50 hover:text-white/80 transition">About</Link>
-          <Link href="/features" className="text-sm text-white/50 hover:text-white/80 transition">Features</Link>
-        </div>
-      </nav>
+      <PublicNav />
 
       <main className="max-w-3xl mx-auto px-6 py-16" role="main">
         <div className="text-center mb-12">

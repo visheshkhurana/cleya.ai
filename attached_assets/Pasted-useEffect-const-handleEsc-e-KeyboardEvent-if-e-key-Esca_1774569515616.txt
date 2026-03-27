@@ -1,0 +1,92 @@
+useEffect(() => {
+  const handleEsc = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') onClose();
+  };
+  if (isOpen) document.addEventListener('keydown', handleEsc);
+  return () => document.removeEventListener('keydown', handleEsc);
+}, [isOpen, onClose]);
+```
+- Acceptance Criteria: Open the modal → press Escape → modal closes and form state is reset.
+
+---
+
+BUG-09: FORGOT PASSWORD BACK TO LOGIN PRESERVES STALE ERROR
+- Severity: P1 MAJOR
+- Location: Auth modal — forgot password view transition
+- Problem: Login fails → "Invalid credentials" shown → click "Forgot password?" → click "Back to Login" → the "Invalid credentials" error is still visible.
+- Fix: In the "Back to Login" button's onClick handler, clear the error state before switching back to the login view. Also clear error when clicking "Forgot password?".
+- Acceptance Criteria: Fail a login → see error → click "Forgot password?" → NO error shown on forgot password view → click "Back to Login" → NO error shown on login view.
+
+---
+
+BUG-10: NAME FIELD ACCEPTS HTML/SCRIPT TAGS
+- Severity: P2 IMPROVEMENT
+- Location: Sign-up form name input
+- Problem: The name field accepts `<script>alert('xss')</script>` as a valid name.
+- Fix: Add client-side validation that rejects HTML angle brackets (`<` and `>`) in the name field. Show error: "Name cannot contain special characters like < or >". Also strip/reject any other clearly non-name characters.
+- Acceptance Criteria: Type `<script>` in name → see error message. Type "Priya Sharma" → no error.
+
+---
+
+BUG-11: NO ERROR TRACKING
+- Severity: P2 IMPROVEMENT
+- Fix: This is a suggestion, not a code fix. Skip this one.
+
+---
+
+BUG-12: CONTACT FORM EMPTY SUBMISSION
+- Severity: P2
+- Covered by BUG-04. No separate fix needed.
+
+---
+
+BUG-13: DUPLICATE TESTIMONIALS FOR SCREEN READERS
+- Severity: P2 IMPROVEMENT
+- Location: Testimonials marquee/carousel section
+- Problem: The testimonial carousel has duplicate DOM content for the infinite scroll animation, which screen readers will read twice.
+- Fix: Add `aria-hidden="true"` to the SECOND (duplicate) set of testimonials. Keep the first set accessible.
+- Acceptance Criteria: Inspect the DOM → the second copy of testimonials has `aria-hidden="true"`.
+
+---
+
+BUG-14: PASSWORD FIELD STATE CONTAMINATION ON TAB SWITCH
+- Severity: P2
+- Covered by BUG-02 and BUG-03 fixes. The tab switch should clear all form fields and errors.
+
+---
+
+FULL REGRESSION TEST CHECKLIST (run after all fixes):
+
+After implementing all fixes, verify EVERY item below passes. If ANY fails, loop back and fix:
+```
+[ ] Sign-up: Empty submit → red errors under each field
+[ ] Sign-up: Invalid email "notanemail" → red error on email field
+[ ] Sign-up: Valid email → no error
+[ ] Sign-up: Weak password → "Weak" indicator (already working, don't break)
+[ ] Sign-up: Mismatched passwords → "Passwords do not match" (already working, don't break)
+[ ] Sign-up: Strong matching passwords → no error
+[ ] Sign-up: HTML in name field → error shown
+[ ] Sign-up: Close modal → reopen → all fields empty, no role selected, no errors
+[ ] Login: Empty submit → red errors under each field
+[ ] Login: Invalid credentials → "Invalid credentials" error
+[ ] Login: Switch to Sign-Up tab → error cleared
+[ ] Login: Switch back to Login tab → error cleared
+[ ] Forgot password: Empty submit → red error on email
+[ ] Forgot password: "Back to Login" → no stale error
+[ ] Modal: Press Escape → modal closes, state resets
+[ ] Modal: Click outside → modal closes, state resets
+[ ] Modal: Close button (X) → modal closes, state resets
+[ ] Footer "Log In" button → opens modal on Login tab
+[ ] Persona "I'm a Founder" → modal opens with Founder selected
+[ ] Persona "I'm an Investor" → modal opens with Investor selected
+[ ] Persona "I'm looking for a role" → modal opens with Talent selected
+[ ] Nav on /about → has consistent links (Logo, About, Features, Contact, Log In, Get Started)
+[ ] Nav on /features → same consistent links
+[ ] Nav on /contact → same consistent links
+[ ] Contact form: Empty submit → red errors under each field
+[ ] Testimonial duplicate set → has aria-hidden="true"
+[ ] 404 page → still works (don't break)
+[ ] Homepage hero, "How It Works" scroll, "Testimonials" scroll → still works
+[ ] FAQ accordion on /contact → still works
+[ ] Password strength indicator → still works
+[ ] All pages load without JS console errors

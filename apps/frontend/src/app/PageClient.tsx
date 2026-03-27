@@ -62,6 +62,7 @@ export default function Home() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(false);
   const [googleEnabled, setGoogleEnabled] = useState(false);
@@ -143,6 +144,36 @@ export default function Home() {
     });
   }, []);
 
+  const resetForm = () => {
+    setFullName('');
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setSelectedPersona('');
+    setConsent(false);
+    setError('');
+    setFieldErrors({});
+    setShowForgotPassword(false);
+    setForgotEmail('');
+    setForgotSent(false);
+  };
+
+  const closeModal = () => {
+    resetForm();
+    setShowAuth(false);
+  };
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showAuth) closeModal();
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [showAuth]);
+
+  const isValidEmail = (val: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+  const hasHtmlTags = (val: string) => /[<>]/.test(val);
+
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setForgotLoading(true);
@@ -156,28 +187,29 @@ export default function Home() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    const errs: Record<string, string> = {};
+
     if (mode === 'signup') {
-      if (!consent) {
-        setError('Please agree to the Terms of Service and Privacy Policy');
-        return;
-      }
-      if (password.length < 8) {
-        setError('Password must be at least 8 characters');
-        return;
-      }
-      if (!/[A-Za-z]/.test(password)) {
-        setError('Password must contain at least one letter');
-        return;
-      }
-      if (!/[0-9]/.test(password)) {
-        setError('Password must contain at least one number');
-        return;
-      }
-      if (password !== confirmPassword) {
-        setError('Passwords do not match');
-        return;
-      }
+      if (!fullName.trim()) errs.fullName = 'Name is required';
+      else if (hasHtmlTags(fullName)) errs.fullName = 'Name cannot contain special characters like < or >';
+      if (!selectedPersona) errs.persona = 'Please select a role';
+      if (!email.trim()) errs.email = 'Email is required';
+      else if (!isValidEmail(email)) errs.email = 'Please enter a valid email address';
+      if (!password) errs.password = 'Password is required';
+      else if (password.length < 8) errs.password = 'Password must be at least 8 characters';
+      else if (!/[A-Za-z]/.test(password)) errs.password = 'Password must contain at least one letter';
+      else if (!/[0-9]/.test(password)) errs.password = 'Password must contain at least one number';
+      if (!confirmPassword) errs.confirmPassword = 'Please confirm your password';
+      else if (password !== confirmPassword) errs.confirmPassword = 'Passwords do not match';
+      if (!consent) errs.consent = 'You must agree to the terms';
+    } else {
+      if (!email.trim()) errs.email = 'Email is required';
+      else if (!isValidEmail(email)) errs.email = 'Please enter a valid email address';
+      if (!password) errs.password = 'Password is required';
     }
+
+    setFieldErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     setLoading(true);
     try {
       if (mode === 'signup') {
@@ -453,7 +485,7 @@ export default function Home() {
         {/* Testimonial Ticker */}
         <div className="border-t border-white/[0.04] py-5 overflow-hidden">
           <div className="flex animate-marquee whitespace-nowrap">
-            {[...testimonials, ...testimonials].map((t, i) => (
+            {testimonials.map((t, i) => (
               <div key={i} className="inline-flex items-center gap-3 mx-6 flex-shrink-0">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
                   style={{ background: 'rgba(13,148,136,0.15)', color: '#5EEAD4' }}>
@@ -463,6 +495,18 @@ export default function Home() {
                 <span className="text-xs font-medium" style={{ color: '#94A3B8' }}>— {t.name}, {t.title}</span>
               </div>
             ))}
+            <div aria-hidden="true" className="contents">
+              {testimonials.map((t, i) => (
+                <div key={`dup-${i}`} className="inline-flex items-center gap-3 mx-6 flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
+                    style={{ background: 'rgba(13,148,136,0.15)', color: '#5EEAD4' }}>
+                    {t.initials}
+                  </div>
+                  <p className="text-sm italic" style={{ color: '#E8E4F0' }}>"{t.quote}"</p>
+                  <span className="text-xs font-medium" style={{ color: '#94A3B8' }}>— {t.name}, {t.title}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -553,6 +597,7 @@ export default function Home() {
                 tagline: 'Raise faster. Hire smarter.',
                 desc: 'Get in front of investors who\'ve already backed companies like yours.',
                 cta: 'I\'m a Founder →',
+                personaValue: 'FOUNDER',
               },
               {
                 icon: (
@@ -564,6 +609,7 @@ export default function Home() {
                 tagline: 'Source deals before they\'re announced.',
                 desc: 'See pre-pitch founders in your thesis verticals before they hit the market — from Bangalore to Tier-2 India.',
                 cta: 'I\'m an Investor →',
+                personaValue: 'INVESTOR',
               },
               {
                 icon: (
@@ -577,12 +623,13 @@ export default function Home() {
                 tagline: 'Land your next role through relationships.',
                 desc: 'Get introduced to founders who are hiring — before the job is posted.',
                 cta: 'I\'m looking for a role →',
+                personaValue: 'TALENT',
               },
             ].map((persona, i) => (
               <button key={i}
                 className="rounded-2xl border border-white/[0.06] p-8 group hover:border-boardy-400/20 transition-all duration-300 cursor-pointer text-left"
                 style={{ background: '#1E293B' }}
-                onClick={() => { setShowAuth(true); setMode('signup'); }}
+                onClick={() => { setShowAuth(true); setMode('signup'); setSelectedPersona(persona.personaValue); }}
               >
                 <div className="mb-5 w-12 h-12 rounded-xl flex items-center justify-center border border-white/[0.06]"
                   style={{ background: 'rgba(13,148,136,0.06)' }}>
@@ -696,11 +743,10 @@ export default function Home() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center"
           role="dialog" aria-modal="true" aria-label={mode === 'signup' ? 'Sign up' : 'Log in'}
           style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}
-          onKeyDown={(e) => { if (e.key === 'Escape') setShowAuth(false); }}
-          onClick={(e) => { if (e.target === e.currentTarget) setShowAuth(false); }}
+          onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
           tabIndex={-1}>
           <div className="relative w-full max-w-sm mx-4 fade-up">
-            <button onClick={() => setShowAuth(false)}
+            <button onClick={() => closeModal()}
               className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full text-white/40 hover:text-white/80 hover:bg-white/10 transition"
               aria-label="Close">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -719,12 +765,12 @@ export default function Home() {
 
             <div className="rounded-2xl border border-white/[0.08] p-8" style={{ background: 'rgba(30,41,59,0.95)', backdropFilter: 'blur(20px)' }}>
               <div className="flex gap-1 mb-6 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                <button onClick={() => setMode('signup')}
+                <button onClick={() => { setMode('signup'); setError(''); setFieldErrors({}); }}
                   className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     mode === 'signup' ? 'text-white shadow-sm' : 'text-white/40 hover:text-white/70'
                   }`}
                   style={mode === 'signup' ? { background: '#0D9488' } : {}}>Sign Up</button>
-                <button onClick={() => setMode('login')}
+                <button onClick={() => { setMode('login'); setError(''); setFieldErrors({}); }}
                   className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     mode === 'login' ? 'text-white shadow-sm' : 'text-white/40 hover:text-white/70'
                   }`}
@@ -739,7 +785,7 @@ export default function Home() {
                     </div>
                     <p className="text-white text-sm font-medium mb-1">Check your email</p>
                     <p className="text-xs mb-4" style={{ color: '#94A3B8' }}>If an account exists with that email, we sent a reset link.</p>
-                    <button type="button" onClick={() => { setShowForgotPassword(false); setForgotSent(false); }} className="text-xs font-medium" style={{ color: '#5EEAD4' }}>Back to Login</button>
+                    <button type="button" onClick={() => { setShowForgotPassword(false); setForgotSent(false); setError(''); setFieldErrors({}); }} className="text-xs font-medium" style={{ color: '#5EEAD4' }}>Back to Login</button>
                   </div>
                 ) : (
                   <form onSubmit={handleForgotPassword} className="space-y-4">
@@ -749,7 +795,7 @@ export default function Home() {
                       <input type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} placeholder="you@example.com" required className="input-dark" />
                     </div>
                     <button type="submit" disabled={forgotLoading} className="btn-primary">{forgotLoading ? 'Sending...' : 'Send Reset Link'}</button>
-                    <button type="button" onClick={() => setShowForgotPassword(false)} className="w-full text-xs text-center font-medium" style={{ color: '#5EEAD4' }}>Back to Login</button>
+                    <button type="button" onClick={() => { setShowForgotPassword(false); setError(''); setFieldErrors({}); }} className="w-full text-xs text-center font-medium" style={{ color: '#5EEAD4' }}>Back to Login</button>
                   </form>
                 )
               ) : (
@@ -758,8 +804,11 @@ export default function Home() {
                     {mode === 'signup' && (
                       <div>
                         <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>Full Name</label>
-                        <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)}
-                          placeholder="Your full name" className="input-dark" autoComplete="name" />
+                        <input type="text" value={fullName} onChange={(e) => { setFullName(e.target.value); setFieldErrors(prev => { const n = {...prev}; delete n.fullName; return n; }); }}
+                          placeholder="Your full name" autoComplete="name"
+                          className="input-dark"
+                          style={fieldErrors.fullName ? { borderColor: '#ef4444' } : {}} />
+                        {fieldErrors.fullName && <p className="text-[10px] mt-1 text-red-400">{fieldErrors.fullName}</p>}
                       </div>
                     )}
                     {mode === 'signup' && (
@@ -771,34 +820,39 @@ export default function Home() {
                             { value: 'INVESTOR', label: 'Investor', icon: '💰' },
                             { value: 'TALENT', label: 'Talent', icon: '⚡' },
                           ].map((p) => (
-                            <button key={p.value} type="button" onClick={() => setSelectedPersona(p.value)}
+                            <button key={p.value} type="button" onClick={() => { setSelectedPersona(p.value); setFieldErrors(prev => { const n = {...prev}; delete n.persona; return n; }); }}
                               className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl border transition-all duration-200"
                               style={{
                                 background: selectedPersona === p.value ? 'rgba(13,148,136,0.15)' : 'rgba(255,255,255,0.03)',
-                                borderColor: selectedPersona === p.value ? '#0D9488' : 'rgba(255,255,255,0.08)',
+                                borderColor: selectedPersona === p.value ? '#0D9488' : fieldErrors.persona ? '#ef4444' : 'rgba(255,255,255,0.08)',
                               }}>
                               <span className="text-lg">{p.icon}</span>
                               <span className="text-xs font-medium" style={{ color: selectedPersona === p.value ? '#5EEAD4' : '#94A3B8' }}>{p.label}</span>
                             </button>
                           ))}
                         </div>
+                        {fieldErrors.persona && <p className="text-[10px] mt-1 text-red-400">{fieldErrors.persona}</p>}
                       </div>
                     )}
                     <div>
                       <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>Email</label>
-                      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                        placeholder="you@example.com" required className="input-dark"
+                      <input type="email" value={email} onChange={(e) => { setEmail(e.target.value); setFieldErrors(prev => { const n = {...prev}; delete n.email; return n; }); }}
+                        placeholder="you@example.com" className="input-dark"
                         autoFocus
+                        style={fieldErrors.email ? { borderColor: '#ef4444' } : {}}
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => e.stopPropagation()} />
+                      {fieldErrors.email && <p className="text-[10px] mt-1 text-red-400">{fieldErrors.email}</p>}
                     </div>
                     <div>
                       <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>Password</label>
-                      <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                        placeholder={mode === 'signup' ? 'Min 8 chars, letter + number' : 'Your password'} required
-                        minLength={mode === 'signup' ? 8 : undefined} className="input-dark"
+                      <input type="password" value={password} onChange={(e) => { setPassword(e.target.value); setFieldErrors(prev => { const n = {...prev}; delete n.password; return n; }); }}
+                        placeholder={mode === 'signup' ? 'Min 8 chars, letter + number' : 'Your password'}
+                        className="input-dark"
+                        style={fieldErrors.password ? { borderColor: '#ef4444' } : {}}
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => e.stopPropagation()} />
+                      {fieldErrors.password && <p className="text-[10px] mt-1 text-red-400">{fieldErrors.password}</p>}
                       {mode === 'signup' && password.length > 0 && (() => {
                         const strength = getPasswordStrength(password);
                         return (
@@ -814,23 +868,27 @@ export default function Home() {
                     {mode === 'signup' && (
                       <div>
                         <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>Confirm Password</label>
-                        <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-                          placeholder="Re-enter password" className="input-dark" />
-                        {confirmPassword && password !== confirmPassword && (
-                          <p className="text-[10px] mt-1 text-red-400">Passwords do not match</p>
+                        <input type="password" value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setFieldErrors(prev => { const n = {...prev}; delete n.confirmPassword; return n; }); }}
+                          placeholder="Re-enter password" className="input-dark"
+                          style={fieldErrors.confirmPassword ? { borderColor: '#ef4444' } : {}} />
+                        {(fieldErrors.confirmPassword || (confirmPassword && password !== confirmPassword)) && (
+                          <p className="text-[10px] mt-1 text-red-400">{fieldErrors.confirmPassword || 'Passwords do not match'}</p>
                         )}
                       </div>
                     )}
                     {mode === 'login' && (
-                      <button type="button" onClick={() => setShowForgotPassword(true)} className="text-xs font-medium" style={{ color: '#5EEAD4' }}>Forgot password?</button>
+                      <button type="button" onClick={() => { setShowForgotPassword(true); setError(''); setFieldErrors({}); }} className="text-xs font-medium" style={{ color: '#5EEAD4' }}>Forgot password?</button>
                     )}
                     {mode === 'signup' && (
-                      <label className="flex items-start gap-2 cursor-pointer">
-                        <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} className="mt-0.5 rounded border-white/20 bg-white/5 accent-teal-600" />
-                        <span className="text-xs leading-relaxed" style={{ color: '#94A3B8' }}>
-                          I agree to the <a href="/terms" target="_blank" className="underline" style={{ color: '#5EEAD4' }}>Terms of Service</a> and <a href="/privacy" target="_blank" className="underline" style={{ color: '#5EEAD4' }}>Privacy Policy</a>
-                        </span>
-                      </label>
+                      <div>
+                        <label className="flex items-start gap-2 cursor-pointer">
+                          <input type="checkbox" checked={consent} onChange={e => { setConsent(e.target.checked); setFieldErrors(prev => { const n = {...prev}; delete n.consent; return n; }); }} className="mt-0.5 rounded border-white/20 bg-white/5 accent-teal-600" />
+                          <span className="text-xs leading-relaxed" style={{ color: '#94A3B8' }}>
+                            I agree to the <a href="/terms" target="_blank" className="underline" style={{ color: '#5EEAD4' }}>Terms of Service</a> and <a href="/privacy" target="_blank" className="underline" style={{ color: '#5EEAD4' }}>Privacy Policy</a>
+                          </span>
+                        </label>
+                        {fieldErrors.consent && <p className="text-[10px] mt-1 text-red-400">{fieldErrors.consent}</p>}
+                      </div>
                     )}
                     {error && (
                       <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">{error}</p>

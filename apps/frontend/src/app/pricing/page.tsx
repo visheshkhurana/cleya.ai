@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
+import PublicNav from '@/components/PublicNav';
 
 const plans = [
   {
@@ -93,26 +94,7 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen font-sans" style={{ background: '#0F172A' }}>
-      <nav className="border-b border-white/[0.06]" style={{ background: 'rgba(11,9,24,0.85)', backdropFilter: 'blur(12px)' }}>
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-boardy-400">
-              <circle cx="8" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
-              <circle cx="16" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
-              <line x1="11" y1="12" x2="13" y2="12" stroke="currentColor" strokeWidth="1.5" />
-            </svg>
-            <span className="text-white font-semibold text-lg tracking-tight">Cleya.ai</span>
-          </Link>
-          <div className="flex items-center gap-3">
-            <Link href="/about" className="hidden sm:inline-block px-3 py-2 text-sm text-white/50 hover:text-white transition-colors">About</Link>
-            <Link href="/blog" className="hidden sm:inline-block px-3 py-2 text-sm text-white/50 hover:text-white transition-colors">Blog</Link>
-            <Link href="/" className="px-5 py-2.5 text-sm font-medium text-white rounded-[10px] transition-all hover:scale-[1.02]"
-              style={{ background: '#0D9488' }}>
-              Get Started
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <PublicNav />
 
       <section className="pt-16 pb-8 text-center">
         <div className="max-w-4xl mx-auto px-6">
