@@ -47,7 +47,7 @@ Runs backend (`node dist/index.js` on port 3001) and frontend (`next start` on p
 
 ## Page Architecture
 All frontend pages use a server/client wrapper pattern for build compatibility:
-- `page.tsx` — server component that exports `dynamic = 'force-dynamic'` and re-exports the client component
+- `page.tsx` — server component that exports `dynamic = 'force-dynamic'` and wraps the client component in a function (e.g., `export default function Page() { return <Home />; }`)
 - `PageClient.tsx` — the actual `'use client'` component with hooks, state, and UI
 
 ### Pages

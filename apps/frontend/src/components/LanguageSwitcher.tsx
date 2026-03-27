@@ -11,6 +11,9 @@ export default function LanguageSwitcher() {
     setLocale(next);
   };
 
+  const flag = locale === 'en' ? '\u{1F1EE}\u{1F1F3}' : '\u{1F1EC}\u{1F1E7}';
+  const label = locale === 'en' ? '\u0939\u093F\u0902' : 'EN';
+
   return (
     <button
       onClick={toggleLocale}
@@ -20,10 +23,10 @@ export default function LanguageSwitcher() {
         border: '1px solid rgba(255,255,255,0.15)',
       }}
       aria-label={locale === 'en' ? 'Switch to Hindi' : 'Switch to English'}
-      title={locale === 'en' ? 'हिंदी में बदलें' : 'Switch to English'}
+      title={locale === 'en' ? '\u0939\u093F\u0902\u0926\u0940 \u092E\u0947\u0902 \u092C\u0926\u0932\u0947\u0902' : 'Switch to English'}
     >
-      <span className="text-sm">{locale === 'en' ? '🇮🇳' : '🇬🇧'}</span>
-      <span>{locale === 'en' ? 'हिं' : 'EN'}</span>
+      <span className="text-sm">{flag}</span>
+      <span>{label}</span>
     </button>
   );
 }
