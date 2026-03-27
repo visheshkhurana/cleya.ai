@@ -48,7 +48,10 @@ app.set('trust proxy', 1);
 
 const server = createServer(app);
 
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false,
+  frameguard: { action: 'sameorigin' },
+}));
 const corsOrigin = env.CORS_ORIGIN || env.FRONTEND_URL;
 app.use(cors({ origin: corsOrigin, credentials: true }));
 app.use(compression());
