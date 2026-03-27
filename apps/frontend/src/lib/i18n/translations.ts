@@ -20,12 +20,12 @@ export const translations: Record<Locale, Record<string, string>> = {
 
     'howItWorks.title': 'How Cleya Works',
     'howItWorks.subtitle': 'Three steps to your next great connection',
-    'howItWorks.step1.title': 'Tell Cleya about yourself',
-    'howItWorks.step1.desc': 'Have a quick AI conversation. Share your role, goals, and who you want to meet.',
-    'howItWorks.step2.title': 'AI finds your best matches',
-    'howItWorks.step2.desc': 'Our algorithms analyze compatibility across industry, stage, goals, and skills.',
-    'howItWorks.step3.title': 'Get warm introductions',
-    'howItWorks.step3.desc': 'When both sides are interested, Cleya facilitates a warm intro with context.',
+    'howItWorks.step1.title': 'Tell Cleya what you need',
+    'howItWorks.step1.desc': 'Describe your goals in plain language — raise a round, find a co-founder, hire engineers, or source deals. Cleya listens like a person.',
+    'howItWorks.step2.title': 'Cleya finds your matches',
+    'howItWorks.step2.desc': 'Our AI searches across verified members across India, weighing sector fit, stage, check size, and intent — not just keywords.',
+    'howItWorks.step3.title': 'Get warm intros, instantly',
+    'howItWorks.step3.desc': 'Cleya makes the introduction with context. No cold emails. No awkward LinkedIn DMs.',
 
     'stats.community': 'A growing community of founders, investors, and operators building India\'s startup future.',
 
@@ -68,12 +68,12 @@ export const translations: Record<Locale, Record<string, string>> = {
 
     'howItWorks.title': 'Cleya कैसे काम करता है',
     'howItWorks.subtitle': 'आपके अगले शानदार कनेक्शन के तीन कदम',
-    'howItWorks.step1.title': 'Cleya को अपने बारे में बताएं',
-    'howItWorks.step1.desc': 'AI से तुरंत बातचीत करें। अपनी भूमिका, लक्ष्य और मिलना चाहते हैं किससे बताएं।',
-    'howItWorks.step2.title': 'AI आपके सबसे अच्छे मैच ढूंढता है',
-    'howItWorks.step2.desc': 'हमारे एल्गोरिदम उद्योग, चरण, लक्ष्य और कौशल में अनुकूलता का विश्लेषण करते हैं।',
-    'howItWorks.step3.title': 'गर्मजोशी से परिचय पाएं',
-    'howItWorks.step3.desc': 'जब दोनों पक्ष रुचि रखते हैं, Cleya संदर्भ के साथ गर्मजोशी से परिचय कराता है।',
+    'howItWorks.step1.title': 'Cleya को बताएं आपको क्या चाहिए',
+    'howItWorks.step1.desc': 'अपने लक्ष्य सरल भाषा में बताएं — फंडिंग उठानी है, सह-संस्थापक ढूंढना है, इंजीनियर हायर करने हैं, या डील सोर्स करनी है।',
+    'howItWorks.step2.title': 'Cleya आपके मैच ढूंढता है',
+    'howItWorks.step2.desc': 'हमारा AI पूरे भारत में सत्यापित सदस्यों में सेक्टर, स्टेज, चेक साइज़ और इरादे के आधार पर खोजता है।',
+    'howItWorks.step3.title': 'तुरंत गर्मजोशी से परिचय पाएं',
+    'howItWorks.step3.desc': 'Cleya संदर्भ के साथ परिचय कराता है। कोई कोल्ड ईमेल नहीं। कोई अजीब LinkedIn DM नहीं।',
 
     'stats.community': 'भारत के स्टार्टअप भविष्य का निर्माण करने वाले संस्थापकों, निवेशकों और संचालकों का एक बढ़ता हुआ समुदाय।',
 

@@ -198,7 +198,22 @@ export default function MatchesPage() {
     );
   }
 
-  const ScoreBreakdown = ({ breakdown }: { breakdown: any }) => {
+  const CircularProgress = ({ value, size = 48, strokeWidth = 4 }: { value: number; size?: number; strokeWidth?: number }) => {
+    const radius = (size - strokeWidth) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (value / 100) * circumference;
+    const color = value >= 80 ? '#0D9488' : value >= 60 ? '#3B82F6' : '#64748B';
+    return (
+      <svg width={size} height={size} className="transform -rotate-90">
+        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={strokeWidth} />
+        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke={color} strokeWidth={strokeWidth}
+          strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
+          style={{ transition: 'stroke-dashoffset 0.6s ease' }} />
+      </svg>
+    );
+  };
+
+  const ScoreBreakdown = ({ breakdown, overallScore }: { breakdown: any; overallScore?: number }) => {
     if (!breakdown || typeof breakdown !== 'object') return null;
     const factors = [
       { key: 'industryScore', label: 'Industry Fit', icon: '🏭' },
@@ -210,22 +225,37 @@ export default function MatchesPage() {
     ];
     const validFactors = factors.filter(f => breakdown[f.key] !== undefined && breakdown[f.key] !== null);
     if (validFactors.length === 0) return null;
+    const scorePercent = overallScore !== undefined && overallScore !== null ? Math.round(overallScore * 100) : null;
     return (
-      <div className="mt-3 space-y-1.5">
-        <p className="text-[10px] font-medium uppercase tracking-wider text-white/25">Match Breakdown</p>
-        {validFactors.map(f => {
-          const val = Math.round((breakdown[f.key] || 0) * 100);
-          return (
-            <div key={f.key} className="flex items-center gap-2">
-              <span className="text-xs w-4">{f.icon}</span>
-              <span className="text-[10px] w-20 text-white/40">{f.label}</span>
-              <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                <div className="h-full rounded-full" style={{ width: `${val}%`, background: val >= 70 ? '#0D9488' : val >= 40 ? '#3B82F6' : '#64748B' }} />
+      <div className="mt-4 rounded-xl p-4" style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="flex items-start gap-4">
+          {scorePercent !== null && (
+            <div className="flex-shrink-0 relative">
+              <CircularProgress value={scorePercent} size={56} strokeWidth={4} />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-sm font-bold" style={{ color: scorePercent >= 80 ? '#5EEAD4' : scorePercent >= 60 ? '#93C5FD' : '#94A3B8' }}>
+                  {scorePercent}%
+                </span>
               </div>
-              <span className="text-[10px] w-8 text-right" style={{ color: val >= 70 ? '#5EEAD4' : '#94A3B8' }}>{val}%</span>
             </div>
-          );
-        })}
+          )}
+          <div className="flex-1 space-y-2">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-white/25 mb-2">Match Breakdown</p>
+            {validFactors.map(f => {
+              const val = Math.round((breakdown[f.key] || 0) * 100);
+              return (
+                <div key={f.key} className="flex items-center gap-2">
+                  <span className="text-xs w-4">{f.icon}</span>
+                  <span className="text-[10px] w-20 text-white/40">{f.label}</span>
+                  <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                    <div className="h-full rounded-full" style={{ width: `${val}%`, background: val >= 70 ? '#0D9488' : val >= 40 ? '#3B82F6' : '#64748B', transition: 'width 0.4s ease' }} />
+                  </div>
+                  <span className="text-[10px] w-8 text-right" style={{ color: val >= 70 ? '#5EEAD4' : '#94A3B8' }}>{val}%</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     );
   };
@@ -252,7 +282,7 @@ export default function MatchesPage() {
                   {profile?.currentRole || other.email.split('@')[0]}
                 </h3>
                 {(profile as any)?.verificationScore > 0 && (
-                  <VerificationBadge score={(profile as any).verificationScore} size="sm" showLabel={false} />
+                  <VerificationBadge score={(profile as any).verificationScore} size="sm" showLabel={true} />
                 )}
                 <button
                   onClick={() => setShowBreakdown(!showBreakdown)}
@@ -282,7 +312,7 @@ export default function MatchesPage() {
             <p className="text-sm text-white/50 mt-3 line-clamp-2">{profile.headline}</p>
           )}
 
-          {showBreakdown && <ScoreBreakdown breakdown={match.scoreBreakdown} />}
+          {showBreakdown && <ScoreBreakdown breakdown={match.scoreBreakdown} overallScore={match.score} />}
 
           {match.reason && (
             <div className="mt-3 p-3 rounded-xl" style={{ background: 'rgba(13,148,136,0.06)', border: '1px solid rgba(13,148,136,0.08)' }}>

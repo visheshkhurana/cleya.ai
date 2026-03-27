@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     description: 'Members-only AI-powered networking for founders, investors, and operators building meaningful connections across India\'s startup ecosystem.',
     images: [
       {
-        url: 'https://cleya.ai/og-image.png',
+        url: 'https://cleya.ai/og-image.svg',
         width: 1200,
         height: 630,
         alt: 'Cleya.ai — AI Superconnector for Indian Startups',
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
     creator: '@cleyaai',
     title: 'Cleya.ai — AI Superconnector for Indian Startups',
     description: 'Meet the right investors, founders, and operators. AI-powered warm intros for India\'s startup ecosystem.',
-    images: ['https://cleya.ai/og-image.png'],
+    images: ['https://cleya.ai/og-image.svg'],
   },
   robots: {
     index: true,

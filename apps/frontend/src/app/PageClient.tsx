@@ -3,6 +3,8 @@ import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { analytics, identifyUser } from '@/lib/posthog';
+import { useTranslation } from '@/lib/i18n';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 function useInView(ref: React.RefObject<HTMLElement | null>) {
   const [inView, setInView] = useState(false);
@@ -56,6 +58,7 @@ function getPasswordStrength(pw: string): { label: string; color: string; width:
 }
 
 export default function Home() {
+  const { t } = useTranslation();
   const [showAuth, setShowAuth] = useState(false);
   const [mode, setMode] = useState<'login' | 'signup'>('signup');
   const [fullName, setFullName] = useState('');
@@ -296,17 +299,18 @@ export default function Home() {
           </div>
           <div className="hidden md:flex items-center gap-3">
             <button onClick={() => scrollToSection('how-it-works')}
-              className="px-3 py-2 text-sm text-white/50 hover:text-white transition-colors">How It Works</button>
+              className="px-3 py-2 text-sm text-white/50 hover:text-white transition-colors">{t('nav.howItWorks')}</button>
             <Link href="/pricing"
-              className="px-3 py-2 text-sm text-white/50 hover:text-white transition-colors">Pricing</Link>
+              className="px-3 py-2 text-sm text-white/50 hover:text-white transition-colors">{t('nav.pricing')}</Link>
             <Link href="/blog"
-              className="px-3 py-2 text-sm text-white/50 hover:text-white transition-colors">Blog</Link>
+              className="px-3 py-2 text-sm text-white/50 hover:text-white transition-colors">{t('nav.blog')}</Link>
+            <LanguageSwitcher />
             <button onClick={() => { setShowAuth(true); setMode('login'); }}
-              className="px-4 py-2 text-sm text-muted hover:text-white transition-colors">Log In</button>
+              className="px-4 py-2 text-sm text-muted hover:text-white transition-colors">{t('nav.login')}</button>
             <button onClick={() => { setShowAuth(true); setMode('signup'); }}
               className="px-5 py-2.5 text-sm font-medium text-white rounded-[10px] transition-all hover:scale-[1.02]"
               style={{ background: '#0D9488', boxShadow: '0 0 20px rgba(13,148,136,0.2)' }}>
-              Get Started
+              {t('nav.getStarted')}
             </button>
           </div>
           <button className="md:hidden p-2 text-white/60 hover:text-white transition" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -321,16 +325,19 @@ export default function Home() {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-white/[0.06] px-6 py-4 space-y-2" style={{ background: 'rgba(11,9,24,0.95)' }}>
             <button onClick={() => { scrollToSection('how-it-works'); setMobileMenuOpen(false); }}
-              className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">How It Works</button>
+              className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">{t('nav.howItWorks')}</button>
             <Link href="/pricing"
-              className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">Pricing</Link>
+              className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">{t('nav.pricing')}</Link>
             <Link href="/blog"
-              className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">Blog</Link>
+              className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">{t('nav.blog')}</Link>
+            <div className="px-3 py-2">
+              <LanguageSwitcher />
+            </div>
             <button onClick={() => { setShowAuth(true); setMode('login'); setMobileMenuOpen(false); }}
-              className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">Log In</button>
+              className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">{t('nav.login')}</button>
             <button onClick={() => { setShowAuth(true); setMode('signup'); setMobileMenuOpen(false); }}
               className="block w-full text-left px-3 py-3 text-sm font-medium rounded-lg min-h-[44px]"
-              style={{ background: '#0D9488', color: 'white' }}>Get Started</button>
+              style={{ background: '#0D9488', color: 'white' }}>{t('nav.getStarted')}</button>
           </div>
         )}
       </nav>
@@ -347,28 +354,28 @@ export default function Home() {
               <div className="fade-up inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[11px] font-medium uppercase tracking-[0.15em] mb-8 border border-white/[0.08]"
                 style={{ background: 'rgba(13,148,136,0.06)', color: '#5EEAD4' }}>
                 <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#0D9488' }} />
-                Members-only · Invite or apply
+                {t('hero.badge')}
               </div>
 
               <h1 className="fade-up-d1 font-display text-[42px] sm:text-[56px] lg:text-[72px] font-bold text-white leading-[1.08] mb-6 tracking-tight">
-                Meet the right<br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0D9488] to-[#5EEAD4] italic">people. Faster.</span>
+                {t('hero.title1')}<br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0D9488] to-[#5EEAD4] italic">{t('hero.title2')}</span>
               </h1>
 
               <p className="fade-up-d2 text-base sm:text-lg leading-relaxed mb-8 max-w-[420px]" style={{ color: '#94A3B8' }}>
-                Cleya is your AI Superconnector — matching founders, investors, and talent across India's startup ecosystem.
+                {t('hero.subtitle')}
               </p>
 
               <div className="fade-up-d3 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <button onClick={() => { setShowAuth(true); setMode('signup'); }}
                   className="px-8 py-[13px] rounded-[10px] text-white font-medium text-sm transition-all duration-200 hover:scale-[1.02]"
                   style={{ background: '#0D9488', boxShadow: '0 0 30px rgba(13,148,136,0.25)' }}>
-                  Get Started →
+                  {t('hero.cta')}
                 </button>
                 <button onClick={() => scrollToSection('how-it-works')}
                   className="group flex items-center gap-1.5 px-4 py-3 text-sm font-medium transition-colors"
                   style={{ color: '#94A3B8' }}>
-                  <span className="border-b border-transparent group-hover:border-white/40 transition-all">See How It Works</span>
+                  <span className="border-b border-transparent group-hover:border-white/40 transition-all">{t('hero.secondary')}</span>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="transition-transform group-hover:translate-x-0.5">
                     <path d="M5 12h14M12 5l7 7-7 7" />
                   </svg>
@@ -477,7 +484,7 @@ export default function Home() {
           ) : (
           <div className="text-center py-4">
             <p className="text-lg sm:text-xl font-medium text-white/80 max-w-xl mx-auto leading-relaxed">
-              A growing community of founders, investors, and operators building India&apos;s startup future.
+              {t('stats.community')}
             </p>
           </div>
           )}
@@ -516,9 +523,9 @@ export default function Home() {
       <section id="how-it-works" className="py-20 sm:py-28">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="font-display text-3xl sm:text-[40px] font-bold text-white mb-4 tracking-tight">How it works</h2>
+            <h2 className="font-display text-3xl sm:text-[40px] font-bold text-white mb-4 tracking-tight">{t('howItWorks.title')}</h2>
             <p className="text-base max-w-md mx-auto" style={{ color: '#94A3B8' }}>
-              Three steps to start building meaningful professional connections.
+              {t('howItWorks.subtitle')}
             </p>
           </div>
 
@@ -532,8 +539,8 @@ export default function Home() {
                     <path d="M8 9h8M8 13h4" />
                   </svg>
                 ),
-                title: 'Tell Cleya what you need',
-                desc: 'Describe your goals in plain language — raise a round, find a co-founder, hire engineers, or source deals. Cleya listens like a person.',
+                title: t('howItWorks.step1.title'),
+                desc: t('howItWorks.step1.desc'),
               },
               {
                 num: '02',
@@ -544,8 +551,8 @@ export default function Home() {
                     <path d="M8 11h6M11 8v6" />
                   </svg>
                 ),
-                title: 'Cleya finds your matches',
-                desc: 'Our AI searches across verified members across India, weighing sector fit, stage, check size, and intent — not just keywords.',
+                title: t('howItWorks.step2.title'),
+                desc: t('howItWorks.step2.desc'),
               },
               {
                 num: '03',
@@ -556,8 +563,8 @@ export default function Home() {
                     <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
                   </svg>
                 ),
-                title: 'Get warm intros, instantly',
-                desc: 'Cleya makes the introduction with context. No cold emails. No awkward LinkedIn DMs.',
+                title: t('howItWorks.step3.title'),
+                desc: t('howItWorks.step3.desc'),
               },
             ].map((step, i) => (
               <div key={i} className="relative rounded-2xl border border-white/[0.06] p-8 group hover:border-boardy-400/20 transition-all duration-300"
@@ -714,14 +721,14 @@ export default function Home() {
             </div>
             <div className="flex items-center gap-6 flex-wrap justify-center">
               {[
-                { label: 'About', href: '/about' },
-                { label: 'Pricing', href: '/pricing' },
-                { label: 'Blog', href: '/blog' },
-                { label: 'Privacy', href: '/privacy' },
-                { label: 'Terms', href: '/terms' },
-                { label: 'Contact', href: '/contact' },
+                { label: t('nav.about'), href: '/about' },
+                { label: t('nav.pricing'), href: '/pricing' },
+                { label: t('nav.blog'), href: '/blog' },
+                { label: t('footer.privacy'), href: '/privacy' },
+                { label: t('footer.terms'), href: '/terms' },
+                { label: t('nav.contact'), href: '/contact' },
               ].map((link) => (
-                <Link key={link.label} href={link.href} className="text-xs transition-colors hover:text-white/60" style={{ color: '#94A3B8' }}>{link.label}</Link>
+                <Link key={link.href} href={link.href} className="text-xs transition-colors hover:text-white/60" style={{ color: '#94A3B8' }}>{link.label}</Link>
               ))}
               <span className="w-px h-3 bg-white/10" />
               {[

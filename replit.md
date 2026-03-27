@@ -255,7 +255,7 @@ Full 8-stage lifecycle implemented:
 14. **Rate Limiting** — 100/15min general, 5/min auth, 5/min login, 3/15min password reset, 50/hr match proposals (express-rate-limit)
 15. **Error Handling** — Custom 404 page, global error boundary with retry
 16. **Security Headers** — CSP, HSTS, X-Frame-Options DENY, X-Content-Type-Options, Referrer-Policy (next.config.js)
-17. **SEO** — OG tags, Twitter cards, robots.txt, sitemap.xml, SVG favicon, OG image
+17. **SEO** — OG tags (no fake stats), Twitter cards, robots.txt, sitemap.xml (with city/blog pages), SVG favicon, OG image; preconnect/dns-prefetch hints; static asset caching (images, fonts immutable 1yr)
 18. **Auth Flows** — Email verification (/verify-email), forgot/reset password (/reset-password), signup consent checkbox
 19. **Legal Pages** — Privacy Policy (/privacy) with GDPR, CCPA, Indian DPDPA sections, DPO contact, children's privacy, cookies/tracking, data export rights; Terms of Service (/terms) with India jurisdiction (Bangalore courts), dispute resolution, indemnification clauses
 20. **Input Validation** — HTML stripping, LinkedIn URL validation, headline ≤150 chars, bio ≤1000 chars
@@ -278,6 +278,18 @@ Full 8-stage lifecycle implemented:
 - **Database indexes**: IVFFlat cosine, unique constraint for upsert
 - **API endpoints**: similar search, text search, embedding stats, backfill
 
+### Hindi Language Support (i18n)
+- **Lightweight i18n system**: `apps/frontend/src/lib/i18n/` — React Context-based, no heavy deps
+- **Translations**: `translations.ts` with `en` and `hi` locales; keys for nav, hero, how-it-works, stats, footer, match labels, dashboard
+- **Language switcher**: `LanguageSwitcher.tsx` in nav (desktop + mobile); persists to `localStorage` (`cleya_locale`); auto-detects browser language
+- **Usage**: `useTranslation()` hook returns `{ t, locale, setLocale }`; `t('key')` falls back to English if Hindi key missing
+- **Provider**: `I18nContext` in `ClientProviders.tsx`
+
+### Match Explanation Cards (Enhanced)
+- **CircularProgress**: SVG circular progress ring with animated stroke-dashoffset
+- **ScoreBreakdown**: Expanded card with overall circular progress + per-factor bar charts (Industry Fit, Stage Match, Location, Goal Alignment, Skills Match, Role Fit)
+- **VerificationBadge**: Tiered (Trusted/Verified/Basic) with label shown on match cards
+
 ## Key Files
 - `apps/backend/src/index.ts` — Main Express server (routes: auth, users, conversations, matches, calls, admin, notifications, messaging, twilio, deals, events, ai-chat, introductions)
 - `apps/backend/src/routes/introduction.ts` — Introduction CRUD + status tracking
@@ -296,6 +308,9 @@ Full 8-stage lifecycle implemented:
 - `apps/frontend/src/lib/sentry.ts` — Sentry error capture utility (captureException, setUser; no-ops if no DSN)
 - `apps/frontend/src/components/BootstrapClient.tsx` — Client-side PostHog CDN loader + cookie consent banner; uses DOM manipulation only (no next/navigation imports) for SSR/prerender safety
 - `apps/frontend/src/lib/api.ts` — API client (relative `/api` path, token as `cleo_token`)
+- `apps/frontend/src/lib/i18n/index.ts` — I18n context, hooks, locale detection
+- `apps/frontend/src/lib/i18n/translations.ts` — English + Hindi translation strings
+- `apps/frontend/src/components/LanguageSwitcher.tsx` — Language toggle button (EN/हिं)
 - `packages/matching/src/index.ts` — Enhanced matching engine with persona context matching
 - `packages/api/src/services/matching.ts` — Shared matching API services
 - `packages/db/prisma/schema.prisma` — Full schema (User, Profile, Match, DealTracking, Event, EventParticipant, etc.)
