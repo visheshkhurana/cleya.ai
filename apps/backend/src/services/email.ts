@@ -39,8 +39,9 @@ class EmailService {
 
   private async send(to: string, subject: string, html: string): Promise<boolean> {
     try {
-      const { client } = await getUncachableResendClient();
-      const from = `Cleya.ai <${env.FROM_EMAIL}>`;
+      const { client, fromEmail } = await getUncachableResendClient();
+      const senderEmail = fromEmail || env.FROM_EMAIL;
+      const from = `Cleya.ai <${senderEmail}>`;
 
       const result = await client.emails.send({
         from,

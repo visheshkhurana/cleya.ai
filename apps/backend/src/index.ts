@@ -132,7 +132,9 @@ function logServiceStatus() {
   console.log(`  CORS origin: ${corsOrigin}`);
   console.log(`  OpenAI: ${env.OPENAI_API_KEY ? '✅ configured' : '⚠️  not configured (AI chat will use fallback responses)'}`);
   console.log(`  Twilio: ${env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN ? '✅ configured' : '⚠️  not configured (calls/SMS disabled)'}`);
-  console.log(`  SMTP: ${env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS ? '✅ configured' : '⚠️  not configured (emails logged only)'}`);
+  const hasResendKey = !!env.RESEND_API_KEY;
+  const hasConnector = !!process.env.REPLIT_CONNECTORS_HOSTNAME;
+  console.log(`  Email (Resend): ${hasResendKey ? '✅ configured (from: ' + env.FROM_EMAIL + ')' : hasConnector ? '✅ connector available' : '⚠️  not configured'}`);
   console.log(`  Google OAuth: ${env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET ? '✅ configured' : '⚠️  not configured (Google login disabled)'}`);
   console.log(`  Sentry: ${env.SENTRY_DSN ? '✅ configured' : '⚠️  not configured (error tracking disabled)'}`);
   console.log(`  PostHog: ${env.POSTHOG_KEY ? '✅ configured' : '⚠️  not configured (analytics disabled)'}`);
