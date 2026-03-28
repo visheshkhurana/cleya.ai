@@ -31,7 +31,7 @@ async function getConnectorCredentials(): Promise<ResendCredentials | null> {
       return null;
     }
 
-    const data = await resp.json();
+    const data = (await resp.json()) as any;
     const conn = data.items?.[0];
     if (conn?.settings?.api_key) {
       return {
