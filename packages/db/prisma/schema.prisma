@@ -86,6 +86,7 @@ model Profile {
   persona          PersonaType?
   headline         String?
   bio              String?
+  avatarUrl        String?
   companyName      String?
   companyStage     CompanyStage?
   currentRole      String?

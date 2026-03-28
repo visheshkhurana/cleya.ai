@@ -100,7 +100,7 @@ All frontend pages use a server/client wrapper pattern for build compatibility:
 - Persona stored on Profile model at signup time
 - Password strength indicator shown during signup
 - OAuth: Google + LinkedIn (both optional, shown only when configured via env vars)
-- LinkedIn OAuth: `GET /api/auth/linkedin` → LinkedIn authorize → `GET /api/auth/linkedin/callback` → `findOrCreateLinkedInUser` (email-based lookup, auto-verifies email, saves LinkedIn URL)
+- LinkedIn OAuth: `GET /api/auth/linkedin` → LinkedIn authorize → `GET /api/auth/linkedin/callback` → `findOrCreateLinkedInUser` (email-based lookup, auto-verifies email, pulls profile data). LinkedIn login auto-fills: name, avatarUrl (profile picture), headline, currentRole, location (from locale), linkedinUrl (from vanity name or userinfo), linkedinVerified=true, industries (if available from /v2/me). For returning users, only empty fields are filled (never overwrites existing data).
 - Backend returns 400 with detailed Zod validation errors (not 500)
 - Protected routes redirect unauthenticated users to `/?action=login` with a prompt message
 - User model has `name` field (String?, added via db push)

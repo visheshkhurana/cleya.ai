@@ -5,6 +5,15 @@ import { env } from '../config/env';
 import { AppError } from '../middleware/errorHandler';
 import { AuthPayload } from '../middleware/auth';
 
+function isValidHttpsUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 export class AuthService {
   async signup(data: { email: string; password: string; name?: string; persona?: string; phone?: string; utmSource?: string; utmMedium?: string; utmCampaign?: string }) {
     // Check existing user
@@ -173,7 +182,21 @@ export class AuthService {
     };
   }
 
-  async findOrCreateLinkedInUser(linkedinProfile: { email: string; name?: string; linkedinId: string; linkedinUrl?: string }) {
+  async findOrCreateLinkedInUser(linkedinProfile: {
+    email: string;
+    name?: string;
+    linkedinId: string;
+    linkedinUrl?: string;
+    avatarUrl?: string;
+    headline?: string;
+    location?: string;
+    firstName?: string;
+    lastName?: string;
+    industryName?: string;
+  }) {
+    const safeLinkedinUrl = linkedinProfile.linkedinUrl && isValidHttpsUrl(linkedinProfile.linkedinUrl) ? linkedinProfile.linkedinUrl : undefined;
+    const safeAvatarUrl = linkedinProfile.avatarUrl && isValidHttpsUrl(linkedinProfile.avatarUrl) ? linkedinProfile.avatarUrl : undefined;
+
     let user = await prisma.user.findUnique({
       where: { email: linkedinProfile.email },
       include: { profile: true },
@@ -183,44 +206,78 @@ export class AuthService {
       if (!user.isActive) {
         throw new AppError(403, 'Account is disabled', 'ACCOUNT_DISABLED');
       }
-      if (!user.emailVerified) {
+
+      const userUpdates: any = {};
+      if (!user.emailVerified) userUpdates.emailVerified = true;
+      if (!user.name && linkedinProfile.name) userUpdates.name = linkedinProfile.name;
+
+      if (Object.keys(userUpdates).length > 0) {
         user = await prisma.user.update({
           where: { id: user.id },
-          data: { emailVerified: true },
+          data: userUpdates,
           include: { profile: true },
         });
       }
-      if (linkedinProfile.linkedinUrl && user.profile && !user.profile.linkedinUrl) {
-        await prisma.profile.update({
-          where: { userId: user.id },
-          data: { linkedinUrl: linkedinProfile.linkedinUrl },
-        });
+
+      if (user.profile) {
+        const profileUpdates: any = {};
+        if (!user.profile.linkedinUrl && safeLinkedinUrl) profileUpdates.linkedinUrl = safeLinkedinUrl;
+        if (!user.profile.avatarUrl && safeAvatarUrl) profileUpdates.avatarUrl = safeAvatarUrl;
+        if (!user.profile.headline && linkedinProfile.headline) profileUpdates.headline = linkedinProfile.headline;
+        if (!user.profile.currentRole && linkedinProfile.headline) profileUpdates.currentRole = linkedinProfile.headline;
+        if (!user.profile.location && linkedinProfile.location) profileUpdates.location = linkedinProfile.location;
+        if (!user.profile.linkedinVerified) profileUpdates.linkedinVerified = true;
+        if (linkedinProfile.industryName && user.profile.industries.length === 0) {
+          profileUpdates.industries = [linkedinProfile.industryName];
+        }
+
+        if (Object.keys(profileUpdates).length > 0) {
+          await prisma.profile.update({
+            where: { userId: user.id },
+            data: profileUpdates,
+          });
+          user = await prisma.user.findUnique({
+            where: { id: user.id },
+            include: { profile: true },
+          }) as typeof user;
+        }
       }
-      const token = this.generateToken(user);
+
+      const token = this.generateToken(user!);
       return {
         user: {
-          id: user.id,
-          email: user.email,
-          phone: user.phone,
-          role: user.role,
-          emailVerified: user.emailVerified,
-          profile: user.profile,
+          id: user!.id,
+          email: user!.email,
+          phone: user!.phone,
+          role: user!.role,
+          emailVerified: user!.emailVerified,
+          profile: user!.profile,
         },
         token,
         isNew: false,
       };
     }
 
+    const profileData: any = {
+      linkedinVerified: true,
+    };
+    if (safeLinkedinUrl) profileData.linkedinUrl = safeLinkedinUrl;
+    if (safeAvatarUrl) profileData.avatarUrl = safeAvatarUrl;
+    if (linkedinProfile.headline) {
+      profileData.headline = linkedinProfile.headline;
+      profileData.currentRole = linkedinProfile.headline;
+    }
+    if (linkedinProfile.location) profileData.location = linkedinProfile.location;
+    if (linkedinProfile.industryName) profileData.industries = [linkedinProfile.industryName];
+
     user = await prisma.user.create({
       data: {
         email: linkedinProfile.email,
+        name: linkedinProfile.name || undefined,
         passwordHash: '',
         emailVerified: true,
         profile: {
-          create: {
-            ...(linkedinProfile.name ? { currentRole: linkedinProfile.name } : {}),
-            ...(linkedinProfile.linkedinUrl ? { linkedinUrl: linkedinProfile.linkedinUrl } : {}),
-          },
+          create: profileData,
         },
       },
       include: { profile: true },

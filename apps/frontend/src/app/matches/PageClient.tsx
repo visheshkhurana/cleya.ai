@@ -272,10 +272,15 @@ export default function MatchesPage() {
         style={{ background: 'rgba(30,41,59,0.6)' }}>
         <div className="p-5">
           <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg, #0D948815, #0F766E15)', border: '1px solid rgba(13,148,136,0.12)' }}>
-              {personaIcon[profile?.persona || 'OTHER'] || '💬'}
-            </div>
+            {profile?.avatarUrl ? (
+              <img src={profile.avatarUrl} alt={profile?.currentRole || 'Match'} referrerPolicy="no-referrer"
+                className="w-14 h-14 rounded-2xl object-cover flex-shrink-0 border border-white/10" />
+            ) : (
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
+                style={{ background: 'linear-gradient(135deg, #0D948815, #0F766E15)', border: '1px solid rgba(13,148,136,0.12)' }}>
+                {personaIcon[profile?.persona || 'OTHER'] || '💬'}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <h3 className="font-semibold text-white text-sm truncate">

@@ -10,6 +10,7 @@ import { setUser as setSentryUser } from '@/lib/sentry';
 interface UserProfile {
   persona?: string;
   headline?: string;
+  avatarUrl?: string;
   companyName?: string;
   currentRole?: string;
   location?: string;
@@ -59,6 +60,7 @@ export default function DashboardPage() {
   const [recentMatches, setRecentMatches] = useState<MatchData[]>([]);
   const [loading, setLoading] = useState(true);
   const [findingMatches, setFindingMatches] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
   const [showAIChat, setShowAIChat] = useState(false);
   const [aiMessages, setAiMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
   const [aiInput, setAiInput] = useState('');
@@ -376,10 +378,16 @@ export default function DashboardPage() {
 
         <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(30,41,59,0.6)' }}>
           <div className="flex items-start gap-4">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg, #0D948820, #0F766E20)', border: '1px solid rgba(13,148,136,0.15)' }}>
-              {personaIcon[profile?.persona || 'OTHER'] || '💬'}
-            </div>
+            {profile?.avatarUrl && !avatarError ? (
+              <img src={profile.avatarUrl} alt={user?.name || 'Profile'} referrerPolicy="no-referrer"
+                className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 border border-white/10"
+                onError={() => setAvatarError(true)} />
+            ) : (
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0"
+                style={{ background: 'linear-gradient(135deg, #0D948820, #0F766E20)', border: '1px solid rgba(13,148,136,0.15)' }}>
+                {personaIcon[profile?.persona || 'OTHER'] || '💬'}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <h2 className="text-xl font-bold text-white truncate">

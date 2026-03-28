@@ -257,11 +257,53 @@ authRouter.get('/linkedin/callback', async (req: Request, res: Response) => {
       return;
     }
 
+    let linkedinHeadline: string | undefined;
+    let linkedinLocation: string | undefined;
+    let linkedinIndustry: string | undefined;
+    let linkedinVanityName: string | undefined;
+
+    try {
+      const meRes = await fetch('https://api.linkedin.com/v2/me?projection=(id,localizedFirstName,localizedLastName,localizedHeadline,vanityName)', {
+        headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      });
+      if (meRes.ok) {
+        const meData: any = await meRes.json();
+        linkedinHeadline = meData.localizedHeadline || undefined;
+        linkedinVanityName = meData.vanityName || undefined;
+      }
+    } catch (err: any) {
+      console.log('LinkedIn /v2/me not available (expected for basic OAuth):', err.message);
+    }
+
+    const linkedinUrl = linkedinVanityName
+      ? `https://www.linkedin.com/in/${linkedinVanityName}`
+      : profile.profile || undefined;
+
+    const localeCountry = profile.locale?.country;
+    if (localeCountry) {
+      const countryMap: Record<string, string> = {
+        IN: 'India', US: 'United States', GB: 'United Kingdom', CA: 'Canada',
+        AU: 'Australia', DE: 'Germany', FR: 'France', SG: 'Singapore',
+        AE: 'UAE', NL: 'Netherlands', IL: 'Israel', JP: 'Japan',
+        CN: 'China', KR: 'South Korea', BR: 'Brazil', SE: 'Sweden',
+        HK: 'Hong Kong', CH: 'Switzerland', IE: 'Ireland', ES: 'Spain',
+      };
+      linkedinLocation = countryMap[localeCountry] || localeCountry;
+    }
+
+    const fullName = profile.name || `${profile.given_name || ''} ${profile.family_name || ''}`.trim();
+
     const result = await authService.findOrCreateLinkedInUser({
       email: profile.email,
-      name: profile.name || `${profile.given_name || ''} ${profile.family_name || ''}`.trim(),
+      name: fullName || undefined,
       linkedinId: profile.sub,
-      linkedinUrl: profile.profile || undefined,
+      linkedinUrl,
+      avatarUrl: profile.picture || undefined,
+      headline: linkedinHeadline || undefined,
+      location: linkedinLocation || undefined,
+      firstName: profile.given_name || undefined,
+      lastName: profile.family_name || undefined,
+      industryName: linkedinIndustry || undefined,
     });
 
     if (result.isNew) {
