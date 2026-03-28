@@ -1,4 +1,4 @@
-import { ConversationFlow } from '@boardy/types';
+import { ConversationFlow } from '@cleya/types';
 
 export const onboardingFlow: ConversationFlow = {
   id: 'onboarding_v1',

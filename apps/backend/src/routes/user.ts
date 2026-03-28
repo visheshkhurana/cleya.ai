@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { authenticate } from '../middleware/auth';
 import { profileService } from '../services/profileService';
-import { prisma } from '@boardy/db';
+import { prisma } from '@cleya/db';
 import bcrypt from 'bcryptjs';
 import { validate, profileUpdateSchema, changePasswordSchema } from '../middleware/validation';
 

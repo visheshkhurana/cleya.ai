@@ -11,7 +11,7 @@ import {
   type VectorSearchResult,
   type HybridMatchResult,
   type ProfileData,
-} from '@boardy/api';
+} from '@cleya/api';
 
 export class VectorMatchingService {
   findMatches = findMatches;

@@ -1,12 +1,12 @@
 #!/bin/bash
 # ============================================
-# Boardy AI — Replit Setup Script
+# Cleya AI — Replit Setup Script
 # Run this once after importing the project
 # ============================================
 
 set -e
 
-echo "🚀 Setting up Boardy AI on Replit..."
+echo "🚀 Setting up Cleya AI on Replit..."
 echo ""
 
 # 1. Install dependencies

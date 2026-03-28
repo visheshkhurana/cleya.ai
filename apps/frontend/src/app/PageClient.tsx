@@ -265,7 +265,7 @@ export default function Home() {
   if (checking) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: '#0F172A' }}>
-        <div className="w-10 h-10 border-2 border-boardy-400 border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-2 border-cleya-400 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -290,7 +290,7 @@ export default function Home() {
       }}>
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-boardy-400">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-cleya-400">
               <circle cx="8" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
               <circle cx="16" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
               <line x1="11" y1="12" x2="13" y2="12" stroke="currentColor" strokeWidth="1.5" />
@@ -385,7 +385,7 @@ export default function Home() {
 
             {/* Chat Mockup */}
             <div className="relative hidden md:flex justify-center fade-up-d4">
-              <div className="relative w-[300px] rounded-[36px] border-[5px] p-2 shadow-boardy-glow"
+              <div className="relative w-[300px] rounded-[36px] border-[5px] p-2 shadow-cleya-glow"
                 style={{ borderColor: 'rgba(255,255,255,0.08)', background: '#0F172A' }}>
                 <div className="w-20 h-5 bg-black rounded-full absolute top-2 left-1/2 -translate-x-1/2 z-10" />
                 <div className="rounded-[28px] overflow-hidden" style={{ background: '#0F172A' }}>
@@ -567,7 +567,7 @@ export default function Home() {
                 desc: t('howItWorks.step3.desc'),
               },
             ].map((step, i) => (
-              <div key={i} className="relative rounded-2xl border border-white/[0.06] p-8 group hover:border-boardy-400/20 transition-all duration-300"
+              <div key={i} className="relative rounded-2xl border border-white/[0.06] p-8 group hover:border-cleya-400/20 transition-all duration-300"
                 style={{ background: '#1E293B' }}>
                 <div className="absolute top-4 right-6 font-display text-[64px] font-bold leading-none pointer-events-none"
                   style={{ color: 'rgba(13,148,136,0.06)' }}>{step.num}</div>
@@ -635,7 +635,7 @@ export default function Home() {
               },
             ].map((persona, i) => (
               <button key={i}
-                className="rounded-2xl border border-white/[0.06] p-8 group hover:border-boardy-400/20 transition-all duration-300 cursor-pointer text-left"
+                className="rounded-2xl border border-white/[0.06] p-8 group hover:border-cleya-400/20 transition-all duration-300 cursor-pointer text-left"
                 style={{ background: '#1E293B' }}
                 onClick={() => { setShowAuth(true); setMode('signup'); setSelectedPersona(persona.personaValue); }}
               >
@@ -712,7 +712,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-boardy-400">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-cleya-400">
                 <circle cx="8" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
                 <circle cx="16" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
                 <line x1="11" y1="12" x2="13" y2="12" stroke="currentColor" strokeWidth="1.5" />

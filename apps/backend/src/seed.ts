@@ -1,4 +1,4 @@
-import { prisma } from '@boardy/db';
+import { prisma } from '@cleya/db';
 import bcrypt from 'bcryptjs';
 import { env } from './config/env';
 

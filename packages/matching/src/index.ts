@@ -3,7 +3,7 @@
 // Three-layer scoring: Rule-based + Intent + Semantic
 // ============================================
 
-import { MatchScore } from '@boardy/types';
+import { MatchScore } from '@cleya/types';
 
 export interface ProfileForMatching {
   userId: string;

@@ -1,5 +1,5 @@
-import { createAIService } from '@boardy/ai';
-import { prisma } from '@boardy/db';
+import { createAIService } from '@cleya/ai';
+import { prisma } from '@cleya/db';
 
 const SYSTEM_PROMPT = `You are Cleya, an AI superconnector for professional networking. You work for Cleya.ai, a platform that matches founders, investors, talent, advisors, and partners.
 

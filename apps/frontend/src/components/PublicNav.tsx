@@ -6,7 +6,7 @@ export default function PublicNav() {
     <nav className="border-b border-white/[0.06]" style={{ background: 'rgba(11,9,24,0.85)', backdropFilter: 'blur(12px)' }} role="navigation" aria-label="Main navigation">
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-boardy-400">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-cleya-400">
             <circle cx="8" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
             <circle cx="16" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
             <line x1="11" y1="12" x2="13" y2="12" stroke="currentColor" strokeWidth="1.5" />

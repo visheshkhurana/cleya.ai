@@ -1,5 +1,5 @@
 import { env } from '../config/env';
-import { prisma } from '@boardy/db';
+import { prisma } from '@cleya/db';
 import { getUncachableResendClient } from './resendClient';
 
 const brandColor = '#0D9488';

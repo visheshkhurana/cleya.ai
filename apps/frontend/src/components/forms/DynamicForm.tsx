@@ -74,7 +74,7 @@ export function DynamicForm({ fields, onSubmit, disabled }: DynamicFormProps) {
   };
 
   const inputClass = `w-full px-3 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white
-    placeholder-white/30 text-sm focus:outline-none focus:ring-2 focus:ring-boardy-500
+    placeholder-white/30 text-sm focus:outline-none focus:ring-2 focus:ring-cleya-500
     focus:border-transparent disabled:opacity-40 transition-all`;
 
   return (
@@ -84,7 +84,7 @@ export function DynamicForm({ fields, onSubmit, disabled }: DynamicFormProps) {
           <div key={field.name}>
             <label className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wide">
               {field.label}
-              {field.required && <span className="text-boardy-400 ml-0.5">*</span>}
+              {field.required && <span className="text-cleya-400 ml-0.5">*</span>}
             </label>
 
             {field.type === 'select' && field.options && (
@@ -112,7 +112,7 @@ export function DynamicForm({ fields, onSubmit, disabled }: DynamicFormProps) {
                       onClick={() => toggleMultiselect(field.name, opt.value)}
                       disabled={submitted}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all
-                        ${sel ? 'bg-boardy-500 text-white border-boardy-500' : 'border-white/20 text-white/60 hover:border-boardy-500/50'}
+                        ${sel ? 'bg-cleya-500 text-white border-cleya-500' : 'border-white/20 text-white/60 hover:border-cleya-500/50'}
                         disabled:opacity-40`}
                     >
                       {opt.label}

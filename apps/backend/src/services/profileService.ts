@@ -1,6 +1,6 @@
-import { prisma } from '@boardy/db';
-import { createAIService } from '@boardy/ai';
-import { generateAndStoreEmbedding } from '@boardy/api';
+import { prisma } from '@cleya/db';
+import { createAIService } from '@cleya/ai';
+import { generateAndStoreEmbedding } from '@cleya/api';
 import { AppError } from '../middleware/errorHandler';
 
 function stripHtml(str: string): string {

@@ -5,7 +5,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        boardy: {
+        cleya: {
           50: '#F0FDFA',
           100: '#CCFBF1',
           200: '#99F6E4',
@@ -35,14 +35,14 @@ const config: Config = {
         display: ['var(--font-playfair)', 'Playfair Display', 'Georgia', 'serif'],
       },
       backgroundImage: {
-        'boardy-gradient': 'linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%)',
+        'cleya-gradient': 'linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%)',
         'hero-gradient': 'radial-gradient(ellipse at center top, #134E4A 0%, #0F172A 60%)',
         'card-gradient': 'linear-gradient(180deg, rgba(13,148,136,0.12) 0%, rgba(13,148,136,0.04) 100%)',
       },
       boxShadow: {
-        'boardy': '0 0 40px rgba(13, 148, 136, 0.25)',
-        'boardy-sm': '0 0 20px rgba(13, 148, 136, 0.15)',
-        'boardy-glow': '0 0 60px rgba(13, 148, 136, 0.3)',
+        'cleya': '0 0 40px rgba(13, 148, 136, 0.25)',
+        'cleya-sm': '0 0 20px rgba(13, 148, 136, 0.15)',
+        'cleya-glow': '0 0 60px rgba(13, 148, 136, 0.3)',
         'bubble': '0 2px 8px rgba(0,0,0,0.2)',
       },
     },

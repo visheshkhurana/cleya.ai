@@ -1,6 +1,6 @@
-import { prisma } from '@boardy/db';
-import { createAIService } from '@boardy/ai';
-import { matchingEngine, ProfileForMatching } from '@boardy/matching';
+import { prisma } from '@cleya/db';
+import { createAIService } from '@cleya/ai';
+import { matchingEngine, ProfileForMatching } from '@cleya/matching';
 
 const ai = createAIService();
 

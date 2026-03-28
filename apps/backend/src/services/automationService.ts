@@ -1,4 +1,4 @@
-import { prisma } from '@boardy/db';
+import { prisma } from '@cleya/db';
 import { callService } from './voice/callService';
 import { messagingService } from './messagingService';
 import { matchingService } from './matchingService';

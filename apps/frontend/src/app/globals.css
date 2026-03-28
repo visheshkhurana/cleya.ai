@@ -41,25 +41,25 @@
   }
 
   .chat-bubble-user {
-    @apply bg-boardy-500 text-white rounded-2xl rounded-tr-sm px-4 py-3 shadow-bubble text-sm leading-relaxed;
+    @apply bg-cleya-500 text-white rounded-2xl rounded-tr-sm px-4 py-3 shadow-bubble text-sm leading-relaxed;
     overflow-wrap: break-word;
     word-break: break-word;
   }
 
   .choice-button {
     @apply w-full text-left px-4 py-3 rounded-2xl border border-white/20 bg-white/5
-           hover:border-boardy-500 hover:bg-boardy-500/10 transition-all duration-150
+           hover:border-cleya-500 hover:bg-cleya-500/10 transition-all duration-150
            text-white font-medium text-sm backdrop-blur-sm;
   }
 
   .choice-button-selected {
-    @apply border-boardy-500 bg-boardy-500/20 text-boardy-300;
+    @apply border-cleya-500 bg-cleya-500/20 text-cleya-300;
   }
 
   .input-dark {
     @apply w-full px-4 py-3 rounded-2xl border border-white/10 bg-white/5 text-white
            placeholder-white/30 text-sm
-           focus:outline-none focus:ring-2 focus:ring-boardy-500 focus:border-transparent
+           focus:outline-none focus:ring-2 focus:ring-cleya-500 focus:border-transparent
            transition-all backdrop-blur-sm;
   }
 

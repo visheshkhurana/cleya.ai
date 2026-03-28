@@ -21,7 +21,7 @@ export default function VerifyEmailPage() {
       <div className="text-center max-w-sm">
         {status === 'loading' && (
           <>
-            <div className="w-10 h-10 border-2 border-boardy-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <div className="w-10 h-10 border-2 border-cleya-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
             <p className="text-white">Verifying your email...</p>
           </>
         )}

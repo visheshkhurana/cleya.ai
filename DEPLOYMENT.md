@@ -10,7 +10,7 @@
 
 ```bash
 # 1. Clone the repository
-git clone <repo-url> && cd boardy-ai
+git clone <repo-url> && cd cleya-ai
 
 # 2. Install dependencies
 npm install

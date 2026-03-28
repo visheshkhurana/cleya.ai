@@ -1,5 +1,5 @@
 import twilio from 'twilio';
-import { prisma } from '@boardy/db';
+import { prisma } from '@cleya/db';
 import { env } from '../../config/env';
 import { sendToUser } from '../../websocket/server';
 

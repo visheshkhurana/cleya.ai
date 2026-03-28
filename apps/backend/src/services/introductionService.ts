@@ -1,5 +1,5 @@
-import { prisma } from '@boardy/db';
-import { createAIService } from '@boardy/ai';
+import { prisma } from '@cleya/db';
+import { createAIService } from '@cleya/ai';
 import { messagingService } from './messagingService';
 import { activityService } from './activityService';
 

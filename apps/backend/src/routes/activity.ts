@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { prisma } from '@boardy/db';
+import { prisma } from '@cleya/db';
 import { authenticate } from '../middleware/auth';
 
 export const activityRouter = Router();

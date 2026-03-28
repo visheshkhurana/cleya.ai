@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { authenticate } from '../middleware/auth';
-import { prisma } from '@boardy/db';
+import { prisma } from '@cleya/db';
 import { matchingService } from '../services/matchingService';
 
 export const dealRouter = Router();

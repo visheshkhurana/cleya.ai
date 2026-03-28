@@ -1,8 +1,8 @@
-import { prisma } from '@boardy/db';
-import { ConversationEngine } from '@boardy/conversation-engine';
-import { onboardingFlow } from '@boardy/conversation-engine';
-import { createAIService, AIService } from '@boardy/ai';
-import { FlowNode } from '@boardy/types';
+import { prisma } from '@cleya/db';
+import { ConversationEngine } from '@cleya/conversation-engine';
+import { onboardingFlow } from '@cleya/conversation-engine';
+import { createAIService, AIService } from '@cleya/ai';
+import { FlowNode } from '@cleya/types';
 import { sendToUser } from '../websocket/server';
 import { profileService } from './profileService';
 import { automationService } from './automationService';

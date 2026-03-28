@@ -1,6 +1,6 @@
 import twilio from 'twilio';
-import { prisma } from '@boardy/db';
-import { createAIService } from '@boardy/ai';
+import { prisma } from '@cleya/db';
+import { createAIService } from '@cleya/ai';
 import { env } from '../../config/env';
 
 export class CallService {

@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { prisma } from '@boardy/db';
+import { prisma } from '@cleya/db';
 import { authenticate, requireAdmin } from '../middleware/auth';
 import { matchingService } from '../services/matchingService';
 import { messagingService } from '../services/messagingService';

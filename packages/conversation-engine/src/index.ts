@@ -3,7 +3,7 @@
 // JSON-driven state machine for onboarding flows
 // ============================================
 
-import { ConversationFlow, FlowNode, FlowChoice, FormField } from '@boardy/types';
+import { ConversationFlow, FlowNode, FlowChoice, FormField } from '@cleya/types';
 
 export interface ConversationState {
   conversationId: string;

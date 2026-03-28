@@ -1,4 +1,4 @@
-import { prisma } from '@boardy/db';
+import { prisma } from '@cleya/db';
 
 export class ActivityService {
   async record(userId: string, type: string, title: string, metadata?: any) {

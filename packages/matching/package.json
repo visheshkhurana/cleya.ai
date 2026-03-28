@@ -1,5 +1,5 @@
 {
-  "name": "@boardy/matching",
+  "name": "@cleya/matching",
   "version": "1.0.0",
   "private": true,
   "main": "./dist/index.js",
@@ -8,8 +8,8 @@
     "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@boardy/types": "*",
-    "@boardy/ai": "*"
+    "@cleya/types": "*",
+    "@cleya/ai": "*"
   },
   "devDependencies": {
     "typescript": "^5.3.3"

@@ -1,6 +1,6 @@
 # Cleya.ai Platform
 
-Imported from: https://github.com/visheshkhurana/boardy-ai-platform
+Imported from: https://github.com/visheshkhurana/cleya-ai-platform
 
 ## Architecture
 Monorepo with:
@@ -224,7 +224,7 @@ Full 8-stage lifecycle implemented:
 
 ### Phase 6: Mobile Responsive + AI Chat + Google OAuth
 - **Mobile Responsive**: All pages (landing, dashboard, matches, profile, settings, admin, chat) responsive with hamburger nav (MobileNav component), breakpoints at sm/md/lg
-- **AI Chat Service**: `apps/backend/src/services/ai.ts` using `@boardy/ai` with gpt-4o-mini, POST /api/ai-chat/message with user context + fallback
+- **AI Chat Service**: `apps/backend/src/services/ai.ts` using `@cleya/ai` with gpt-4o-mini, POST /api/ai-chat/message with user context + fallback
 - **Dashboard AI Chat Widget**: Floating 💬 FAB → fullscreen (mobile) / 500px panel (desktop), conversation history, typing indicator, quick prompts
 - **MobileNav Component**: `apps/frontend/src/components/MobileNav.tsx` — hamburger icon, slide-out drawer, body scroll lock, click-outside-to-close
 - **Google OAuth**: Optional (requires GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET env vars). Routes: GET /api/auth/google (redirect to Google), GET /api/auth/google/callback (exchange code → find/create user → redirect with token), GET /api/auth/google/status (check if enabled). Landing page shows "Continue with Google" button when configured. Handles token from redirect URL on landing/dashboard/chat pages.

@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { authenticate } from '../middleware/auth';
 import { matchingService } from '../services/matchingService';
 import { vectorMatchingService } from '../services/vectorMatchingService';
-import { prisma } from '@boardy/db';
+import { prisma } from '@cleya/db';
 import { matchProposalLimiter } from '../middleware/rateLimit';
 import { validate, matchResponseSchema, matchFeedbackSchema, matchProposeSchema } from '../middleware/validation';
 

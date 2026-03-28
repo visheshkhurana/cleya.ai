@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { prisma } from '@boardy/db';
+import { prisma } from '@cleya/db';
 import { env } from '../config/env';
 import { AppError } from '../middleware/errorHandler';
 import { AuthPayload } from '../middleware/auth';

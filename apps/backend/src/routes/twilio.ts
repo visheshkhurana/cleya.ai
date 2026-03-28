@@ -51,7 +51,7 @@ twilioRouter.post('/status', async (req: Request, res: Response, next: NextFunct
     console.log(`Twilio status update: ${CallSid} -> ${CallStatus} (${CallDuration || 0}s)`);
 
     if (CallSid) {
-      const { prisma } = await import('@boardy/db');
+      const { prisma } = await import('@cleya/db');
       const call = await prisma.call.findFirst({
         where: { twilioCallSid: CallSid },
       });

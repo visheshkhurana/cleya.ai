@@ -1,6 +1,6 @@
-import { prisma } from '@boardy/db';
-import { matchingEngine, ProfileForMatching } from '@boardy/matching';
-import { createAIService } from '@boardy/ai';
+import { prisma } from '@cleya/db';
+import { matchingEngine, ProfileForMatching } from '@cleya/matching';
+import { createAIService } from '@cleya/ai';
 import { AppError } from '../middleware/errorHandler';
 import { sendToUser } from '../websocket/server';
 import { introductionService } from './introductionService';
