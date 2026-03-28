@@ -1,6 +1,6 @@
 run = "npm run dev"
 entrypoint = "apps/backend/src/index.ts"
-modules = ["nodejs-20", "postgresql-16"]
+modules = ["nodejs-20", "postgresql-16", "python-3.11"]
 
 hidden = [".config", "package-lock.json"]
 
@@ -35,6 +35,7 @@ build = ["npm", "run", "build"]
 
 [agent]
 expertMode = true
+integrations = ["resend:1.0.0"]
 
 [workflows]
 runButton = "Project"
