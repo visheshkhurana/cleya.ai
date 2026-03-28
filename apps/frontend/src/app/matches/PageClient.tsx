@@ -26,6 +26,7 @@ interface MatchData {
 interface ProfileData {
   persona?: string;
   headline?: string;
+  avatarUrl?: string;
   companyName?: string;
   currentRole?: string;
   location?: string;
