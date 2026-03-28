@@ -8,7 +8,8 @@ const navItems = [
   { href: '/matches', label: 'Matches', icon: '🤝' },
   { href: '/messages', label: 'Messages', icon: '💬' },
   { href: '/introductions', label: 'Introductions', icon: '📨' },
-  { href: '/chat', label: 'Onboarding Chat', icon: '🤖' },
+  { href: '/secretary', label: 'AI Secretary', icon: '🤖' },
+  { href: '/chat', label: 'Onboarding Chat', icon: '💭' },
   { href: '/profile', label: 'Profile', icon: '👤' },
   { href: '/settings', label: 'Settings', icon: '⚙️' },
 ];

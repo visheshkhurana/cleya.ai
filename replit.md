@@ -65,7 +65,8 @@ All frontend pages use a server/client wrapper pattern for build compatibility:
 - `/profile` — Profile editor; merges `extraData` JSON for persona-specific fields (preferredRole, portfolioSize, etc.)
 - `/matches` — Match listing with qualitative labels + expandable score breakdown (industry/stage/location/goals/skills/role), verification badges, Message button for accepted matches, feedback, search
 - `/chat` — AI onboarding conversation with progress indicator (Step X of 5)
-- `/settings` — Account settings with phone display (syncs from profile), password change, notification preferences (persisted to CommunicationPreference model)
+- `/secretary` — AI Secretary chat interface with OpenAI-powered assistant for scheduling meetings, sending follow-ups, daily digest, and Zoom integration; quick prompt suggestions on empty state; action buttons for suggested meeting/followup actions
+- `/settings` — Account settings with phone display (syncs from profile), password change, notification preferences (persisted to CommunicationPreference model), Zoom integration (connect/disconnect)
 - `/introductions` — Introduction records with full status lifecycle (PENDING_APPROVAL → APPROVED → SENT → VIEWED → RESPONDED → COMPLETED)
 - `/admin` — Admin dashboard
 
@@ -84,6 +85,16 @@ All frontend pages use a server/client wrapper pattern for build compatibility:
 - `PUT /api/meetings/:id/confirm` — Confirm a meeting with selected time
 - `PUT /api/meetings/:id/cancel` — Cancel a meeting
 - `GET /api/meetings/:id/ics` — Download ICS calendar file for meeting
+- `POST /api/secretary/chat` — Chat with AI Secretary (OpenAI-powered, user context aware)
+- `POST /api/secretary/action` — Execute secretary-suggested action (schedule_meeting, send_followup)
+- `GET /api/secretary/digest` — Generate daily digest with pending matches, meetings, intros
+- `POST /api/secretary/digest/send` — Send daily digest via email
+- `GET /api/secretary/history?limit=` — Get secretary conversation history
+- `DELETE /api/secretary/history` — Clear secretary conversation history
+- `GET /api/zoom/status` — Check Zoom configuration and connection status
+- `GET /api/zoom/connect` — Get Zoom OAuth authorization URL
+- `GET /api/zoom/callback` — Zoom OAuth callback (redirects to /settings)
+- `POST /api/zoom/disconnect` — Disconnect Zoom account
 - `GET /api/analytics/overview` — User-facing analytics: match stats, intro counts, profile completeness, recent matches
 - `GET /api/referrals` — Invite code summary (total/used/available) with referred user details
 

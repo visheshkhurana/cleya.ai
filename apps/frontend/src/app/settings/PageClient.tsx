@@ -20,6 +20,8 @@ export default function SettingsPage() {
   const [exportLoading, setExportLoading] = useState(false);
   const [notifPrefs, setNotifPrefs] = useState({ matchNotify: true, introNotify: true, weeklyDigest: true, whatsappMatchNotify: true, whatsappIntroNotify: true, whatsappWeeklyDigest: true });
   const [notifSaving, setNotifSaving] = useState(false);
+  const [zoomStatus, setZoomStatus] = useState<{ configured: boolean; connected: boolean } | null>(null);
+  const [zoomLoading, setZoomLoading] = useState(false);
 
   useEffect(() => {
     api.getMe().then((user) => {
@@ -42,6 +44,16 @@ export default function SettingsPage() {
         setLoading(false);
       })
       .catch(() => { router.push('/?action=login'); });
+
+    api.zoomStatus().then(data => {
+      if (data) setZoomStatus(data);
+    }).catch(() => {});
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('zoom') === 'connected') {
+      setZoomStatus({ configured: true, connected: true });
+      window.history.replaceState({}, '', '/settings');
+    }
   }, [router]);
 
   const handleChangePassword = async () => {
@@ -417,6 +429,80 @@ export default function SettingsPage() {
           {notifSaving && (
             <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '11px', marginTop: '8px' }}>Saving...</p>
           )}
+        </section>
+
+        {/* Integrations */}
+        <section style={{
+          background: '#1E293B',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: '16px',
+          padding: '28px',
+        }}>
+          <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 600, marginBottom: '4px' }}>Integrations</h2>
+          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '13px', marginBottom: '20px' }}>Connect external services to enhance your Cleya experience.</p>
+
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '16px', borderRadius: '12px',
+            background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '40px', height: '40px', borderRadius: '10px',
+                background: '#2D8CFF', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '18px', color: '#fff', fontWeight: 700,
+              }}>Z</div>
+              <div>
+                <p style={{ color: '#fff', fontSize: '14px', fontWeight: 500 }}>Zoom</p>
+                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
+                  {zoomStatus?.connected
+                    ? 'Connected — meetings will include Zoom links'
+                    : zoomStatus?.configured
+                      ? 'Available — connect to create Zoom meetings automatically'
+                      : 'Not configured — ask your admin to set up Zoom'}
+                </p>
+              </div>
+            </div>
+            {zoomStatus?.configured && (
+              zoomStatus.connected ? (
+                <button
+                  onClick={async () => {
+                    setZoomLoading(true);
+                    try {
+                      await api.zoomDisconnect();
+                      setZoomStatus({ configured: true, connected: false });
+                    } catch {} finally { setZoomLoading(false); }
+                  }}
+                  disabled={zoomLoading}
+                  style={{
+                    padding: '8px 16px', borderRadius: '8px', fontSize: '13px',
+                    background: 'rgba(239,68,68,0.1)', color: '#ef4444',
+                    border: '1px solid rgba(239,68,68,0.2)', cursor: 'pointer',
+                  }}>
+                  {zoomLoading ? '...' : 'Disconnect'}
+                </button>
+              ) : (
+                <button
+                  onClick={async () => {
+                    setZoomLoading(true);
+                    try {
+                      const data = await api.zoomConnect();
+                      if (data?.authUrl) {
+                        window.location.href = data.authUrl;
+                      }
+                    } catch {} finally { setZoomLoading(false); }
+                  }}
+                  disabled={zoomLoading}
+                  style={{
+                    padding: '8px 16px', borderRadius: '8px', fontSize: '13px',
+                    background: 'rgba(13,148,136,0.1)', color: '#5eead4',
+                    border: '1px solid rgba(13,148,136,0.2)', cursor: 'pointer',
+                  }}>
+                  {zoomLoading ? '...' : 'Connect Zoom'}
+                </button>
+              )
+            )}
+          </div>
         </section>
 
         {/* Danger Zone */}

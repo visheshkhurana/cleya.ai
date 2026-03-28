@@ -243,6 +243,74 @@ class EmailService {
     await this.send(user.email, `Your Cleya.ai Weekly Update — ${newMatches} new match${newMatches !== 1 ? 'es' : ''}`, html);
   }
 
+  async sendMeetingInvite(
+    to: string,
+    otherName: string,
+    title: string,
+    meetingTime: Date,
+    duration: number,
+    meetingUrl: string | null
+  ) {
+    const timeStr = meetingTime.toLocaleDateString('en-IN', {
+      weekday: 'long', month: 'long', day: 'numeric',
+      hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata',
+    });
+    const icsContent = this.generateICS(title, meetingTime, duration, meetingUrl);
+    const html = emailLayout(`
+      <h2 style="color:#fff;font-size:24px;font-weight:700;margin:0 0 16px;">Meeting Scheduled 📅</h2>
+      <p style="color:rgba(255,255,255,0.6);font-size:14px;line-height:1.6;margin:0 0 24px;">
+        A meeting has been scheduled between you and <strong style="color:#fff;">${otherName}</strong> via Cleya.ai.
+      </p>
+      <div style="background:rgba(13,148,136,0.08);border:1px solid rgba(13,148,136,0.15);border-radius:12px;padding:20px;margin:0 0 24px;">
+        <p style="color:#5eead4;font-size:13px;font-weight:600;margin:0 0 8px;">Meeting Details</p>
+        <p style="color:#fff;font-weight:600;font-size:16px;margin:0 0 4px;">${title}</p>
+        <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:0 0 4px;">📅 ${timeStr} IST</p>
+        <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:0;">⏱ ${duration} minutes</p>
+        ${meetingUrl ? `<p style="margin:12px 0 0;"><a href="${meetingUrl}" style="color:#5eead4;font-size:13px;text-decoration:underline;">🔗 Join Zoom Meeting</a></p>` : ''}
+      </div>
+      <div style="text-align:center;">
+        ${btn('View in Cleya →', `${env.FRONTEND_URL}/dashboard`)}
+      </div>
+    `);
+    await this.send(to, `Meeting: ${title} — ${timeStr}`, html);
+  }
+
+  async sendFollowup(to: string, subject: string, body: string) {
+    const html = emailLayout(`
+      <h2 style="color:#fff;font-size:24px;font-weight:700;margin:0 0 16px;">Follow-up from Cleya.ai</h2>
+      <div style="color:rgba(255,255,255,0.6);font-size:14px;line-height:1.8;margin:0 0 24px;white-space:pre-line;">${body}</div>
+      <div style="text-align:center;margin:24px 0 0;">
+        ${btn('Open Cleya →', `${env.FRONTEND_URL}/dashboard`)}
+      </div>
+    `);
+    await this.send(to, subject, html);
+  }
+
+  async sendDailyDigest(to: string, digestContent: string) {
+    const html = emailLayout(`
+      <h2 style="color:#fff;font-size:24px;font-weight:700;margin:0 0 16px;">Your Daily Digest ☀️</h2>
+      <div style="color:rgba(255,255,255,0.6);font-size:14px;line-height:1.8;margin:0 0 24px;white-space:pre-line;">${digestContent.replace(/\*\*(.*?)\*\*/g, '<strong style="color:#fff;">$1</strong>')}</div>
+      <div style="text-align:center;margin:24px 0 0;">
+        ${btn('Open Dashboard →', `${env.FRONTEND_URL}/dashboard`)}
+      </div>
+    `);
+    await this.send(to, `Cleya.ai — Your Daily Update`, html);
+  }
+
+  private generateICS(title: string, start: Date, durationMin: number, url: string | null): string {
+    const end = new Date(start.getTime() + durationMin * 60000);
+    const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    return [
+      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Cleya.ai//Meeting//EN',
+      'BEGIN:VEVENT',
+      `DTSTART:${fmt(start)}`, `DTEND:${fmt(end)}`,
+      `SUMMARY:${title}`,
+      `DESCRIPTION:Scheduled via Cleya.ai`,
+      url ? `URL:${url}` : '',
+      'END:VEVENT', 'END:VCALENDAR',
+    ].filter(Boolean).join('\r\n');
+  }
+
   async sendDigestToAll() {
     const users = await prisma.user.findMany({
       where: { role: 'USER', isActive: true },

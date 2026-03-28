@@ -44,6 +44,10 @@ const envSchema = z.object({
   ADMIN_EMAIL: z.string().optional(),
   ADMIN_PASSWORD: z.string().optional(),
 
+  ZOOM_CLIENT_ID: z.string().optional(),
+  ZOOM_CLIENT_SECRET: z.string().optional(),
+  ZOOM_REDIRECT_URI: z.string().optional(),
+
   SENTRY_DSN: z.string().optional(),
   POSTHOG_KEY: z.string().optional(),
 });

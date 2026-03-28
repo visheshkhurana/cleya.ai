@@ -63,6 +63,12 @@ model User {
   organizedMeetings      Meeting[]       @relation("MeetingOrganizer")
   participantMeetings    Meeting[]       @relation("MeetingParticipant")
 
+  secretaryThreads       SecretaryMessage[]
+
+  zoomAccessToken        String?
+  zoomRefreshToken       String?
+  zoomUserId             String?
+
   @@index([email])
   @@index([phone])
   @@map("users")
@@ -483,6 +489,9 @@ enum NotificationEvent {
   PROFILE_COMPLETE
   CALL_SCHEDULED
   CALL_REMINDER
+  MEETING_PROPOSED
+  MEETING_CONFIRMED
+  SECRETARY_DIGEST
 }
 
 // ─────────────────────────────────────────────
@@ -733,6 +742,7 @@ model Meeting {
   duration      Int           @default(30)
   location      String?
   meetingUrl    String?
+  zoomMeetingId String?
   status        MeetingStatus @default(PROPOSED)
   notes         String?
   createdAt     DateTime      @default(now())
@@ -750,6 +760,24 @@ enum MeetingStatus {
   CANCELLED
   COMPLETED
   RESCHEDULED
+}
+
+// ─────────────────────────────────────────────
+// AI SECRETARY (per-user conversation history)
+// ─────────────────────────────────────────────
+
+model SecretaryMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      MessageSender
+  content   String
+  metadata  Json?    @db.JsonB
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("secretary_messages")
 }
 
 // ─────────────────────────────────────────────

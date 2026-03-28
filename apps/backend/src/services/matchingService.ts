@@ -6,6 +6,7 @@ import { sendToUser } from '../websocket/server';
 import { introductionService } from './introductionService';
 import { vectorMatchingService } from './vectorMatchingService';
 import { emailService } from './email';
+import { onMatchAccepted } from './secretaryService';
 
 export class MatchingService {
   private ai = createAIService();
@@ -162,6 +163,9 @@ export class MatchingService {
       );
       this.progressDealOnAcceptance(updated.userAId, updated.userBId).catch((e) =>
         console.log('[MatchingService] Deal progression failed:', e)
+      );
+      onMatchAccepted(matchId, updated.userAId, updated.userBId).catch((e) =>
+        console.log('[MatchingService] Secretary match notification failed:', e)
       );
     }
 

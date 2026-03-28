@@ -42,6 +42,8 @@ import { analyticsRouter } from './routes/analytics';
 import { referralRouter } from './routes/referral';
 import { directMessageRouter } from './routes/directMessage';
 import { meetingRouter } from './routes/meeting';
+import { secretaryRouter } from './routes/secretary';
+import { zoomRouter } from './routes/zoom';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -120,6 +122,8 @@ app.use('/api/analytics', csrfProtection, analyticsRouter);
 app.use('/api/referrals', csrfProtection, referralRouter);
 app.use('/api/dm', csrfProtection, directMessageRouter);
 app.use('/api/meetings', csrfProtection, meetingRouter);
+app.use('/api/secretary', csrfProtection, secretaryRouter);
+app.use('/api/zoom', zoomRouter);
 
 if (env.SENTRY_DSN) {
   Sentry.setupExpressErrorHandler(app);
@@ -136,6 +140,7 @@ function logServiceStatus() {
   const hasConnector = !!process.env.REPLIT_CONNECTORS_HOSTNAME;
   console.log(`  Email (Resend): ${hasResendKey ? '✅ configured (from: ' + env.FROM_EMAIL + ')' : hasConnector ? '✅ connector available' : '⚠️  not configured'}`);
   console.log(`  Google OAuth: ${env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET ? '✅ configured' : '⚠️  not configured (Google login disabled)'}`);
+  console.log(`  Zoom: ${env.ZOOM_CLIENT_ID && env.ZOOM_CLIENT_SECRET ? '✅ configured' : '⚠️  not configured (Zoom meetings disabled)'}`);
   console.log(`  Sentry: ${env.SENTRY_DSN ? '✅ configured' : '⚠️  not configured (error tracking disabled)'}`);
   console.log(`  PostHog: ${env.POSTHOG_KEY ? '✅ configured' : '⚠️  not configured (analytics disabled)'}`);
   console.log('---------------------\n');

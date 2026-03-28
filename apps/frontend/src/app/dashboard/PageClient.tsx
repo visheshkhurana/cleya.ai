@@ -568,16 +568,16 @@ export default function DashboardPage() {
             </button>
 
             <button
-              onClick={() => router.push('/chat')}
+              onClick={() => router.push('/secretary')}
               className="rounded-2xl border border-white/5 p-5 text-left hover:border-teal-500/20 transition group"
               style={{ background: 'rgba(30,41,59,0.6)' }}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-2xl">💬</span>
+                <span className="text-2xl">🤖</span>
                 <span className="text-xs text-white/20 group-hover:text-white/40 transition">→</span>
               </div>
-              <h3 className="font-semibold text-white text-sm mb-1">Chat with Cleya</h3>
-              <p className="text-xs text-white/40">Start a conversation</p>
+              <h3 className="font-semibold text-white text-sm mb-1">AI Secretary</h3>
+              <p className="text-xs text-white/40">Schedule, follow up & more</p>
             </button>
           </div>
         </div>

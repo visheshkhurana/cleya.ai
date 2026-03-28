@@ -462,6 +462,48 @@ class ApiClient {
       body: JSON.stringify({ linkedinUrl }),
     });
   }
+
+  async secretaryChat(message: string) {
+    return this.fetch('/secretary/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    });
+  }
+
+  async secretaryAction(action: any) {
+    return this.fetch('/secretary/action', {
+      method: 'POST',
+      body: JSON.stringify({ action }),
+    });
+  }
+
+  async secretaryDigest() {
+    return this.fetch('/secretary/digest');
+  }
+
+  async secretarySendDigest() {
+    return this.fetch('/secretary/digest/send', { method: 'POST' });
+  }
+
+  async secretaryHistory(limit = 50) {
+    return this.fetch(`/secretary/history?limit=${limit}`);
+  }
+
+  async secretaryClearHistory() {
+    return this.fetch('/secretary/history', { method: 'DELETE' });
+  }
+
+  async zoomStatus() {
+    return this.fetch('/zoom/status');
+  }
+
+  async zoomConnect() {
+    return this.fetch('/zoom/connect');
+  }
+
+  async zoomDisconnect() {
+    return this.fetch('/zoom/disconnect', { method: 'POST' });
+  }
 }
 
 export const api = new ApiClient();
