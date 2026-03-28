@@ -352,3 +352,36 @@ adminRouter.post('/send-digest', async (_req: Request, res: Response, next: Next
     next(error);
   }
 });
+
+adminRouter.post('/test-email', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { to, type } = req.body;
+    if (!to) return res.status(400).json({ success: false, error: 'Missing "to" email address' });
+
+    const emailType = type || 'welcome';
+
+    switch (emailType) {
+      case 'welcome':
+        await emailService.sendWelcome(to);
+        break;
+      case 'verification':
+        await emailService.sendEmailVerification(to, 'test-token-123');
+        break;
+      case 'password-reset':
+        await emailService.sendPasswordReset(to, 'test-token-456');
+        break;
+      case 'match-proposed':
+        await emailService.sendMatchProposed(to, 'Test User', 'Founder · Fintech', 0.92);
+        break;
+      case 'match-accepted':
+        await emailService.sendMatchAccepted(to, 'Test User', 'Investor · Seed Stage', 'test@example.com');
+        break;
+      default:
+        return res.status(400).json({ success: false, error: `Unknown email type: ${emailType}` });
+    }
+
+    res.json({ success: true, message: `Test "${emailType}" email sent to ${to}` });
+  } catch (error) {
+    next(error);
+  }
+});

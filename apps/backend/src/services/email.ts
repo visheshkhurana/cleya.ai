@@ -1,6 +1,6 @@
-import nodemailer from 'nodemailer';
 import { env } from '../config/env';
 import { prisma } from '@boardy/db';
+import { getUncachableResendClient } from './resendClient';
 
 const brandColor = '#0D9488';
 const bgColor = '#0D0B1A';
@@ -35,40 +35,36 @@ function btn(text: string, url: string): string {
 }
 
 class EmailService {
-  private transporter: nodemailer.Transporter | null = null;
-
-  constructor() {
-    if (env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS) {
-      this.transporter = nodemailer.createTransport({
-        host: env.SMTP_HOST,
-        port: env.SMTP_PORT,
-        secure: env.SMTP_PORT === 465,
-        auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
-      });
-      console.log('📧 Email service configured');
-    } else {
-      console.log('📧 Email service: SMTP not configured (emails will be logged only)');
-    }
-  }
+  private resendAvailable: boolean | null = null;
 
   private async send(to: string, subject: string, html: string): Promise<boolean> {
-    if (this.transporter) {
-      try {
-        await this.transporter.sendMail({
-          from: `"Cleya.ai" <${env.FROM_EMAIL}>`,
-          to,
-          subject,
-          html,
-        });
-        console.log(`📧 Email sent to ${to}: ${subject}`);
-        return true;
-      } catch (err) {
-        console.error(`📧 Email send failed to ${to}:`, err);
+    try {
+      const { client } = await getUncachableResendClient();
+      const from = `Cleya.ai <${env.FROM_EMAIL}>`;
+
+      const result = await client.emails.send({
+        from,
+        to: [to],
+        subject,
+        html,
+      });
+
+      if (result.error) {
+        console.error(`📧 Resend error to ${to}:`, result.error);
         return false;
       }
-    } else {
-      console.log(`📧 [DEV] Email to ${to}: ${subject}`);
+
+      console.log(`📧 Email sent to ${to}: ${subject} (id: ${result.data?.id})`);
+      this.resendAvailable = true;
       return true;
+    } catch (err: any) {
+      if (this.resendAvailable === null) {
+        console.log('📧 Resend not available, falling back to log-only mode');
+        this.resendAvailable = false;
+      }
+      console.error(`📧 Email send failed to ${to}:`, err?.message || err);
+      console.log(`📧 [FALLBACK] Email to ${to}: ${subject}`);
+      return false;
     }
   }
 
