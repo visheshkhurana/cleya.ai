@@ -14,7 +14,7 @@ Monorepo with:
 - `packages/types` — Shared TypeScript types
 
 ## Stack
-- **Frontend:** Next.js 14, React 18, Tailwind CSS (dark teal theme)
+- **Frontend:** Next.js 14, React 18, Tailwind CSS (dark teal theme), Framer Motion 10, Lenis (smooth scroll)
 - **Backend:** Express, TypeScript, WebSocket
 - **Database:** PostgreSQL (Replit built-in), Prisma ORM, pgvector
 - **Auth:** JWT in httpOnly secure cookie (`cleo_auth`), bcryptjs password hashing, CSRF double-submit cookie protection, email verification on signup. No JWT in localStorage or URL params. WebSocket auth reads from cookie. Frontend auth checks use `/auth/me` endpoint.
@@ -219,7 +219,7 @@ Full 8-stage lifecycle implemented:
 5. **Analytics** — Users by persona, onboarding rate, match stats, feedback distribution, daily signups chart, communications breakdown, recent activity feed, weekly digest trigger
 
 ### User-Facing Pages
-- **Landing Page** (`/`) — Redesigned "Precision Intelligence" aesthetic focused on India's startup ecosystem. Sections: frosted-glass nav, hero (Playfair Display serif headline + phone chat mockup with staggered match cards showing Indian names/context), metrics bar (count-up animation with ₹ crores), testimonial ticker (marquee with Indian startup testimonials), How It Works (3-step cards), Who It's For (3 persona columns), featured match story (blockquote), final CTA, minimal footer. Fonts: Playfair Display (hero/quotes) + DM Sans (body). Colors: #0B0918 bg, #0D9488 teal primary, #0F766E teal hover, #14B8A6 teal light, #2DD4BF teal accent, #A09FB5 muted text. Animations respect prefers-reduced-motion. Auth modal has Escape/click-outside dismiss. Non-auth users see landing; auth users auto-redirect to dashboard/admin
+- **Landing Page** (`/`) — Premium animated design with Framer Motion + Canvas2D animations. Sections: frosted-glass nav, hero (serif headline + floating 3D chat mockup with staggered match cards), testimonial marquee (auto-scrolling), How It Works (3-step TiltCards), Built For Every Side (3 persona columns), featured testimonial blockquote, final CTA with AnimatedOrb, minimal footer. Components: `ParticleNetwork` (Canvas2D particle animation), `AnimatedOrb` (Canvas2D blob), `TiltCard` (3D mouse-tilt), `ScrollProgress` (fixed progress bar), `SmoothScroll` (Lenis smooth scrolling). Colors: #0F172A bg, #1E293B surface, #334155 border, #0D9488 teal primary, #2DD4BF teal accent. Animations respect prefers-reduced-motion. Auth modal has Escape/click-outside dismiss. Non-auth users see landing; auth users auto-redirect to dashboard/admin
 - **Dashboard** (`/dashboard`) — Profile summary, match stats, recent match cards with scores + persona + reason, quick actions (View Matches, Find Matches, Edit Profile, Chat)
 - **Profile** (`/profile`) — Edit all profile fields per persona type (Founder/Investor/Talent sections), save via PATCH /api/users/profile
 - **Chat** (`/chat`) — AI chat with typing indicator, timestamps, smooth scroll, chat history persistence (localStorage, survives refresh, 24h expiry)
