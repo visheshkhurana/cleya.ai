@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 type ChatStep =
@@ -262,6 +262,7 @@ export default function AnimatedChatPreview() {
   const [scenarioIdx, setScenarioIdx] = useState(0);
   const [visibleSteps, setVisibleSteps] = useState(0);
   const [transitioning, setTransitioning] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   const scenario = scenarios[scenarioIdx];
   const totalSteps = scenario.steps.length;
@@ -277,6 +278,12 @@ export default function AnimatedChatPreview() {
     setVisibleSteps(0);
     setTransitioning(false);
   }, [scenarioIdx]);
+
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }, [visibleSteps]);
 
   useEffect(() => {
     if (visibleSteps >= totalSteps) {
@@ -342,7 +349,8 @@ export default function AnimatedChatPreview() {
           animate={{ opacity: transitioning ? 0 : 1, y: transitioning ? -8 : 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.35 }}
-          className="p-5 space-y-3.5 min-h-[320px]"
+          className="p-5 space-y-3.5 h-[340px] overflow-y-auto"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {displayed.map((step, i) => (
             <motion.div
@@ -359,6 +367,7 @@ export default function AnimatedChatPreview() {
               {step.type === 'schedule-card' && <ScheduleCardView schedule={step.schedule} />}
             </motion.div>
           ))}
+          <div ref={chatEndRef} />
         </motion.div>
       </AnimatePresence>
 
