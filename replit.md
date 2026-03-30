@@ -157,6 +157,13 @@ Six persona types with tailored onboarding flows:
 - **Admin Communications tab** — recent calls/messages tables, stats, manual trigger (Call/Message) per user
 - **MessageRecord model** — SMS/WhatsApp/Email audit trail
 
+## Phase 2b: Gupshup WhatsApp Templates
+- **WhatsApp Template System** (`whatsappTemplates.ts`) — 13 templates: welcome, match_found, match_accepted, intro_sent, intro_accepted, meeting_scheduled, meeting_confirmed, meeting_reminder, profile_incomplete, weekly_digest, event_registration, event_followup, follow_up
+- **Automatic triggers**: signup→welcome, match proposed→match_found (both users), match accepted→match_accepted (both users), meeting proposed→meeting_scheduled, meeting confirmed→meeting_confirmed (both parties)
+- **Template delivery**: Uses `gupshupService.sendTemplate()` for registered Gupshup templates with fallback to plain text via `messagingService.sendWhatsApp()`
+- **Admin WhatsApp endpoints**: `GET /api/admin/whatsapp/templates`, `POST /api/admin/whatsapp/send-template`, `POST /api/admin/whatsapp/trigger`, `POST /api/admin/whatsapp/broadcast` (bulk with user filters)
+- **Broadcast error tracking**: Properly tracks failed/sent/skipped counts per user
+
 ## Phase 3: Enhanced Matching Engine + Special Flows + Deal/Event Management
 
 ### Enhanced Matching Engine

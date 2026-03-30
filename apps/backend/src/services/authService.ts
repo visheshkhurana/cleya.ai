@@ -50,6 +50,14 @@ export class AuthService {
 
     const token = this.generateToken(user);
 
+    if (user.phone) {
+      import('./whatsappTemplates').then(({ whatsappTemplates }) => {
+        whatsappTemplates.triggerWelcome(user.id).catch((e) =>
+          console.error('[Auth] Welcome WhatsApp failed:', e)
+        );
+      });
+    }
+
     return {
       user: {
         id: user.id,

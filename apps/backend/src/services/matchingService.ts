@@ -7,6 +7,7 @@ import { introductionService } from './introductionService';
 import { vectorMatchingService } from './vectorMatchingService';
 import { emailService } from './email';
 import { onMatchAccepted } from './secretaryService';
+import { whatsappTemplates } from './whatsappTemplates';
 
 export class MatchingService {
   private ai = createAIService();
@@ -114,6 +115,12 @@ export class MatchingService {
       const personaB = userBData.profile?.persona || 'Professional';
       emailService.sendMatchProposed(userAData.email, nameB, personaB, score.total).catch(() => {});
       emailService.sendMatchProposed(userBData.email, nameA, personaA, score.total).catch(() => {});
+      whatsappTemplates.triggerMatchFound(userAId, userBId, score.total).catch((e) =>
+        console.log('[MatchingService] WhatsApp match found (A) failed:', e)
+      );
+      whatsappTemplates.triggerMatchFound(userBId, userAId, score.total).catch((e) =>
+        console.log('[MatchingService] WhatsApp match found (B) failed:', e)
+      );
     }
 
     return match;
@@ -166,6 +173,12 @@ export class MatchingService {
       );
       onMatchAccepted(matchId, updated.userAId, updated.userBId).catch((e) =>
         console.log('[MatchingService] Secretary match notification failed:', e)
+      );
+      whatsappTemplates.triggerMatchAccepted(updated.userAId, updated.userBId).catch((e) =>
+        console.log('[MatchingService] WhatsApp match accepted (A) failed:', e)
+      );
+      whatsappTemplates.triggerMatchAccepted(updated.userBId, updated.userAId).catch((e) =>
+        console.log('[MatchingService] WhatsApp match accepted (B) failed:', e)
       );
     }
 

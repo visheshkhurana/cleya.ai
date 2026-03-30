@@ -5,6 +5,7 @@ import { matchingService } from '../services/matchingService';
 import { messagingService } from '../services/messagingService';
 import { automationService } from '../services/automationService';
 import { emailService } from '../services/email';
+import { whatsappTemplates } from '../services/whatsappTemplates';
 
 export const adminRouter = Router();
 
@@ -381,6 +382,178 @@ adminRouter.post('/test-email', async (req: Request, res: Response, next: NextFu
     }
 
     res.json({ success: true, message: `Test "${emailType}" email sent to ${to}` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/whatsapp/templates', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const templates = whatsappTemplates.getAllTemplates();
+    const provider = messagingService.getActiveProvider();
+    res.json({
+      success: true,
+      data: {
+        provider,
+        templates: templates.map(t => ({
+          id: t.id,
+          name: t.name,
+          description: t.description,
+          gupshupTemplateId: t.gupshupTemplateId,
+          sampleMessage: t.buildMessage({
+            name: 'Rahul',
+            matchName: 'Priya Sharma',
+            matchRole: 'VC Partner',
+            matchCompany: 'Sequoia Capital',
+            matchScore: '94',
+            introName: 'Vikram Singh',
+            introRole: 'CTO at Razorpay',
+            meetingTitle: 'Coffee Chat',
+            withName: 'Ananya Patel',
+            proposedTime: 'Tomorrow at 3:00 PM IST',
+            confirmedTime: 'Mar 31, 2026 at 3:00 PM IST',
+            location: 'Google Meet',
+            eventName: 'Pitch by Deel',
+            eventDate: 'Apr 15, 2026',
+            completionPct: '40',
+            newMatches: '3',
+            introsSent: '2',
+            meetingsScheduled: '1',
+            pendingMatches: '5',
+          }),
+        })),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/whatsapp/send-template', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { userId, phoneNumber, templateId, params } = req.body;
+
+    if (!templateId) {
+      return res.status(400).json({ success: false, error: { message: 'templateId is required' } });
+    }
+    if (!userId && !phoneNumber) {
+      return res.status(400).json({ success: false, error: { message: 'userId or phoneNumber is required' } });
+    }
+
+    const template = whatsappTemplates.getTemplate(templateId);
+    if (!template) {
+      return res.status(404).json({ success: false, error: { message: `Template '${templateId}' not found` } });
+    }
+
+    const result = await whatsappTemplates.sendTemplate(
+      userId || 'admin',
+      phoneNumber || '',
+      templateId,
+      params || {}
+    );
+
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/whatsapp/trigger', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { trigger, userId, params } = req.body;
+
+    if (!trigger || !userId) {
+      return res.status(400).json({ success: false, error: { message: 'trigger and userId are required' } });
+    }
+
+    let result;
+    switch (trigger) {
+      case 'welcome':
+        result = await whatsappTemplates.triggerWelcome(userId);
+        break;
+      case 'match_found':
+        if (!params?.matchUserId) return res.status(400).json({ success: false, error: { message: 'params.matchUserId required' } });
+        result = await whatsappTemplates.triggerMatchFound(userId, params.matchUserId, params.matchScore);
+        break;
+      case 'match_accepted':
+        if (!params?.matchUserId) return res.status(400).json({ success: false, error: { message: 'params.matchUserId required' } });
+        result = await whatsappTemplates.triggerMatchAccepted(userId, params.matchUserId);
+        break;
+      case 'intro_sent':
+        result = await whatsappTemplates.triggerIntroSent(userId, params?.introName || 'Someone', params?.introRole);
+        break;
+      case 'intro_accepted':
+        result = await whatsappTemplates.triggerIntroAccepted(userId, params?.introName || 'Someone');
+        break;
+      case 'meeting_scheduled':
+        result = await whatsappTemplates.triggerMeetingScheduled(userId, params?.meetingTitle || 'Meeting', params?.withName || 'Someone', params?.proposedTime);
+        break;
+      case 'meeting_confirmed':
+        result = await whatsappTemplates.triggerMeetingConfirmed(userId, params?.meetingTitle || 'Meeting', params?.withName || 'Someone', params?.confirmedTime || 'TBD', params?.location);
+        break;
+      case 'meeting_reminder':
+        result = await whatsappTemplates.triggerMeetingReminder(userId, params?.meetingTitle || 'Meeting', params?.withName || 'Someone', params?.timeUntil || '1 hour', params?.location, params?.meetingLink);
+        break;
+      case 'profile_incomplete':
+        result = await whatsappTemplates.triggerProfileIncomplete(userId, params?.completionPct || 0);
+        break;
+      case 'event_registration':
+        result = await whatsappTemplates.triggerEventRegistration(userId, params?.eventName || 'Event', params?.eventDate || 'TBD', params?.eventLocation);
+        break;
+      case 'follow_up':
+        result = await whatsappTemplates.triggerFollowUp(userId);
+        break;
+      case 'weekly_digest':
+        result = await whatsappTemplates.triggerWeeklyDigest(userId, params || { newMatches: 0, introsSent: 0, meetingsScheduled: 0 });
+        break;
+      default:
+        return res.status(400).json({ success: false, error: { message: `Unknown trigger: ${trigger}` } });
+    }
+
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/whatsapp/broadcast', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { templateId, params, userFilter } = req.body;
+
+    if (!templateId) {
+      return res.status(400).json({ success: false, error: { message: 'templateId is required' } });
+    }
+
+    const where: any = { phone: { not: null } };
+    if (userFilter?.persona) where.profile = { persona: userFilter.persona };
+    if (userFilter?.role) where.role = userFilter.role;
+
+    const users = await prisma.user.findMany({
+      where,
+      select: { id: true, phone: true, name: true, email: true },
+      take: userFilter?.limit || 100,
+    });
+
+    const results = { sent: 0, failed: 0, skipped: 0, total: users.length };
+
+    for (const user of users) {
+      if (!user.phone) { results.skipped++; continue; }
+      try {
+        const result = await whatsappTemplates.sendTemplate(user.id, user.phone, templateId, {
+          name: user.name || user.email.split('@')[0],
+          ...params,
+        });
+        if (!result || result.status === 'FAILED') {
+          results.failed++;
+        } else {
+          results.sent++;
+        }
+      } catch {
+        results.failed++;
+      }
+    }
+
+    res.json({ success: true, data: results });
   } catch (error) {
     next(error);
   }

@@ -2,6 +2,7 @@ import { prisma } from '@cleya/db';
 import { callService } from './voice/callService';
 import { messagingService } from './messagingService';
 import { matchingService } from './matchingService';
+import { whatsappTemplates } from './whatsappTemplates';
 
 export class AutomationService {
   async onOnboardingComplete(userId: string, context: Record<string, any>) {
@@ -134,12 +135,11 @@ export class AutomationService {
   }
 
   private async sendWelcomeMessages(userId: string, phoneNumber: string, userName?: string) {
-    const welcomeMessage = messagingService.getWelcomeMessage(userName);
+    const result = await whatsappTemplates.triggerWelcome(userId);
 
-    const whatsappResult = await messagingService.sendWhatsApp(userId, phoneNumber, welcomeMessage);
-
-    if (whatsappResult.status === 'FAILED') {
-      console.log(`WhatsApp failed for ${userId}, falling back to SMS`);
+    if (!result || result.status === 'FAILED') {
+      console.log(`WhatsApp template failed for ${userId}, falling back to plain SMS`);
+      const welcomeMessage = messagingService.getWelcomeMessage(userName);
       await messagingService.sendSMS(userId, phoneNumber, welcomeMessage);
     }
   }

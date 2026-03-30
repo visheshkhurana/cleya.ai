@@ -88,8 +88,11 @@ export class NotificationService {
   }
 
   private async sendWhatsApp(payload: NotificationPayload) {
-    if (!this.twilioClient || !env.TWILIO_WHATSAPP_NUMBER) {
-      console.warn('⚠️ WhatsApp not configured');
+    const { messagingService } = await import('../messagingService');
+    const provider = messagingService.getActiveProvider();
+
+    if (provider === 'none') {
+      console.warn('No WhatsApp provider configured');
       return;
     }
 
@@ -97,11 +100,11 @@ export class NotificationService {
     if (!user?.phone) return;
 
     try {
-      await this.twilioClient.messages.create({
-        from: env.TWILIO_WHATSAPP_NUMBER,
-        to: `whatsapp:${user.phone}`,
-        body: `*${payload.title}*\n\n${payload.body}`,
-      });
+      await messagingService.sendWhatsApp(
+        payload.userId,
+        user.phone,
+        `*${payload.title}*\n\n${payload.body}`
+      );
     } catch (error) {
       console.error('WhatsApp send failed:', error);
     }

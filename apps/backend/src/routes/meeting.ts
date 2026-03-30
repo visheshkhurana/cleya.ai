@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticate } from '../middleware/auth';
 import { sendToUser } from '../websocket/server';
+import { whatsappTemplates } from '../services/whatsappTemplates';
 
 const prisma = new PrismaClient();
 export const meetingRouter = Router();
@@ -79,6 +80,13 @@ meetingRouter.post('/', authenticate, async (req: Request, res: Response, next: 
       meeting: { id: meeting.id, title: meeting.title, organizerName: meeting.organizer.name || meeting.organizer.email },
     });
 
+    whatsappTemplates.triggerMeetingScheduled(
+      participantId,
+      meeting.title,
+      meeting.organizer.name || meeting.organizer.email,
+      proposedTimes[0] ? new Date(proposedTimes[0]).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : undefined
+    ).catch((e) => console.log('[Meeting] WhatsApp scheduled failed:', e));
+
     res.json({ success: true, data: meeting });
   } catch (error) {
     next(error);
@@ -120,6 +128,20 @@ meetingRouter.put('/:meetingId/confirm', authenticate, async (req: Request, res:
     sendToUser(notifyUserId, 'meeting:confirmed', {
       meeting: { id: updated.id, title: updated.title, confirmedTime: updated.confirmedTime },
     });
+
+    const confirmedTimeStr = new Date(confirmedTime).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+    const otherUser = userId === meeting.organizerId ? updated.participant : updated.organizer;
+    const currentUser = userId === meeting.organizerId ? updated.organizer : updated.participant;
+    whatsappTemplates.triggerMeetingConfirmed(
+      notifyUserId, updated.title,
+      currentUser.name || currentUser.email,
+      confirmedTimeStr, updated.location || undefined
+    ).catch((e) => console.log('[Meeting] WhatsApp confirmed failed:', e));
+    whatsappTemplates.triggerMeetingConfirmed(
+      userId, updated.title,
+      otherUser.name || otherUser.email,
+      confirmedTimeStr, updated.location || undefined
+    ).catch((e) => console.log('[Meeting] WhatsApp confirmed (self) failed:', e));
 
     res.json({ success: true, data: updated });
   } catch (error) {
