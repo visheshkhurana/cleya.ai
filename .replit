@@ -86,3 +86,7 @@ BACKEND_URL = "https://boardy-ai-platform.replit.dev:3001"
 [userenv.production]
 FRONTEND_URL = "https://boardy-ai-platform.replit.app"
 BACKEND_URL = "https://boardy-ai-platform.replit.app"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 120000
