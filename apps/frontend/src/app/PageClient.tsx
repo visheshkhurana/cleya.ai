@@ -248,14 +248,14 @@ export default function Home() {
         <nav
           role="navigation"
           aria-label="Main navigation"
-          className="fixed top-0 left-0 right-0 z-50 transition-all duration-500"
+          className="fixed top-0 left-0 right-0 z-50 transition-[background,backdrop-filter,border-color] duration-500"
           style={{
             background: scrolled ? 'rgba(15,23,42,0.85)' : 'transparent',
             backdropFilter: scrolled ? 'blur(20px) saturate(180%)' : 'none',
             borderBottom: scrolled ? '1px solid rgba(255,255,255,0.05)' : '1px solid transparent',
           }}
         >
-          <div className={`max-w-6xl mx-auto px-6 flex items-center justify-between transition-all duration-300 ${scrolled ? 'py-3' : 'py-5'}`}>
+          <div className={`max-w-6xl mx-auto px-6 flex items-center justify-between transition-[padding] duration-300 ${scrolled ? 'py-3' : 'py-5'}`}>
             <div className="flex items-center gap-2.5">
               <svg width="28" height="16" viewBox="0 0 28 16" fill="none">
                 <path d="M8 1C4.134 1 1 4.134 1 8s3.134 7 7 7 7-3.134 7-7" stroke="#2DD4BF" strokeWidth="1.8" strokeLinecap="round"/>
@@ -348,7 +348,8 @@ export default function Home() {
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-                  className="font-display text-[44px] sm:text-[58px] lg:text-[72px] font-bold text-white leading-[1.05] mb-7 tracking-tight"
+                  className="font-display font-bold text-white leading-[1.05] mb-7 tracking-tight"
+                  style={{ fontSize: 'clamp(44px, 5vw + 16px, 72px)' }}
                 >
                   {t('hero.title1')}<br />
                   <span className="italic" style={{ color: '#2DD4BF' }}>{t('hero.title2')}</span>
@@ -358,8 +359,8 @@ export default function Home() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5, duration: 0.6 }}
-                  className="text-base sm:text-lg leading-relaxed mb-10 max-w-[440px]"
-                  style={{ color: '#94A3B8' }}
+                  className="leading-relaxed mb-10 max-w-[440px]"
+                  style={{ color: '#94A3B8', fontSize: 'clamp(16px, 1vw + 12px, 18px)' }}
                 >
                   {t('hero.subtitle')}
                 </motion.p>
@@ -388,8 +389,8 @@ export default function Home() {
 
               {/* Chat Mockup - 3D floating with animated scenarios */}
               <motion.div
-                initial={{ opacity: 0, scale: 0.85, rotateY: -15 }}
-                animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                initial={{ opacity: 0, y: 30, rotateY: -15 }}
+                animate={{ opacity: 1, y: 0, rotateY: 0 }}
                 transition={{ delay: 0.4, duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
                 className="relative hidden lg:flex justify-center items-center"
                 style={{ perspective: '800px' }}
@@ -445,7 +446,7 @@ export default function Home() {
         <section id="how-it-works" className="py-24 sm:py-32">
           <div className="max-w-6xl mx-auto px-6">
             <AnimatedSection className="text-center mb-16">
-              <motion.h2 variants={fadeUp} className="font-display text-3xl sm:text-[44px] font-bold text-white mb-4 tracking-tight">
+              <motion.h2 variants={fadeUp} className="font-display font-bold text-white mb-4 tracking-tight" style={{ fontSize: 'clamp(30px, 3.5vw + 8px, 44px)' }}>
                 {t('howItWorks.title')}
               </motion.h2>
               <motion.p variants={fadeUp} className="text-base max-w-md mx-auto" style={{ color: '#94A3B8' }}>
@@ -475,7 +476,7 @@ export default function Home() {
                 },
               ].map((step, i) => (
                 <motion.div key={i} variants={fadeUp}>
-                  <TiltCard className="relative rounded-2xl border border-white/[0.06] p-8 hover:border-[#2DD4BF]/20 transition-all duration-300 h-full" style={{ background: '#1E293B' }}>
+                  <TiltCard className="relative rounded-2xl border border-white/[0.06] p-8 hover:border-[#2DD4BF]/20 transition-[border-color] duration-300 h-full" style={{ background: '#1E293B' }}>
                     <div className="absolute top-4 right-6 font-display text-[72px] font-bold leading-none pointer-events-none select-none"
                       style={{ color: 'rgba(13,148,136,0.06)' }}>{step.num}</div>
                     <div className="relative">
@@ -497,7 +498,7 @@ export default function Home() {
         <section className="py-24 sm:py-32 border-t border-white/[0.04]">
           <div className="max-w-6xl mx-auto px-6">
             <AnimatedSection className="text-center mb-16">
-              <motion.h2 variants={fadeUp} className="font-display text-3xl sm:text-[44px] font-bold text-white mb-4 tracking-tight">
+              <motion.h2 variants={fadeUp} className="font-display font-bold text-white mb-4 tracking-tight" style={{ fontSize: 'clamp(30px, 3.5vw + 8px, 44px)' }}>
                 Built for every side of the table
               </motion.h2>
               <motion.p variants={fadeUp} className="text-base max-w-md mx-auto" style={{ color: '#94A3B8' }}>
@@ -534,7 +535,7 @@ export default function Home() {
               ].map((persona, i) => (
                 <motion.div key={i} variants={fadeUp}>
                   <TiltCard
-                    className="relative rounded-2xl border border-white/[0.06] p-8 hover:border-[#2DD4BF]/20 transition-all duration-300 cursor-pointer h-full group"
+                    className="relative rounded-2xl border border-white/[0.06] p-8 hover:border-[#2DD4BF]/20 transition-[border-color] duration-300 cursor-pointer h-full group"
                     style={{ background: '#1E293B' }}
                     onClick={() => { setShowAuth(true); setMode('signup'); setSelectedPersona(persona.personaValue); }}
                   >
@@ -567,7 +568,7 @@ export default function Home() {
                   style={{ background: 'radial-gradient(circle, rgba(13,148,136,0.08) 0%, transparent 70%)' }} />
                 <div className="absolute -left-4 top-8 font-display text-[120px] font-bold leading-none pointer-events-none select-none"
                   style={{ color: 'rgba(13,148,136,0.06)' }}>"</div>
-                <blockquote className="font-display text-xl sm:text-[28px] leading-snug text-white/90 mb-8 relative italic">
+                <blockquote className="font-display leading-snug text-white/90 mb-8 relative italic" style={{ fontSize: 'clamp(20px, 2vw + 8px, 28px)' }}>
                   "Cleya introduced me to my lead investor in 48 hours. The match was so precise it felt like Cleya had read my pitch deck."
                 </blockquote>
                 <div className="flex items-center gap-4">
@@ -591,7 +592,7 @@ export default function Home() {
             style={{ background: 'radial-gradient(ellipse at center, rgba(13,148,136,0.08) 0%, transparent 60%)' }} />
 
           <AnimatedSection className="relative max-w-3xl mx-auto px-6 text-center">
-            <motion.h2 variants={fadeUp} className="font-display text-3xl sm:text-[48px] font-bold text-white mb-6 tracking-tight leading-tight">
+            <motion.h2 variants={fadeUp} className="font-display font-bold text-white mb-6 tracking-tight leading-tight" style={{ fontSize: 'clamp(30px, 4vw + 8px, 48px)' }}>
               Your next co-founder, investor, or hire is already on Cleya.
             </motion.h2>
             <motion.p variants={fadeUp} className="text-base mb-12 max-w-lg mx-auto" style={{ color: '#94A3B8' }}>
@@ -658,9 +659,9 @@ export default function Home() {
             onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
             tabIndex={-1}>
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
               transition={{ duration: 0.25 }}
               className="relative w-full max-w-sm mx-4"
             >

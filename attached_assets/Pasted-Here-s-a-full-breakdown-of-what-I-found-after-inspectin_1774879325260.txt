@@ -1,0 +1,43 @@
+Here's a full breakdown of what I found after inspecting cleya.ai:
+
+---
+
+**The "Slacky" Scroll**
+
+The site is using **Lenis v1.3.21** (smooth scroll library). The `<html>` element has the `lenis` class, and the bundled code shows it's configured with `smoothWheel: true`, `wheelMultiplier: 1`, and `touchMultiplier: 1`. Lenis works by hijacking native scroll and using a **lerp (linear interpolation)** animation loop — so when you scroll the wheel, instead of the page moving instantly, it *eases* into the target position over several animation frames. This is what creates the "slacky" or floaty, delayed feeling. The scroll position lags behind your actual input.
+
+**How to fix the scroll:**
+
+You have a few options depending on what feel you want:
+
+- **Increase the `lerp` value** (e.g. from the default `~0.1` to `0.15` or `0.2`) — higher lerp = faster catch-up = snappier scroll.
+- **Switch to `duration` mode** instead of `lerp` — Lenis supports a fixed `duration` (e.g. `duration: 0.8`) with an easing function, which can feel more predictable.
+- **Increase `wheelMultiplier`** (currently `1`) — setting it to `1.2` or `1.5` will make each scroll tick move more, reducing the feeling of sluggishness.
+- **Remove Lenis entirely** if you don't need smooth scroll — native browser scroll is instant and well-optimized.
+
+---
+
+**The Text Changing Sizes**
+
+This isn't caused by animation directly — it's the **responsive Tailwind breakpoint classes** on your text elements. For example:
+
+- `H1`: `text-[44px] sm:text-[58px] lg:text-[72px]` — jumps from 44px → 58px → 72px at breakpoints
+- `H2`s: `text-3xl sm:text-[44px]` — jumps from 30px → 44px
+- Body text: `text-base sm:text-lg` — jumps from 16px → 18px
+
+These are **discrete jumps at Tailwind breakpoints** (640px, 1024px), not smooth scaling. If users are resizing their window or if the Lenis smooth scroll is causing any brief layout recalculations that trigger a breakpoint boundary, the text will visually "snap" to a different size.
+
+Additionally, the site has **38 elements using framer-motion** inline styles (`opacity` + `transform`). Many of these animate in with `initial: {opacity: 0, scale: 0.95}` → `animate: {opacity: 1, scale: 1}` using spring physics (`type: "spring", stiffness: 100-120`). The `scale: 0.95 → 1` transition on text containers means text visually **grows ~5% in size** as it animates into view. Combined with the Lenis smooth scroll (which controls *when* these elements enter the viewport), this creates a noticeable "text growing" effect during scroll.
+
+---
+
+**Other Performance Concerns**
+
+The **canvas** running a 2D particle background is rendered at 2266×1664 pixels (2x device pixel ratio), which is a lot of pixel-pushing on every frame. There's also a **3D perspective card** in the hero that recalculates `rotateX/rotateY/translateY` on mouse movement, a **fixed navbar** with `transition-all duration-500` (which transitions *every* CSS property for 500ms on any change), and a **scroll progress bar** that updates its width continuously.
+
+**Quick wins to improve things:**
+
+- In your `ReactLenis` wrapper, try `lerp={0.15}` or `duration={0.6}` with a snappier easing
+- Replace `transition-all` on the nav with specific properties like `transition-[background,box-shadow]` to avoid unnecessary repaints
+- Consider removing the `scale: 0.95 → 1` from your framer-motion `initial` states — use just `opacity` + `y` translation instead, which won't cause the "text growing" perception
+- Use `clamp()` for font sizes (e.g. `font-size: clamp(44px, 5vw, 72px)`) instead of breakpoint jumps for smoother responsive typography
