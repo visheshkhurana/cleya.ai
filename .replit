@@ -78,6 +78,8 @@ PORT = "3001"
 JWT_SECRET = "c0a5a053f8698508919b603afcb4e48a2a240e54cd59965280759d28dda83434"
 ADMIN_EMAIL = "admin@cleo.ai"
 ADMIN_PASSWORD = "CleyaAdmin2024!"
+GUPSHUP_API_KEY = "sk_3c07d74e1e9a4785aae88e25a09b43f8"
+GUPSHUP_APP_NAME = "cleyaai"
 
 [userenv.development]
 FRONTEND_URL = "https://boardy-ai-platform.replit.dev"
