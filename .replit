@@ -80,6 +80,7 @@ ADMIN_EMAIL = "admin@cleo.ai"
 ADMIN_PASSWORD = "CleyaAdmin2024!"
 GUPSHUP_API_KEY = "sk_3c07d74e1e9a4785aae88e25a09b43f8"
 GUPSHUP_APP_NAME = "cleyaai"
+GUPSHUP_SOURCE_NUMBER = "13688005877"
 
 [userenv.development]
 FRONTEND_URL = "https://boardy-ai-platform.replit.dev"
