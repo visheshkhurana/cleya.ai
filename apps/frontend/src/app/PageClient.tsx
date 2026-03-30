@@ -11,6 +11,7 @@ import ScrollProgress from '@/components/ui/ScrollProgress';
 import SmoothScroll from '@/components/ui/SmoothScroll';
 import ParticleNetwork from '@/components/3d/ParticleNetwork';
 import AnimatedOrb from '@/components/3d/AnimatedOrb';
+import AnimatedChatPreview from '@/components/AnimatedChatPreview';
 
 function getPasswordStrength(pw: string): { label: string; color: string; width: string } {
   if (!pw) return { label: '', color: '', width: '0%' };
@@ -237,17 +238,6 @@ export default function Home() {
     { initials: 'NK', quote: 'Cleya connected me to 3 portfolio founders in one day.', name: 'Nandini R.', title: 'Venture Partner · Elevation Capital' },
   ];
 
-  const chatMessages = [
-    { type: 'bot', text: "Hey! I'm Cleya. What brings you here today?" },
-    { type: 'user', text: "I'm raising a seed round for my fintech startup in Bangalore" },
-    { type: 'bot', text: "I found 3 investors that match your profile perfectly." },
-  ];
-
-  const matchCards = [
-    { name: 'Meera Iyer', role: 'VC Partner', sector: 'Fintech · Seed', match: 94 },
-    { name: 'Siddharth A.', role: 'Angel Investor', sector: 'SaaS · Pre-Seed', match: 91 },
-    { name: 'Ananya Bhat', role: 'Associate', sector: 'AI/ML · Seed-A', match: 88 },
-  ];
 
   return (
     <SmoothScroll>
@@ -396,7 +386,7 @@ export default function Home() {
                 </motion.div>
               </motion.div>
 
-              {/* Chat Mockup - 3D floating */}
+              {/* Chat Mockup - 3D floating with animated scenarios */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.9, rotateY: -10 }}
                 animate={{ opacity: 1, scale: 1, rotateY: 0 }}
@@ -412,93 +402,7 @@ export default function Home() {
                 >
                   <div className="absolute -inset-8 rounded-3xl pointer-events-none"
                     style={{ background: 'radial-gradient(circle, rgba(13,148,136,0.15) 0%, transparent 70%)', filter: 'blur(30px)' }} />
-
-                  <div className="relative w-[320px] rounded-2xl border border-white/[0.08] overflow-hidden shadow-2xl"
-                    style={{ background: '#0F172A', boxShadow: '0 25px 60px -12px rgba(0,0,0,0.5), 0 0 40px rgba(13,148,136,0.08)' }}>
-                    <div className="px-4 py-3 flex items-center gap-3 border-b border-white/[0.06]" style={{ background: 'rgba(30,41,59,0.5)' }}>
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                        style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>C</div>
-                      <div>
-                        <p className="text-white text-sm font-medium">Cleya.ai</p>
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                          <p className="text-[11px] text-white/40">Active now</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4 space-y-3">
-                      {chatMessages.map((msg, i) => (
-                        <motion.div
-                          key={i}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.8 + i * 0.6, duration: 0.5 }}
-                          className={`flex ${msg.type === 'user' ? 'justify-end' : 'gap-2 items-end'}`}
-                        >
-                          {msg.type === 'bot' && (
-                            <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] text-white font-bold flex-shrink-0"
-                              style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>C</div>
-                          )}
-                          <div className={`rounded-xl px-3 py-2.5 max-w-[82%] ${
-                            msg.type === 'user'
-                              ? 'rounded-tr-sm bg-gradient-to-r from-[#0D9488] to-[#0F766E]'
-                              : 'rounded-tl-sm'
-                          }`} style={msg.type === 'bot' ? { background: '#1E293B' } : {}}>
-                            <p className={`text-[11px] leading-relaxed ${msg.type === 'user' ? 'text-white' : 'text-white/80'}`}>{msg.text}</p>
-                          </div>
-                        </motion.div>
-                      ))}
-
-                      <div className="space-y-2 ml-8">
-                        {matchCards.map((m, i) => (
-                          <motion.div
-                            key={m.name}
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 2.6 + i * 0.2, duration: 0.4, type: 'spring', stiffness: 100 }}
-                            className="rounded-xl border border-white/[0.06] p-2.5"
-                            style={{ background: 'rgba(13,148,136,0.04)' }}
-                          >
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold"
-                                style={{ background: 'rgba(13,148,136,0.2)', color: '#2DD4BF' }}>
-                                {m.name.split(' ').map(n => n[0]).join('')}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-[11px] text-white font-medium">{m.name} — {m.role}</p>
-                                <p className="text-[10px] text-white/40">{m.sector} · {m.match}% match</p>
-                              </div>
-                            </div>
-                            <div className="mt-2 h-[3px] rounded-full overflow-hidden" style={{ background: 'rgba(13,148,136,0.15)' }}>
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${m.match}%` }}
-                                transition={{ delay: 3 + i * 0.2, duration: 0.8, ease: 'easeOut' }}
-                                className="h-full rounded-full"
-                                style={{ background: 'linear-gradient(90deg, #0D9488, #2DD4BF)' }}
-                              />
-                            </div>
-                          </motion.div>
-                        ))}
-                      </div>
-
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 3.5, duration: 0.3 }}
-                        className="flex gap-2 items-end"
-                      >
-                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] text-white font-bold flex-shrink-0"
-                          style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>C</div>
-                        <div className="rounded-xl rounded-tl-sm px-3 py-2.5 flex gap-1.5" style={{ background: '#1E293B' }}>
-                          <div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#94A3B8', animationDelay: '0ms' }} />
-                          <div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#94A3B8', animationDelay: '150ms' }} />
-                          <div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: '#94A3B8', animationDelay: '300ms' }} />
-                        </div>
-                      </motion.div>
-                    </div>
-                  </div>
+                  <AnimatedChatPreview />
                 </motion.div>
               </motion.div>
             </div>
