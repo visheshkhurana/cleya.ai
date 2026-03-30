@@ -8,6 +8,7 @@
     "start": "next start --port 5000"
   },
   "dependencies": {
+    "@sentry/browser": "^10.46.0",
     "autoprefixer": "^10.4.17",
     "clsx": "^2.1.0",
     "framer-motion": "10",

@@ -1,29 +1,46 @@
 'use client';
 
 import { useEffect } from 'react';
+import { initGA } from '@/lib/ga';
 
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY || '';
+const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || '';
+
+function hasAnalyticsConsent(): boolean {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem('cleo_cookie_consent') === 'accepted';
+}
+
+function initPostHog() {
+  if (!POSTHOG_KEY || typeof window === 'undefined' || (window as any).posthog) return;
+
+  const script = document.createElement('script');
+  script.src = 'https://us.i.posthog.com/static/array.js';
+  script.async = true;
+  script.onload = () => {
+    if ((window as any).posthog) {
+      (window as any).posthog.init(POSTHOG_KEY, {
+        api_host: 'https://us.i.posthog.com',
+        person_profiles: 'identified_only',
+        capture_pageview: true,
+        capture_pageleave: true,
+        autocapture: true,
+        persistence: 'localStorage+cookie',
+      });
+    }
+  };
+  document.head.appendChild(script);
+}
+
+function initAnalyticsIfConsented() {
+  if (!hasAnalyticsConsent()) return;
+  if (POSTHOG_KEY) initPostHog();
+  if (GA_ID) initGA();
+}
 
 export default function BootstrapClient() {
   useEffect(() => {
-    if (POSTHOG_KEY && typeof window !== 'undefined' && !(window as any).posthog) {
-      const script = document.createElement('script');
-      script.src = 'https://us.i.posthog.com/static/array.js';
-      script.async = true;
-      script.onload = () => {
-        if ((window as any).posthog) {
-          (window as any).posthog.init(POSTHOG_KEY, {
-            api_host: 'https://us.i.posthog.com',
-            person_profiles: 'identified_only',
-            capture_pageview: true,
-            capture_pageleave: true,
-            autocapture: true,
-            persistence: 'localStorage+cookie',
-          });
-        }
-      };
-      document.head.appendChild(script);
-    }
+    initAnalyticsIfConsented();
   }, []);
 
   useEffect(() => {
@@ -61,6 +78,7 @@ export default function BootstrapClient() {
         acceptBtn.onclick = () => {
           localStorage.setItem('cleo_cookie_consent', 'accepted');
           wrapper.remove();
+          initAnalyticsIfConsented();
         };
 
         const declineBtn = document.createElement('button');
