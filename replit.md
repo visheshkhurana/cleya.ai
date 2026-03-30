@@ -105,6 +105,8 @@ All frontend pages use a server/client wrapper pattern for build compatibility:
 - `NotificationCenter.tsx` — In-app notification dropdown
 - `PhoneInput.tsx` — Phone number input with validation
 - `VerificationBadge.tsx` — Tier-based verification badge (Trusted/Verified/Basic) shown on match cards
+- `AppFooter.tsx` — Footer for authenticated pages (dashboard, matches, profile) with nav links and copyright
+- `ChatBubble.tsx` — Chat message bubble with markdown rendering (react-markdown) for AI messages, plain text for user messages
 
 ### Auth Flow
 - Signup: Full Name (optional) + Persona selector (Founder/Investor/Talent) + Email + Password (min 8 chars, letter + number required) + Confirm Password + Terms consent

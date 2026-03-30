@@ -290,8 +290,8 @@ export class MatchingService {
       prisma.match.count({
         where: {
           OR: [
-            { userAId: userId, status: { in: ['PROPOSED', 'PENDING_B'] } },
-            { userBId: userId, status: { in: ['PROPOSED', 'PENDING_A'] } },
+            { userAId: userId, status: { in: ['PROPOSED', 'PENDING_A'] } },
+            { userBId: userId, status: { in: ['PROPOSED', 'PENDING_B'] } },
           ],
         },
       }),

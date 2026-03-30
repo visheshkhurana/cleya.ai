@@ -7,6 +7,7 @@ import MobileNav from '@/components/MobileNav';
 import VerificationBadge from '@/components/VerificationBadge';
 import { analytics } from '@/lib/posthog';
 import { useToast } from '@/components/Toast';
+import AppFooter from '@/components/AppFooter';
 
 interface MatchData {
   id: string;
@@ -153,12 +154,13 @@ export default function MatchesPage() {
     });
   };
 
-  const pendingMatches = filterBySearch(matches.filter(isPending));
-  const acceptedMatches = filterBySearch(matches.filter((m) => m.status === 'ACCEPTED'));
-  const waitingMatches = filterBySearch(matches.filter((m) => {
+  const sortByScore = (list: MatchData[]) => [...list].sort((a, b) => (b.score || 0) - (a.score || 0));
+  const pendingMatches = sortByScore(filterBySearch(matches.filter(isPending)));
+  const acceptedMatches = sortByScore(filterBySearch(matches.filter((m) => m.status === 'ACCEPTED')));
+  const waitingMatches = sortByScore(filterBySearch(matches.filter((m) => {
     const myResp = getMyResponse(m);
     return myResp === 'ACCEPTED' && m.status !== 'ACCEPTED' && m.status !== 'REJECTED';
-  }));
+  })));
 
   const personaIcon: Record<string, string> = {
     FOUNDER: '🚀', INVESTOR: '💰', TALENT: '🎯', DEAL_PARTNER: '🤝',
@@ -560,6 +562,8 @@ export default function MatchesPage() {
           </div>
         </div>
       )}
+
+      <AppFooter />
     </div>
   );
 }

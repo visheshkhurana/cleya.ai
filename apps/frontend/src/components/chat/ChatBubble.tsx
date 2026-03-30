@@ -1,4 +1,5 @@
 'use client';
+import ReactMarkdown from 'react-markdown';
 
 interface ChatBubbleProps {
   sender: 'AI' | 'USER' | 'SYSTEM';
@@ -22,7 +23,29 @@ export function ChatBubble({ sender, content, timestamp }: ChatBubbleProps) {
         )}
         <div className="min-w-0">
           <div className={isUser ? 'chat-bubble-user' : 'chat-bubble-ai'}>
-            <p className="text-sm whitespace-pre-wrap leading-relaxed break-words">{content}</p>
+            {isUser ? (
+              <p className="text-sm whitespace-pre-wrap leading-relaxed break-words">{content}</p>
+            ) : (
+              <div className="text-sm leading-relaxed break-words prose-chat">
+                <ReactMarkdown
+                  components={{
+                    p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                    strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                    em: ({ children }) => <em className="italic">{children}</em>,
+                    ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+                    ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+                    li: ({ children }) => <li>{children}</li>,
+                    a: ({ href, children }) => (
+                      <a href={href} target="_blank" rel="noopener noreferrer" className="underline" style={{ color: '#5EEAD4' }}>
+                        {children}
+                      </a>
+                    ),
+                  }}
+                >
+                  {content}
+                </ReactMarkdown>
+              </div>
+            )}
           </div>
           {timestamp && (
             <p className={`text-[10px] text-white/20 mt-1 ${isUser ? 'text-right' : 'text-left'}`}>

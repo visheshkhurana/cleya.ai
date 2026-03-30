@@ -6,6 +6,7 @@ import MobileNav from '@/components/MobileNav';
 import PhoneInput, { validatePhone } from '@/components/PhoneInput';
 import { analytics } from '@/lib/posthog';
 import { useToast } from '@/components/Toast';
+import AppFooter from '@/components/AppFooter';
 
 interface ProfileData {
   persona?: string;
@@ -48,8 +49,19 @@ const personaIcon: Record<string, string> = {
 const industryOptions = [
   'ai_ml', 'fintech', 'saas', 'healthtech', 'edtech', 'e_commerce', 'biotech',
   'cleantech', 'cybersecurity', 'real_estate', 'media', 'gaming', 'logistics', 'food_beverage',
-  'enterprise', 'consumer', 'climate',
+  'enterprise', 'consumer', 'climate', 'other',
 ];
+
+const completenessFields = [
+  { key: 'persona', label: 'Persona' },
+  { key: 'headline', label: 'Headline' },
+  { key: 'bio', label: 'Bio' },
+  { key: 'companyName', label: 'Company Name' },
+  { key: 'currentRole', label: 'Current Role' },
+  { key: 'location', label: 'Location' },
+  { key: 'industries', label: 'Industries' },
+  { key: 'linkedinUrl', label: 'LinkedIn URL' },
+] as const;
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileData>({});
@@ -57,6 +69,8 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const [customIndustry, setCustomIndustry] = useState('');
+  const [showCustomIndustry, setShowCustomIndustry] = useState(false);
   const toast = useToast();
   const router = useRouter();
 
@@ -130,6 +144,10 @@ export default function ProfilePage() {
   };
 
   const toggleIndustry = (ind: string) => {
+    if (ind === 'other') {
+      setShowCustomIndustry(!showCustomIndustry);
+      return;
+    }
     const current = profile.industries || [];
     if (current.includes(ind)) {
       updateField('industries', current.filter((i) => i !== ind));
@@ -137,6 +155,30 @@ export default function ProfilePage() {
       updateField('industries', [...current, ind]);
     }
   };
+
+  const addCustomIndustry = () => {
+    const trimmed = customIndustry.trim().toLowerCase().replace(/\s+/g, '_');
+    if (!trimmed) return;
+    const current = profile.industries || [];
+    if (!current.includes(trimmed)) {
+      updateField('industries', [...current, trimmed]);
+    }
+    setCustomIndustry('');
+    setShowCustomIndustry(false);
+  };
+
+  const getMissingFields = () => {
+    const missing: string[] = [];
+    for (const field of completenessFields) {
+      const val = profile[field.key as keyof ProfileData];
+      if (!val || (Array.isArray(val) && val.length === 0) || (typeof val === 'string' && !val.trim())) {
+        missing.push(field.label);
+      }
+    }
+    return missing;
+  };
+
+  const completenessScore = Math.round(((completenessFields.length - getMissingFields().length) / completenessFields.length) * 100);
 
   if (loading) {
     return (
@@ -203,6 +245,21 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        <div className="rounded-2xl border border-white/5 p-4" style={{ background: 'rgba(30,41,59,0.6)' }}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-white/50 uppercase tracking-wide">Profile Completion</span>
+            <span className="text-sm font-bold" style={{ color: completenessScore === 100 ? '#10b981' : '#5EEAD4' }}>{completenessScore}%</span>
+          </div>
+          <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${completenessScore}%`, background: completenessScore === 100 ? '#10b981' : 'linear-gradient(90deg, #0D9488, #2DD4BF)' }} />
+          </div>
+          {getMissingFields().length > 0 && (
+            <p className="text-[11px] mt-2" style={{ color: '#94A3B8' }}>
+              Missing: {getMissingFields().join(', ')}
+            </p>
+          )}
+        </div>
+
         {error && (
           <div className="rounded-xl p-3 text-sm text-red-400 bg-red-500/10 border border-red-500/20">{error}</div>
         )}
@@ -255,8 +312,18 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">LinkedIn URL</label>
-              <input type="url" value={profile.linkedinUrl || ''} onChange={(e) => updateField('linkedinUrl', e.target.value)}
-                placeholder="https://linkedin.com/in/..." className="input-dark" />
+              <div className="flex items-center rounded-2xl border border-white/10 bg-white/5 overflow-hidden focus-within:ring-2 focus-within:ring-cleya-500 transition-all backdrop-blur-sm">
+                <span className="pl-4 pr-1 text-sm text-white/30 whitespace-nowrap select-none">linkedin.com/in/</span>
+                <input type="text"
+                  value={(profile.linkedinUrl || '').replace(/^https?:\/\/(www\.)?linkedin\.com\/in\/?/i, '')}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\/?/i, '').replace(/^\/+/, '');
+                    const slug = raw.split(/[?#/]/)[0].trim();
+                    updateField('linkedinUrl', slug ? `https://linkedin.com/in/${slug}` : '');
+                  }}
+                  placeholder="your-profile"
+                  className="flex-1 px-2 py-3 bg-transparent text-white text-sm placeholder-white/30 focus:outline-none" />
+              </div>
             </div>
             <div>
               <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Website</label>
@@ -270,7 +337,7 @@ export default function ProfilePage() {
           <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Industries</h3>
           <div className="flex flex-wrap gap-2">
             {industryOptions.map((ind) => {
-              const selected = (profile.industries || []).includes(ind);
+              const selected = ind === 'other' ? showCustomIndustry : (profile.industries || []).includes(ind);
               return (
                 <button key={ind} onClick={() => toggleIndustry(ind)}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
@@ -279,11 +346,35 @@ export default function ProfilePage() {
                       : 'border-white/10 text-white/40 hover:border-white/20 hover:text-white/60'
                   }`}
                   style={selected ? { background: 'rgba(13,148,136,0.15)' } : { background: 'rgba(255,255,255,0.03)' }}>
-                  {ind.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/\bAi Ml\b/, 'AI/ML').replace(/\bSaas\b/, 'SaaS').replace(/\bE Commerce\b/, 'E-Commerce')}
+                  {ind === 'other' ? 'Other' : ind.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/\bAi Ml\b/, 'AI/ML').replace(/\bSaas\b/, 'SaaS').replace(/\bE Commerce\b/, 'E-Commerce')}
                 </button>
               );
             })}
           </div>
+          {showCustomIndustry && (
+            <div className="flex items-center gap-2 mt-2">
+              <input type="text" value={customIndustry} onChange={(e) => setCustomIndustry(e.target.value)}
+                placeholder="Enter your industry" className="input-dark flex-1"
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomIndustry(); } }} />
+              <button onClick={addCustomIndustry}
+                className="px-4 py-3 rounded-2xl text-xs font-semibold text-white transition"
+                style={{ background: '#0D9488' }}>
+                Add
+              </button>
+            </div>
+          )}
+          {(profile.industries || []).filter(i => !industryOptions.includes(i)).length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {(profile.industries || []).filter(i => !industryOptions.includes(i)).map(ind => (
+                <span key={ind} className="px-3 py-1.5 rounded-full text-xs font-medium border border-teal-500/40 text-teal-300 flex items-center gap-1.5"
+                  style={{ background: 'rgba(13,148,136,0.15)' }}>
+                  {ind.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                  <button onClick={() => updateField('industries', (profile.industries || []).filter(i => i !== ind))}
+                    className="text-white/40 hover:text-white/70 text-xs">×</button>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         {isFounder && (
@@ -351,6 +442,8 @@ export default function ProfilePage() {
           </button>
         </div>
       </div>
+
+      <AppFooter />
     </div>
   );
 }

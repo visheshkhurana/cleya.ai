@@ -6,6 +6,7 @@ import NotificationCenter from '@/components/NotificationCenter';
 import MobileNav from '@/components/MobileNav';
 import { analytics, identifyUser } from '@/lib/posthog';
 import { setUser as setSentryUser } from '@/lib/sentry';
+import AppFooter from '@/components/AppFooter';
 
 interface UserProfile {
   persona?: string;
@@ -760,6 +761,8 @@ export default function DashboardPage() {
           </form>
         </div>
       )}
+
+      <AppFooter />
     </div>
   );
 }

@@ -63,6 +63,12 @@
            transition-all backdrop-blur-sm;
   }
 
+  select.input-dark option {
+    background: #1E293B;
+    color: #ffffff;
+    padding: 8px 12px;
+  }
+
   .btn-primary {
     @apply w-full py-3 rounded-2xl text-white font-semibold text-sm
            transition-all duration-200
