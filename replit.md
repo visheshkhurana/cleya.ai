@@ -23,9 +23,16 @@ Monorepo with:
 
 ## Environment Variables (see .env.example for full list)
 **Required:** `DATABASE_URL`, `JWT_SECRET` (min 32 chars; startup throws if missing)
-**Optional (graceful fallback):** `OPENAI_API_KEY` (AI chat → fallback responses), `TWILIO_*` (calls/SMS disabled), `SMTP_*` (emails logged only), `GOOGLE_CLIENT_*` (Google login hidden), `LINKEDIN_CLIENT_ID` + `LINKEDIN_CLIENT_SECRET` (LinkedIn login hidden), `SENTRY_DSN` (no error tracking), `POSTHOG_KEY` (no analytics)
+**Optional (graceful fallback):** `OPENAI_API_KEY` (AI chat → fallback responses), `TWILIO_*` (calls/SMS disabled), `SMTP_*` (emails logged only), `GOOGLE_CLIENT_*` (Google login hidden), `LINKEDIN_CLIENT_ID` + `LINKEDIN_CLIENT_SECRET` (LinkedIn login hidden), `SENTRY_DSN` (backend error tracking), `NEXT_PUBLIC_SENTRY_DSN` (frontend error tracking via CDN), `NEXT_PUBLIC_POSTHOG_KEY` (PostHog analytics), `NEXT_PUBLIC_GA_MEASUREMENT_ID` (Google Analytics 4)
 **Admin seed:** `ADMIN_EMAIL` + `ADMIN_PASSWORD` — both must be set to create admin; no defaults in code
 **CORS:** `CORS_ORIGIN` env var → defaults to `FRONTEND_URL`; locked to single origin (not wildcard)
+
+## Analytics & Error Tracking
+- **Frontend Sentry:** Loaded via CDN script (`browser.sentry-cdn.com/8.48.0/bundle.min.js`) in `BootstrapClient.tsx` — avoids webpack conflicts with Next.js 14. Helper functions in `src/lib/sentry.ts` (`captureException`, `captureMessage`, `setUser`). Initializes on all routes regardless of cookie consent (essential service).
+- **Frontend GA4:** `src/lib/ga.ts` — CDN-loaded Google Analytics. Consent-gated via `cleo_cookie_consent` localStorage key. Page views tracked via `usePathname()` in `BootstrapClient.tsx` (single source, `send_page_view: false` in config).
+- **Frontend PostHog:** CDN-loaded in `BootstrapClient.tsx`. Consent-gated. Analytics helpers in `src/lib/posthog.ts`.
+- **Backend Sentry:** `@sentry/node` in `apps/backend/src/index.ts` + `errorHandler.ts`. Uses `SENTRY_DSN` env var.
+- **Cookie consent:** Banner in `BootstrapClient.tsx` (DOM-injected, not React-rendered). Stored as `cleo_cookie_consent` in localStorage. PostHog + GA4 only init after "Accept all"; Sentry loads regardless.
 
 ## Running the App
 ```

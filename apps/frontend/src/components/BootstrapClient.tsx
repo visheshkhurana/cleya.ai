@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
-import { initGA } from '@/lib/ga';
+import { useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
+import { initGA, trackPageView } from '@/lib/ga';
 
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY || '';
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || '';
+const SENTRY_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN || '';
 
 function hasAnalyticsConsent(): boolean {
   if (typeof window === 'undefined') return false;
@@ -32,6 +34,26 @@ function initPostHog() {
   document.head.appendChild(script);
 }
 
+function initSentry() {
+  if (!SENTRY_DSN || typeof window === 'undefined' || (window as any).__sentryLoaded) return;
+  (window as any).__sentryLoaded = true;
+
+  const script = document.createElement('script');
+  script.src = 'https://browser.sentry-cdn.com/8.48.0/bundle.min.js';
+  script.crossOrigin = 'anonymous';
+  script.async = true;
+  script.onload = () => {
+    if ((window as any).Sentry) {
+      (window as any).Sentry.init({
+        dsn: SENTRY_DSN,
+        environment: process.env.NODE_ENV || 'development',
+        tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.2 : 1.0,
+      });
+    }
+  };
+  document.head.appendChild(script);
+}
+
 function initAnalyticsIfConsented() {
   if (!hasAnalyticsConsent()) return;
   if (POSTHOG_KEY) initPostHog();
@@ -39,9 +61,20 @@ function initAnalyticsIfConsented() {
 }
 
 export default function BootstrapClient() {
+  const pathname = usePathname();
+  const prevPathname = useRef<string | null>(null);
+
   useEffect(() => {
+    initSentry();
     initAnalyticsIfConsented();
   }, []);
+
+  useEffect(() => {
+    if (pathname && pathname !== prevPathname.current) {
+      prevPathname.current = pathname;
+      trackPageView(pathname);
+    }
+  }, [pathname]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
