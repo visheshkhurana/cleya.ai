@@ -1,6 +1,7 @@
 import twilio from 'twilio';
 import { prisma } from '@cleya/db';
 import { env } from '../config/env';
+import { gupshupService } from './gupshupService';
 
 export class MessagingService {
   private twilioClient: twilio.Twilio | null = null;
@@ -11,6 +12,18 @@ export class MessagingService {
     }
   }
 
+  private getWhatsAppProvider(): 'gupshup' | 'twilio' | null {
+    if (env.MESSAGING_PROVIDER === 'gupshup') {
+      return gupshupService.isConfigured() ? 'gupshup' : null;
+    }
+    if (env.MESSAGING_PROVIDER === 'twilio') {
+      return this.twilioClient ? 'twilio' : null;
+    }
+    if (gupshupService.isConfigured()) return 'gupshup';
+    if (this.twilioClient) return 'twilio';
+    return null;
+  }
+
   async sendSMS(userId: string, phoneNumber: string, message: string) {
     const record = await prisma.messageRecord.create({
       data: {
@@ -19,6 +32,7 @@ export class MessagingService {
         channel: 'SMS',
         content: message,
         status: 'QUEUED',
+        provider: 'TWILIO',
       },
     });
 
@@ -56,6 +70,12 @@ export class MessagingService {
   }
 
   async sendWhatsApp(userId: string, phoneNumber: string, message: string) {
+    const provider = this.getWhatsAppProvider();
+
+    if (provider === 'gupshup') {
+      return gupshupService.sendWhatsApp(userId, phoneNumber, message);
+    }
+
     const whatsappNumber = phoneNumber.startsWith('whatsapp:')
       ? phoneNumber
       : `whatsapp:${phoneNumber}`;
@@ -67,14 +87,15 @@ export class MessagingService {
         channel: 'WHATSAPP',
         content: message,
         status: 'QUEUED',
+        provider: 'TWILIO',
       },
     });
 
     if (!this.twilioClient) {
-      console.warn('Twilio not configured, WhatsApp skipped');
+      console.warn('No WhatsApp provider configured (neither Gupshup nor Twilio)');
       await prisma.messageRecord.update({
         where: { id: record.id },
-        data: { status: 'FAILED', errorMessage: 'Twilio not configured' },
+        data: { status: 'FAILED', errorMessage: 'No WhatsApp provider configured' },
       });
       return record;
     }
@@ -97,7 +118,7 @@ export class MessagingService {
         data: { status: 'SENT', messageSid: result.sid },
       });
 
-      console.log(`WhatsApp sent to ${phoneNumber} (${result.sid})`);
+      console.log(`WhatsApp sent to ${phoneNumber} via Twilio (${result.sid})`);
       return { ...record, status: 'SENT', messageSid: result.sid };
     } catch (error: any) {
       await prisma.messageRecord.update({
@@ -107,6 +128,29 @@ export class MessagingService {
       console.error(`WhatsApp failed to ${phoneNumber}:`, error.message);
       return { ...record, status: 'FAILED', errorMessage: error.message };
     }
+  }
+
+  async sendWhatsAppTemplate(userId: string, phoneNumber: string, templateId: string, params: string[] = []) {
+    const provider = this.getWhatsAppProvider();
+    if (provider === 'gupshup') {
+      return gupshupService.sendTemplate(userId, phoneNumber, templateId, params);
+    }
+    return this.sendWhatsApp(userId, phoneNumber, `Template: ${templateId} | ${params.join(', ')}`);
+  }
+
+  async sendWhatsAppImage(userId: string, phoneNumber: string, imageUrl: string, caption?: string) {
+    const provider = this.getWhatsAppProvider();
+    if (provider === 'gupshup') {
+      return gupshupService.sendImage(userId, phoneNumber, imageUrl, caption);
+    }
+    return this.sendWhatsApp(userId, phoneNumber, caption || imageUrl);
+  }
+
+  getActiveProvider(): string {
+    const provider = this.getWhatsAppProvider();
+    if (provider) return provider;
+    if (this.twilioClient) return 'twilio (SMS only)';
+    return 'none';
   }
 
   getWelcomeMessage(userName?: string): string {

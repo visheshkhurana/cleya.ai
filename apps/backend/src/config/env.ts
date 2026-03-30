@@ -20,6 +20,11 @@ const envSchema = z.object({
   TWILIO_PHONE_NUMBER: z.string().optional(),
   TWILIO_WHATSAPP_NUMBER: z.string().optional(),
 
+  GUPSHUP_API_KEY: z.string().optional(),
+  GUPSHUP_APP_NAME: z.string().optional(),
+  GUPSHUP_SOURCE_NUMBER: z.string().optional(),
+  MESSAGING_PROVIDER: z.enum(['twilio', 'gupshup', 'auto']).default('auto'),
+
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(3001),
   FRONTEND_URL: z.string().default('http://localhost:3000'),

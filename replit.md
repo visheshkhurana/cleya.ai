@@ -23,7 +23,7 @@ Monorepo with:
 
 ## Environment Variables (see .env.example for full list)
 **Required:** `DATABASE_URL`, `JWT_SECRET` (min 32 chars; startup throws if missing)
-**Optional (graceful fallback):** `OPENAI_API_KEY` (AI chat → fallback responses), `TWILIO_*` (calls/SMS disabled), `SMTP_*` (emails logged only), `GOOGLE_CLIENT_*` (Google login hidden), `LINKEDIN_CLIENT_ID` + `LINKEDIN_CLIENT_SECRET` (LinkedIn login hidden), `SENTRY_DSN` (backend error tracking), `NEXT_PUBLIC_SENTRY_DSN` (frontend error tracking via CDN), `NEXT_PUBLIC_POSTHOG_KEY` (PostHog analytics), `NEXT_PUBLIC_GA_MEASUREMENT_ID` (Google Analytics 4)
+**Optional (graceful fallback):** `OPENAI_API_KEY` (AI chat → fallback responses), `TWILIO_*` (calls/SMS disabled), `GUPSHUP_API_KEY` + `GUPSHUP_APP_NAME` + `GUPSHUP_SOURCE_NUMBER` (Gupshup WhatsApp), `MESSAGING_PROVIDER` (`auto`|`gupshup`|`twilio`, default `auto` — prefers Gupshup), `SMTP_*` (emails logged only), `GOOGLE_CLIENT_*` (Google login hidden), `LINKEDIN_CLIENT_ID` + `LINKEDIN_CLIENT_SECRET` (LinkedIn login hidden), `SENTRY_DSN` (backend error tracking), `NEXT_PUBLIC_SENTRY_DSN` (frontend error tracking via CDN), `NEXT_PUBLIC_POSTHOG_KEY` (PostHog analytics), `NEXT_PUBLIC_GA_MEASUREMENT_ID` (Google Analytics 4)
 **Admin seed:** `ADMIN_EMAIL` + `ADMIN_PASSWORD` — both must be set to create admin; no defaults in code
 **CORS:** `CORS_ORIGIN` env var → defaults to `FRONTEND_URL`; locked to single origin (not wildcard)
 

@@ -44,6 +44,7 @@ import { directMessageRouter } from './routes/directMessage';
 import { meetingRouter } from './routes/meeting';
 import { secretaryRouter } from './routes/secretary';
 import { zoomRouter } from './routes/zoom';
+import { gupshupRouter } from './routes/gupshup';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -124,6 +125,7 @@ app.use('/api/dm', csrfProtection, directMessageRouter);
 app.use('/api/meetings', csrfProtection, meetingRouter);
 app.use('/api/secretary', csrfProtection, secretaryRouter);
 app.use('/api/zoom', zoomRouter);
+app.use('/api/gupshup', gupshupRouter);
 
 if (env.SENTRY_DSN) {
   Sentry.setupExpressErrorHandler(app);
@@ -136,6 +138,9 @@ function logServiceStatus() {
   console.log(`  CORS origin: ${corsOrigin}`);
   console.log(`  OpenAI: ${env.OPENAI_API_KEY ? '✅ configured' : '⚠️  not configured (AI chat will use fallback responses)'}`);
   console.log(`  Twilio: ${env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN ? '✅ configured' : '⚠️  not configured (calls/SMS disabled)'}`);
+  console.log(`  Gupshup: ${env.GUPSHUP_API_KEY && env.GUPSHUP_APP_NAME ? '✅ configured' : '⚠️  not configured'}`);
+  const { messagingService: ms } = require('./services/messagingService');
+  console.log(`  WhatsApp provider: ${ms.getActiveProvider()}`);
   const hasResendKey = !!env.RESEND_API_KEY;
   const hasConnector = !!process.env.REPLIT_CONNECTORS_HOSTNAME;
   console.log(`  Email (Resend): ${hasResendKey ? '✅ configured (from: ' + env.FROM_EMAIL + ')' : hasConnector ? '✅ connector available' : '⚠️  not configured'}`);

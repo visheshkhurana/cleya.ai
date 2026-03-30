@@ -508,6 +508,7 @@ model MessageRecord {
   status          MessageStatus    @default(QUEUED)
   messageSid      String?
   errorMessage    String?
+  provider        String?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
