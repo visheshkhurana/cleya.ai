@@ -80,7 +80,7 @@ export class GupshupService {
         body: body.toString(),
       });
 
-      const result: GupshupResponse = await response.json();
+      const result = (await response.json()) as GupshupResponse;
 
       if (!response.ok) {
         throw new Error(result.message || `Gupshup HTTP error: ${response.status}`);
@@ -154,7 +154,7 @@ export class GupshupService {
         body: body.toString(),
       });
 
-      const result: GupshupResponse = await response.json();
+      const result = (await response.json()) as GupshupResponse;
 
       if (!response.ok) {
         throw new Error(result.message || `Gupshup HTTP error: ${response.status}`);
@@ -225,7 +225,7 @@ export class GupshupService {
         body: body.toString(),
       });
 
-      const result: GupshupResponse = await response.json();
+      const result = (await response.json()) as GupshupResponse;
 
       if (!response.ok) {
         throw new Error(result.message || `Gupshup HTTP error: ${response.status}`);
