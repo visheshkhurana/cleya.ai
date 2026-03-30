@@ -24,13 +24,18 @@ export class GupshupService {
   }
 
   private formatPhone(phone: string): string {
-    let cleaned = phone.replace(/[\s\-()whatsapp:]/g, '');
-    if (!cleaned.startsWith('+')) {
-      if (cleaned.length === 10) {
-        cleaned = '91' + cleaned;
-      }
-    } else {
-      cleaned = cleaned.substring(1);
+    let cleaned = phone.replace(/[\s\-()whatsapp:+]/g, '');
+    if (cleaned.length === 10) {
+      cleaned = '91' + cleaned;
+    }
+    if (cleaned.startsWith('910') && cleaned.length === 13) {
+      cleaned = '91' + cleaned.substring(3);
+    }
+    if (cleaned.startsWith('9710') && cleaned.length === 14) {
+      cleaned = '971' + cleaned.substring(4);
+    }
+    if (cleaned.startsWith('00')) {
+      cleaned = cleaned.substring(2);
     }
     return cleaned;
   }
