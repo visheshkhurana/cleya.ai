@@ -200,7 +200,7 @@ userRouter.get('/settings', authenticate, async (req: Request, res: Response, ne
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user!.userId },
-      select: { email: true, phone: true, name: true, createdAt: true },
+      select: { email: true, phone: true, name: true, createdAt: true, whatsappOptedIn: true, whatsappPhone: true },
     });
     const profile = await prisma.profile.findUnique({
       where: { userId: req.user!.userId },

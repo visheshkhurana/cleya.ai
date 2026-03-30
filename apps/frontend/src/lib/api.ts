@@ -504,6 +504,21 @@ class ApiClient {
   async zoomDisconnect() {
     return this.fetch('/zoom/disconnect', { method: 'POST' });
   }
+
+  async whatsappStatus() {
+    return this.fetch('/whatsapp/status');
+  }
+
+  async whatsappOptIn(phoneNumber: string) {
+    return this.fetch('/whatsapp/opt-in', {
+      method: 'POST',
+      body: JSON.stringify({ phoneNumber }),
+    });
+  }
+
+  async whatsappOptOut() {
+    return this.fetch('/whatsapp/opt-out', { method: 'POST' });
+  }
 }
 
 export const api = new ApiClient();

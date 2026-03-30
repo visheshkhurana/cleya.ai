@@ -157,12 +157,17 @@ Six persona types with tailored onboarding flows:
 - **Admin Communications tab** — recent calls/messages tables, stats, manual trigger (Call/Message) per user
 - **MessageRecord model** — SMS/WhatsApp/Email audit trail
 
-## Phase 2b: Gupshup WhatsApp Templates
-- **WhatsApp Template System** (`whatsappTemplates.ts`) — 13 templates: welcome, match_found, match_accepted, intro_sent, intro_accepted, meeting_scheduled, meeting_confirmed, meeting_reminder, profile_incomplete, weekly_digest, event_registration, event_followup, follow_up
+## Phase 2b: Gupshup WhatsApp Templates + Opt-in System
+- **WhatsApp Template System** (`whatsappTemplates.ts`) — 13 internal templates mapped to 5 Gupshup templates: `cleya_welcome`, `cleya_introduction`, `cleya_meeting_reminder`, `cleya_followup`, `cleya_reengagement`
 - **Automatic triggers**: signup→welcome, match proposed→match_found (both users), match accepted→match_accepted (both users), meeting proposed→meeting_scheduled, meeting confirmed→meeting_confirmed (both parties)
-- **Template delivery**: Uses `gupshupService.sendTemplate()` for registered Gupshup templates with fallback to plain text via `messagingService.sendWhatsApp()`
-- **Admin WhatsApp endpoints**: `GET /api/admin/whatsapp/templates`, `POST /api/admin/whatsapp/send-template`, `POST /api/admin/whatsapp/trigger`, `POST /api/admin/whatsapp/broadcast` (bulk with user filters)
-- **Broadcast error tracking**: Properly tracks failed/sent/skipped counts per user
+- **Opt-in gating**: All WhatsApp messages check `user.whatsappOptedIn` before sending; users opt in via Settings page
+- **User schema**: `whatsappOptedIn` (boolean, default false), `whatsappPhone` (string, nullable) on User model
+- **Opt-in API**: `POST /api/whatsapp/opt-in` (with phone), `POST /api/whatsapp/opt-out`, `GET /api/whatsapp/status`
+- **Frontend**: WhatsApp Notifications section in Settings page with phone input, enable/disable toggle, status indicator
+- **Auto opt-in**: Inbound WhatsApp messages (via Gupshup webhook) auto opt-in the user if their phone matches a DB record
+- **Admin endpoints**: `GET /api/admin/whatsapp/templates`, `POST /api/admin/whatsapp/send-template`, `POST /api/admin/whatsapp/trigger`, `POST /api/admin/whatsapp/broadcast`, `POST /api/admin/whatsapp/register-templates`, `GET /api/admin/whatsapp/gupshup-templates`
+- **Gupshup API key limitation**: Current key is messaging-only; template registration + opt-in management requires partner/portal key from Gupshup dashboard
+- **Template delivery**: Uses `gupshupService.sendTemplate()` for Gupshup templates with fallback to plain text; checks `whatsappOptedIn` before sending
 
 ## Phase 3: Enhanced Matching Engine + Special Flows + Deal/Event Management
 

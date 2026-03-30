@@ -40,6 +40,73 @@ export class GupshupService {
     return cleaned;
   }
 
+  async optInUser(phoneNumber: string): Promise<{ success: boolean; error?: string }> {
+    if (!this.isConfigured()) {
+      return { success: false, error: 'Gupshup not configured' };
+    }
+
+    try {
+      const formattedPhone = this.formatPhone(phoneNumber);
+
+      const body = new URLSearchParams({
+        user: formattedPhone,
+      });
+
+      const response = await fetch(`https://api.gupshup.io/sm/api/v1/app/opt/in/${this.appName}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'apikey': this.apiKey!,
+        },
+        body: body.toString(),
+      });
+
+      const result = await response.json() as any;
+
+      if (response.ok && result.status === 'success') {
+        console.log(`Gupshup opt-in success for ${formattedPhone}`);
+        return { success: true };
+      }
+
+      const msg = typeof result === 'string' ? result : result?.message || JSON.stringify(result);
+      console.warn(`Gupshup opt-in response for ${formattedPhone}:`, msg);
+      return { success: true };
+    } catch (error: any) {
+      console.error(`Gupshup opt-in failed for ${phoneNumber}:`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async optOutUser(phoneNumber: string): Promise<{ success: boolean; error?: string }> {
+    if (!this.isConfigured()) {
+      return { success: false, error: 'Gupshup not configured' };
+    }
+
+    try {
+      const formattedPhone = this.formatPhone(phoneNumber);
+
+      const body = new URLSearchParams({
+        user: formattedPhone,
+      });
+
+      const response = await fetch(`https://api.gupshup.io/sm/api/v1/app/opt/out/${this.appName}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'apikey': this.apiKey!,
+        },
+        body: body.toString(),
+      });
+
+      const result = await response.json() as any;
+      console.log(`Gupshup opt-out for ${formattedPhone}:`, result);
+      return { success: true };
+    } catch (error: any) {
+      console.error(`Gupshup opt-out failed for ${phoneNumber}:`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
   async sendWhatsApp(userId: string, phoneNumber: string, message: string) {
     const record = await prisma.messageRecord.create({
       data: {
@@ -285,6 +352,101 @@ export class GupshupService {
     if (type === 'message') {
       const { from, text, type: msgType } = eventPayload;
       console.log(`Gupshup inbound from ${from}: [${msgType}] ${text || ''}`);
+
+      if (from) {
+        try {
+          const formattedFrom = this.formatPhone(from);
+          const user = await prisma.user.findFirst({
+            where: {
+              OR: [
+                { phone: { contains: formattedFrom.slice(-10) } },
+                { whatsappPhone: { contains: formattedFrom.slice(-10) } },
+              ],
+            },
+          });
+
+          if (user && !user.whatsappOptedIn) {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { whatsappOptedIn: true, whatsappPhone: from },
+            });
+            console.log(`Auto opted-in user ${user.id} from inbound WhatsApp`);
+          }
+
+          if (!user) {
+            console.log(`Inbound WhatsApp from unknown number ${from}`);
+          }
+        } catch (e: any) {
+          console.error(`Auto opt-in error:`, e.message);
+        }
+      }
+    }
+  }
+
+  async registerTemplate(
+    elementName: string,
+    languageCode: string,
+    category: string,
+    templateType: string,
+    content: string,
+    example?: string
+  ): Promise<{ success: boolean; data?: any; error?: string }> {
+    if (!this.isConfigured()) {
+      return { success: false, error: 'Gupshup not configured' };
+    }
+
+    try {
+      const body = new URLSearchParams({
+        elementName,
+        languageCode,
+        category,
+        templateType,
+        content,
+        vertical: 'Networking',
+      });
+      if (example) {
+        body.append('example', example);
+      }
+
+      const response = await fetch(`https://api.gupshup.io/sm/api/v2/template/${this.appName}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'apikey': this.apiKey!,
+        },
+        body: body.toString(),
+      });
+
+      const result = await response.json() as any;
+      console.log(`Template registration [${elementName}]:`, JSON.stringify(result));
+
+      if (result.status === 'success' || result.status === 'submitted') {
+        return { success: true, data: result };
+      }
+      return { success: false, data: result, error: result.message || JSON.stringify(result) };
+    } catch (error: any) {
+      console.error(`Template registration failed [${elementName}]:`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async listTemplates(): Promise<{ success: boolean; data?: any; error?: string }> {
+    if (!this.isConfigured()) {
+      return { success: false, error: 'Gupshup not configured' };
+    }
+
+    try {
+      const response = await fetch(`https://api.gupshup.io/sm/api/v1/template/list/${this.appName}`, {
+        method: 'GET',
+        headers: {
+          'apikey': this.apiKey!,
+        },
+      });
+
+      const result = await response.json() as any;
+      return { success: true, data: result };
+    } catch (error: any) {
+      return { success: false, error: error.message };
     }
   }
 }

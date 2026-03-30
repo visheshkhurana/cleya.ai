@@ -6,6 +6,7 @@ import { messagingService } from '../services/messagingService';
 import { automationService } from '../services/automationService';
 import { emailService } from '../services/email';
 import { whatsappTemplates } from '../services/whatsappTemplates';
+import { gupshupService } from '../services/gupshupService';
 
 export const adminRouter = Router();
 
@@ -554,6 +555,79 @@ adminRouter.post('/whatsapp/broadcast', async (req: Request, res: Response, next
     }
 
     res.json({ success: true, data: results });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/whatsapp/register-templates', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const templatesToRegister = [
+      {
+        elementName: 'cleya_welcome',
+        languageCode: 'en',
+        category: 'UTILITY',
+        templateType: 'TEXT',
+        content: "Welcome to Cleya.ai! 🎉 We're excited to help you connect with the right people. You'll receive networking updates and introductions here.",
+        example: "Welcome to Cleya.ai! 🎉 We're excited to help you connect with the right people. You'll receive networking updates and introductions here.",
+      },
+      {
+        elementName: 'cleya_introduction',
+        languageCode: 'en',
+        category: 'UTILITY',
+        templateType: 'TEXT',
+        content: 'Hi {{1}}! Cleya.ai has found a great connection for you. {{2}} would love to connect. Reply to start the conversation!',
+        example: 'Hi [Rahul]! Cleya.ai has found a great connection for you. [Priya from Sequoia] would love to connect. Reply to start the conversation!',
+      },
+      {
+        elementName: 'cleya_meeting_reminder',
+        languageCode: 'en',
+        category: 'UTILITY',
+        templateType: 'TEXT',
+        content: 'Reminder: You have a meeting scheduled {{1}}. {{2}}',
+        example: 'Reminder: You have a meeting scheduled [tomorrow at 3 PM]. [Coffee chat with Ananya Patel at Starbucks Koramangala]',
+      },
+      {
+        elementName: 'cleya_followup',
+        languageCode: 'en',
+        category: 'UTILITY',
+        templateType: 'TEXT',
+        content: "Hi {{1}}! How was your meeting? We'd love to hear your feedback. Reply with your thoughts!",
+        example: "Hi [Rahul]! How was your meeting? We'd love to hear your feedback. Reply with your thoughts!",
+      },
+      {
+        elementName: 'cleya_reengagement',
+        languageCode: 'en',
+        category: 'MARKETING',
+        templateType: 'TEXT',
+        content: "Hi {{1}}! It's been a while since we connected. Cleya.ai has new networking opportunities waiting for you. Tap to explore!",
+        example: "Hi [Rahul]! It's been a while since we connected. Cleya.ai has new networking opportunities waiting for you. Tap to explore!",
+      },
+    ];
+
+    const results = [];
+    for (const t of templatesToRegister) {
+      const result = await gupshupService.registerTemplate(
+        t.elementName,
+        t.languageCode,
+        t.category,
+        t.templateType,
+        t.content,
+        t.example
+      );
+      results.push({ template: t.elementName, ...result });
+    }
+
+    res.json({ success: true, data: results });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/whatsapp/gupshup-templates', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await gupshupService.listTemplates();
+    res.json({ success: true, data: result });
   } catch (error) {
     next(error);
   }

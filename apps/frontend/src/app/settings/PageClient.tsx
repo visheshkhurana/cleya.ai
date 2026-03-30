@@ -22,6 +22,11 @@ export default function SettingsPage() {
   const [notifSaving, setNotifSaving] = useState(false);
   const [zoomStatus, setZoomStatus] = useState<{ configured: boolean; connected: boolean } | null>(null);
   const [zoomLoading, setZoomLoading] = useState(false);
+  const [waOptedIn, setWaOptedIn] = useState(false);
+  const [waPhone, setWaPhone] = useState('');
+  const [waPhoneInput, setWaPhoneInput] = useState('');
+  const [waLoading, setWaLoading] = useState(false);
+  const [waMsg, setWaMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     api.getMe().then((user) => {
@@ -47,6 +52,14 @@ export default function SettingsPage() {
 
     api.zoomStatus().then(data => {
       if (data) setZoomStatus(data);
+    }).catch(() => {});
+
+    api.whatsappStatus().then(data => {
+      if (data) {
+        setWaOptedIn(data.whatsappOptedIn || false);
+        setWaPhone(data.whatsappPhone || '');
+        setWaPhoneInput(data.whatsappPhone || '');
+      }
     }).catch(() => {});
 
     const params = new URLSearchParams(window.location.search);
@@ -431,12 +444,136 @@ export default function SettingsPage() {
           )}
         </section>
 
+        {/* WhatsApp Integration */}
+        <section style={{
+          background: '#1E293B',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: '16px',
+          padding: '28px',
+          marginTop: '24px',
+        }}>
+          <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 600, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '20px' }}>💬</span> WhatsApp Notifications
+          </h2>
+          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '13px', marginBottom: '20px', lineHeight: 1.5 }}>
+            Get real-time match notifications, meeting reminders, and introductions delivered to your WhatsApp.
+          </p>
+
+          {waOptedIn ? (
+            <div>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '12px',
+                padding: '14px 16px', borderRadius: '12px',
+                background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.15)',
+                marginBottom: '16px',
+              }}>
+                <div style={{
+                  width: '10px', height: '10px', borderRadius: '50%',
+                  background: '#10b981', flexShrink: 0,
+                }} />
+                <div>
+                  <p style={{ color: '#6ee7b7', fontSize: '14px', fontWeight: 500, margin: 0 }}>WhatsApp notifications active</p>
+                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: '2px 0 0 0' }}>
+                    Receiving on {waPhone || 'your number'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={async () => {
+                  setWaLoading(true);
+                  setWaMsg(null);
+                  try {
+                    await api.whatsappOptOut();
+                    setWaOptedIn(false);
+                    setWaMsg({ type: 'success', text: 'WhatsApp notifications turned off' });
+                  } catch (err: any) {
+                    setWaMsg({ type: 'error', text: err.message || 'Failed to opt out' });
+                  }
+                  setWaLoading(false);
+                }}
+                disabled={waLoading}
+                style={{
+                  padding: '10px 20px', borderRadius: '10px', fontSize: '13px',
+                  background: 'rgba(239,68,68,0.1)', color: '#ef4444',
+                  border: '1px solid rgba(239,68,68,0.2)', cursor: 'pointer',
+                  opacity: waLoading ? 0.5 : 1,
+                }}
+              >
+                {waLoading ? 'Processing...' : 'Turn Off WhatsApp Notifications'}
+              </button>
+            </div>
+          ) : (
+            <div>
+              <div style={{ display: 'flex', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: '200px' }}>
+                  <label style={labelStyle}>WhatsApp Number</label>
+                  <input
+                    type="tel"
+                    value={waPhoneInput}
+                    onChange={e => setWaPhoneInput(e.target.value)}
+                    style={inputStyle}
+                    placeholder="+91 98765 43210"
+                  />
+                </div>
+              </div>
+              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', marginBottom: '14px', lineHeight: 1.5 }}>
+                By enabling, you agree to receive WhatsApp messages from Cleya.ai. You can opt out anytime.
+              </p>
+              <button
+                onClick={async () => {
+                  if (!waPhoneInput.trim()) {
+                    setWaMsg({ type: 'error', text: 'Please enter your WhatsApp number' });
+                    return;
+                  }
+                  setWaLoading(true);
+                  setWaMsg(null);
+                  try {
+                    await api.whatsappOptIn(waPhoneInput.trim());
+                    setWaOptedIn(true);
+                    setWaPhone(waPhoneInput.trim());
+                    setWaMsg({ type: 'success', text: 'WhatsApp notifications enabled!' });
+                  } catch (err: any) {
+                    setWaMsg({ type: 'error', text: err.message || 'Failed to enable WhatsApp' });
+                  }
+                  setWaLoading(false);
+                }}
+                disabled={waLoading || !waPhoneInput.trim()}
+                style={{
+                  padding: '12px 24px',
+                  background: 'linear-gradient(135deg, #25D366, #128C7E)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  opacity: waLoading || !waPhoneInput.trim() ? 0.5 : 1,
+                }}
+              >
+                {waLoading ? 'Enabling...' : 'Enable WhatsApp Notifications'}
+              </button>
+            </div>
+          )}
+
+          {waMsg && (
+            <div style={{
+              marginTop: '12px', padding: '10px 14px', borderRadius: '10px', fontSize: '13px',
+              background: waMsg.type === 'success' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+              border: `1px solid ${waMsg.type === 'success' ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
+              color: waMsg.type === 'success' ? '#6ee7b7' : '#fca5a5',
+            }}>
+              {waMsg.text}
+            </div>
+          )}
+        </section>
+
         {/* Integrations */}
         <section style={{
           background: '#1E293B',
           border: '1px solid rgba(255,255,255,0.06)',
           borderRadius: '16px',
           padding: '28px',
+          marginTop: '24px',
         }}>
           <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 600, marginBottom: '4px' }}>Integrations</h2>
           <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '13px', marginBottom: '20px' }}>Connect external services to enhance your Cleya experience.</p>

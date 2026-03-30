@@ -15,117 +15,117 @@ const templates: Record<string, TemplateConfig> = {
     id: 'welcome',
     name: 'Welcome Message',
     description: 'Sent when a new user signs up',
-    gupshupTemplateId: 'welcome',
+    gupshupTemplateId: 'cleya_welcome',
     buildMessage: (p) =>
-      `Hey ${p.name || 'there'}! 👋 Welcome to Cleya.ai — India's AI-powered networking platform. We're already finding the best people for you to connect with. Complete your profile to get matched faster: ${p.profileUrl || 'https://cleya.ai/dashboard'}`,
+      `Welcome to Cleya.ai! 🎉 We're excited to help you connect with the right people. You'll receive networking updates and introductions here.`,
   },
 
   match_found: {
     id: 'match_found',
     name: 'Match Found',
     description: 'Sent when AI finds a new match for the user',
-    gupshupTemplateId: 'match_found',
+    gupshupTemplateId: 'cleya_introduction',
     buildMessage: (p) =>
-      `Great news! Cleya.ai found a match for you: *${p.matchName}* — ${p.matchRole || 'Professional'}${p.matchCompany ? ` at ${p.matchCompany}` : ''}. Match score: ${p.matchScore || '90'}%. Review and accept: ${p.matchUrl || 'https://cleya.ai/dashboard/matches'}`,
+      `Hi ${p.name || 'there'}! Cleya.ai has found a great connection for you. ${p.matchName}${p.matchRole ? ` (${p.matchRole})` : ''} would love to connect. Reply to start the conversation!`,
   },
 
   match_accepted: {
     id: 'match_accepted',
     name: 'Match Accepted',
     description: 'Sent when the other person accepts a match',
-    gupshupTemplateId: 'match_accepted',
+    gupshupTemplateId: 'cleya_introduction',
     buildMessage: (p) =>
-      `${p.matchName} accepted your match on Cleya.ai! You can now start a conversation or schedule a meeting. Open the app: ${p.chatUrl || 'https://cleya.ai/dashboard/matches'}`,
+      `Hi ${p.name || 'there'}! Cleya.ai has found a great connection for you. ${p.matchName} accepted your match and would love to connect. Reply to start the conversation!`,
   },
 
   intro_sent: {
     id: 'intro_sent',
     name: 'Introduction Sent',
     description: 'Sent when an introduction email is facilitated',
-    gupshupTemplateId: 'intro_sent',
+    gupshupTemplateId: 'cleya_introduction',
     buildMessage: (p) =>
-      `Cleya.ai just made an introduction for you! We've connected you with *${p.introName}*${p.introRole ? ` (${p.introRole})` : ''}. Check your email for the intro message, and keep the conversation going: ${p.introUrl || 'https://cleya.ai/dashboard/introductions'}`,
+      `Hi ${p.name || 'there'}! Cleya.ai has found a great connection for you. ${p.introName}${p.introRole ? ` (${p.introRole})` : ''} would love to connect. Reply to start the conversation!`,
   },
 
   intro_accepted: {
     id: 'intro_accepted',
     name: 'Introduction Accepted',
     description: 'Sent when an introduction is accepted by the other party',
-    gupshupTemplateId: 'intro_accepted',
+    gupshupTemplateId: 'cleya_introduction',
     buildMessage: (p) =>
-      `${p.introName} responded to your introduction on Cleya.ai! They're interested in connecting. Schedule a meeting: ${p.meetingUrl || 'https://cleya.ai/dashboard/meetings'}`,
+      `Hi ${p.name || 'there'}! Cleya.ai has found a great connection for you. ${p.introName} accepted your introduction and would love to connect. Reply to start the conversation!`,
   },
 
   meeting_scheduled: {
     id: 'meeting_scheduled',
     name: 'Meeting Scheduled',
     description: 'Sent when a meeting is proposed',
-    gupshupTemplateId: 'meeting_scheduled',
+    gupshupTemplateId: 'cleya_meeting_reminder',
     buildMessage: (p) =>
-      `A meeting has been proposed on Cleya.ai!\n\n📅 *${p.meetingTitle}*\n👤 With: ${p.withName}\n⏰ ${p.proposedTime || 'Pending confirmation'}\n\nConfirm or suggest a new time: ${p.meetingUrl || 'https://cleya.ai/dashboard/meetings'}`,
+      `Reminder: You have a meeting scheduled ${p.proposedTime || 'soon'}. ${p.meetingTitle} with ${p.withName}`,
   },
 
   meeting_confirmed: {
     id: 'meeting_confirmed',
     name: 'Meeting Confirmed',
     description: 'Sent when a meeting is confirmed',
-    gupshupTemplateId: 'meeting_confirmed',
+    gupshupTemplateId: 'cleya_meeting_reminder',
     buildMessage: (p) =>
-      `Your meeting is confirmed! 🎉\n\n📅 *${p.meetingTitle}*\n👤 With: ${p.withName}\n⏰ ${p.confirmedTime}\n📍 ${p.location || 'Virtual'}\n\nWe'll send you a reminder before it starts.`,
+      `Reminder: You have a meeting scheduled ${p.confirmedTime}. ${p.meetingTitle} with ${p.withName}${p.location ? ` at ${p.location}` : ''}`,
   },
 
   meeting_reminder: {
     id: 'meeting_reminder',
     name: 'Meeting Reminder',
     description: 'Sent 1 hour before a scheduled meeting',
-    gupshupTemplateId: 'meeting_reminder',
+    gupshupTemplateId: 'cleya_meeting_reminder',
     buildMessage: (p) =>
-      `Reminder: You have a meeting in ${p.timeUntil || '1 hour'}!\n\n📅 *${p.meetingTitle}*\n👤 With: ${p.withName}\n📍 ${p.location || 'Virtual'}\n${p.meetingLink ? `🔗 Join: ${p.meetingLink}` : ''}`,
+      `Reminder: You have a meeting scheduled in ${p.timeUntil || '1 hour'}. ${p.meetingTitle} with ${p.withName}${p.location ? ` at ${p.location}` : ''}`,
   },
 
   profile_incomplete: {
     id: 'profile_incomplete',
     name: 'Profile Incomplete Nudge',
     description: 'Sent 24h after signup if profile is incomplete',
-    gupshupTemplateId: 'profile_incomplete',
+    gupshupTemplateId: 'cleya_reengagement',
     buildMessage: (p) =>
-      `Hi ${p.name || 'there'}! Your Cleya.ai profile is ${p.completionPct || '0'}% complete. A complete profile gets 3x more matches. Finish it now: ${p.profileUrl || 'https://cleya.ai/onboarding'}`,
+      `Hi ${p.name || 'there'}! It's been a while since we connected. Cleya.ai has new networking opportunities waiting for you. Tap to explore!`,
   },
 
   weekly_digest: {
     id: 'weekly_digest',
     name: 'Weekly Digest',
     description: 'Weekly summary of matches and activity',
-    gupshupTemplateId: 'weekly_digest',
+    gupshupTemplateId: 'cleya_reengagement',
     buildMessage: (p) =>
-      `Your weekly Cleya.ai update:\n\n🤝 ${p.newMatches || '0'} new matches\n📨 ${p.introsSent || '0'} introductions made\n📅 ${p.meetingsScheduled || '0'} meetings scheduled\n\nSee who's waiting to connect: ${p.dashboardUrl || 'https://cleya.ai/dashboard'}`,
+      `Hi ${p.name || 'there'}! It's been a while since we connected. Cleya.ai has new networking opportunities waiting for you. Tap to explore!`,
   },
 
   event_registration: {
     id: 'event_registration',
     name: 'Event Registration Confirmed',
     description: 'Sent when user registers for an event',
-    gupshupTemplateId: 'event_registration',
+    gupshupTemplateId: 'cleya_meeting_reminder',
     buildMessage: (p) =>
-      `You're registered for *${p.eventName}*! 🎫\n\n📅 ${p.eventDate}\n📍 ${p.eventLocation || 'TBD'}\n\nWe'll match you with other attendees before the event. Stay tuned!`,
+      `Reminder: You have a meeting scheduled ${p.eventDate}. ${p.eventName}${p.eventLocation ? ` at ${p.eventLocation}` : ''}`,
   },
 
   event_followup: {
     id: 'event_followup',
     name: 'Post-Event Follow-up',
     description: 'Sent after an event with match results',
-    gupshupTemplateId: 'event_followup',
+    gupshupTemplateId: 'cleya_followup',
     buildMessage: (p) =>
-      `Thanks for attending *${p.eventName}*! 🎉\n\nYour top matches from the event:\n${p.matchList || 'We\'re still processing — check back soon!'}\n\nReview and connect: ${p.matchesUrl || 'https://cleya.ai/dashboard/matches'}`,
+      `Hi ${p.name || 'there'}! How was your meeting? We'd love to hear your feedback. Reply with your thoughts!`,
   },
 
   follow_up: {
     id: 'follow_up',
     name: 'General Follow-up',
     description: 'Periodic check-in with inactive users',
-    gupshupTemplateId: 'follow_up',
+    gupshupTemplateId: 'cleya_reengagement',
     buildMessage: (p) =>
-      `Hi ${p.name || 'there'}! Just checking in from Cleya.ai. You have ${p.pendingMatches || 'new'} matches waiting for you. Don't miss out — review them now: ${p.dashboardUrl || 'https://cleya.ai/dashboard/matches'}`,
+      `Hi ${p.name || 'there'}! It's been a while since we connected. Cleya.ai has new networking opportunities waiting for you. Tap to explore!`,
   },
 };
 
@@ -345,7 +345,7 @@ export class WhatsAppTemplateService {
   private async getUserWithPhone(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: { profile: true },
+      include: { profile: true, communicationPreference: true },
     });
 
     if (!user) {
@@ -353,9 +353,14 @@ export class WhatsAppTemplateService {
       return null;
     }
 
-    const phone = user.phone || (user.profile as any)?.phoneNumber;
+    const phone = user.whatsappPhone || user.phone || (user.profile as any)?.phoneNumber;
     if (!phone) {
       console.warn(`User ${userId} has no phone number, skipping WhatsApp`);
+      return null;
+    }
+
+    if (!user.whatsappOptedIn) {
+      console.warn(`User ${userId} has not opted in to WhatsApp, skipping`);
       return null;
     }
 
