@@ -4,6 +4,25 @@ import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { initGA, trackPageView } from '@/lib/ga';
 
+declare global {
+  interface Window {
+    posthog?: {
+      init: (key: string, config: Record<string, unknown>) => void;
+      capture: (event: string, properties?: Record<string, unknown>) => void;
+      identify: (id: string, properties?: Record<string, unknown>) => void;
+      reset: () => void;
+      people?: { set: (properties: Record<string, unknown>) => void };
+    };
+    Sentry?: {
+      init: (config: Record<string, unknown>) => void;
+      captureException: (error: Error, context?: Record<string, unknown>) => void;
+      captureMessage: (message: string, level?: string) => void;
+      setUser: (user: { id: string; email?: string } | null) => void;
+    };
+    __sentryLoaded?: boolean;
+  }
+}
+
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY || '';
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || '';
 const SENTRY_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN || '';
@@ -14,14 +33,14 @@ function hasAnalyticsConsent(): boolean {
 }
 
 function initPostHog() {
-  if (!POSTHOG_KEY || typeof window === 'undefined' || (window as any).posthog) return;
+  if (!POSTHOG_KEY || typeof window === 'undefined' || window.posthog) return;
 
   const script = document.createElement('script');
   script.src = 'https://us.i.posthog.com/static/array.js';
   script.async = true;
   script.onload = () => {
-    if ((window as any).posthog) {
-      (window as any).posthog.init(POSTHOG_KEY, {
+    if (window.posthog) {
+      window.posthog.init(POSTHOG_KEY, {
         api_host: 'https://us.i.posthog.com',
         person_profiles: 'identified_only',
         capture_pageview: true,
@@ -35,16 +54,16 @@ function initPostHog() {
 }
 
 function initSentry() {
-  if (!SENTRY_DSN || typeof window === 'undefined' || (window as any).__sentryLoaded) return;
-  (window as any).__sentryLoaded = true;
+  if (!SENTRY_DSN || typeof window === 'undefined' || window.__sentryLoaded) return;
+  window.__sentryLoaded = true;
 
   const script = document.createElement('script');
   script.src = 'https://browser.sentry-cdn.com/8.48.0/bundle.min.js';
   script.crossOrigin = 'anonymous';
   script.async = true;
   script.onload = () => {
-    if ((window as any).Sentry) {
-      (window as any).Sentry.init({
+    if (window.Sentry) {
+      window.Sentry.init({
         dsn: SENTRY_DSN,
         environment: process.env.NODE_ENV || 'development',
         tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.2 : 1.0,
