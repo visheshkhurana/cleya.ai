@@ -66,7 +66,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(false);
   const [googleEnabled, setGoogleEnabled] = useState(false);
-  const [linkedinEnabled, setLinkedinEnabled] = useState(false);
+  const [linkedinEnabled, setLinkedinEnabled] = useState(true);
   const [scrolled, setScrolled] = useState(false);
   const [consent, setConsent] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -122,8 +122,8 @@ export default function Home() {
         window.history.replaceState({}, '', '/');
       }
     }
-    api.getGoogleAuthStatus().then(d => setGoogleEnabled(d.enabled)).catch(() => {});
-    api.getLinkedInAuthStatus().then(d => setLinkedinEnabled(d.enabled)).catch(() => {});
+    api.getGoogleAuthStatus().then(d => { if (d && typeof d.enabled === 'boolean') setGoogleEnabled(d.enabled); }).catch(() => {});
+    api.getLinkedInAuthStatus().then(d => { if (d && typeof d.enabled === 'boolean') setLinkedinEnabled(d.enabled); }).catch(() => {});
     api.getMe().then(async (user) => {
       if (!user) { setChecking(false); return; }
       api.setToken('authenticated');
