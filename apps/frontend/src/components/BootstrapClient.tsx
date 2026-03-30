@@ -6,13 +6,7 @@ import { initGA, trackPageView } from '@/lib/ga';
 
 declare global {
   interface Window {
-    posthog?: {
-      init: (key: string, config: Record<string, unknown>) => void;
-      capture: (event: string, properties?: Record<string, unknown>) => void;
-      identify: (id: string, properties?: Record<string, unknown>) => void;
-      reset: () => void;
-      people?: { set: (properties: Record<string, unknown>) => void };
-    };
+    posthog?: any;
     Sentry?: {
       init: (config: Record<string, unknown>) => void;
       captureException: (error: Error, context?: Record<string, unknown>) => void;
