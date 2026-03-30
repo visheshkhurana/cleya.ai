@@ -4,6 +4,15 @@ import { env } from './config/env';
 
 export async function seedDatabase() {
   try {
+    if (env.ADMIN_EMAIL && env.ADMIN_PASSWORD) {
+      const existingAdmin = await prisma.user.findUnique({ where: { email: env.ADMIN_EMAIL } });
+      if (existingAdmin) {
+        const hash = await bcrypt.hash(env.ADMIN_PASSWORD, 12);
+        await prisma.user.update({ where: { email: env.ADMIN_EMAIL }, data: { passwordHash: hash, role: 'ADMIN' } });
+        console.log(`Admin password synced for ${env.ADMIN_EMAIL}`);
+      }
+    }
+
     const userCount = await prisma.user.count();
     if (userCount > 0) {
       console.log(`Database already has ${userCount} users, skipping seed`);
