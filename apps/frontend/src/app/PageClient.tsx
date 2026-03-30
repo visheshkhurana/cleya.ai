@@ -388,21 +388,25 @@ export default function Home() {
 
               {/* Chat Mockup - 3D floating with animated scenarios */}
               <motion.div
-                initial={{ opacity: 0, scale: 0.9, rotateY: -10 }}
+                initial={{ opacity: 0, scale: 0.85, rotateY: -15 }}
                 animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-                transition={{ delay: 0.4, duration: 1, ease: [0.22, 1, 0.36, 1] }}
-                className="relative hidden lg:flex justify-center"
-                style={{ perspective: '1200px' }}
+                transition={{ delay: 0.4, duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+                className="relative hidden lg:flex justify-center items-center"
+                style={{ perspective: '800px' }}
               >
                 <motion.div
-                  animate={{ y: [0, -10, 0] }}
-                  transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                  animate={{ y: [0, -12, 0], rotateY: [-8, -5, -8], rotateX: [3, 5, 3] }}
+                  transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
                   className="relative"
-                  style={{ transform: 'rotateY(-5deg) rotateX(2deg)', transformStyle: 'preserve-3d' }}
+                  style={{ transformStyle: 'preserve-3d', transform: 'translateZ(60px)' }}
                 >
-                  <div className="absolute -inset-8 rounded-3xl pointer-events-none"
-                    style={{ background: 'radial-gradient(circle, rgba(13,148,136,0.15) 0%, transparent 70%)', filter: 'blur(30px)' }} />
+                  <div className="absolute -inset-16 rounded-3xl pointer-events-none"
+                    style={{ background: 'radial-gradient(ellipse at center, rgba(13,148,136,0.2) 0%, rgba(13,148,136,0.08) 40%, transparent 70%)', filter: 'blur(40px)' }} />
+                  <div className="absolute -inset-1 rounded-2xl pointer-events-none"
+                    style={{ background: 'linear-gradient(135deg, rgba(13,148,136,0.15), transparent 50%, rgba(45,212,191,0.1))', filter: 'blur(1px)' }} />
                   <AnimatedChatPreview />
+                  <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-[80%] h-8 pointer-events-none"
+                    style={{ background: 'radial-gradient(ellipse, rgba(0,0,0,0.4), transparent 70%)', filter: 'blur(12px)' }} />
                 </motion.div>
               </motion.div>
             </div>
