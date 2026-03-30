@@ -131,6 +131,7 @@ export default function BootstrapClient() {
           localStorage.setItem('cleo_cookie_consent', 'accepted');
           wrapper.remove();
           initAnalyticsIfConsented();
+          setTimeout(() => trackPageView(window.location.pathname), 100);
         };
 
         const declineBtn = document.createElement('button');
