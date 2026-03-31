@@ -45,6 +45,7 @@ import { meetingRouter } from './routes/meeting';
 import { secretaryRouter } from './routes/secretary';
 import { zoomRouter } from './routes/zoom';
 import { whatsappRouter } from './routes/whatsapp';
+import { gupshupRouter } from './routes/gupshup';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -126,6 +127,7 @@ app.use('/api/meetings', csrfProtection, meetingRouter);
 app.use('/api/secretary', csrfProtection, secretaryRouter);
 app.use('/api/zoom', zoomRouter);
 app.use('/api/whatsapp', csrfProtection, whatsappRouter);
+app.use('/api/gupshup', gupshupRouter);
 
 if (env.SENTRY_DSN) {
   Sentry.setupExpressErrorHandler(app);
