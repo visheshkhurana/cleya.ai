@@ -24,6 +24,7 @@ export interface UserProfile {
   linkedinUrl?: string;
   websiteUrl?: string;
   phone?: string;
+  phoneNumber?: string;
   companyStage?: string;
   fundName?: string;
   portfolioSize?: number;

@@ -301,8 +301,8 @@ export default function ProfileScreen() {
               <Text style={styles.fieldLabel}>Phone Number</Text>
               <TextInput
                 style={styles.textInput}
-                value={String(profile?.phone || '')}
-                onChangeText={(v) => updateField('phone', v)}
+                value={String(profile?.phoneNumber || profile?.phone || '')}
+                onChangeText={(v) => updateField('phoneNumber', v)}
                 placeholder="+91 98765 43210"
                 placeholderTextColor={Colors.textMuted}
                 keyboardType="phone-pad"

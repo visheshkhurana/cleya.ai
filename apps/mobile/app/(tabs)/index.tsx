@@ -8,6 +8,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   Platform,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -64,7 +65,8 @@ export default function DashboardScreen() {
         queryClient.invalidateQueries({ queryKey: ['matches'] }),
       ]);
       router.push('/(tabs)/matches');
-    } catch {
+    } catch (err: unknown) {
+      Alert.alert('Error', err instanceof Error ? err.message : 'Could not find matches');
     } finally {
       setFindingMatches(false);
     }

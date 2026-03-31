@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Platform,
   Modal,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -168,7 +169,8 @@ export default function MatchesScreen() {
       setFeedbackMatchId(matchId);
       setFeedbackRating(0);
       setFeedbackText('');
-    } catch {
+    } catch (err: unknown) {
+      Alert.alert('Error', err instanceof Error ? err.message : 'Could not respond to match');
     } finally {
       setRespondingId(null);
     }
@@ -180,7 +182,8 @@ export default function MatchesScreen() {
     try {
       await api.submitMatchFeedback(feedbackMatchId, feedbackRating, feedbackText || undefined);
       if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch {
+    } catch (err: unknown) {
+      Alert.alert('Error', err instanceof Error ? err.message : 'Could not submit feedback');
     } finally {
       setSubmittingFeedback(false);
       setFeedbackMatchId(null);

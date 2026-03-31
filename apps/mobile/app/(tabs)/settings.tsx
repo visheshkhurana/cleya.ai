@@ -53,7 +53,9 @@ export default function SettingsScreen() {
     try {
       await api.updateNotificationPrefs({ [key]: value });
       await queryClient.invalidateQueries({ queryKey: ['settings'] });
-    } catch {}
+    } catch (err: unknown) {
+      Alert.alert('Error', err instanceof Error ? err.message : 'Could not update notification preferences');
+    }
   };
 
   const handleChangePassword = async () => {
