@@ -37,7 +37,9 @@ const STEP_MAP: Record<string, number> = {
   event_details: 2,
   deal_partner_details: 2,
   other_details: 2,
-  founder_priorities: 3,
+  founder_priority: 3,
+  founder_fundraising: 3,
+  talent_target_role: 3,
   common_details: 4,
   attribution: 5,
   completion: 5,
@@ -587,6 +589,21 @@ export default function ChatScreen() {
         ListFooterComponent={
           <>
             {typing && <TypingIndicator />}
+            {!typing && !isOnboarded && currentNode?.type === 'message' && currentNode.next && (
+              <View style={s.continueContainer}>
+                <TouchableOpacity
+                  style={[s.continueButton, sending && { opacity: 0.5 }]}
+                  onPress={() => sendOnboardingMessage({ textInput: 'Continue' })}
+                  disabled={sending}
+                  activeOpacity={0.7}
+                  accessibilityLabel="Continue"
+                  accessibilityRole="button"
+                >
+                  <Text style={s.continueText}>Continue</Text>
+                  <Ionicons name="arrow-forward" size={16} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            )}
             {!typing && !isOnboarded && currentNode?.type === 'choices' && currentNode.choices && (
               <ChoiceButtons
                 choices={currentNode.choices}
@@ -991,5 +1008,25 @@ const s = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Inter_400Regular',
     color: Colors.textSecondary,
+  },
+  continueContainer: {
+    paddingLeft: 36,
+    marginBottom: 12,
+  },
+  continueButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignSelf: 'flex-start',
+  },
+  continueText: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#fff',
   },
 });
