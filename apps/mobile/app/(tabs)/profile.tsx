@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -28,8 +28,9 @@ export default function ProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-  const [editData, setEditData] = useState<Record<string, any>>({});
+  const [editData, setEditData] = useState<Record<string, string | number | string[] | undefined>>({});
   const [hasEdits, setHasEdits] = useState(false);
+  const [customIndustry, setCustomIndustry] = useState('');
 
   const { data: rawProfile, isLoading } = useQuery({
     queryKey: ['profile'],
@@ -57,6 +58,22 @@ export default function ProfileScreen() {
       : [...current, ind];
     updateField('industries', updated);
   };
+
+  const addCustomIndustry = () => {
+    const trimmed = customIndustry.trim().toLowerCase().replace(/\s+/g, '_');
+    if (!trimmed) return;
+    const current: string[] = profile?.industries || [];
+    if (!current.includes(trimmed)) {
+      updateField('industries', [...current, trimmed]);
+    }
+    setCustomIndustry('');
+    if (Platform.OS !== 'web') Haptics.selectionAsync();
+  };
+
+  const customIndustries = useMemo(() => {
+    const current: string[] = profile?.industries || [];
+    return current.filter((ind: string) => !industryOptions.includes(ind));
+  }, [profile?.industries]);
 
   const handleSave = async () => {
     if (!profile?.persona) { setError('Please select a persona type'); return; }
@@ -118,7 +135,12 @@ export default function ProfileScreen() {
   return (
     <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? 67 : insets.top }]}>
       <View style={styles.headerBar}>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
+        <View style={styles.headerRow}>
+          <View style={styles.logoIcon}>
+            <Text style={styles.logoIconText}>C</Text>
+          </View>
+          <Text style={styles.headerTitle}>Edit Profile</Text>
+        </View>
         <TouchableOpacity
           style={[styles.saveButton, saving && styles.saveButtonDisabled]}
           onPress={handleSave}
@@ -276,7 +298,10 @@ export default function ProfileScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Industries</Text>
+            <View style={styles.fieldLabelRow}>
+              <Text style={styles.sectionTitle}>Industries</Text>
+              {!(profile?.industries?.length) ? <Ionicons name="alert-circle" size={12} color={Colors.warning} /> : null}
+            </View>
             <View style={styles.industryGrid}>
               {industryOptions.map((ind) => {
                 const selected = (profile?.industries || []).includes(ind);
@@ -293,6 +318,41 @@ export default function ProfileScreen() {
                   </TouchableOpacity>
                 );
               })}
+              {customIndustries.map((ind: string) => (
+                <TouchableOpacity
+                  key={ind}
+                  style={[styles.industryChip, styles.industryChipActive]}
+                  onPress={() => toggleIndustry(ind)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.customIndustryChipContent}>
+                    <Text style={[styles.industryChipText, styles.industryChipTextActive]}>
+                      {formatIndustry(ind)}
+                    </Text>
+                    <Ionicons name="close" size={12} color={Colors.accentLight} />
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={styles.customIndustryRow}>
+              <TextInput
+                style={styles.customIndustryInput}
+                value={customIndustry}
+                onChangeText={setCustomIndustry}
+                placeholder="Add custom industry..."
+                placeholderTextColor={Colors.textMuted}
+                autoCapitalize="none"
+                returnKeyType="done"
+                onSubmitEditing={addCustomIndustry}
+              />
+              <TouchableOpacity
+                style={[styles.customIndustryAdd, !customIndustry.trim() && styles.customIndustryAddDisabled]}
+                onPress={addCustomIndustry}
+                disabled={!customIndustry.trim()}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="add" size={18} color={customIndustry.trim() ? '#fff' : Colors.textMuted} />
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -413,6 +473,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 12,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  logoIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoIconText: {
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
+    color: '#fff',
   },
   headerTitle: {
     fontSize: 22,
@@ -588,6 +666,38 @@ const styles = StyleSheet.create({
   },
   industryChipTextActive: {
     color: Colors.accentLight,
+  },
+  customIndustryChipContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  customIndustryRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  customIndustryInput: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    color: Colors.text,
+  },
+  customIndustryAdd: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  customIndustryAddDisabled: {
+    backgroundColor: Colors.surfaceLight,
   },
   stageGrid: {
     flexDirection: 'row',

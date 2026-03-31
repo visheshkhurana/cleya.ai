@@ -127,7 +127,12 @@ export default function SettingsScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.headerBar}>
-        <Text style={styles.headerTitle}>Settings</Text>
+        <View style={styles.headerRow}>
+          <View style={styles.logoIcon}>
+            <Text style={styles.logoIconText}>C</Text>
+          </View>
+          <Text style={styles.headerTitle}>Settings</Text>
+        </View>
       </View>
 
       <View style={styles.content}>
@@ -247,6 +252,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 12,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  logoIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoIconText: {
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
+    color: '#fff',
   },
   headerTitle: {
     fontSize: 22,

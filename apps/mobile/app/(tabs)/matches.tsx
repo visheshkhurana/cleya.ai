@@ -62,6 +62,30 @@ interface MatchData {
   userB: MatchUser;
 }
 
+function CircularScore({ score, size = 48 }: { score: number; size?: number }) {
+  const color = score >= 80 ? Colors.accentLight : score >= 60 ? '#93C5FD' : '#94A3B8';
+  const bgColor = score >= 80 ? 'rgba(13,148,136,0.15)' : score >= 60 ? 'rgba(59,130,246,0.12)' : 'rgba(100,116,139,0.12)';
+  const borderWidth = 3;
+  return (
+    <View style={{
+      width: size,
+      height: size,
+      borderRadius: size / 2,
+      backgroundColor: bgColor,
+      borderWidth,
+      borderColor: color,
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}>
+      <Text style={{
+        fontSize: size * 0.28,
+        fontFamily: 'Inter_700Bold',
+        color,
+      }}>{score}%</Text>
+    </View>
+  );
+}
+
 export default function MatchesScreen() {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
@@ -215,18 +239,10 @@ export default function MatchesScreen() {
               ) : null}
             </View>
             <TouchableOpacity
-              style={[styles.scorePill, score >= 80 ? styles.scoreHigh : score >= 60 ? styles.scoreMed : styles.scoreLow]}
               onPress={() => setExpandedId(isExpanded ? null : match.id)}
               activeOpacity={0.7}
             >
-              <Text style={[styles.scoreText, score >= 80 ? styles.scoreTextHigh : score >= 60 ? styles.scoreTextMed : styles.scoreTextLow]}>
-                {score}%
-              </Text>
-              <Ionicons
-                name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                size={12}
-                color={score >= 80 ? Colors.accentLight : score >= 60 ? '#93C5FD' : '#94A3B8'}
-              />
+              <CircularScore score={score} size={48} />
             </TouchableOpacity>
           </View>
 
@@ -310,7 +326,12 @@ export default function MatchesScreen() {
   return (
     <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? 67 : insets.top }]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Matches</Text>
+        <View style={styles.headerRow}>
+          <View style={styles.logoIcon}>
+            <Text style={styles.logoText}>C</Text>
+          </View>
+          <Text style={styles.headerTitle}>Matches</Text>
+        </View>
         <View style={styles.searchContainer}>
           <Ionicons name="search" size={16} color={Colors.textMuted} style={styles.searchIcon} />
           <TextInput
@@ -459,6 +480,24 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     gap: 10,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  logoIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoText: {
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
+    color: '#fff',
+  },
   headerTitle: {
     fontSize: 22,
     fontFamily: 'Inter_700Bold',
@@ -574,36 +613,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontFamily: 'Inter_500Medium',
     color: Colors.accentLight,
-  },
-  scorePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-  },
-  scoreHigh: {
-    backgroundColor: 'rgba(13,148,136,0.15)',
-  },
-  scoreMed: {
-    backgroundColor: 'rgba(59,130,246,0.12)',
-  },
-  scoreLow: {
-    backgroundColor: 'rgba(100,116,139,0.12)',
-  },
-  scoreText: {
-    fontSize: 12,
-    fontFamily: 'Inter_700Bold',
-  },
-  scoreTextHigh: {
-    color: Colors.accentLight,
-  },
-  scoreTextMed: {
-    color: '#93C5FD',
-  },
-  scoreTextLow: {
-    color: '#94A3B8',
   },
   matchHeadline: {
     fontSize: 13,

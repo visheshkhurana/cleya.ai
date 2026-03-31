@@ -49,7 +49,7 @@ async function clearToken(): Promise<void> {
   } catch {}
 }
 
-async function apiFetch<T = any>(path: string, options: RequestInit = {}): Promise<T> {
+async function apiFetch<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
   const token = await getToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -127,7 +127,7 @@ export const api = {
     return apiFetch('/users/profile');
   },
 
-  async updateProfile(data: Record<string, any>) {
+  async updateProfile(data: Record<string, string | number | boolean | string[] | undefined>) {
     return apiFetch('/users/profile', {
       method: 'PATCH',
       body: JSON.stringify(data),
