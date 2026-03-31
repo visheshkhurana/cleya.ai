@@ -466,7 +466,7 @@ export default function ChatScreen() {
           setCurrentNode(null);
           addAIMessage("\ud83c\udf89 **You're all set!** Your profile has been created and Cleya is already looking for great connections for you.\n\nTaking you to your dashboard...");
           if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          setTimeout(() => router.replace('/(tabs)/'), 3000);
+          setTimeout(() => router.replace('/'), 3000);
         }
       }
     } catch (err: unknown) {
