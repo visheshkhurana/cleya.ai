@@ -100,6 +100,40 @@ export interface DirectMessage {
   sender: { id: string; name?: string; email: string };
 }
 
+export interface FlowChoice {
+  label: string;
+  value: string;
+  next: string;
+}
+
+export interface FormField {
+  name: string;
+  type: 'text' | 'email' | 'phone' | 'select' | 'multiselect' | 'textarea' | 'number' | 'url';
+  label: string;
+  placeholder?: string;
+  required?: boolean;
+  options?: { label: string; value: string }[];
+  validation?: { min?: number; max?: number; pattern?: string; message?: string };
+  conditional?: { field: string; value: string };
+}
+
+export interface FlowNode {
+  id: string;
+  type: string;
+  content?: string;
+  choices?: FlowChoice[];
+  formSchema?: FormField[];
+  next?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ConversationEngineResponse {
+  conversationId: string;
+  node: FlowNode;
+  messages?: { sender: string; content: string; nodeId?: string; createdAt?: string }[];
+  errors?: Record<string, string>;
+}
+
 export interface WhatsAppStatus {
   whatsappOptedIn: boolean;
   whatsappPhone: string | null;
@@ -293,6 +327,27 @@ export const api = {
     return apiFetch<{ content: string }>('/ai-chat/message', {
       method: 'POST',
       body: JSON.stringify({ message, history }),
+    });
+  },
+
+  async startConversation(flowId: string) {
+    return apiFetch<ConversationEngineResponse>('/conversations/start', {
+      method: 'POST',
+      body: JSON.stringify({ flowId }),
+    });
+  },
+
+  async getConversation(conversationId: string) {
+    return apiFetch<ConversationEngineResponse>(`/conversations/${conversationId}`);
+  },
+
+  async sendConversationMessage(
+    conversationId: string,
+    input: { choiceValue?: string; formData?: Record<string, unknown>; textInput?: string }
+  ) {
+    return apiFetch<ConversationEngineResponse>(`/conversations/${conversationId}/message`, {
+      method: 'POST',
+      body: JSON.stringify(input),
     });
   },
 
