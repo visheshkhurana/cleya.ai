@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import MobileNav from '@/components/MobileNav';
+import AppFooter from '@/components/AppFooter';
 import { resetUser } from '@/lib/posthog';
 import { setUser as setSentryUser } from '@/lib/sentry';
 
@@ -709,6 +710,7 @@ export default function SettingsPage() {
           )}
         </section>
       </div>
+      <AppFooter />
     </div>
   );
 }

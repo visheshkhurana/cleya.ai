@@ -74,6 +74,7 @@ export default function ChatPage() {
   const [inputText, setInputText] = useState('');
   const [isOnboarded, setIsOnboarded] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -181,6 +182,16 @@ export default function ChatPage() {
         if (data.node.metadata?.action === 'complete_onboarding' || data.node.next === null) {
           localStorage.removeItem(CHAT_STORAGE_KEY);
           analytics.onboardingCompleted(data.node.metadata?.persona || 'unknown');
+          setRedirecting(true);
+          setCurrentNode(null);
+          setMessages((prev) => [
+            ...prev,
+            {
+              sender: 'AI',
+              content: "🎉 **You're all set!** Your profile has been created and Cleya is already looking for great connections for you.\n\nRedirecting you to your dashboard...",
+              createdAt: new Date(),
+            },
+          ]);
           setTimeout(() => {
             window.location.href = '/dashboard';
           }, 3000);
@@ -342,7 +353,7 @@ export default function ChatPage() {
         </div>
       )}
 
-      {(currentNode?.type === 'ai_response' || isOnboarded) && (
+      {(currentNode?.type === 'ai_response' || isOnboarded) && !redirecting && (
         <form onSubmit={handleTextSubmit} className="px-4 py-4 border-t border-white/5">
           <div className="flex gap-2">
             <input
