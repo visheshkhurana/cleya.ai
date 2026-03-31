@@ -20,6 +20,7 @@ Monorepo with:
 - **Database:** PostgreSQL (Replit built-in), Prisma ORM, pgvector
 - **Auth:** JWT in httpOnly secure cookie (`cleo_auth`) for web, Bearer token (`Authorization: Bearer <token>`) for mobile. bcryptjs password hashing, CSRF double-submit cookie protection (web only), email verification on signup. Mobile stores JWT in expo-secure-store. Frontend auth checks use `/auth/me` endpoint.
 - **Validation:** Zod schemas on all state-changing endpoints (profile, password, match, introduction)
+- **Security Middleware:** Input sanitization (`middleware/sanitize.ts`) strips null bytes, control chars, normalizes Unicode (NFKC). HTML stripping (`stripHtml` in `validation.ts`) removes `<script>`, `<style>`, `<iframe>`, `<object>`, `<embed>`, event handlers, `javascript:` URIs. Body size limit 1MB. Helmet with CSP, HSTS, X-Content-Type-Options. Global ZodError + SyntaxError catching in error handler returns 400 (never 500 with stack traces). Health endpoint does not expose env/NODE_ENV.
 - **AI:** OpenAI for embeddings + chat (gpt-4-turbo-preview, text-embedding-3-small)
 
 ## Environment Variables (see .env.example for full list)

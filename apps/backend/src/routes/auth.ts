@@ -17,23 +17,27 @@ setInterval(() => {
   }
 }, 60 * 1000);
 
+function stripHtmlBasic(str: string): string {
+  return str.replace(/<[^>]*>/g, '').replace(/&#?[a-z0-9]+;/gi, ' ').trim();
+}
+
 const signupSchema = z.object({
-  email: z.string().email(),
+  email: z.string().email().max(255),
   password: z.string().min(8, 'Password must be at least 8 characters')
     .max(128, 'Password must be less than 128 characters')
     .regex(/[A-Za-z]/, 'Password must contain at least one letter')
     .regex(/[0-9]/, 'Password must contain at least one number'),
-  name: z.string().min(2, 'Full name is required').max(100).optional(),
+  name: z.string().min(2, 'Full name is required').max(100).transform(stripHtmlBasic).optional(),
   persona: z.enum(['FOUNDER', 'INVESTOR', 'TALENT']).optional(),
-  phone: z.string().optional(),
-  utmSource: z.string().optional(),
-  utmMedium: z.string().optional(),
-  utmCampaign: z.string().optional(),
+  phone: z.string().max(20).optional(),
+  utmSource: z.string().max(100).optional(),
+  utmMedium: z.string().max(100).optional(),
+  utmCampaign: z.string().max(100).optional(),
 });
 
 const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string(),
+  email: z.string().email().max(255),
+  password: z.string().max(128),
 });
 
 function setAuthCookie(res: Response, token: string) {

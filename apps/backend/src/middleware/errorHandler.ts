@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as Sentry from '@sentry/node';
+import { ZodError } from 'zod';
 import { env } from '../config/env';
 
 export class AppError extends Error {
@@ -28,7 +29,30 @@ export function errorHandler(
     });
   }
 
-  console.error('Unhandled error:', err);
+  if (err instanceof ZodError) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        message: 'Validation failed',
+        code: 'VALIDATION_ERROR',
+        details: err.errors.map(e => ({
+          field: e.path.join('.'),
+          message: e.message,
+        })),
+      },
+    });
+  }
+
+  if (err instanceof SyntaxError && 'body' in err) {
+    return res.status(400).json({
+      error: {
+        message: 'Invalid request body',
+        code: 'INVALID_JSON',
+      },
+    });
+  }
+
+  console.error('Unhandled error:', err.message);
 
   if (env.SENTRY_DSN) {
     Sentry.captureException(err, {

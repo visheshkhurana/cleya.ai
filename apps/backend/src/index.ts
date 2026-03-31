@@ -46,23 +46,39 @@ import { secretaryRouter } from './routes/secretary';
 import { zoomRouter } from './routes/zoom';
 import { whatsappRouter } from './routes/whatsapp';
 import { gupshupRouter } from './routes/gupshup';
+import { sanitizeInput } from './middleware/sanitize';
 
 const app = express();
 app.set('trust proxy', 1);
 const server = createServer(app);
+const corsOrigin = env.CORS_ORIGIN || env.FRONTEND_URL;
 
 app.use(helmet({
-  contentSecurityPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", corsOrigin || ''],
+      fontSrc: ["'self'", "https:", "data:"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'self'"],
+    },
+  },
   frameguard: { action: 'sameorigin' },
+  hsts: { maxAge: 31536000, includeSubDomains: true },
+  noSniff: true,
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
 }));
-
-const corsOrigin = env.CORS_ORIGIN || env.FRONTEND_URL;
 app.use(cors({ origin: corsOrigin, credentials: true }));
 app.use(compression());
 app.use(morgan('dev'));
 app.use(cookieParser());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+app.use(sanitizeInput);
 app.use('/api', generalLimiter);
 
 const startTime = Date.now();
@@ -72,7 +88,6 @@ const healthHandler = (_req: express.Request, res: express.Response) => {
     timestamp: new Date().toISOString(),
     version: '1.0.0',
     uptime: Math.floor((Date.now() - startTime) / 1000),
-    env: env.NODE_ENV,
   });
 };
 
