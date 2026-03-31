@@ -359,6 +359,6 @@ Full 8-stage lifecycle implemented:
 - `apps/frontend/src/lib/i18n/index.ts` — I18n context, hooks, locale detection
 - `apps/frontend/src/lib/i18n/translations.ts` — English + Hindi translation strings
 - `apps/frontend/src/components/LanguageSwitcher.tsx` — Language toggle button (EN/हिं)
-- `packages/matching/src/index.ts` — Enhanced matching engine with persona context matching
-- `packages/api/src/services/matching.ts` — Shared matching API services
+- `packages/matching/src/index.ts` — Enhanced matching engine with sector taxonomy, three-layer scoring (rule 50% / intent 20% / semantic 30%), persona compatibility matrix, sector family similarity, geographic weighting, cold-start penalty, and founder context matching. Industry scoring uses SECTOR_FAMILIES taxonomy (19 families with sub-sectors) and cross-family similarity matrix instead of simple Jaccard overlap.
+- `packages/api/src/services/matching.ts` — Shared matching API services (min score threshold: 0.35)
 - `packages/db/prisma/schema.prisma` — Full schema (User, Profile, Match, DealTracking, Event, EventParticipant, etc.)

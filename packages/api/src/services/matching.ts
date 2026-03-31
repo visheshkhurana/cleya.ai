@@ -263,7 +263,7 @@ export async function findMatches(
   return hybridMatch(userId, {
     limit,
     vectorCandidatePool: Math.max(limit * 5, 50),
-    minScore: 0.30,
+    minScore: 0.35,
     excludeUserIds: alreadyMatchedIds,
   });
 }
@@ -272,7 +272,7 @@ export async function hybridMatch(
   userId: string,
   options: { limit?: number; vectorCandidatePool?: number; minScore?: number; excludeUserIds?: string[] } = {}
 ): Promise<HybridMatchResult[]> {
-  const { limit = 10, vectorCandidatePool = 50, minScore = 0.30, excludeUserIds = [] } = options;
+  const { limit = 10, vectorCandidatePool = 50, minScore = 0.35, excludeUserIds = [] } = options;
 
   const userProfile = await getProfileForMatching(userId);
   if (!userProfile) {

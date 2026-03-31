@@ -30,6 +30,50 @@ export interface ProfileForMatching {
   investmentRange?: string;
 }
 
+const SECTOR_FAMILIES: Record<string, string[]> = {
+  fintech: ['fintech', 'payments', 'payment automation', 'lending', 'insurtech', 'neobanking', 'wealth management', 'financial services', 'banking', 'defi', 'crypto', 'blockchain finance', 'regtech'],
+  enterprise: ['enterprise', 'enterprise ai', 'enterprise saas', 'enterprise software', 'b2b saas', 'erp', 'crm'],
+  healthtech: ['healthtech', 'health tech', 'medtech', 'biotech', 'digital health', 'telemedicine', 'pharma', 'healthcare'],
+  edtech: ['edtech', 'education', 'ed-tech', 'e-learning', 'online learning', 'upskilling'],
+  saas: ['saas', 'b2b saas', 'enterprise saas', 'paas', 'software'],
+  ai_ml: ['ai', 'ai/ml', 'artificial intelligence', 'machine learning', 'deep learning', 'nlp', 'computer vision', 'generative ai', 'ml'],
+  ecommerce: ['ecommerce', 'e-commerce', 'marketplace', 'd2c', 'retail tech', 'commerce'],
+  logistics: ['logistics', 'supply chain', 'warehousing', 'fleet management', 'last mile', 'transportation'],
+  agritech: ['agritech', 'agriculture', 'farmtech', 'agri-tech', 'food tech'],
+  cleantech: ['cleantech', 'clean energy', 'renewable energy', 'climate tech', 'sustainability', 'ev', 'electric vehicles'],
+  proptech: ['proptech', 'real estate tech', 'construction tech', 'housing'],
+  hrtech: ['hrtech', 'hr tech', 'recruiting', 'talent management', 'workforce management'],
+  gaming: ['gaming', 'esports', 'game development', 'metaverse'],
+  media: ['media', 'content', 'creator economy', 'social media', 'adtech', 'advertising'],
+  cybersecurity: ['cybersecurity', 'security', 'infosec', 'identity management'],
+  devtools: ['devtools', 'developer tools', 'infrastructure', 'cloud', 'devops', 'open source'],
+  legaltech: ['legaltech', 'legal tech', 'compliance', 'govtech'],
+  mobility: ['mobility', 'ride-sharing', 'autonomous vehicles', 'connected cars'],
+  spacetech: ['spacetech', 'space tech', 'aerospace', 'satellite', 'drones'],
+};
+
+const SECTOR_FAMILY_SIMILARITY: Record<string, Record<string, number>> = {
+  fintech: { saas: 0.35, enterprise: 0.08, ai_ml: 0.15, ecommerce: 0.25, legaltech: 0.20 },
+  enterprise: { saas: 0.70, ai_ml: 0.40, devtools: 0.45, cybersecurity: 0.35, hrtech: 0.30 },
+  healthtech: { ai_ml: 0.25, edtech: 0.10, cleantech: 0.10 },
+  edtech: { saas: 0.25, ai_ml: 0.20, media: 0.20 },
+  saas: { enterprise: 0.70, devtools: 0.50, ai_ml: 0.35, hrtech: 0.35, fintech: 0.35, cybersecurity: 0.30 },
+  ai_ml: { enterprise: 0.40, saas: 0.35, devtools: 0.40, healthtech: 0.25, fintech: 0.20 },
+  ecommerce: { logistics: 0.45, fintech: 0.25, media: 0.20 },
+  logistics: { ecommerce: 0.45, agritech: 0.25, mobility: 0.35 },
+  agritech: { cleantech: 0.30, logistics: 0.25 },
+  cleantech: { mobility: 0.35, spacetech: 0.15, agritech: 0.30 },
+  devtools: { enterprise: 0.45, saas: 0.50, ai_ml: 0.40, cybersecurity: 0.35 },
+  cybersecurity: { enterprise: 0.35, devtools: 0.35, saas: 0.30, fintech: 0.20 },
+  media: { ecommerce: 0.20, edtech: 0.20, gaming: 0.30 },
+  gaming: { media: 0.30, ai_ml: 0.15 },
+  hrtech: { saas: 0.35, enterprise: 0.30 },
+  legaltech: { fintech: 0.20, enterprise: 0.25 },
+  mobility: { cleantech: 0.35, logistics: 0.35, spacetech: 0.20 },
+  proptech: { fintech: 0.15, ecommerce: 0.15 },
+  spacetech: { cleantech: 0.15, mobility: 0.20 },
+};
+
 // ─── Persona Compatibility Matrix ───
 const PERSONA_COMPATIBILITY: Record<string, Record<string, number>> = {
   FOUNDER: {
@@ -249,26 +293,88 @@ const TARGET_ROLE_BOOST: Record<string, string[]> = {
 };
 
 export class MatchingEngine {
-  private ruleWeight = 0.45;
+  private ruleWeight = 0.50;
   private intentWeight = 0.20;
-  private semanticWeight = 0.35;
+  private semanticWeight = 0.30;
+
+  private sectorFamilyCache = new Map<string, string | null>();
+
+  private getSectorFamily(industry: string): string | null {
+    const key = industry.toLowerCase().trim();
+    if (this.sectorFamilyCache.has(key)) return this.sectorFamilyCache.get(key)!;
+    for (const [family, members] of Object.entries(SECTOR_FAMILIES)) {
+      if (members.includes(key)) {
+        this.sectorFamilyCache.set(key, family);
+        return family;
+      }
+    }
+    this.sectorFamilyCache.set(key, null);
+    return null;
+  }
+
+  private scoreSectorSimilarity(industriesA: string[], industriesB: string[]): number {
+    if (!industriesA.length || !industriesB.length) return 0.3;
+
+    const familiesA = new Set<string>();
+    const familiesB = new Set<string>();
+    const normedA = new Set(industriesA.map(s => s.toLowerCase().trim()));
+    const normedB = new Set(industriesB.map(s => s.toLowerCase().trim()));
+
+    for (const ind of normedA) {
+      const fam = this.getSectorFamily(ind);
+      if (fam) familiesA.add(fam);
+    }
+    for (const ind of normedB) {
+      const fam = this.getSectorFamily(ind);
+      if (fam) familiesB.add(fam);
+    }
+
+    const directOverlap = [...normedA].filter(x => normedB.has(x));
+    if (directOverlap.length > 0) {
+      const union = new Set([...normedA, ...normedB]);
+      return Math.max(directOverlap.length / union.size, 0.6);
+    }
+
+    const familyOverlap = [...familiesA].filter(f => familiesB.has(f));
+    if (familyOverlap.length > 0) {
+      const familyUnion = new Set([...familiesA, ...familiesB]);
+      return 0.4 + (familyOverlap.length / familyUnion.size) * 0.4;
+    }
+
+    let bestCross = 0;
+    for (const fA of familiesA) {
+      for (const fB of familiesB) {
+        const sim = SECTOR_FAMILY_SIMILARITY[fA]?.[fB] ?? SECTOR_FAMILY_SIMILARITY[fB]?.[fA] ?? 0;
+        bestCross = Math.max(bestCross, sim);
+      }
+    }
+
+    if (bestCross > 0) return bestCross;
+
+    if (familiesA.size === 0 || familiesB.size === 0) {
+      const fallback = this.scoreArrayOverlap(industriesA, industriesB);
+      return fallback;
+    }
+
+    return 0.05;
+  }
 
   score(profileA: ProfileForMatching, profileB: ProfileForMatching): MatchScore {
     const roleMatch = this.scoreRoleMatch(profileA, profileB);
     const stageMatch = this.scoreStageMatch(profileA, profileB);
-    const industryMatch = this.scoreArrayOverlap(profileA.industries, profileB.industries);
+    const industryMatch = this.scoreSectorSimilarity(profileA.industries, profileB.industries);
     const interestMatch = this.scoreArrayOverlap(profileA.interests, profileB.interests);
     const locationMatch = this.scoreLocation(profileA.location, profileB.location);
     const skillMatch = this.scoreSkillRelevance(profileA, profileB);
     const founderContextBoost = this.scoreFounderContextMatch(profileA, profileB);
 
     const ruleScore =
-      roleMatch * 0.22 +
+      roleMatch * 0.15 +
       stageMatch * 0.10 +
-      industryMatch * 0.20 +
-      interestMatch * 0.10 +
-      locationMatch * 0.10 +
-      skillMatch * 0.13 +
+      industryMatch * 0.28 +
+      interestMatch * 0.08 +
+      locationMatch * 0.12 +
+      skillMatch * 0.12 +
       founderContextBoost * 0.15;
 
     const intentScore = this.scoreIntentAlignment(profileA, profileB);
@@ -283,8 +389,13 @@ export class MatchingEngine {
       this.intentWeight * intentScore +
       this.semanticWeight * semanticSimilarity;
 
+    let sectorPenalty = 1.0;
+    if (industryMatch <= 0.10) sectorPenalty = 0.75;
+    else if (industryMatch <= 0.20) sectorPenalty = 0.85;
+    const adjustedTotal = total * sectorPenalty;
+
     return {
-      total: Math.round(total * 100) / 100,
+      total: Math.round(adjustedTotal * 100) / 100,
       ruleScore: Math.round(ruleScore * 100) / 100,
       semanticScore: Math.round(semanticSimilarity * 100) / 100,
       breakdown: {
@@ -306,7 +417,7 @@ export class MatchingEngine {
     candidates: ProfileForMatching[],
     options: { limit?: number; minScore?: number } = {}
   ): Array<{ profile: ProfileForMatching; score: MatchScore }> {
-    const { limit = 10, minScore = 0.3 } = options;
+    const { limit = 10, minScore = 0.35 } = options;
 
     const scored = candidates
       .filter((c) => c.userId !== user.userId)
@@ -349,9 +460,10 @@ export class MatchingEngine {
       if (founder.persona === 'FOUNDER' && founder.priority === 'FUNDRAISING') {
         if (!['INVESTOR', 'DEAL_PARTNER', 'VENTURE_PARTNER'].includes(candidate.persona)) return 0;
 
-        let score = 0.4;
+        const industryOverlap = this.scoreSectorSimilarity(founder.industries, candidate.industries);
+        if (industryOverlap < 0.20 && founder.industries.length > 0 && candidate.industries.length > 0) return 0.1;
 
-        const industryOverlap = this.scoreArrayOverlap(founder.industries, candidate.industries);
+        let score = 0.4;
         score += industryOverlap * 0.35;
 
         if (founder.companyStage && candidate.companyStage) {
@@ -389,7 +501,7 @@ export class MatchingEngine {
         const complementaryRatio = totalUnique > 0 ? complementaryCount / totalUnique : 0;
         score += complementaryRatio * 0.4;
 
-        const industryOverlap = this.scoreArrayOverlap(founder.industries, candidate.industries);
+        const industryOverlap = this.scoreSectorSimilarity(founder.industries, candidate.industries);
         score += industryOverlap * 0.2;
 
         const interestOverlap = this.scoreArrayOverlap(founder.interests, candidate.interests);
@@ -418,7 +530,7 @@ export class MatchingEngine {
           }
         }
 
-        const industryOverlap = this.scoreArrayOverlap(founder.industries, candidate.industries);
+        const industryOverlap = this.scoreSectorSimilarity(founder.industries, candidate.industries);
         score += industryOverlap * 0.2;
 
         const skillRelevance = this.scoreArrayOverlap(founder.skills, candidate.skills);
@@ -432,7 +544,7 @@ export class MatchingEngine {
 
         let score = 0.3;
 
-        const industryOverlap = this.scoreArrayOverlap(founder.industries, candidate.industries);
+        const industryOverlap = this.scoreSectorSimilarity(founder.industries, candidate.industries);
         score += industryOverlap * 0.30;
 
         if (founder.companyStage && candidate.companyStage) {
@@ -475,7 +587,7 @@ export class MatchingEngine {
           }
         }
 
-        const industryOverlap = this.scoreArrayOverlap(founder.industries, candidate.industries);
+        const industryOverlap = this.scoreSectorSimilarity(founder.industries, candidate.industries);
         score += industryOverlap * 0.20;
 
         const skillRelevance = this.scoreArrayOverlap(founder.skills, candidate.skills);
@@ -490,7 +602,7 @@ export class MatchingEngine {
         let score = 0.25;
 
         const focusIndustries = founder.industryFocus?.length ? founder.industryFocus : founder.industries;
-        const industryOverlap = this.scoreArrayOverlap(focusIndustries, candidate.industries);
+        const industryOverlap = this.scoreSectorSimilarity(focusIndustries, candidate.industries);
         score += industryOverlap * 0.30;
 
         if (founder.trackedCompanies && candidate.headline) {
@@ -520,7 +632,7 @@ export class MatchingEngine {
         let score = 0.15;
 
         const focusIndustries = founder.industryFocus?.length ? founder.industryFocus : founder.industries;
-        const industryOverlap = this.scoreArrayOverlap(focusIndustries, candidate.industries);
+        const industryOverlap = this.scoreSectorSimilarity(focusIndustries, candidate.industries);
         score += industryOverlap * 0.20;
 
         if (founder.companyStage && candidate.companyStage) {
