@@ -45,7 +45,7 @@ export default function ProfileScreen() {
 
   const profile = hasEdits ? { ...rawProfile, ...editData } : rawProfile;
 
-  const updateField = (key: string, value: any) => {
+  const updateField = (key: string, value: string | number | string[] | undefined) => {
     setEditData((prev) => ({ ...prev, [key]: value }));
     setHasEdits(true);
   };
@@ -73,8 +73,8 @@ export default function ProfileScreen() {
       setEditData({});
       await queryClient.invalidateQueries({ queryKey: ['profile'] });
       setTimeout(() => setSuccessMsg(''), 3000);
-    } catch (err: any) {
-      setError(err.message || 'Failed to save');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to save');
     } finally {
       setSaving(false);
     }
@@ -145,7 +145,7 @@ export default function ProfileScreen() {
               <Text style={[styles.completenessValue, completeness === 100 && { color: Colors.success }]}>{completeness}%</Text>
             </View>
             <View style={styles.progressTrack}>
-              <View style={[styles.progressFill, { width: `${completeness}%` as any, backgroundColor: completeness === 100 ? Colors.success : Colors.primary }]} />
+              <View style={[styles.progressFill, { width: `${completeness}%`, backgroundColor: completeness === 100 ? Colors.success : Colors.primary }]} />
             </View>
           </View>
 
@@ -177,7 +177,10 @@ export default function ProfileScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Basic Information</Text>
             <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>Headline</Text>
+              <View style={styles.fieldLabelRow}>
+                <Text style={styles.fieldLabel}>Headline</Text>
+                {!profile?.headline?.trim() ? <Ionicons name="alert-circle" size={12} color={Colors.warning} /> : null}
+              </View>
               <TextInput
                 style={styles.textInput}
                 value={profile?.headline || ''}
@@ -187,7 +190,10 @@ export default function ProfileScreen() {
               />
             </View>
             <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>Current Role</Text>
+              <View style={styles.fieldLabelRow}>
+                <Text style={styles.fieldLabel}>Current Role</Text>
+                {!profile?.currentRole?.trim() ? <Ionicons name="alert-circle" size={12} color={Colors.warning} /> : null}
+              </View>
               <TextInput
                 style={styles.textInput}
                 value={profile?.currentRole || ''}
@@ -197,7 +203,10 @@ export default function ProfileScreen() {
               />
             </View>
             <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>Company</Text>
+              <View style={styles.fieldLabelRow}>
+                <Text style={styles.fieldLabel}>Company</Text>
+                {!profile?.companyName?.trim() ? <Ionicons name="alert-circle" size={12} color={Colors.warning} /> : null}
+              </View>
               <TextInput
                 style={styles.textInput}
                 value={profile?.companyName || ''}
@@ -207,7 +216,10 @@ export default function ProfileScreen() {
               />
             </View>
             <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>Location</Text>
+              <View style={styles.fieldLabelRow}>
+                <Text style={styles.fieldLabel}>Location</Text>
+                {!profile?.location?.trim() ? <Ionicons name="alert-circle" size={12} color={Colors.warning} /> : null}
+              </View>
               <TextInput
                 style={styles.textInput}
                 value={profile?.location || ''}
@@ -217,7 +229,10 @@ export default function ProfileScreen() {
               />
             </View>
             <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>Bio</Text>
+              <View style={styles.fieldLabelRow}>
+                <Text style={styles.fieldLabel}>Bio</Text>
+                {!profile?.bio?.trim() ? <Ionicons name="alert-circle" size={12} color={Colors.warning} /> : null}
+              </View>
               <TextInput
                 style={[styles.textInput, styles.textArea]}
                 value={profile?.bio || ''}
@@ -232,7 +247,10 @@ export default function ProfileScreen() {
               <Text style={styles.charCount}>{(profile?.bio || '').length}/1000</Text>
             </View>
             <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>LinkedIn URL</Text>
+              <View style={styles.fieldLabelRow}>
+                <Text style={styles.fieldLabel}>LinkedIn URL</Text>
+                {!profile?.linkedinUrl?.trim() ? <Ionicons name="alert-circle" size={12} color={Colors.warning} /> : null}
+              </View>
               <TextInput
                 style={styles.textInput}
                 value={profile?.linkedinUrl || ''}
@@ -260,7 +278,7 @@ export default function ProfileScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Industries</Text>
             <View style={styles.industryGrid}>
-              {industryOptions.filter((i) => i !== 'other').map((ind) => {
+              {industryOptions.map((ind) => {
                 const selected = (profile?.industries || []).includes(ind);
                 return (
                   <TouchableOpacity
@@ -486,6 +504,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   fieldGroup: {
+    gap: 6,
+  },
+  fieldLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 6,
   },
   fieldLabel: {

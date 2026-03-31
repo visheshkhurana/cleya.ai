@@ -69,8 +69,8 @@ export default function SettingsScreen() {
       setCurrentPassword('');
       setNewPassword('');
       setTimeout(() => setPasswordMsg(''), 3000);
-    } catch (err: any) {
-      setPasswordError(err.message || 'Failed to change password');
+    } catch (err: unknown) {
+      setPasswordError(err instanceof Error ? err.message : 'Failed to change password');
     } finally {
       setChangingPassword(false);
     }

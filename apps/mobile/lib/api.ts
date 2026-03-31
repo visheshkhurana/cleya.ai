@@ -4,13 +4,25 @@ import { Platform } from 'react-native';
 
 const TOKEN_KEY = 'cleya_auth_token';
 
+interface AuthUser {
+  id: string;
+  email: string;
+  name?: string;
+  role: string;
+}
+
 function getApiUrl(): string {
-  const domain = Constants.expoConfig?.extra?.apiDomain
+  const envUrl = Constants.expoConfig?.extra?.apiDomain
     || process.env.EXPO_PUBLIC_API_URL
     || '';
-  if (domain) return domain.replace(/\/$/, '');
+  if (envUrl) return envUrl.replace(/\/$/, '');
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
     return `${window.location.protocol}//${window.location.hostname}:3001`;
+  }
+  const debuggerHost = Constants.expoConfig?.hostUri || Constants.debuggerHost;
+  if (debuggerHost) {
+    const lanHost = debuggerHost.split(':')[0];
+    return `http://${lanHost}:3001`;
   }
   return 'http://localhost:3001';
 }
@@ -51,11 +63,11 @@ async function apiFetch<T = any>(path: string, options: RequestInit = {}): Promi
       ...options,
       headers,
     });
-  } catch (err: any) {
-    throw new Error(err.message || 'Network error — please check your connection');
+  } catch (err: unknown) {
+    throw new Error(err instanceof Error ? err.message : 'Network error — please check your connection');
   }
 
-  let json: any;
+  let json: Record<string, unknown>;
   try {
     json = await res.json();
   } catch {
@@ -67,16 +79,17 @@ async function apiFetch<T = any>(path: string, options: RequestInit = {}): Promi
     if (res.status === 401) {
       await clearToken();
     }
-    const errMsg = json?.error?.message || json?.message || 'Request failed';
-    const details = json?.error?.details;
+    const errObj = json?.error as Record<string, unknown> | undefined;
+    const errMsg = (errObj?.message as string) || (json?.message as string) || 'Request failed';
+    const details = errObj?.details;
     if (details && Array.isArray(details) && details.length > 0) {
-      const detailStr = details.map((d: any) => d.field ? `${d.field}: ${d.message}` : d.message).join('; ');
+      const detailStr = details.map((d: Record<string, string>) => d.field ? `${d.field}: ${d.message}` : d.message).join('; ');
       throw new Error(`${errMsg} — ${detailStr}`);
     }
     throw new Error(errMsg);
   }
 
-  return json.data;
+  return json.data as T;
 }
 
 export const api = {
@@ -85,7 +98,7 @@ export const api = {
   clearToken,
 
   async login(email: string, password: string) {
-    const data = await apiFetch<{ user: any; token: string }>('/auth/login', {
+    const data = await apiFetch<{ user: AuthUser; token: string }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
@@ -94,7 +107,7 @@ export const api = {
   },
 
   async signup(email: string, password: string, name?: string, persona?: string) {
-    const data = await apiFetch<{ user: any; token: string }>('/auth/signup', {
+    const data = await apiFetch<{ user: AuthUser; token: string }>('/auth/signup', {
       method: 'POST',
       body: JSON.stringify({ email, password, name, persona }),
     });

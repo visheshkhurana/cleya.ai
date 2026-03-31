@@ -2,12 +2,14 @@ import { useState, useCallback } from 'react';
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
   FlatList,
   RefreshControl,
   ActivityIndicator,
   Platform,
+  Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,19 +21,45 @@ import { Colors, personaLabels, formatIndustry } from '@/constants/colors';
 
 type Tab = 'pending' | 'accepted';
 
+interface MatchProfile {
+  persona?: string;
+  headline?: string;
+  currentRole?: string;
+  companyName?: string;
+  companyStage?: string;
+  industries?: string[];
+  location?: string;
+  bio?: string;
+}
+
+interface MatchUser {
+  id: string;
+  email: string;
+  profile?: MatchProfile;
+}
+
+interface ScoreBreakdown {
+  industryScore?: number;
+  stageScore?: number;
+  locationScore?: number;
+  goalsScore?: number;
+  skillsScore?: number;
+  personaScore?: number;
+}
+
 interface MatchData {
   id: string;
   status: string;
   score: number;
   reason?: string;
-  scoreBreakdown?: any;
+  scoreBreakdown?: ScoreBreakdown;
   userAId: string;
   userBId: string;
   userAResponse: string;
   userBResponse: string;
   createdAt: string;
-  userA: { id: string; email: string; profile?: any };
-  userB: { id: string; email: string; profile?: any };
+  userA: MatchUser;
+  userB: MatchUser;
 }
 
 export default function MatchesScreen() {
@@ -41,6 +69,12 @@ export default function MatchesScreen() {
   const [activeTab, setActiveTab] = useState<Tab>('pending');
   const [respondingId, setRespondingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const [feedbackMatchId, setFeedbackMatchId] = useState<string | null>(null);
+  const [feedbackRating, setFeedbackRating] = useState(0);
+  const [feedbackText, setFeedbackText] = useState('');
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
 
   const { data: rawMatches, isLoading } = useQuery({
     queryKey: ['matches'],
@@ -49,23 +83,48 @@ export default function MatchesScreen() {
 
   const matches: MatchData[] = Array.isArray(rawMatches) ? rawMatches : [];
 
-  const getOtherUser = (match: MatchData) => {
+  const getOtherUser = (match: MatchData): MatchUser => {
     if (!user) return match.userB;
     return match.userAId === user.id ? match.userB : match.userA;
   };
 
-  const getMyResponse = (match: MatchData) => {
+  const getMyResponse = (match: MatchData): string => {
     if (!user) return 'PENDING';
     return match.userAId === user.id ? match.userAResponse : match.userBResponse;
   };
 
-  const isPending = (match: MatchData) => {
+  const isPending = (match: MatchData): boolean => {
     const myResp = getMyResponse(match);
     return myResp === 'PENDING' && match.status !== 'REJECTED' && match.status !== 'ACCEPTED';
   };
 
-  const pendingMatches = matches.filter(isPending).sort((a, b) => (b.score || 0) - (a.score || 0));
-  const acceptedMatches = matches.filter((m) => m.status === 'ACCEPTED').sort((a, b) => (b.score || 0) - (a.score || 0));
+  const matchesSearch = (match: MatchData, query: string): boolean => {
+    if (!query.trim()) return true;
+    const q = query.toLowerCase();
+    const other = getOtherUser(match);
+    const profile = other?.profile;
+    const searchable = [
+      profile?.currentRole,
+      profile?.companyName,
+      profile?.headline,
+      profile?.location,
+      profile?.persona ? personaLabels[profile.persona] : undefined,
+      ...(profile?.industries?.map(formatIndustry) || []),
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    return searchable.includes(q);
+  };
+
+  const pendingMatches = matches
+    .filter(isPending)
+    .filter((m) => matchesSearch(m, searchQuery))
+    .sort((a, b) => (b.score || 0) - (a.score || 0));
+  const acceptedMatches = matches
+    .filter((m) => m.status === 'ACCEPTED')
+    .filter((m) => matchesSearch(m, searchQuery))
+    .sort((a, b) => (b.score || 0) - (a.score || 0));
 
   const currentList = activeTab === 'pending' ? pendingMatches : acceptedMatches;
 
@@ -82,9 +141,25 @@ export default function MatchesScreen() {
       }
       await queryClient.invalidateQueries({ queryKey: ['matches'] });
       await queryClient.invalidateQueries({ queryKey: ['matchStats'] });
+      setFeedbackMatchId(matchId);
+      setFeedbackRating(0);
+      setFeedbackText('');
     } catch {
     } finally {
       setRespondingId(null);
+    }
+  };
+
+  const handleSubmitFeedback = async () => {
+    if (!feedbackMatchId || feedbackRating === 0) return;
+    setSubmittingFeedback(true);
+    try {
+      await api.submitMatchFeedback(feedbackMatchId, feedbackRating, feedbackText || undefined);
+      if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+    } finally {
+      setSubmittingFeedback(false);
+      setFeedbackMatchId(null);
     }
   };
 
@@ -97,12 +172,13 @@ export default function MatchesScreen() {
 
   const ScoreBar = ({ label, value, icon }: { label: string; value: number; icon: string }) => {
     const pct = Math.round(value * 100);
+    const barColor = pct >= 70 ? Colors.primary : pct >= 40 ? Colors.info : '#64748B';
     return (
       <View style={styles.scoreBarRow}>
         <Text style={styles.scoreBarIcon}>{icon}</Text>
         <Text style={styles.scoreBarLabel}>{label}</Text>
         <View style={styles.scoreBarTrack}>
-          <View style={[styles.scoreBarFill, { width: `${pct}%` as any, backgroundColor: pct >= 70 ? Colors.primary : pct >= 40 ? Colors.info : '#64748B' }]} />
+          <View style={[styles.scoreBarFill, { width: `${pct}%`, backgroundColor: barColor }]} />
         </View>
         <Text style={[styles.scoreBarValue, { color: pct >= 70 ? Colors.accentLight : '#94A3B8' }]}>{pct}%</Text>
       </View>
@@ -161,14 +237,14 @@ export default function MatchesScreen() {
           {isExpanded && breakdown && typeof breakdown === 'object' ? (
             <View style={styles.breakdownContainer}>
               {[
-                { key: 'industryScore', label: 'Industry', icon: '🏭' },
-                { key: 'stageScore', label: 'Stage', icon: '📊' },
-                { key: 'locationScore', label: 'Location', icon: '📍' },
-                { key: 'goalsScore', label: 'Goals', icon: '🎯' },
-                { key: 'skillsScore', label: 'Skills', icon: '💡' },
-                { key: 'personaScore', label: 'Role Fit', icon: '👤' },
+                { key: 'industryScore' as const, label: 'Industry', icon: '🏭' },
+                { key: 'stageScore' as const, label: 'Stage', icon: '📊' },
+                { key: 'locationScore' as const, label: 'Location', icon: '📍' },
+                { key: 'goalsScore' as const, label: 'Goals', icon: '🎯' },
+                { key: 'skillsScore' as const, label: 'Skills', icon: '💡' },
+                { key: 'personaScore' as const, label: 'Role Fit', icon: '👤' },
               ].filter(f => breakdown[f.key] != null).map(f => (
-                <ScoreBar key={f.key} label={f.label} value={breakdown[f.key]} icon={f.icon} />
+                <ScoreBar key={f.key} label={f.label} value={breakdown[f.key] ?? 0} icon={f.icon} />
               ))}
             </View>
           ) : null}
@@ -235,6 +311,23 @@ export default function MatchesScreen() {
     <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? 67 : insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Matches</Text>
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={16} color={Colors.textMuted} style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search by role, company, industry..."
+            placeholderTextColor={Colors.textMuted}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {searchQuery ? (
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.searchClear}>
+              <Ionicons name="close-circle" size={16} color={Colors.textMuted} />
+            </TouchableOpacity>
+          ) : null}
+        </View>
         <View style={styles.tabBar}>
           {(['pending', 'accepted'] as Tab[]).map((tab) => (
             <TouchableOpacity
@@ -270,10 +363,16 @@ export default function MatchesScreen() {
             <View style={styles.emptyState}>
               <Ionicons name={activeTab === 'pending' ? 'search' : 'people'} size={40} color={Colors.textMuted} />
               <Text style={styles.emptyTitle}>
-                {activeTab === 'pending' ? 'No pending matches' : 'No accepted matches yet'}
+                {searchQuery
+                  ? 'No matches found'
+                  : activeTab === 'pending'
+                  ? 'No pending matches'
+                  : 'No accepted matches yet'}
               </Text>
               <Text style={styles.emptySubtitle}>
-                {activeTab === 'pending'
+                {searchQuery
+                  ? 'Try a different search term'
+                  : activeTab === 'pending'
                   ? 'Go to Dashboard and find new matches'
                   : 'Accept matches from the Pending tab to start connecting'}
               </Text>
@@ -281,6 +380,70 @@ export default function MatchesScreen() {
           }
         />
       )}
+
+      <Modal
+        visible={feedbackMatchId !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFeedbackMatchId(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.feedbackModal}>
+            <Text style={styles.feedbackTitle}>Rate this match</Text>
+            <Text style={styles.feedbackSubtitle}>How relevant was this match for you?</Text>
+            <View style={styles.starRow}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity
+                  key={star}
+                  onPress={() => {
+                    setFeedbackRating(star);
+                    if (Platform.OS !== 'web') Haptics.selectionAsync();
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name={star <= feedbackRating ? 'star' : 'star-outline'}
+                    size={32}
+                    color={star <= feedbackRating ? Colors.warning : Colors.textMuted}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TextInput
+              style={styles.feedbackInput}
+              value={feedbackText}
+              onChangeText={setFeedbackText}
+              placeholder="Any additional feedback? (optional)"
+              placeholderTextColor={Colors.textMuted}
+              multiline
+              numberOfLines={3}
+              maxLength={500}
+              textAlignVertical="top"
+            />
+            <View style={styles.feedbackActions}>
+              <TouchableOpacity
+                style={styles.feedbackSkip}
+                onPress={() => setFeedbackMatchId(null)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.feedbackSkipText}>Skip</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.feedbackSubmit, (feedbackRating === 0 || submittingFeedback) && styles.feedbackSubmitDisabled]}
+                onPress={handleSubmitFeedback}
+                disabled={feedbackRating === 0 || submittingFeedback}
+                activeOpacity={0.8}
+              >
+                {submittingFeedback ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.feedbackSubmitText}>Submit</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -294,12 +457,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 12,
-    gap: 12,
+    gap: 10,
   },
   headerTitle: {
     fontSize: 22,
     fontFamily: 'Inter_700Bold',
     color: Colors.text,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  searchIcon: {
+    paddingLeft: 12,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    fontSize: 14,
+    fontFamily: 'Inter_400Regular',
+    color: Colors.text,
+  },
+  searchClear: {
+    paddingHorizontal: 10,
+    paddingVertical: 10,
   },
   tabBar: {
     flexDirection: 'row',
@@ -570,5 +756,85 @@ const styles = StyleSheet.create({
     color: Colors.textTertiary,
     textAlign: 'center',
     paddingHorizontal: 40,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  feedbackModal: {
+    backgroundColor: Colors.surface,
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 360,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    gap: 12,
+  },
+  feedbackTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter_700Bold',
+    color: Colors.text,
+    textAlign: 'center',
+  },
+  feedbackSubtitle: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    color: Colors.textTertiary,
+    textAlign: 'center',
+  },
+  starRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+    paddingVertical: 8,
+  },
+  feedbackInput: {
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 14,
+    fontFamily: 'Inter_400Regular',
+    color: Colors.text,
+    minHeight: 70,
+  },
+  feedbackActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  feedbackSkip: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  feedbackSkipText: {
+    fontSize: 14,
+    fontFamily: 'Inter_500Medium',
+    color: Colors.textTertiary,
+  },
+  feedbackSubmit: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 12,
+    backgroundColor: Colors.primary,
+  },
+  feedbackSubmitDisabled: {
+    opacity: 0.5,
+  },
+  feedbackSubmitText: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#fff',
   },
 });

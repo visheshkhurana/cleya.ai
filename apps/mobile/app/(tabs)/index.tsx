@@ -70,9 +70,9 @@ export default function DashboardScreen() {
     }
   };
 
-  const getOtherUser = (match: any) => {
-    if (!user) return match.userB;
-    return match.userAId === user.id ? match.userB : match.userA;
+  const getOtherUser = (match: Record<string, unknown>) => {
+    if (!user) return match.userB as Record<string, unknown> | undefined;
+    return (match.userAId === user.id ? match.userB : match.userA) as Record<string, unknown> | undefined;
   };
 
   const completenessScore = profile?.completenessScore
@@ -154,7 +154,7 @@ export default function DashboardScreen() {
                   <Text style={styles.completenessValue}>{completenessScore}%</Text>
                 </View>
                 <View style={styles.progressTrack}>
-                  <View style={[styles.progressFill, { width: `${completenessScore}%` as any }]} />
+                  <View style={[styles.progressFill, { width: `${completenessScore}%` }]} />
                 </View>
                 <Text style={styles.completenessHint}>
                   Tap to complete your profile and improve match quality
@@ -200,13 +200,13 @@ export default function DashboardScreen() {
                     <Text style={styles.seeAll}>See All</Text>
                   </TouchableOpacity>
                 </View>
-                {matches.map((match: any) => {
+                {matches.map((match: Record<string, unknown>) => {
                   const other = getOtherUser(match);
-                  const otherProfile = other?.profile;
-                  const score = Math.round((match.score || 0) * 100);
+                  const otherProfile = other?.profile as Record<string, unknown> | undefined;
+                  const score = Math.round(((match.score as number) || 0) * 100);
                   return (
                     <TouchableOpacity
-                      key={match.id}
+                      key={match.id as string}
                       style={styles.matchPreview}
                       onPress={() => router.push('/(tabs)/matches')}
                       activeOpacity={0.7}
@@ -216,10 +216,10 @@ export default function DashboardScreen() {
                       </View>
                       <View style={styles.matchInfo}>
                         <Text style={styles.matchName} numberOfLines={1}>
-                          {otherProfile?.currentRole || other?.email?.split('@')[0] || 'Match'}
+                          {(otherProfile?.currentRole as string) || (other?.email as string)?.split('@')[0] || 'Match'}
                         </Text>
                         <Text style={styles.matchCompany} numberOfLines={1}>
-                          {otherProfile?.companyName || otherProfile?.headline || ''}
+                          {(otherProfile?.companyName as string) || (otherProfile?.headline as string) || ''}
                         </Text>
                       </View>
                       <View style={[styles.scoreBadge, score >= 80 ? styles.scoreHigh : score >= 60 ? styles.scoreMed : styles.scoreLow]}>
@@ -244,21 +244,31 @@ export default function DashboardScreen() {
             <View style={styles.quickActions}>
               <Text style={styles.sectionTitle}>Quick Actions</Text>
               <View style={styles.actionGrid}>
-                {[
-                  { icon: 'person' as const, label: 'Edit Profile', route: '/(tabs)/profile' },
-                  { icon: 'people' as const, label: 'View Matches', route: '/(tabs)/matches' },
-                  { icon: 'settings' as const, label: 'Settings', route: '/(tabs)/settings' },
-                ].map((action) => (
-                  <TouchableOpacity
-                    key={action.label}
-                    style={styles.actionCard}
-                    onPress={() => router.push(action.route as any)}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name={action.icon} size={22} color={Colors.accent} />
-                    <Text style={styles.actionLabel}>{action.label}</Text>
-                  </TouchableOpacity>
-                ))}
+                <TouchableOpacity
+                  style={styles.actionCard}
+                  onPress={handleFindMatches}
+                  disabled={findingMatches}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="search" size={22} color={Colors.accent} />
+                  <Text style={styles.actionLabel}>Find Matches</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.actionCard}
+                  onPress={() => router.push('/(tabs)/profile')}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="person" size={22} color={Colors.accent} />
+                  <Text style={styles.actionLabel}>Edit Profile</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.actionCard}
+                  onPress={() => router.push('/(tabs)/matches')}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="chatbubbles" size={22} color={Colors.accent} />
+                  <Text style={styles.actionLabel}>Chat</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </>

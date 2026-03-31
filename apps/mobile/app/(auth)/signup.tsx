@@ -41,8 +41,8 @@ export default function SignupScreen() {
       await signup(email.trim().toLowerCase(), password, name.trim() || undefined, persona);
       if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace('/(tabs)');
-    } catch (err: any) {
-      setError(err.message || 'Signup failed. Please try again.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Signup failed. Please try again.');
       if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setLoading(false);
