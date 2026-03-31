@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import { api } from '@/lib/api';
+import { api, UserProfile } from '@/lib/api';
 import { Colors, personaLabels, industryOptions, formatIndustry } from '@/constants/colors';
 
 const personaOptions = ['FOUNDER', 'INVESTOR', 'TALENT', 'DEAL_PARTNER', 'EVENT_PARTICIPANT', 'ADVISOR', 'OPERATOR', 'JOB_SEEKER'] as const;
@@ -32,13 +32,14 @@ export default function ProfileScreen() {
   const [hasEdits, setHasEdits] = useState(false);
   const [customIndustry, setCustomIndustry] = useState('');
 
-  const { data: rawProfile, isLoading } = useQuery({
+  const { data: rawProfile, isLoading } = useQuery<UserProfile>({
     queryKey: ['profile'],
     queryFn: async () => {
       const data = await api.getProfile();
       if (data) {
         const { extraData, ...rest } = data;
-        return { ...rest, ...(typeof extraData === 'object' && extraData ? extraData : {}) };
+        const merged: UserProfile = { ...rest, ...(typeof extraData === 'object' && extraData ? extraData as Record<string, unknown> : {}) };
+        return merged;
       }
       return data;
     },
@@ -83,7 +84,8 @@ export default function ProfileScreen() {
     setSuccessMsg('');
     try {
       const dataToSave = hasEdits ? { ...rawProfile, ...editData } : rawProfile;
-      await api.updateProfile(dataToSave);
+      if (!dataToSave) { setError('No profile data to save'); setSaving(false); return; }
+      await api.updateProfile(dataToSave as Record<string, string | number | boolean | string[] | undefined>);
       if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSuccessMsg('Profile saved');
       setHasEdits(false);
@@ -293,6 +295,18 @@ export default function ProfileScreen() {
                 placeholderTextColor={Colors.textMuted}
                 autoCapitalize="none"
                 keyboardType="url"
+              />
+            </View>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Phone Number</Text>
+              <TextInput
+                style={styles.textInput}
+                value={String(profile?.phone || '')}
+                onChangeText={(v) => updateField('phone', v)}
+                placeholder="+91 98765 43210"
+                placeholderTextColor={Colors.textMuted}
+                keyboardType="phone-pad"
+                autoCapitalize="none"
               />
             </View>
           </View>

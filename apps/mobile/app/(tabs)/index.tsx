@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@/lib/api';
+import { api, UserProfile, MatchStats } from '@/lib/api';
 import { Colors, personaLabels } from '@/constants/colors';
 
 export default function DashboardScreen() {
@@ -25,19 +25,19 @@ export default function DashboardScreen() {
   const queryClient = useQueryClient();
   const [findingMatches, setFindingMatches] = useState(false);
 
-  const { data: profile, isLoading: profileLoading } = useQuery({
+  const { data: profile, isLoading: profileLoading } = useQuery<UserProfile>({
     queryKey: ['profile'],
     queryFn: () => api.getProfile(),
   });
 
-  const { data: matchStats, isLoading: statsLoading } = useQuery({
+  const { data: matchStats, isLoading: statsLoading } = useQuery<MatchStats>({
     queryKey: ['matchStats'],
     queryFn: () => api.getMatchStats(),
   });
 
-  const { data: rawMatches } = useQuery({
+  const { data: rawMatches } = useQuery<Record<string, unknown>[]>({
     queryKey: ['matches'],
-    queryFn: () => api.getMatches(),
+    queryFn: () => api.getMatches() as Promise<Record<string, unknown>[]>,
   });
 
   const matches = Array.isArray(rawMatches) ? rawMatches.slice(0, 3) : [];

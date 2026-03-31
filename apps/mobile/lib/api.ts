@@ -4,11 +4,58 @@ import { Platform } from 'react-native';
 
 const TOKEN_KEY = 'cleya_auth_token';
 
-interface AuthUser {
+export interface AuthUser {
   id: string;
   email: string;
   name?: string;
   role: string;
+}
+
+export interface UserProfile {
+  id: string;
+  userId: string;
+  persona?: string;
+  headline?: string;
+  bio?: string;
+  companyName?: string;
+  currentRole?: string;
+  location?: string;
+  industries?: string[];
+  linkedinUrl?: string;
+  websiteUrl?: string;
+  phone?: string;
+  companyStage?: string;
+  fundName?: string;
+  portfolioSize?: number;
+  experienceYears?: number;
+  preferredRole?: string;
+  completenessScore?: number;
+  extraData?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+export interface NotificationPrefs {
+  matchNotify?: boolean;
+  introNotify?: boolean;
+  weeklyDigest?: boolean;
+}
+
+export interface UserSettings {
+  notificationPrefs?: NotificationPrefs;
+  [key: string]: unknown;
+}
+
+export interface MatchUser {
+  id: string;
+  name?: string;
+  email?: string;
+  profile?: UserProfile;
+}
+
+export interface MatchStats {
+  total: number;
+  pending: number;
+  accepted: number;
 }
 
 function getApiUrl(): string {
@@ -120,11 +167,11 @@ export const api = {
   },
 
   async getMe() {
-    return apiFetch('/auth/me');
+    return apiFetch<AuthUser>('/auth/me');
   },
 
   async getProfile() {
-    return apiFetch('/users/profile');
+    return apiFetch<UserProfile>('/users/profile');
   },
 
   async updateProfile(data: Record<string, string | number | boolean | string[] | undefined>) {
@@ -139,7 +186,7 @@ export const api = {
   },
 
   async getMatchStats() {
-    return apiFetch<{ total: number; pending: number; accepted: number }>('/matches/stats');
+    return apiFetch<MatchStats>('/matches/stats');
   },
 
   async findAndPropose(limit = 5) {
@@ -168,7 +215,7 @@ export const api = {
   },
 
   async getSettings() {
-    return apiFetch('/users/settings');
+    return apiFetch<UserSettings>('/users/settings');
   },
 
   async updateNotificationPrefs(prefs: { matchNotify?: boolean; introNotify?: boolean; weeklyDigest?: boolean }) {

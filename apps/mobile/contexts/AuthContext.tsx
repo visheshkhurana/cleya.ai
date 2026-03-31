@@ -1,11 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { api } from '@/lib/api';
+import { api, AuthUser } from '@/lib/api';
 
-interface User {
-  id: string;
-  email: string;
-  name?: string;
-  role?: string;
+interface User extends AuthUser {
   emailVerified?: boolean;
 }
 

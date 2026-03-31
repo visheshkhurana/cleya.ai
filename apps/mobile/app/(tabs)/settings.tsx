@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@/lib/api';
+import { api, UserSettings } from '@/lib/api';
 import { Colors } from '@/constants/colors';
 
 export default function SettingsScreen() {
@@ -32,7 +32,7 @@ export default function SettingsScreen() {
   const [passwordMsg, setPasswordMsg] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
-  const { data: settings } = useQuery({
+  const { data: settings } = useQuery<UserSettings>({
     queryKey: ['settings'],
     queryFn: () => api.getSettings(),
   });
