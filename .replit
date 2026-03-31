@@ -30,6 +30,10 @@ externalPort = 80
 localPort = 5100
 externalPort = 3002
 
+[[ports]]
+localPort = 8080
+externalPort = 8080
+
 [languages]
 [languages.typescript]
 pattern = "**/{*.ts,*.tsx}"
@@ -57,6 +61,10 @@ author = "agent"
 task = "workflow.run"
 args = "Start application"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start Mobile"
+
 [[workflows.workflow]]
 name = "Start application"
 author = "agent"
@@ -68,6 +76,18 @@ waitForPort = 5000
 
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[[workflows.workflow]]
+name = "Start Mobile"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev --workspace=apps/mobile"
+waitForPort = 8080
+
+[workflows.workflow.metadata]
+outputType = "console"
 
 [userenv]
 

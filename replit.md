@@ -15,9 +15,10 @@ Monorepo with:
 
 ## Stack
 - **Frontend:** Next.js 14, React 18, Tailwind CSS (dark teal theme), Framer Motion 10, Lenis (smooth scroll)
+- **Mobile:** Expo SDK 52 (React Native 0.76), expo-router 4, React Query, SecureStore for auth tokens
 - **Backend:** Express, TypeScript, WebSocket
 - **Database:** PostgreSQL (Replit built-in), Prisma ORM, pgvector
-- **Auth:** JWT in httpOnly secure cookie (`cleo_auth`), bcryptjs password hashing, CSRF double-submit cookie protection, email verification on signup. No JWT in localStorage or URL params. WebSocket auth reads from cookie. Frontend auth checks use `/auth/me` endpoint.
+- **Auth:** JWT in httpOnly secure cookie (`cleo_auth`) for web, Bearer token (`Authorization: Bearer <token>`) for mobile. bcryptjs password hashing, CSRF double-submit cookie protection (web only), email verification on signup. Mobile stores JWT in expo-secure-store. Frontend auth checks use `/auth/me` endpoint.
 - **Validation:** Zod schemas on all state-changing endpoints (profile, password, match, introduction)
 - **AI:** OpenAI for embeddings + chat (gpt-4-turbo-preview, text-embedding-3-small)
 
