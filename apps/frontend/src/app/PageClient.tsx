@@ -76,6 +76,11 @@ export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [platformStats, setPlatformStats] = useState<{ memberCount: number; matchCount: number; introductionCount: number } | null>(null);
   const [selectedPersona, setSelectedPersona] = useState<string>('');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 80);
@@ -248,6 +253,7 @@ export default function Home() {
         <nav
           role="navigation"
           aria-label="Main navigation"
+          suppressHydrationWarning
           className="fixed top-0 left-0 right-0 z-50 transition-[background,backdrop-filter,border-color] duration-500"
           style={{
             background: scrolled ? 'rgba(15,23,42,0.85)' : 'transparent',
@@ -296,28 +302,30 @@ export default function Home() {
             </button>
           </div>
 
-          <AnimatePresence>
-            {mobileMenuOpen && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="md:hidden border-t border-white/[0.06] px-6 py-4 space-y-2 overflow-hidden"
-                style={{ background: 'rgba(15,23,42,0.97)' }}
-              >
-                <button onClick={() => { scrollToSection('how-it-works'); setMobileMenuOpen(false); }}
-                  className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">{t('nav.howItWorks')}</button>
-                <Link href="/pricing" className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">{t('nav.pricing')}</Link>
-                <Link href="/blog" className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">{t('nav.blog')}</Link>
-                <div className="px-3 py-2"><LanguageSwitcher /></div>
-                <button onClick={() => { setShowAuth(true); setMode('login'); setMobileMenuOpen(false); }}
-                  className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">{t('nav.login')}</button>
-                <button onClick={() => { setShowAuth(true); setMode('signup'); setMobileMenuOpen(false); }}
-                  className="block w-full text-left px-3 py-3 text-sm font-medium rounded-lg min-h-[44px] text-white"
-                  style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>{t('nav.getStarted')}</button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {mounted && (
+            <AnimatePresence>
+              {mobileMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="md:hidden border-t border-white/[0.06] px-6 py-4 space-y-2 overflow-hidden"
+                  style={{ background: 'rgba(15,23,42,0.97)' }}
+                >
+                  <button onClick={() => { scrollToSection('how-it-works'); setMobileMenuOpen(false); }}
+                    className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">{t('nav.howItWorks')}</button>
+                  <Link href="/pricing" className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">{t('nav.pricing')}</Link>
+                  <Link href="/blog" className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">{t('nav.blog')}</Link>
+                  <div className="px-3 py-2"><LanguageSwitcher /></div>
+                  <button onClick={() => { setShowAuth(true); setMode('login'); setMobileMenuOpen(false); }}
+                    className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">{t('nav.login')}</button>
+                  <button onClick={() => { setShowAuth(true); setMode('signup'); setMobileMenuOpen(false); }}
+                    className="block w-full text-left px-3 py-3 text-sm font-medium rounded-lg min-h-[44px] text-white"
+                    style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>{t('nav.getStarted')}</button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          )}
         </nav>
 
         {/* HERO */}
