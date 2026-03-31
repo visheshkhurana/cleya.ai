@@ -323,6 +323,20 @@ Full 8-stage lifecycle implemented:
 - **ScoreBreakdown**: Expanded card with overall circular progress + per-factor bar charts (Industry Fit, Stage Match, Location, Goal Alignment, Skills Match, Role Fit)
 - **VerificationBadge**: Tiered (Trusted/Verified/Basic) with label shown on match cards
 
+### Mobile App Screens (`apps/mobile/app/(tabs)/`)
+- `index.tsx` — Dashboard (profile summary, match stats, recent matches)
+- `matches.tsx` — Match cards with accept/reject, score breakdown
+- `chat.tsx` — AI Chat screen (free-form AI assistant with quick prompts, markdown in bubbles, typing indicator)
+- `messages.tsx` — Direct Messaging (conversation list + thread view with polling, read receipts)
+- `introductions.tsx` — Introductions list with status badges, detail modal (approve/edit/cancel, outcome recording)
+- `profile.tsx` — Full profile editor with persona-specific sections
+- `settings.tsx` — Account, notifications, WhatsApp opt-in/out, password change, logout, delete account
+- `_layout.tsx` — 7-tab navigation (Dashboard, Matches, AI Chat, Messages, Intros, Profile, Settings)
+
+### Mobile API Client (`apps/mobile/lib/api.ts`)
+- Full typed API client with Bearer token auth
+- Endpoints: auth, profile, matches, AI chat, DM conversations/messages, introductions (CRUD + approve/edit/cancel/outcome), WhatsApp status/opt-in/opt-out, notifications, settings
+
 ## Key Files
 - `apps/backend/src/index.ts` — Main Express server (routes: auth, users, conversations, matches, calls, admin, notifications, messaging, twilio, deals, events, ai-chat, introductions)
 - `apps/backend/src/routes/introduction.ts` — Introduction CRUD + status tracking

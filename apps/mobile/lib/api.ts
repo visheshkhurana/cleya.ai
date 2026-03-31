@@ -59,6 +59,58 @@ export interface MatchStats {
   accepted: number;
 }
 
+export interface Introduction {
+  id: string;
+  matchId: string;
+  status: string;
+  introText?: string;
+  talkingPoints: string[];
+  outcome?: string;
+  outcomeNotes?: string;
+  sentAt?: string;
+  followUpAt?: string;
+  scheduledAt?: string;
+  notes?: string;
+  createdAt: string;
+  match: { score: number; reason?: string };
+  userA: { id: string; email: string; name?: string; profile?: UserProfile };
+  userB: { id: string; email: string; name?: string; profile?: UserProfile };
+}
+
+export interface Conversation {
+  partnerId: string;
+  partner: {
+    id: string;
+    email: string;
+    name?: string;
+    profile?: { persona?: string; headline?: string; companyName?: string; currentRole?: string; location?: string };
+  };
+  lastMessage: string;
+  lastMessageAt: string;
+  unreadCount: number;
+}
+
+export interface DirectMessage {
+  id: string;
+  senderId: string;
+  recipientId: string;
+  content: string;
+  createdAt: string;
+  readAt?: string | null;
+  sender: { id: string; name?: string; email: string };
+}
+
+export interface WhatsAppStatus {
+  whatsappOptedIn: boolean;
+  whatsappPhone: string | null;
+  preferences?: {
+    whatsappEnabled: boolean;
+    whatsappMatchNotify: boolean;
+    whatsappIntroNotify: boolean;
+    whatsappWeeklyDigest: boolean;
+  };
+}
+
 function getApiUrl(): string {
   const envUrl = Constants.expoConfig?.extra?.apiDomain
     || process.env.EXPO_PUBLIC_API_URL
@@ -238,29 +290,66 @@ export const api = {
   },
 
   async sendAIChat(message: string, history: { role: 'user' | 'assistant'; content: string }[] = []) {
-    return apiFetch('/ai-chat/message', {
+    return apiFetch<{ content: string }>('/ai-chat/message', {
       method: 'POST',
       body: JSON.stringify({ message, history }),
     });
   },
 
   async getIntroductions() {
-    return apiFetch('/introductions');
+    return apiFetch<Introduction[]>('/introductions');
+  },
+
+  async approveIntroduction(id: string) {
+    return apiFetch(`/introductions/${id}/approve`, { method: 'POST' });
+  },
+
+  async editIntroductionText(id: string, introText: string) {
+    return apiFetch(`/introductions/${id}/edit`, {
+      method: 'PATCH',
+      body: JSON.stringify({ introText }),
+    });
+  },
+
+  async cancelIntroduction(id: string) {
+    return apiFetch(`/introductions/${id}/cancel`, { method: 'POST' });
+  },
+
+  async recordIntroOutcome(id: string, outcome: string, outcomeNotes?: string) {
+    return apiFetch(`/introductions/${id}/outcome`, {
+      method: 'POST',
+      body: JSON.stringify({ outcome, outcomeNotes }),
+    });
   },
 
   async getConversations() {
-    return apiFetch('/dm/conversations');
+    return apiFetch<Conversation[]>('/dm/conversations');
   },
 
   async getDirectMessages(partnerId: string, limit = 50) {
-    return apiFetch(`/dm/${partnerId}?limit=${limit}`);
+    return apiFetch<DirectMessage[]>(`/dm/${partnerId}?limit=${limit}`);
   },
 
   async sendDirectMessage(partnerId: string, content: string) {
-    return apiFetch(`/dm/${partnerId}`, {
+    return apiFetch<DirectMessage>(`/dm/${partnerId}`, {
       method: 'POST',
       body: JSON.stringify({ content }),
     });
+  },
+
+  async whatsappStatus() {
+    return apiFetch<WhatsAppStatus>('/whatsapp/status');
+  },
+
+  async whatsappOptIn(phoneNumber: string) {
+    return apiFetch('/whatsapp/opt-in', {
+      method: 'POST',
+      body: JSON.stringify({ phoneNumber }),
+    });
+  },
+
+  async whatsappOptOut() {
+    return apiFetch('/whatsapp/opt-out', { method: 'POST' });
   },
 
   async forgotPassword(email: string) {

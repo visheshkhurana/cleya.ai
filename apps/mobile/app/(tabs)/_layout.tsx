@@ -33,7 +33,7 @@ export default function TabLayout() {
         tabBarInactiveTintColor: Colors.textMuted,
         tabBarLabelStyle: {
           fontFamily: 'Inter_500Medium',
-          fontSize: 11,
+          fontSize: 10,
         },
       }}
     >
@@ -52,6 +52,33 @@ export default function TabLayout() {
           title: 'Matches',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="people" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="chat"
+        options={{
+          title: 'AI Chat',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="sparkles" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="messages"
+        options={{
+          title: 'Messages',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="chatbubbles" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="introductions"
+        options={{
+          title: 'Intros',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="hand-right" size={size} color={color} />
           ),
         }}
       />

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/contexts/AuthContext';
-import { api, UserSettings } from '@/lib/api';
+import { api, UserSettings, WhatsAppStatus } from '@/lib/api';
 import { Colors } from '@/constants/colors';
 
 export default function SettingsScreen() {
@@ -37,9 +37,24 @@ export default function SettingsScreen() {
     queryFn: () => api.getSettings(),
   });
 
+  const { data: whatsappStatus, refetch: refetchWhatsApp } = useQuery<WhatsAppStatus>({
+    queryKey: ['whatsapp-status'],
+    queryFn: () => api.whatsappStatus(),
+  });
+
   const [matchNotify, setMatchNotify] = useState<boolean | null>(null);
   const [introNotify, setIntroNotify] = useState<boolean | null>(null);
   const [weeklyDigest, setWeeklyDigest] = useState<boolean | null>(null);
+  const [whatsappPhone, setWhatsappPhone] = useState('');
+  const [whatsappLoading, setWhatsappLoading] = useState(false);
+  const [whatsappMsg, setWhatsappMsg] = useState('');
+  const [whatsappError, setWhatsappError] = useState('');
+
+  useEffect(() => {
+    if (whatsappStatus?.whatsappPhone) {
+      setWhatsappPhone(whatsappStatus.whatsappPhone);
+    }
+  }, [whatsappStatus?.whatsappPhone]);
 
   const prefs = settings?.notificationPrefs;
   const effectiveMatchNotify = matchNotify ?? prefs?.matchNotify ?? true;
@@ -55,6 +70,44 @@ export default function SettingsScreen() {
       await queryClient.invalidateQueries({ queryKey: ['settings'] });
     } catch (err: unknown) {
       Alert.alert('Error', err instanceof Error ? err.message : 'Could not update notification preferences');
+    }
+  };
+
+  const handleWhatsAppOptIn = async () => {
+    const phone = whatsappPhone.trim();
+    if (!phone || phone.length < 10) {
+      setWhatsappError('Please enter a valid phone number with country code (e.g. +91...)');
+      return;
+    }
+    setWhatsappLoading(true);
+    setWhatsappError('');
+    setWhatsappMsg('');
+    try {
+      await api.whatsappOptIn(phone);
+      if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setWhatsappMsg('WhatsApp notifications enabled!');
+      await refetchWhatsApp();
+      setTimeout(() => setWhatsappMsg(''), 3000);
+    } catch (err: unknown) {
+      setWhatsappError(err instanceof Error ? err.message : 'Failed to enable WhatsApp');
+    } finally {
+      setWhatsappLoading(false);
+    }
+  };
+
+  const handleWhatsAppOptOut = async () => {
+    setWhatsappLoading(true);
+    setWhatsappError('');
+    setWhatsappMsg('');
+    try {
+      await api.whatsappOptOut();
+      setWhatsappMsg('WhatsApp notifications disabled');
+      await refetchWhatsApp();
+      setTimeout(() => setWhatsappMsg(''), 3000);
+    } catch (err: unknown) {
+      setWhatsappError(err instanceof Error ? err.message : 'Failed to disable WhatsApp');
+    } finally {
+      setWhatsappLoading(false);
     }
   };
 
@@ -185,6 +238,74 @@ export default function SettingsScreen() {
               thumbColor={effectiveWeeklyDigest ? Colors.primary : '#94A3B8'}
             />
           </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>WhatsApp Notifications</Text>
+          <Text style={styles.whatsappDesc}>
+            Get match and introduction updates on WhatsApp
+          </Text>
+          {whatsappError ? (
+            <View style={styles.errorBox}>
+              <Ionicons name="alert-circle" size={14} color={Colors.error} />
+              <Text style={styles.errorText}>{whatsappError}</Text>
+            </View>
+          ) : null}
+          {whatsappMsg ? (
+            <View style={styles.successBox}>
+              <Ionicons name="checkmark-circle" size={14} color={Colors.success} />
+              <Text style={styles.successText}>{whatsappMsg}</Text>
+            </View>
+          ) : null}
+          {whatsappStatus?.whatsappOptedIn ? (
+            <View style={styles.whatsappActiveRow}>
+              <View style={styles.whatsappActiveInfo}>
+                <Ionicons name="logo-whatsapp" size={20} color={Colors.success} />
+                <View>
+                  <Text style={styles.whatsappActiveLabel}>Active</Text>
+                  <Text style={styles.whatsappActivePhone}>{whatsappStatus.whatsappPhone}</Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={styles.whatsappOptOutButton}
+                onPress={handleWhatsAppOptOut}
+                disabled={whatsappLoading}
+                activeOpacity={0.7}
+              >
+                {whatsappLoading ? (
+                  <ActivityIndicator size="small" color={Colors.error} />
+                ) : (
+                  <Text style={styles.whatsappOptOutText}>Disable</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
+              <View style={styles.whatsappInputRow}>
+                <Ionicons name="logo-whatsapp" size={20} color={Colors.textMuted} style={{ marginTop: 12 }} />
+                <TextInput
+                  style={[styles.textInput, { flex: 1 }]}
+                  value={whatsappPhone}
+                  onChangeText={setWhatsappPhone}
+                  placeholder="+91 98765 43210"
+                  placeholderTextColor={Colors.textMuted}
+                  keyboardType="phone-pad"
+                />
+              </View>
+              <TouchableOpacity
+                style={[styles.changeButton, whatsappLoading && styles.changeButtonDisabled]}
+                onPress={handleWhatsAppOptIn}
+                disabled={whatsappLoading}
+                activeOpacity={0.8}
+              >
+                {whatsappLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.changeButtonText}>Enable WhatsApp</Text>
+                )}
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -407,6 +528,48 @@ const styles = StyleSheet.create({
   },
   deleteText: {
     fontSize: 14,
+    fontFamily: 'Inter_500Medium',
+    color: Colors.error,
+  },
+  whatsappDesc: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    color: Colors.textMuted,
+  },
+  whatsappInputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  whatsappActiveRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  whatsappActiveInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  whatsappActiveLabel: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    color: Colors.success,
+  },
+  whatsappActivePhone: {
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
+    color: Colors.textMuted,
+  },
+  whatsappOptOutButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.3)',
+  },
+  whatsappOptOutText: {
+    fontSize: 12,
     fontFamily: 'Inter_500Medium',
     color: Colors.error,
   },
