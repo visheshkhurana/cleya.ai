@@ -92,11 +92,12 @@ export function DynamicForm({ fields, onSubmit, disabled }: DynamicFormProps) {
                 value={values[field.name] || ''}
                 onChange={(e) => handleChange(field.name, e.target.value)}
                 disabled={submitted}
-                className={inputClass + ' appearance-none'}
+                className={inputClass}
+                style={{ appearance: 'auto' }}
               >
-                <option value="">Select...</option>
+                <option value="" style={{ background: '#1E293B', color: '#fff' }}>Select...</option>
                 {field.options.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  <option key={opt.value} value={opt.value} style={{ background: '#1E293B', color: '#fff' }}>{opt.label}</option>
                 ))}
               </select>
             )}
