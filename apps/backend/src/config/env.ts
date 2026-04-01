@@ -23,6 +23,7 @@ const envSchema = z.object({
   GUPSHUP_API_KEY: z.string().optional(),
   GUPSHUP_APP_NAME: z.string().optional(),
   GUPSHUP_SOURCE_NUMBER: z.string().optional(),
+  GUPSHUP_TEMPLATE_NAMESPACE: z.string().optional(),
   MESSAGING_PROVIDER: z.enum(['twilio', 'gupshup', 'auto']).default('auto'),
 
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),

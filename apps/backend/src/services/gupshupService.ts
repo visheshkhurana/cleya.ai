@@ -11,12 +11,14 @@ export class GupshupService {
   private apiKey: string | null;
   private appName: string | null;
   private sourceNumber: string | null;
+  private templateNamespace: string | null;
   private baseUrl = 'https://api.gupshup.io/wa/api/v1';
 
   constructor() {
     this.apiKey = env.GUPSHUP_API_KEY || null;
     this.appName = env.GUPSHUP_APP_NAME || null;
     this.sourceNumber = env.GUPSHUP_SOURCE_NUMBER || null;
+    this.templateNamespace = env.GUPSHUP_TEMPLATE_NAMESPACE || null;
   }
 
   isConfigured(): boolean {
@@ -203,13 +205,37 @@ export class GupshupService {
       const destination = this.formatPhone(phoneNumber);
       const source = this.formatPhone(this.sourceNumber!);
 
-      const templateMessage: any = {
-        id: templateId,
-        type: 'template',
-      };
-      if (params.length > 0) {
-        templateMessage.params = params;
+      let templateMessage: any;
+
+      if (this.templateNamespace) {
+        templateMessage = {
+          type: 'template',
+          template: {
+            namespace: this.templateNamespace,
+            name: templateId,
+            language: {
+              code: 'en',
+              policy: 'deterministic',
+            },
+            components: params.length > 0
+              ? [{
+                  type: 'body',
+                  parameters: params.map(p => ({ type: 'text', text: p })),
+                }]
+              : [],
+          },
+        };
+      } else {
+        templateMessage = {
+          id: templateId,
+          type: 'template',
+        };
+        if (params.length > 0) {
+          templateMessage.params = params;
+        }
       }
+
+      console.log(`Gupshup sendTemplate: dest=${destination}, template=${templateId}, namespace=${this.templateNamespace || 'none'}, payload=${JSON.stringify(templateMessage)}`);
 
       const body = new URLSearchParams({
         channel: 'whatsapp',
@@ -323,6 +349,11 @@ export class GupshupService {
   }
 
   async handleWebhook(payload: any) {
+    if (payload?.entry) {
+      await this.handleMetaWebhook(payload);
+      return;
+    }
+
     const { type, payload: eventPayload } = payload;
 
     if (type === 'message-event') {
@@ -338,50 +369,101 @@ export class GupshupService {
       const newStatus = statusMap[eventType] || eventType.toUpperCase();
 
       if (gsId) {
-        const record = await prisma.messageRecord.findFirst({
-          where: { messageSid: gsId },
-        });
-        if (record) {
-          await prisma.messageRecord.update({
-            where: { id: record.id },
-            data: { status: newStatus },
-          });
-          console.log(`Gupshup webhook: message ${gsId} -> ${newStatus}`);
-        }
+        await this.updateMessageStatus(gsId, newStatus);
       }
     }
 
     if (type === 'message') {
       const { from, text, type: msgType } = eventPayload;
       console.log(`Gupshup inbound from ${from}: [${msgType}] ${text || ''}`);
+      await this.handleInboundFrom(from);
+    }
+  }
 
-      if (from) {
-        try {
-          const formattedFrom = this.formatPhone(from);
-          const user = await prisma.user.findFirst({
-            where: {
-              OR: [
-                { phone: { contains: formattedFrom.slice(-10) } },
-                { whatsappPhone: { contains: formattedFrom.slice(-10) } },
-              ],
-            },
-          });
+  private async handleMetaWebhook(payload: any) {
+    for (const entry of payload.entry || []) {
+      for (const change of entry.changes || []) {
+        const value = change.value;
+        if (!value) continue;
 
-          if (user && !user.whatsappOptedIn) {
-            await prisma.user.update({
-              where: { id: user.id },
-              data: { whatsappOptedIn: true, whatsappPhone: from },
-            });
-            console.log(`Auto opted-in user ${user.id} from inbound WhatsApp`);
+        if (value.statuses) {
+          for (const s of value.statuses) {
+            const statusMap: Record<string, string> = {
+              'sent': 'SENT',
+              'delivered': 'DELIVERED',
+              'read': 'READ',
+              'failed': 'FAILED',
+              'enqueued': 'QUEUED',
+            };
+            const newStatus = statusMap[s.status] || (s.status || '').toUpperCase();
+
+            if (s.gs_id) {
+              await this.updateMessageStatus(s.gs_id, newStatus);
+            }
+
+            if (s.status === 'failed' && s.errors?.[0]) {
+              const err = s.errors[0];
+              console.log(`Gupshup webhook: message ${s.gs_id} FAILED - code=${err.code}, details=${err.error_data?.details || err.message}`);
+            }
           }
+        }
 
-          if (!user) {
-            console.log(`Inbound WhatsApp from unknown number ${from}`);
+        if (value.messages) {
+          for (const m of value.messages) {
+            console.log(`Gupshup inbound (Meta): from=${m.from}, type=${m.type}, text=${m.text?.body || ''}`);
+            await this.handleInboundFrom(m.from);
           }
-        } catch (e: any) {
-          console.error(`Auto opt-in error:`, e.message);
         }
       }
+    }
+  }
+
+  private async updateMessageStatus(gsId: string, newStatus: string) {
+    const validStatuses = ['QUEUED', 'SENT', 'DELIVERED', 'FAILED', 'READ'] as const;
+    const status = validStatuses.find(s => s === newStatus);
+    if (!status) {
+      console.log(`Gupshup webhook: unknown status "${newStatus}" for ${gsId}, skipping DB update`);
+      return;
+    }
+
+    const record = await prisma.messageRecord.findFirst({
+      where: { messageSid: gsId },
+    });
+    if (record) {
+      await prisma.messageRecord.update({
+        where: { id: record.id },
+        data: { status },
+      });
+      console.log(`Gupshup webhook: message ${gsId} -> ${status}`);
+    }
+  }
+
+  private async handleInboundFrom(from: string) {
+    if (!from) return;
+    try {
+      const formattedFrom = this.formatPhone(from);
+      const user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { phone: { contains: formattedFrom.slice(-10) } },
+            { whatsappPhone: { contains: formattedFrom.slice(-10) } },
+          ],
+        },
+      });
+
+      if (user && !user.whatsappOptedIn) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { whatsappOptedIn: true, whatsappPhone: from },
+        });
+        console.log(`Auto opted-in user ${user.id} from inbound WhatsApp`);
+      }
+
+      if (!user) {
+        console.log(`Inbound WhatsApp from unknown number ${from}`);
+      }
+    } catch (e: any) {
+      console.error(`Auto opt-in error:`, e.message);
     }
   }
 

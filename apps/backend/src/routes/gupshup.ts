@@ -8,22 +8,36 @@ gupshupRouter.post('/webhook', async (req: Request, res: Response, next: NextFun
   try {
     const payload = req.body;
 
-    console.log('[Gupshup Webhook] Received:', JSON.stringify(payload).substring(0, 1000));
+    console.log('[Gupshup Webhook] Raw payload:', JSON.stringify(payload).substring(0, 2000));
 
-    if (!payload || (!payload.type && !payload.payload)) {
-      console.log('[Gupshup Webhook] Empty/invalid payload, ignoring');
-      res.sendStatus(200);
-      return;
-    }
+    if (payload?.entry) {
+      for (const entry of payload.entry) {
+        for (const change of entry.changes || []) {
+          const value = change.value;
+          if (!value) continue;
 
-    if (payload.type === 'message-event' && payload.payload) {
+          if (value.statuses) {
+            for (const s of value.statuses) {
+              const errDetail = s.errors?.[0];
+              console.log(`[Gupshup Webhook] Status: gs_id=${s.gs_id}, status=${s.status}, recipient=${s.recipient_id}, meta_msg_id=${s.meta_msg_id || 'n/a'}, error_code=${errDetail?.code || 'none'}, error=${errDetail?.error_data?.details || 'none'}`);
+            }
+          }
+
+          if (value.messages) {
+            for (const m of value.messages) {
+              console.log(`[Gupshup Webhook] Inbound: from=${m.from}, type=${m.type}, text=${m.text?.body || ''}, msg_id=${m.id}`);
+            }
+          }
+        }
+      }
+    } else if (payload?.type === 'message-event' && payload.payload) {
       const ep = payload.payload;
-      console.log(`[Gupshup Webhook] Delivery event: type=${ep.type}, gsId=${ep.gsId}, destination=${ep.destination}, errorCode=${ep.errorCode || 'none'}, errorMessage=${ep.reason || ep.errorMessage || 'none'}`);
-    }
-
-    if (payload.type === 'message' && payload.payload) {
+      console.log(`[Gupshup Webhook] Delivery event (legacy): type=${ep.type}, gsId=${ep.gsId}, destination=${ep.destination}, errorCode=${ep.errorCode || 'none'}, errorMessage=${ep.reason || ep.errorMessage || 'none'}`);
+    } else if (payload?.type === 'message' && payload.payload) {
       const ep = payload.payload;
-      console.log(`[Gupshup Webhook] Inbound message: from=${ep.from}, type=${ep.type}, text=${ep.text || ''}`);
+      console.log(`[Gupshup Webhook] Inbound (legacy): from=${ep.from}, type=${ep.type}, text=${ep.text || ''}`);
+    } else {
+      console.log('[Gupshup Webhook] Unknown format, ignoring');
     }
 
     if (env.GUPSHUP_API_KEY) {
