@@ -1,10 +1,10 @@
 'use client';
 
-import { useTranslation } from '../lib/i18n';
+import { useI18n } from '../lib/i18n';
 import type { Locale } from '../lib/i18n';
 
 export default function LanguageSwitcher() {
-  const { locale, setLocale } = useTranslation();
+  const { locale, setLocale } = useI18n();
 
   const toggleLocale = () => {
     const next: Locale = locale === 'en' ? 'hi' : 'en';

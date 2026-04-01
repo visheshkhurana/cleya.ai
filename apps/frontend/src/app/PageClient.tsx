@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { motion, useInView as useFramerInView, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import { analytics, identifyUser } from '@/lib/posthog';
-import { useTranslation } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
+import { translations } from '@/lib/i18n/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import TiltCard from '@/components/ui/TiltCard';
 import ScrollProgress from '@/components/ui/ScrollProgress';
@@ -54,7 +55,11 @@ function AnimatedSection({ children, className = '', style = {} }: { children: R
 }
 
 export default function Home() {
-  const { t } = useTranslation();
+  const { locale } = useI18n();
+  const t = useCallback(
+    (key: string) => translations[locale]?.[key] || translations.en[key] || key,
+    [locale]
+  );
   const [showAuth, setShowAuth] = useState(false);
   const [mode, setMode] = useState<'login' | 'signup'>('signup');
   const [fullName, setFullName] = useState('');

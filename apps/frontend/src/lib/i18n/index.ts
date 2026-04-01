@@ -6,13 +6,11 @@ import { translations, type Locale } from './translations';
 interface I18nContextType {
   locale: Locale;
   setLocale: (locale: Locale) => void;
-  t: (key: string) => string;
 }
 
 export const I18nContext = createContext<I18nContextType>({
   locale: 'en',
   setLocale: () => {},
-  t: (key: string) => translations.en[key] || key,
 });
 
 export function useI18n() {
@@ -20,7 +18,11 @@ export function useI18n() {
 }
 
 export function useTranslation() {
-  const { t, locale, setLocale } = useI18n();
+  const { locale, setLocale } = useI18n();
+  const t = useCallback(
+    (key: string) => translations[locale]?.[key] || translations.en[key] || key,
+    [locale]
+  );
   return { t, locale, setLocale };
 }
 
@@ -42,9 +44,6 @@ export function createI18nValue(locale: Locale, setLocaleState: (l: Locale) => v
         localStorage.setItem('cleya_locale', newLocale);
         document.documentElement.lang = newLocale;
       }
-    },
-    t: (key: string) => {
-      return translations[locale]?.[key] || translations.en[key] || key;
     },
   };
 }
