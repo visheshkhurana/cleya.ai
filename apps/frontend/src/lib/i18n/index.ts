@@ -12,7 +12,7 @@ interface I18nContextType {
 export const I18nContext = createContext<I18nContextType>({
   locale: 'en',
   setLocale: () => {},
-  t: (key: string) => key,
+  t: (key: string) => translations.en[key] || key,
 });
 
 export function useI18n() {
