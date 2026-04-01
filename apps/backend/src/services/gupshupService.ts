@@ -61,16 +61,18 @@ export class GupshupService {
         body: body.toString(),
       });
 
-      const result = await response.json() as any;
+      let result: any;
+      const rawText = await response.text();
+      try { result = JSON.parse(rawText); } catch { result = rawText; }
 
-      if (response.ok && result.status === 'success') {
+      if (response.ok && (result?.status === 'success' || result?.status === 'true')) {
         console.log(`Gupshup opt-in success for ${formattedPhone}`);
         return { success: true };
       }
 
       const msg = typeof result === 'string' ? result : result?.message || JSON.stringify(result);
-      console.warn(`Gupshup opt-in response for ${formattedPhone}:`, msg);
-      return { success: true };
+      console.warn(`Gupshup opt-in failed for ${formattedPhone}: HTTP ${response.status} — ${msg}`);
+      return { success: false, error: msg };
     } catch (error: any) {
       console.error(`Gupshup opt-in failed for ${phoneNumber}:`, error.message);
       return { success: false, error: error.message };
