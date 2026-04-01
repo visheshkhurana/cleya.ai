@@ -12,4 +12,13 @@ config.resolver.nodeModulesPaths = [
   path.resolve(monorepoRoot, 'node_modules'),
 ];
 
+config.resolver.blockList = [
+  /\.local\/.*/,
+  /apps\/frontend\/.*/,
+  /apps\/backend\/.*/,
+  /\.git\/.*/,
+  /\.cache\/.*/,
+  /\.canvas\/.*/,
+];
+
 module.exports = config;
