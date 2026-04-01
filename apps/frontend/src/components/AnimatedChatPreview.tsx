@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, SafeAnimatePresence as AnimatePresence } from '@/components/SafeMotion';
 
 type ChatStep =
   | { type: 'bot'; text: string }

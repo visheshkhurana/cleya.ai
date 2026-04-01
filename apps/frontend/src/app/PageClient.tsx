@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { motion, useInView as useFramerInView, AnimatePresence } from 'framer-motion';
+import { useInView as useFramerInView } from 'framer-motion';
+import { motion, SafeAnimatePresence as AnimatePresence, MountedProvider } from '@/components/SafeMotion';
 import { api } from '@/lib/api';
 import { analytics, identifyUser } from '@/lib/posthog';
 import { useI18n } from '@/lib/i18n';
@@ -250,6 +251,7 @@ export default function Home() {
 
 
   return (
+    <MountedProvider value={mounted}>
     <SmoothScroll>
       <div className="min-h-screen font-sans" style={{ background: '#0F172A' }} suppressHydrationWarning>
         <ScrollProgress />
@@ -847,5 +849,6 @@ export default function Home() {
         )}
       </div>
     </SmoothScroll>
+    </MountedProvider>
   );
 }
