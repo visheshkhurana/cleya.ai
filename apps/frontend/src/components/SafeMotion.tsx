@@ -1,10 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, forwardRef, createElement } from 'react';
+import React, { useState, useEffect, forwardRef, createElement } from 'react';
 import { motion as fm, AnimatePresence as FramerAP } from 'framer-motion';
-
-const MountedCtx = createContext(false);
-export const MountedProvider = MountedCtx.Provider;
 
 const MOTION_KEYS = new Set([
   'initial', 'animate', 'exit', 'variants', 'transition',
@@ -22,9 +19,28 @@ function stripMotionProps(props: Record<string, unknown>) {
   return clean;
 }
 
+let globalMounted = false;
+const listeners = new Set<() => void>();
+
+export function notifyMounted(value: boolean) {
+  globalMounted = value;
+  listeners.forEach((fn) => fn());
+}
+
+function useGlobalMounted() {
+  const [mounted, setMounted] = useState(globalMounted);
+  useEffect(() => {
+    const handler = () => setMounted(globalMounted);
+    listeners.add(handler);
+    handler();
+    return () => { listeners.delete(handler); };
+  }, []);
+  return mounted;
+}
+
 function makeSafe(tag: string) {
   return forwardRef((props: any, ref: any) => {
-    const mounted = useContext(MountedCtx);
+    const mounted = useGlobalMounted();
     if (mounted) {
       const Comp = (fm as any)[tag];
       return <Comp {...props} ref={ref} />;
@@ -49,7 +65,7 @@ export const motion = {
 };
 
 export function SafeAnimatePresence({ children, ...props }: any) {
-  const mounted = useContext(MountedCtx);
+  const mounted = useGlobalMounted();
   if (mounted) return <FramerAP {...props}>{children}</FramerAP>;
   return <>{children}</>;
 }

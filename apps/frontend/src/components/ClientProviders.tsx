@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ToastProvider } from './Toast';
 import { I18nContext, getInitialLocale, createI18nValue, type Locale } from '../lib/i18n';
+import { notifyMounted } from './SafeMotion';
 
 export default function ClientProviders({ children }: { children: React.ReactNode }) {
   const [locale, setLocale] = useState<Locale>('en');
@@ -11,6 +12,8 @@ export default function ClientProviders({ children }: { children: React.ReactNod
   useEffect(() => {
     setLocale(getInitialLocale());
     setMounted(true);
+    notifyMounted(true);
+    return () => notifyMounted(false);
   }, []);
 
   const i18nValue = createI18nValue(locale, setLocale);

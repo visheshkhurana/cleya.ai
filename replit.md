@@ -48,6 +48,8 @@ npm run build
 ```
 Builds in dependency order: prisma generate → types → db → ai → matching → conversation-engine → api → backend (tsc) → frontend (next build). All packages compile TypeScript to `dist/` with `main` pointing to `./dist/index.js`. Frontend build script (`build.js`) handles the Next.js 14 `_not-found` prerender bug: (1) generates fallback `prerender-manifest.json` with `notFoundRoutes: []` to prevent RSC contamination, (2) fixes `_buildManifest.js` by merging app routes from `app-build-manifest.json` into the client-side manifest (the build exits with error before writing page routes, leaving the manifest incomplete).
 
+**SafeMotion pattern:** `SafeMotion.tsx` provides SSR-safe framer-motion wrappers. Uses a global `notifyMounted()` pattern (called from `ClientProviders` in layout) instead of `useContext` — because React's context dispatcher is null during Next.js static page generation. Components render plain HTML elements until mount, then switch to framer-motion components. The homepage uses `export const dynamic = 'force-dynamic'` to skip static prerendering entirely (framer-motion + Next.js SSG are incompatible).
+
 ## Production Start
 ```
 npm run start
