@@ -227,7 +227,7 @@ export default function Home() {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  if (checking) {
+  if (!mounted || checking) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: '#0F172A' }}>
         <div className="w-10 h-10 border-2 border-cleya-400 border-t-transparent rounded-full animate-spin" />
@@ -302,16 +302,15 @@ export default function Home() {
             </button>
           </div>
 
-          {mounted && (
-            <AnimatePresence>
-              {mobileMenuOpen && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="md:hidden border-t border-white/[0.06] px-6 py-4 space-y-2 overflow-hidden"
-                  style={{ background: 'rgba(15,23,42,0.97)' }}
-                >
+          <AnimatePresence>
+            {mobileMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="md:hidden border-t border-white/[0.06] px-6 py-4 space-y-2 overflow-hidden"
+                style={{ background: 'rgba(15,23,42,0.97)' }}
+              >
                   <button onClick={() => { scrollToSection('how-it-works'); setMobileMenuOpen(false); }}
                     className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">{t('nav.howItWorks')}</button>
                   <Link href="/pricing" className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">{t('nav.pricing')}</Link>
@@ -324,8 +323,7 @@ export default function Home() {
                     style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>{t('nav.getStarted')}</button>
                 </motion.div>
               )}
-            </AnimatePresence>
-          )}
+          </AnimatePresence>
         </nav>
 
         {/* HERO */}
