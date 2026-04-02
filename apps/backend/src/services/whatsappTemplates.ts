@@ -15,7 +15,7 @@ const templates: Record<string, TemplateConfig> = {
     id: 'welcome',
     name: 'Welcome Message',
     description: 'Sent when a new user signs up',
-    gupshupTemplateId: 'cleya_welcome',
+    gupshupTemplateId: 'cleya_meeting_reminder',
     buildMessage: (p) =>
       `Welcome to Cleya.ai! 🎉 We're excited to help you connect with the right people. You'll receive networking updates and introductions here.`,
   },
