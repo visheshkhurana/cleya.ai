@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, forwardRef, createElement } from 'react';
-import { motion as fm, AnimatePresence as FramerAP } from 'framer-motion';
+import { getGlobalMounted, addMountListener } from '@/lib/mountState';
 
 const MOTION_KEYS = new Set([
   'initial', 'animate', 'exit', 'variants', 'transition',
@@ -19,31 +19,44 @@ function stripMotionProps(props: Record<string, unknown>) {
   return clean;
 }
 
-let globalMounted = false;
-const listeners = new Set<() => void>();
-
-export function notifyMounted(value: boolean) {
-  globalMounted = value;
-  listeners.forEach((fn) => fn());
-}
-
 function useGlobalMounted() {
-  const [mounted, setMounted] = useState(globalMounted);
+  const [mounted, setMounted] = useState(false);
   useEffect(() => {
-    const handler = () => setMounted(globalMounted);
-    listeners.add(handler);
-    handler();
-    return () => { listeners.delete(handler); };
+    if (getGlobalMounted()) setMounted(true);
+    const unsub = addMountListener(() => setMounted(getGlobalMounted()));
+    return unsub;
   }, []);
   return mounted;
+}
+
+let framerMotion: any = null;
+let framerAP: any = null;
+let loadPromise: Promise<void> | null = null;
+
+function loadFramerMotion() {
+  if (!loadPromise) {
+    loadPromise = import('framer-motion').then((mod) => {
+      framerMotion = mod.motion;
+      framerAP = mod.AnimatePresence;
+    }).catch(() => {});
+  }
+  return loadPromise;
 }
 
 function makeSafe(tag: string) {
   return forwardRef((props: any, ref: any) => {
     const mounted = useGlobalMounted();
-    if (mounted) {
-      const Comp = (fm as any)[tag];
-      return <Comp {...props} ref={ref} />;
+    const [fmLoaded, setFmLoaded] = useState(!!framerMotion);
+
+    useEffect(() => {
+      if (!framerMotion) {
+        loadFramerMotion().then(() => setFmLoaded(!!framerMotion));
+      }
+    }, []);
+
+    if (mounted && fmLoaded && framerMotion) {
+      const Comp = framerMotion[tag];
+      if (Comp) return <Comp {...props} ref={ref} />;
     }
     return createElement(tag, { ...stripMotionProps(props), ref });
   });
@@ -66,6 +79,19 @@ export const motion = {
 
 export function SafeAnimatePresence({ children, ...props }: any) {
   const mounted = useGlobalMounted();
-  if (mounted) return <FramerAP {...props}>{children}</FramerAP>;
+  const [fmLoaded, setFmLoaded] = useState(!!framerAP);
+
+  useEffect(() => {
+    if (!framerAP) {
+      loadFramerMotion().then(() => setFmLoaded(!!framerAP));
+    }
+  }, []);
+
+  if (mounted && fmLoaded && framerAP) {
+    const AP = framerAP;
+    return <AP {...props}>{children}</AP>;
+  }
   return <>{children}</>;
 }
+
+export { notifyMounted } from '@/lib/mountState';

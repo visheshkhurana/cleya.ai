@@ -1,0 +1,141 @@
+{
+  "colorScheme": "dark",
+  "fonts": [
+    {
+      "family": "DM Sans",
+      "role": "body"
+    },
+    {
+      "family": "Playfair Display",
+      "role": "heading"
+    }
+  ],
+  "colors": {
+    "primary": "#1E293B",
+    "secondary": "#575D6A",
+    "accent": "#0D9488",
+    "background": "#0F172A",
+    "textPrimary": "#0F172A",
+    "link": "#0F172A"
+  },
+  "typography": {
+    "fontFamilies": {
+      "primary": "DM Sans",
+      "heading": "Playfair Display"
+    },
+    "fontStacks": {
+      "heading": [
+        "__Playfair_Display_745915",
+        "__Playfair_Display_Fallback_745915",
+        "Playfair Display",
+        "Georgia",
+        "serif"
+      ],
+      "body": [
+        "__DM_Sans_e64f39",
+        "__DM_Sans_Fallback_e64f39",
+        "DM Sans",
+        "-apple-system",
+        "BlinkMacSystemFont",
+        "sans-serif"
+      ],
+      "paragraph": [
+        "__DM_Sans_e64f39",
+        "__DM_Sans_Fallback_e64f39",
+        "DM Sans",
+        "-apple-system",
+        "BlinkMacSystemFont",
+        "sans-serif"
+      ]
+    },
+    "fontSizes": {
+      "h1": "72px",
+      "h2": "44px",
+      "body": "18px"
+    }
+  },
+  "spacing": {
+    "baseUnit": 4,
+    "borderRadius": "6px"
+  },
+  "components": {
+    "buttonPrimary": {
+      "background": "#0D9488",
+      "textColor": "#FFFFFF",
+      "borderRadius": "10px",
+      "borderRadiusCorners": {
+        "topLeft": "10px",
+        "topRight": "10px",
+        "bottomRight": "10px",
+        "bottomLeft": "10px"
+      },
+      "shadow": "none"
+    },
+    "buttonSecondary": {
+      "background": "#0F172A",
+      "textColor": "#FFFFFF",
+      "borderRadius": "9999px",
+      "borderRadiusCorners": {
+        "topLeft": "9999px",
+        "topRight": "9999px",
+        "bottomRight": "9999px",
+        "bottomLeft": "9999px"
+      },
+      "shadow": "none"
+    }
+  },
+  "images": {
+    "logo": "File saved at: attached_assets/logo.svg",
+    "favicon": "https://cleya.ai/icon.svg",
+    "ogImage": "https://cleya.ai/og-image.svg"
+  },
+  "__llm_logo_reasoning": {
+    "selectedIndex": 0,
+    "reasoning": "Selected #0 because it is located in the header, is visible, and matches the favicon, indicating it represents the Cleya.ai brand.",
+    "confidence": 0.85,
+    "source": "llm"
+  },
+  "__llm_button_reasoning": {
+    "primary": {
+      "index": 6,
+      "text": "Accept all",
+      "reasoning": "Button #6 has a vibrant green background (#0D9488), which is distinct and eye-catching, making it suitable as the primary CTA. The text 'Accept all' suggests a decisive action, aligning with typical primary CTA characteristics."
+    },
+    "secondary": {
+      "index": 0,
+      "text": "Apply for Access→",
+      "reasoning": "Button #0, 'Apply for Access→', has a dark background (#0F172A) and is less vibrant than the primary button. It serves as a secondary action, complementing the primary CTA."
+    },
+    "confidence": 0.95
+  },
+  "personality": {
+    "tone": "modern",
+    "energy": "medium",
+    "targetAudience": "Indian Startups"
+  },
+  "designSystem": {
+    "framework": "tailwind",
+    "componentLibrary": ""
+  },
+  "confidence": {
+    "buttons": 0.95,
+    "colors": 0.9,
+    "overall": 0.925
+  },
+  "__llm_metadata": {
+    "logoSelection": {
+      "llmCalled": true,
+      "llmSucceeded": true,
+      "finalSource": "llm",
+      "rawLogoSelection": {
+        "selectedLogoIndex": 0,
+        "selectedLogoReasoning": "Selected #0 because it is located in the header, is visible, and matches the favicon, indicating it represents the Cleya.ai brand.",
+        "confidence": 0.85
+      }
+    },
+    "buttonClassification": {
+      "llmCalled": true,
+      "llmSucceeded": true
+    }
+  }
+}

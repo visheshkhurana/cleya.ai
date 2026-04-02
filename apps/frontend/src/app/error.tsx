@@ -10,32 +10,21 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('App error:', error);
+    console.error('Page error caught by error boundary:', error.message, error.stack);
   }, [error]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: '#0F172A' }}>
-      <div className="text-center px-4">
-        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl flex items-center justify-center text-4xl"
-          style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }}>
-          ⚠️
-        </div>
-        <h1 className="text-2xl font-bold text-white mb-2">Something went wrong</h1>
-        <p className="text-sm text-white/40 mb-8 max-w-sm mx-auto">
-          An unexpected error occurred. Please try again or return to the dashboard.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <button
-            onClick={() => reset()}
-            className="px-6 py-3 rounded-2xl text-sm font-medium text-white transition"
-            style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
-            Try Again
-          </button>
-          <a href="/dashboard"
-            className="px-6 py-3 rounded-2xl text-sm font-medium text-white/50 border border-white/10 hover:border-white/20 transition">
-            Go to Dashboard
-          </a>
-        </div>
+    <div style={{ minHeight: '100vh', background: '#050510', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+      <div style={{ textAlign: 'center', maxWidth: '600px' }}>
+        <h1 style={{ color: 'white', fontSize: '24px', marginBottom: '16px' }}>Something went wrong</h1>
+        <pre style={{ color: '#ef4444', fontSize: '12px', textAlign: 'left', background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '8px', overflow: 'auto', maxHeight: '200px', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+          {error.message}
+        </pre>
+        <button
+          onClick={() => reset()}
+          style={{ marginTop: '16px', padding: '10px 24px', background: '#3B82F6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '14px' }}>
+          Try Again
+        </button>
       </div>
     </div>
   );

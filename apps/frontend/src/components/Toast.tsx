@@ -68,14 +68,19 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     warning: (m) => addToast('warning', m),
   };
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none sm:max-w-sm max-w-[calc(100vw-32px)]" style={{ left: 'auto' }}>
-        {toasts.map(t => (
-          <ToastItemEl key={t.id} toast={t} onRemove={removeToast} />
-        ))}
-      </div>
+      {mounted && toasts.length > 0 && (
+        <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none sm:max-w-sm max-w-[calc(100vw-32px)]" style={{ left: 'auto' }}>
+          {toasts.map(t => (
+            <ToastItemEl key={t.id} toast={t} onRemove={removeToast} />
+          ))}
+        </div>
+      )}
     </ToastContext.Provider>
   );
 }
