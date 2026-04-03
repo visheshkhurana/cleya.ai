@@ -105,12 +105,12 @@ export default function MobileNav() {
             ref={drawerRef}
             id="mobile-nav-drawer"
             className="absolute top-0 right-0 w-72 h-full border-l border-white/5 overflow-y-auto"
-            style={{ background: '#0F172A' }}
+            style={{ background: '#050510' }}
           >
             <div className="flex items-center justify-between p-4 border-b border-white/5">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
-                  style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>C</div>
+                  style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>C</div>
                 <span className="text-white font-semibold text-sm">Cleya.ai</span>
               </div>
               <div className="flex items-center gap-2">
@@ -137,7 +137,7 @@ export default function MobileNav() {
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${
                       isActive ? 'text-white' : 'text-white/50 hover:text-white/80'
                     }`}
-                    style={isActive ? { background: 'rgba(13,148,136,0.12)', borderLeft: '2px solid #0D9488' } : {}}
+                    style={isActive ? { background: 'rgba(59,130,246,0.12)', borderLeft: '2px solid #3B82F6' } : {}}
                     aria-current={isActive ? 'page' : undefined}
                   >
                     <span className="text-base" aria-hidden="true">{item.icon}</span>

@@ -3,13 +3,13 @@ import Link from 'next/link';
 
 export default function AppFooter() {
   return (
-    <footer className="border-t border-white/[0.04] py-8 mt-auto" style={{ background: '#0F172A' }}>
+    <footer className="border-t border-white/[0.04] py-8 mt-auto" style={{ background: '#050510' }}>
       <div className="max-w-6xl mx-auto px-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <svg width="20" height="12" viewBox="0 0 28 16" fill="none">
-              <path d="M8 1C4.134 1 1 4.134 1 8s3.134 7 7 7 7-3.134 7-7" stroke="#2DD4BF" strokeWidth="1.8" strokeLinecap="round"/>
-              <path d="M20 15c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7" stroke="#2DD4BF" strokeWidth="1.8" strokeLinecap="round"/>
+              <path d="M8 1C4.134 1 1 4.134 1 8s3.134 7 7 7 7-3.134 7-7" stroke="#60A5FA" strokeWidth="1.8" strokeLinecap="round"/>
+              <path d="M20 15c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7" stroke="#60A5FA" strokeWidth="1.8" strokeLinecap="round"/>
             </svg>
             <span className="text-white/60 font-medium text-xs">Cleya.ai</span>
           </div>

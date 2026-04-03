@@ -31,7 +31,7 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: '#0F172A' }}>
+    <div className="min-h-screen" style={{ background: '#050510' }}>
       <PublicNav />
 
       <main className="max-w-3xl mx-auto px-6 py-16" role="main">
@@ -43,34 +43,34 @@ export default function ContactPage() {
         </div>
 
         {submitted ? (
-          <div className="rounded-2xl border border-white/[0.08] p-8 text-center" style={{ background: 'rgba(30,41,59,0.6)' }}>
-            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(13,148,136,0.15)' }}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" strokeWidth="2"><path d="M20 6L9 17l-5-5" /></svg>
+          <div className="rounded-2xl border border-white/[0.08] p-8 text-center" style={{ background: 'rgba(10,10,26,0.8)' }}>
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(59,130,246,0.15)' }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#93C5FD" strokeWidth="2"><path d="M20 6L9 17l-5-5" /></svg>
             </div>
             <h2 className="text-xl font-semibold text-white mb-2">Message Sent</h2>
             <p className="text-sm text-white/50 mb-6">Thank you for reaching out. We&apos;ll get back to you within 24-48 hours.</p>
-            <Link href="/" className="text-sm font-medium" style={{ color: '#5EEAD4' }}>Back to Home</Link>
+            <Link href="/" className="text-sm font-medium" style={{ color: '#93C5FD' }}>Back to Home</Link>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="rounded-2xl border border-white/[0.08] p-8 space-y-5" style={{ background: 'rgba(30,41,59,0.6)' }}>
+          <form onSubmit={handleSubmit} className="rounded-2xl border border-white/[0.08] p-8 space-y-5" style={{ background: 'rgba(10,10,26,0.8)' }}>
             <div className="grid sm:grid-cols-2 gap-5">
               <div>
                 <label htmlFor="contact-name" className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>Name</label>
                 <input id="contact-name" type="text" value={name} onChange={e => setName(e.target.value)} required placeholder="Your name"
-                  className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-white/30 border border-white/[0.08] focus:outline-none focus:border-[#0D9488] transition"
+                  className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-white/30 border border-white/[0.08] focus:outline-none focus:border-[#3B82F6] transition"
                   style={{ background: 'rgba(255,255,255,0.03)' }} />
               </div>
               <div>
                 <label htmlFor="contact-email" className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>Email</label>
                 <input id="contact-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="you@example.com"
-                  className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-white/30 border border-white/[0.08] focus:outline-none focus:border-[#0D9488] transition"
+                  className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-white/30 border border-white/[0.08] focus:outline-none focus:border-[#3B82F6] transition"
                   style={{ background: 'rgba(255,255,255,0.03)' }} />
               </div>
             </div>
             <div>
               <label htmlFor="contact-subject" className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>Subject</label>
               <select id="contact-subject" value={subject} onChange={e => setSubject(e.target.value)} required
-                className="w-full px-4 py-3 rounded-xl text-sm text-white border border-white/[0.08] focus:outline-none focus:border-[#0D9488] transition appearance-none"
+                className="w-full px-4 py-3 rounded-xl text-sm text-white border border-white/[0.08] focus:outline-none focus:border-[#3B82F6] transition appearance-none"
                 style={{ background: 'rgba(255,255,255,0.03)' }}>
                 <option value="" disabled>Select a topic</option>
                 <option value="general">General Inquiry</option>
@@ -84,12 +84,12 @@ export default function ContactPage() {
             <div>
               <label htmlFor="contact-message" className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>Message</label>
               <textarea id="contact-message" value={message} onChange={e => setMessage(e.target.value)} required placeholder="How can we help?" rows={5}
-                className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-white/30 border border-white/[0.08] focus:outline-none focus:border-[#0D9488] transition resize-none"
+                className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-white/30 border border-white/[0.08] focus:outline-none focus:border-[#3B82F6] transition resize-none"
                 style={{ background: 'rgba(255,255,255,0.03)' }} />
             </div>
             <button type="submit" disabled={loading}
               className="w-full py-3 rounded-xl text-white font-semibold transition-all duration-200 hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              style={{ background: '#0D9488' }}>
+              style={{ background: '#3B82F6' }}>
               {loading && (
                 <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -107,7 +107,7 @@ export default function ContactPage() {
             { icon: '📍', title: 'Location', detail: 'Bangalore, India' },
             { icon: '🕐', title: 'Response Time', detail: '24-48 hours' },
           ].map((item, i) => (
-            <div key={i} className="text-center p-4 rounded-xl border border-white/[0.06]" style={{ background: 'rgba(30,41,59,0.4)' }}>
+            <div key={i} className="text-center p-4 rounded-xl border border-white/[0.06]" style={{ background: 'rgba(10,10,26,0.8)' }}>
               <div className="text-2xl mb-2">{item.icon}</div>
               <p className="text-sm font-medium text-white mb-1">{item.title}</p>
               <p className="text-xs text-white/40">{item.detail}</p>
@@ -119,7 +119,7 @@ export default function ContactPage() {
           <h2 className="text-2xl font-bold text-white mb-8 text-center">Frequently Asked Questions</h2>
           <div className="space-y-3">
             {FAQ_ITEMS.map((item, i) => (
-              <div key={i} className="rounded-xl border border-white/[0.06] overflow-hidden" style={{ background: 'rgba(30,41,59,0.4)' }}>
+              <div key={i} className="rounded-xl border border-white/[0.06] overflow-hidden" style={{ background: 'rgba(10,10,26,0.8)' }}>
                 <button
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
                   className="w-full flex items-center justify-between px-5 py-4 text-left"

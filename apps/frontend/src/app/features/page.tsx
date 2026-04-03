@@ -47,13 +47,13 @@ const features = [
 
 export default function FeaturesPage() {
   return (
-    <div className="min-h-screen" style={{ background: '#0F172A' }}>
+    <div className="min-h-screen" style={{ background: '#050510' }}>
       <PublicNav />
 
       <main className="max-w-6xl mx-auto px-6 py-16">
         <div className="text-center mb-16">
           <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            Everything you need to <span style={{ color: '#5EEAD4' }}>grow your network</span>
+            Everything you need to <span style={{ color: '#93C5FD' }}>grow your network</span>
           </h1>
           <p className="text-lg text-white/50 max-w-2xl mx-auto">
             Cleya combines AI intelligence with human warmth to create meaningful professional connections in India&apos;s startup ecosystem.
@@ -63,7 +63,7 @@ export default function FeaturesPage() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((f, i) => (
             <div key={i} className="rounded-2xl border border-white/[0.08] p-6 hover:border-white/[0.15] transition-all duration-300"
-              style={{ background: 'rgba(30,41,59,0.6)' }}>
+              style={{ background: 'rgba(10,10,26,0.8)' }}>
               <div className="text-3xl mb-4">{f.icon}</div>
               <h3 className="text-lg font-semibold text-white mb-2">{f.title}</h3>
               <p className="text-sm text-white/50 leading-relaxed">{f.description}</p>
@@ -74,7 +74,7 @@ export default function FeaturesPage() {
         <div className="text-center mt-16">
           <Link href="/?action=signup"
             className="inline-flex items-center gap-2 px-8 py-3 rounded-xl text-white font-semibold transition-all duration-200 hover:brightness-110"
-            style={{ background: '#0D9488' }}>
+            style={{ background: '#3B82F6' }}>
             Get Started Free
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
           </Link>

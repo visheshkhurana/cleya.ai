@@ -3,7 +3,7 @@ import PublicNav from '@/components/PublicNav';
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen" style={{ background: '#0F172A' }}>
+    <div className="min-h-screen" style={{ background: '#050510' }}>
       <PublicNav />
 
       <main className="max-w-4xl mx-auto px-6 py-16">
@@ -121,7 +121,7 @@ export default function PrivacyPage() {
               <li><strong className="text-white">Withdraw consent:</strong> Where processing is based on consent, withdraw it at any time.</li>
               <li><strong className="text-white">Non-discrimination:</strong> Exercise your privacy rights without receiving discriminatory treatment.</li>
             </ul>
-            <p className="mt-2">To exercise any of these rights, contact our Data Protection Officer at <a href="mailto:dpo@cleya.ai" className="underline" style={{ color: '#5EEAD4' }}>dpo@cleya.ai</a>. We will respond to your request within 30 days.</p>
+            <p className="mt-2">To exercise any of these rights, contact our Data Protection Officer at <a href="mailto:dpo@cleya.ai" className="underline" style={{ color: '#93C5FD' }}>dpo@cleya.ai</a>. We will respond to your request within 30 days.</p>
           </section>
 
           <section>
@@ -133,7 +133,7 @@ export default function PrivacyPage() {
               <li>The right to opt out of the sale of your personal information (we do not sell personal data).</li>
               <li>The right to non-discrimination for exercising your CCPA rights.</li>
             </ul>
-            <p className="mt-2">To submit a CCPA request, email <a href="mailto:privacy@cleya.ai" className="underline" style={{ color: '#5EEAD4' }}>privacy@cleya.ai</a> with the subject &quot;CCPA Request.&quot;</p>
+            <p className="mt-2">To submit a CCPA request, email <a href="mailto:privacy@cleya.ai" className="underline" style={{ color: '#93C5FD' }}>privacy@cleya.ai</a> with the subject &quot;CCPA Request.&quot;</p>
           </section>
 
           <section>
@@ -143,7 +143,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">13. Children&apos;s Privacy</h2>
-            <p>Cleya.ai is not intended for use by anyone under the age of 18. We do not knowingly collect personal information from children. If we become aware that we have collected data from a person under 18, we will take steps to delete such information promptly. If you believe a child has provided us with personal information, please contact us immediately at <a href="mailto:privacy@cleya.ai" className="underline" style={{ color: '#5EEAD4' }}>privacy@cleya.ai</a>.</p>
+            <p>Cleya.ai is not intended for use by anyone under the age of 18. We do not knowingly collect personal information from children. If we become aware that we have collected data from a person under 18, we will take steps to delete such information promptly. If you believe a child has provided us with personal information, please contact us immediately at <a href="mailto:privacy@cleya.ai" className="underline" style={{ color: '#93C5FD' }}>privacy@cleya.ai</a>.</p>
           </section>
 
           <section>
@@ -154,8 +154,8 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">15. Data Protection Officer</h2>
             <p className="mb-2">Our Data Protection Officer can be reached at:</p>
-            <p>Email: <a href="mailto:dpo@cleya.ai" className="underline" style={{ color: '#5EEAD4' }}>dpo@cleya.ai</a></p>
-            <p className="mt-2">For general privacy inquiries: <a href="mailto:privacy@cleya.ai" className="underline" style={{ color: '#5EEAD4' }}>privacy@cleya.ai</a></p>
+            <p>Email: <a href="mailto:dpo@cleya.ai" className="underline" style={{ color: '#93C5FD' }}>dpo@cleya.ai</a></p>
+            <p className="mt-2">For general privacy inquiries: <a href="mailto:privacy@cleya.ai" className="underline" style={{ color: '#93C5FD' }}>privacy@cleya.ai</a></p>
           </section>
         </div>
       </main>

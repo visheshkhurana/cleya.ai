@@ -32,7 +32,7 @@ const personaIcon: Record<string, string> = {
 const statusConfig: Record<string, { bg: string; text: string; label: string; icon: string }> = {
   PENDING_APPROVAL: { bg: 'rgba(245,158,11,0.15)', text: '#fbbf24', label: 'Review Required', icon: '⏳' },
   APPROVED: { bg: 'rgba(59,130,246,0.15)', text: '#93c5fd', label: 'Approved', icon: '✅' },
-  SENT: { bg: 'rgba(13,148,136,0.15)', text: '#5EEAD4', label: 'Sent', icon: '📤' },
+  SENT: { bg: 'rgba(59,130,246,0.15)', text: '#93C5FD', label: 'Sent', icon: '📤' },
   VIEWED: { bg: 'rgba(59,130,246,0.15)', text: '#93c5fd', label: 'Viewed', icon: '👀' },
   RESPONDED: { bg: 'rgba(16,185,129,0.15)', text: '#6ee7b7', label: 'Responded', icon: '💬' },
   FOLLOWED_UP: { bg: 'rgba(245,158,11,0.15)', text: '#fbbf24', label: 'Follow-up Sent', icon: '🔔' },
@@ -42,7 +42,7 @@ const statusConfig: Record<string, { bg: string; text: string; label: string; ic
 
 const outcomeLabels: Record<string, { label: string; icon: string; color: string }> = {
   GREAT_MEETING: { label: 'Great meeting', icon: '🎉', color: '#10B981' },
-  GOOD_CHAT: { label: 'Good chat', icon: '👍', color: '#0D9488' },
+  GOOD_CHAT: { label: 'Good chat', icon: '👍', color: '#3B82F6' },
   DIDNT_MEET: { label: "Didn't meet", icon: '😕', color: '#f59e0b' },
   NOT_A_FIT: { label: 'Not a fit', icon: '🤷', color: '#ef4444' },
 };
@@ -151,9 +151,9 @@ export default function IntroductionsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0F172A' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#050510' }}>
         <div className="flex items-center gap-3">
-          <div className="w-5 h-5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
           <p className="text-white/40 text-sm">Loading introductions...</p>
         </div>
       </div>
@@ -161,8 +161,8 @@ export default function IntroductionsPage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#0F172A' }}>
-      <header className="sticky top-0 z-10 border-b border-white/5" style={{ background: 'rgba(13,11,26,0.9)', backdropFilter: 'blur(20px)' }}>
+    <div className="min-h-screen" style={{ background: '#050510' }}>
+      <header className="sticky top-0 z-10 border-b border-white/5" style={{ background: 'rgba(5,5,16,0.85)', backdropFilter: 'blur(20px)' }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={() => router.push('/dashboard')} className="text-white/30 hover:text-white/60 transition text-sm hidden sm:block">← Back</button>
@@ -189,7 +189,7 @@ export default function IntroductionsPage() {
             <p className="text-white/30 text-xs mb-6">You'll be able to preview and approve it before it's sent.</p>
             <button onClick={() => router.push('/matches')}
               className="px-5 py-2.5 rounded-xl text-sm font-medium text-white transition"
-              style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
+              style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
               View Matches
             </button>
           </div>
@@ -205,8 +205,8 @@ export default function IntroductionsPage() {
             )}
 
             {activeCount > 0 && (
-              <div className="rounded-xl border p-4 mb-6" style={{ background: 'rgba(13,148,136,0.05)', borderColor: 'rgba(13,148,136,0.15)' }}>
-                <p className="text-sm text-teal-300/80">
+              <div className="rounded-xl border p-4 mb-6" style={{ background: 'rgba(59,130,246,0.05)', borderColor: 'rgba(59,130,246,0.15)' }}>
+                <p className="text-sm text-blue-300/80">
                   📤 You have <strong>{activeCount}</strong> active introduction{activeCount !== 1 ? 's' : ''} out there. 
                   Share how they went when you're ready!
                 </p>
@@ -225,11 +225,11 @@ export default function IntroductionsPage() {
 
                 return (
                   <button key={intro.id} onClick={() => { setSelectedIntro(intro); setEditMode(false); setShowOutcomeModal(false); }}
-                    className="w-full text-left rounded-2xl border border-white/5 p-5 hover:border-teal-500/20 transition group"
-                    style={{ background: intro.status === 'PENDING_APPROVAL' ? 'rgba(245,158,11,0.03)' : 'rgba(30,41,59,0.6)' }}>
+                    className="w-full text-left rounded-2xl border border-white/5 p-5 hover:border-blue-500/20 transition group"
+                    style={{ background: intro.status === 'PENDING_APPROVAL' ? 'rgba(245,158,11,0.03)' : 'rgba(10,10,26,0.8)' }}>
                     <div className="flex items-start gap-4">
                       <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                        style={{ background: 'linear-gradient(135deg, #0D948815, #0F766E15)', border: '1px solid rgba(13,148,136,0.12)' }}>
+                        style={{ background: 'linear-gradient(135deg, #3B82F615, #8B5CF615)', border: '1px solid rgba(59,130,246,0.12)' }}>
                         {personaIcon[profile?.persona || 'OTHER'] || '💬'}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -257,7 +257,7 @@ export default function IntroductionsPage() {
                           }
                         </p>
                       </div>
-                      <span className="text-white/20 text-sm flex-shrink-0 group-hover:text-teal-400/40 transition">→</span>
+                      <span className="text-white/20 text-sm flex-shrink-0 group-hover:text-blue-400/40 transition">→</span>
                     </div>
                   </button>
                 );
@@ -315,12 +315,12 @@ function IntroDetailModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
       <div className="w-full max-w-lg rounded-2xl border border-white/10 overflow-hidden max-h-[90vh] overflow-y-auto"
-        style={{ background: '#1E293B' }}>
+        style={{ background: 'rgba(10,10,26,0.8)' }}>
         <div className="p-5 border-b border-white/5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
-                style={{ background: 'linear-gradient(135deg, #0D948815, #0F766E15)', border: '1px solid rgba(13,148,136,0.15)' }}>
+                style={{ background: 'linear-gradient(135deg, #3B82F615, #8B5CF615)', border: '1px solid rgba(59,130,246,0.15)' }}>
                 {personaIcon[profile?.persona || 'OTHER']}
               </div>
               <div>
@@ -356,13 +356,13 @@ function IntroDetailModal({
           {intro.introText && (
             <div>
               <p className="text-[10px] uppercase tracking-wider text-white/30 mb-2 font-medium">Introduction Preview</p>
-              <div className="rounded-xl border p-4" style={{ background: 'rgba(13,148,136,0.03)', borderColor: 'rgba(13,148,136,0.1)' }}>
+              <div className="rounded-xl border p-4" style={{ background: 'rgba(59,130,246,0.03)', borderColor: 'rgba(59,130,246,0.1)' }}>
                 {editMode ? (
                   <textarea
                     value={editText}
                     onChange={(e) => onEditTextChange(e.target.value)}
                     className="w-full bg-transparent text-white/80 text-sm leading-relaxed resize-none outline-none min-h-[150px] border rounded-lg p-3"
-                    style={{ borderColor: 'rgba(13,148,136,0.3)' }}
+                    style={{ borderColor: 'rgba(59,130,246,0.3)' }}
                   />
                 ) : (
                   <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{intro.introText}</p>
@@ -377,7 +377,7 @@ function IntroDetailModal({
               <div className="space-y-2">
                 {intro.talkingPoints.map((tp, i) => (
                   <div key={i} className="flex gap-2 text-sm">
-                    <span className="text-teal-400/60 mt-0.5 flex-shrink-0">•</span>
+                    <span className="text-blue-400/60 mt-0.5 flex-shrink-0">•</span>
                     <span className="text-white/50">{tp}</span>
                   </div>
                 ))}
@@ -407,7 +407,7 @@ function IntroDetailModal({
             <div className="flex gap-2">
               <button onClick={onApprove} disabled={actionLoading === 'approve'}
                 className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
+                style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
                 {actionLoading === 'approve' ? 'Sending...' : '✓ Approve & Send'}
               </button>
               <button onClick={onStartEdit}
@@ -421,7 +421,7 @@ function IntroDetailModal({
             <div className="flex gap-2">
               <button onClick={onSaveEdit} disabled={actionLoading === 'edit'}
                 className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
+                style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
                 {actionLoading === 'edit' ? 'Saving...' : 'Save Changes'}
               </button>
               <button onClick={onCancelEdit}
@@ -434,7 +434,7 @@ function IntroDetailModal({
           {canFeedback && !showOutcomeModal && (
             <button onClick={onShowOutcome}
               className="w-full py-2.5 rounded-xl text-sm font-semibold text-white transition"
-              style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
+              style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
               How did it go? Share feedback
             </button>
           )}
@@ -447,7 +447,7 @@ function IntroDetailModal({
                   <button key={key} onClick={() => onRecordOutcome(key)}
                     disabled={actionLoading === 'outcome'}
                     className="py-3 rounded-xl text-sm font-medium text-white/70 hover:text-white transition border border-white/10 hover:border-white/20 disabled:opacity-50"
-                    style={{ background: 'rgba(30,41,59,0.8)' }}>
+                    style={{ background: 'rgba(10,10,26,0.85)' }}>
                     <span className="block text-lg mb-1">{val.icon}</span>
                     {val.label}
                   </button>

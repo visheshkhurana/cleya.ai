@@ -3,7 +3,7 @@ import PublicNav from '@/components/PublicNav';
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen" style={{ background: '#0F172A' }}>
+    <div className="min-h-screen" style={{ background: '#050510' }}>
       <PublicNav />
 
       <main className="max-w-4xl mx-auto px-6 py-16">
@@ -93,7 +93,7 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">14. Contact</h2>
-            <p>For questions about these terms, contact us at <a href="mailto:legal@cleya.ai" className="underline" style={{ color: '#5EEAD4' }}>legal@cleya.ai</a>.</p>
+            <p>For questions about these terms, contact us at <a href="mailto:legal@cleya.ai" className="underline" style={{ color: '#93C5FD' }}>legal@cleya.ai</a>.</p>
           </section>
         </div>
       </main>

@@ -14,7 +14,7 @@ export default function NotFoundClient() {
 
   return (
     <div style={{
-      background: '#0F172A',
+      background: '#050510',
       minHeight: '100vh',
       display: 'flex',
       alignItems: 'center',
@@ -30,8 +30,8 @@ export default function NotFoundClient() {
           alignItems: 'center',
           justifyContent: 'center',
           fontSize: '2.25rem',
-          background: 'linear-gradient(135deg, rgba(13,148,136,0.08), rgba(78,47,216,0.08))',
-          border: '1px solid rgba(13,148,136,0.12)',
+          background: 'linear-gradient(135deg, rgba(59,130,246,0.08), rgba(78,47,216,0.08))',
+          border: '1px solid rgba(59,130,246,0.12)',
         }}>
           🔮
         </div>
@@ -48,7 +48,7 @@ export default function NotFoundClient() {
             fontSize: '0.875rem',
             fontWeight: 500,
             color: 'white',
-            background: 'linear-gradient(135deg, #0D9488, #0F766E)',
+            background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)',
             textDecoration: 'none',
           }}>
             {isLoggedIn ? 'Go to Dashboard' : 'Go to Homepage'}

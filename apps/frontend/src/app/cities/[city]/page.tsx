@@ -83,11 +83,11 @@ export default function CityPage() {
 
   if (!city) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0F172A' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#050510' }}>
         <div className="text-center">
           <h1 className="text-4xl font-bold text-white mb-4">City Not Found</h1>
           <p className="mb-6" style={{ color: '#94A3B8' }}>We haven&apos;t launched in this city yet.</p>
-          <Link href="/" className="px-6 py-3 rounded-xl text-white font-medium text-sm" style={{ background: '#0D9488' }}>
+          <Link href="/" className="px-6 py-3 rounded-xl text-white font-medium text-sm" style={{ background: '#3B82F6' }}>
             Back to Home
           </Link>
         </div>
@@ -96,14 +96,14 @@ export default function CityPage() {
   }
 
   return (
-    <div className="min-h-screen font-sans" style={{ background: '#0F172A' }}>
+    <div className="min-h-screen font-sans" style={{ background: '#050510' }}>
       <PublicNav />
 
       <section className="py-20 text-center relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse at center top, rgba(13,148,136,0.15) 0%, transparent 60%)' }} />
+          style={{ background: 'radial-gradient(ellipse at center top, rgba(59,130,246,0.15) 0%, transparent 60%)' }} />
         <div className="relative max-w-4xl mx-auto px-6">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#5EEAD4' }}>
+          <p className="text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#93C5FD' }}>
             Cleya.ai in {city.name}
           </p>
           <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-white tracking-tight mb-4">
@@ -115,7 +115,7 @@ export default function CityPage() {
           </p>
           <Link href="/"
             className="inline-block px-8 py-3 rounded-[10px] text-white font-medium text-sm transition-all hover:scale-[1.02]"
-            style={{ background: '#0D9488', boxShadow: '0 0 30px rgba(13,148,136,0.25)' }}>
+            style={{ background: '#3B82F6', boxShadow: '0 0 30px rgba(59,130,246,0.25)' }}>
             Join {city.name} Community →
           </Link>
         </div>
@@ -130,7 +130,7 @@ export default function CityPage() {
               { value: city.stats.unicorns, label: 'Unicorns' },
             ].map((s, i) => (
               <div key={i} className="text-center">
-                <div className="text-3xl sm:text-4xl font-bold" style={{ color: '#5EEAD4' }}>{s.value}</div>
+                <div className="text-3xl sm:text-4xl font-bold" style={{ color: '#93C5FD' }}>{s.value}</div>
                 <div className="text-sm mt-1" style={{ color: '#94A3B8' }}>{s.label}</div>
               </div>
             ))}
@@ -144,7 +144,7 @@ export default function CityPage() {
           <div className="flex flex-wrap justify-center gap-4">
             {city.investors.map((investor) => (
               <div key={investor} className="px-5 py-3 rounded-xl border border-white/5"
-                style={{ background: 'rgba(30,41,59,0.6)' }}>
+                style={{ background: 'rgba(10,10,26,0.8)' }}>
                 <span className="text-sm font-medium text-white">{investor}</span>
               </div>
             ))}
@@ -158,7 +158,7 @@ export default function CityPage() {
           <div className="flex flex-wrap justify-center gap-3">
             {city.sectors.map((sector) => (
               <span key={sector} className="px-4 py-2 rounded-full text-sm font-medium border"
-                style={{ background: 'rgba(13,148,136,0.08)', borderColor: 'rgba(13,148,136,0.15)', color: '#5EEAD4' }}>
+                style={{ background: 'rgba(59,130,246,0.08)', borderColor: 'rgba(59,130,246,0.15)', color: '#93C5FD' }}>
                 {sector}
               </span>
             ))}
@@ -172,11 +172,11 @@ export default function CityPage() {
             <h2 className="text-2xl font-bold text-white text-center mb-10">Success Stories from {city.name}</h2>
             <div className="grid sm:grid-cols-2 gap-6">
               {city.testimonials.map((t, i) => (
-                <div key={i} className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(30,41,59,0.6)' }}>
+                <div key={i} className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(10,10,26,0.8)' }}>
                   <p className="text-sm italic mb-4" style={{ color: '#CBD5E1' }}>&ldquo;{t.quote}&rdquo;</p>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold"
-                      style={{ background: 'rgba(13,148,136,0.15)', color: '#5EEAD4' }}>
+                      style={{ background: 'rgba(59,130,246,0.15)', color: '#93C5FD' }}>
                       {t.name.split(' ').map(n => n[0]).join('')}
                     </div>
                     <div>
@@ -191,7 +191,7 @@ export default function CityPage() {
         </section>
       )}
 
-      <section className="py-20 text-center" style={{ background: 'rgba(13,148,136,0.06)' }}>
+      <section className="py-20 text-center" style={{ background: 'rgba(59,130,246,0.06)' }}>
         <div className="max-w-xl mx-auto px-6">
           <h2 className="text-2xl font-bold text-white mb-3">
             Ready to join {city.name}&apos;s startup ecosystem?
@@ -201,7 +201,7 @@ export default function CityPage() {
           </p>
           <Link href="/"
             className="inline-block px-8 py-3 rounded-[10px] text-white font-medium text-sm transition-all hover:scale-[1.02]"
-            style={{ background: '#0D9488', boxShadow: '0 0 30px rgba(13,148,136,0.25)' }}>
+            style={{ background: '#3B82F6', boxShadow: '0 0 30px rgba(59,130,246,0.25)' }}>
             Apply for Early Access →
           </Link>
         </div>
@@ -212,7 +212,7 @@ export default function CityPage() {
           <div className="flex flex-wrap justify-center gap-4 mb-4">
             {Object.entries(cityData).filter(([slug]) => slug !== citySlug).map(([slug, c]) => (
               <Link key={slug} href={`/cities/${slug}`}
-                className="text-sm hover:text-teal-300 transition" style={{ color: '#94A3B8' }}>
+                className="text-sm hover:text-blue-300 transition" style={{ color: '#94A3B8' }}>
                 {c.name}
               </Link>
             ))}

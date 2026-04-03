@@ -35,14 +35,14 @@ export function useToast() {
 const ICONS: Record<ToastType, JSX.Element> = {
   success: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5"><path d="M20 6L9 17l-5-5" /></svg>,
   error: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>,
-  info: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>,
+  info: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>,
   warning: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>,
 };
 
 const BORDER_COLORS: Record<ToastType, string> = {
   success: 'rgba(16,185,129,0.3)',
   error: 'rgba(239,68,68,0.3)',
-  info: 'rgba(13,148,136,0.3)',
+  info: 'rgba(59,130,246,0.3)',
   warning: 'rgba(245,158,11,0.3)',
 };
 
@@ -104,7 +104,7 @@ function ToastItemEl({ toast, onRemove }: { toast: ToastItem; onRemove: (id: str
       aria-live="polite"
       className="pointer-events-auto flex items-start gap-3 px-4 py-3 rounded-xl border shadow-lg backdrop-blur-lg transition-all duration-300"
       style={{
-        background: 'rgba(13,11,26,0.95)',
+        background: 'rgba(5,5,16,0.9)',
         borderColor: BORDER_COLORS[toast.type],
         opacity: visible && !exiting ? 1 : 0,
         transform: visible && !exiting ? 'translateX(0)' : 'translateX(20px)',

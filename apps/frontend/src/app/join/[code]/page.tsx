@@ -71,16 +71,16 @@ export default function JoinPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0F172A' }}>
-        <div className="w-10 h-10 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#050510' }}>
+        <div className="w-10 h-10 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (!inviteInfo?.valid) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#0F172A' }}>
-        <div className="max-w-md w-full text-center rounded-2xl border border-white/[0.08] p-8" style={{ background: 'rgba(30,41,59,0.95)' }}>
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#050510' }}>
+        <div className="max-w-md w-full text-center rounded-2xl border border-white/[0.08] p-8" style={{ background: 'rgba(10,10,26,0.8)' }}>
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(239,68,68,0.1)' }}>
             <span className="text-2xl">🔗</span>
           </div>
@@ -89,7 +89,7 @@ export default function JoinPage() {
             This invite code is invalid or has already been used.
           </p>
           <a href="/" className="inline-block px-6 py-2.5 rounded-xl text-sm font-medium text-white transition-all hover:scale-[1.02]"
-            style={{ background: '#0D9488' }}>
+            style={{ background: '#3B82F6' }}>
             Go to Homepage
           </a>
         </div>
@@ -98,23 +98,23 @@ export default function JoinPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#0F172A' }}>
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#050510' }}>
       <div className="w-full max-w-sm">
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-3"
-            style={{ background: '#0D9488', boxShadow: '0 0 30px rgba(13,148,136,0.3)' }}>
+            style={{ background: '#3B82F6', boxShadow: '0 0 30px rgba(59,130,246,0.3)' }}>
             <span className="text-white text-xl font-bold">C</span>
           </div>
           <h1 className="font-display text-2xl font-bold text-white mb-1">You&apos;re invited to Cleya</h1>
           {inviteInfo.inviterName && (
             <p className="text-sm" style={{ color: '#94A3B8' }}>
-              <span style={{ color: '#5EEAD4' }}>{inviteInfo.inviterName}</span>
+              <span style={{ color: '#93C5FD' }}>{inviteInfo.inviterName}</span>
               {inviteInfo.inviterTitle ? ` (${inviteInfo.inviterTitle})` : ''} thinks you should join India&apos;s AI networking community.
             </p>
           )}
         </div>
 
-        <div className="rounded-2xl border border-white/[0.08] p-8" style={{ background: 'rgba(30,41,59,0.95)', backdropFilter: 'blur(20px)' }}>
+        <div className="rounded-2xl border border-white/[0.08] p-8" style={{ background: 'rgba(10,10,26,0.8)', backdropFilter: 'blur(20px)' }}>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>Full Name</label>
@@ -132,11 +132,11 @@ export default function JoinPage() {
                   <button key={p.value} type="button" onClick={() => setSelectedPersona(p.value)}
                     className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl border transition-all duration-200"
                     style={{
-                      background: selectedPersona === p.value ? 'rgba(13,148,136,0.15)' : 'rgba(255,255,255,0.03)',
-                      borderColor: selectedPersona === p.value ? '#0D9488' : 'rgba(255,255,255,0.08)',
+                      background: selectedPersona === p.value ? 'rgba(59,130,246,0.15)' : 'rgba(255,255,255,0.03)',
+                      borderColor: selectedPersona === p.value ? '#3B82F6' : 'rgba(255,255,255,0.08)',
                     }}>
                     <span className="text-lg">{p.icon}</span>
-                    <span className="text-xs font-medium" style={{ color: selectedPersona === p.value ? '#5EEAD4' : '#94A3B8' }}>{p.label}</span>
+                    <span className="text-xs font-medium" style={{ color: selectedPersona === p.value ? '#93C5FD' : '#94A3B8' }}>{p.label}</span>
                   </button>
                 ))}
               </div>
@@ -160,9 +160,9 @@ export default function JoinPage() {
               )}
             </div>
             <label className="flex items-start gap-2 cursor-pointer">
-              <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} className="mt-0.5 rounded border-white/20 bg-white/5 accent-teal-600" />
+              <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} className="mt-0.5 rounded border-white/20 bg-white/5 accent-blue-600" />
               <span className="text-xs leading-relaxed" style={{ color: '#94A3B8' }}>
-                I agree to the <a href="/terms" target="_blank" className="underline" style={{ color: '#5EEAD4' }}>Terms of Service</a> and <a href="/privacy" target="_blank" className="underline" style={{ color: '#5EEAD4' }}>Privacy Policy</a>
+                I agree to the <a href="/terms" target="_blank" className="underline" style={{ color: '#93C5FD' }}>Terms of Service</a> and <a href="/privacy" target="_blank" className="underline" style={{ color: '#93C5FD' }}>Privacy Policy</a>
               </span>
             </label>
             {error && (
@@ -178,7 +178,7 @@ export default function JoinPage() {
             </button>
           </form>
           <p className="text-center text-xs mt-4" style={{ color: '#94A3B8' }}>
-            Already have an account? <a href="/?action=login" className="font-medium" style={{ color: '#5EEAD4' }}>Log in</a>
+            Already have an account? <a href="/?action=login" className="font-medium" style={{ color: '#93C5FD' }}>Log in</a>
           </p>
         </div>
       </div>

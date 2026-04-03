@@ -13,7 +13,7 @@ export default function VerificationBadge({ score = 0, size = 'sm', showLabel = 
   if (normalizedScore >= 75) {
     tier = { label: 'Trusted', color: '#10B981', bgColor: 'rgba(16,185,129,0.12)', borderColor: 'rgba(16,185,129,0.2)' };
   } else if (normalizedScore >= 50) {
-    tier = { label: 'Verified', color: '#0D9488', bgColor: 'rgba(13,148,136,0.12)', borderColor: 'rgba(13,148,136,0.2)' };
+    tier = { label: 'Verified', color: '#3B82F6', bgColor: 'rgba(59,130,246,0.12)', borderColor: 'rgba(59,130,246,0.2)' };
   } else if (normalizedScore >= 25) {
     tier = { label: 'Basic', color: '#3B82F6', bgColor: 'rgba(59,130,246,0.12)', borderColor: 'rgba(59,130,246,0.2)' };
   } else {

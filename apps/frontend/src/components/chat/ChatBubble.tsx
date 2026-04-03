@@ -16,7 +16,7 @@ export function ChatBubble({ sender, content, timestamp }: ChatBubbleProps) {
         {!isUser && (
           <div
             className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mb-1"
-            style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}
+            style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}
           >
             C
           </div>
@@ -36,7 +36,7 @@ export function ChatBubble({ sender, content, timestamp }: ChatBubbleProps) {
                     ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
                     li: ({ children }) => <li>{children}</li>,
                     a: ({ href, children }) => (
-                      <a href={href} target="_blank" rel="noopener noreferrer" className="underline" style={{ color: '#5EEAD4' }}>
+                      <a href={href} target="_blank" rel="noopener noreferrer" className="underline" style={{ color: '#93C5FD' }}>
                         {children}
                       </a>
                     ),

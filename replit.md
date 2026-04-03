@@ -14,7 +14,7 @@ Monorepo with:
 - `packages/types` — Shared TypeScript types
 
 ## Stack
-- **Frontend:** Next.js 14, React 18, Tailwind CSS (dark teal theme), Framer Motion 10, Lenis (smooth scroll)
+- **Frontend:** Next.js 14, React 18, Tailwind CSS (dark premium theme — #050510 bg, blue/purple gradients), Framer Motion 10, Lenis (smooth scroll)
 - **Mobile:** Expo SDK 52 (React Native 0.76), expo-router 4, React Query, SecureStore for auth tokens
 - **Backend:** Express, TypeScript, WebSocket
 - **Database:** PostgreSQL (Replit built-in), Prisma ORM, pgvector

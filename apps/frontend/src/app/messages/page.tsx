@@ -143,15 +143,15 @@ export default function MessagesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0F172A' }}>
-        <div className="w-10 h-10 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#050510' }}>
+        <div className="w-10 h-10 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen font-sans flex flex-col" style={{ background: '#0F172A' }}>
-      <header className="sticky top-0 z-10 border-b border-white/5" style={{ background: 'rgba(13,11,26,0.9)', backdropFilter: 'blur(20px)' }}>
+    <div className="min-h-screen font-sans flex flex-col" style={{ background: '#050510' }}>
+      <header className="sticky top-0 z-10 border-b border-white/5" style={{ background: 'rgba(5,5,16,0.85)', backdropFilter: 'blur(20px)' }}>
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={() => router.push('/dashboard')} className="text-white/30 hover:text-white/60 transition text-sm hidden sm:block">← Back</button>
@@ -174,7 +174,7 @@ export default function MessagesPage() {
                 Accept a match to start messaging
               </p>
               <button onClick={() => router.push('/matches')}
-                className="mt-4 px-4 py-2 rounded-lg text-xs font-medium text-teal-300 border border-teal-500/20 hover:bg-teal-500/5 transition">
+                className="mt-4 px-4 py-2 rounded-lg text-xs font-medium text-blue-300 border border-blue-500/20 hover:bg-blue-500/5 transition">
                 View Matches
               </button>
             </div>
@@ -188,7 +188,7 @@ export default function MessagesPage() {
                   }`}>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                      style={{ background: 'rgba(13,148,136,0.15)', color: '#5EEAD4' }}>
+                      style={{ background: 'rgba(59,130,246,0.15)', color: '#93C5FD' }}>
                       {getPartnerDisplay(convo.partner)[0]?.toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -196,7 +196,7 @@ export default function MessagesPage() {
                         <p className="text-sm font-medium text-white truncate">{getPartnerDisplay(convo.partner)}</p>
                         {convo.unreadCount > 0 && (
                           <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
-                            style={{ background: '#0D9488' }}>
+                            style={{ background: '#3B82F6' }}>
                             {convo.unreadCount}
                           </span>
                         )}
@@ -225,14 +225,14 @@ export default function MessagesPage() {
                   ←
                 </button>
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
-                  style={{ background: 'rgba(13,148,136,0.15)', color: '#5EEAD4' }}>
+                  style={{ background: 'rgba(59,130,246,0.15)', color: '#93C5FD' }}>
                   {selectedConvo ? getPartnerDisplay(selectedConvo.partner)[0]?.toUpperCase() : '?'}
                 </div>
                 <div>
                   <p className="text-sm font-medium text-white">
                     {selectedConvo ? getPartnerDisplay(selectedConvo.partner) : ''}
                   </p>
-                  {typing && <p className="text-[10px]" style={{ color: '#5EEAD4' }}>typing...</p>}
+                  {typing && <p className="text-[10px]" style={{ color: '#93C5FD' }}>typing...</p>}
                 </div>
               </div>
 
@@ -244,7 +244,7 @@ export default function MessagesPage() {
                       <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
                         isMe ? 'rounded-tr-sm' : 'rounded-tl-sm'
                       }`} style={{
-                        background: isMe ? '#0D9488' : '#1E293B',
+                        background: isMe ? '#3B82F6' : 'rgba(10,10,26,0.8)',
                       }}>
                         <p className="text-sm text-white leading-relaxed">{msg.content}</p>
                         <p className="text-[10px] mt-1 text-right" style={{ color: isMe ? 'rgba(255,255,255,0.5)' : '#64748B' }}>
@@ -266,14 +266,14 @@ export default function MessagesPage() {
                     onChange={(e) => { setNewMessage(e.target.value); handleTyping(); }}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                     placeholder="Type a message..."
-                    className="flex-1 px-4 py-2.5 rounded-xl text-sm text-white placeholder:text-white/20 border border-white/5 focus:border-teal-500/30 focus:outline-none transition"
-                    style={{ background: 'rgba(30,41,59,0.6)' }}
+                    className="flex-1 px-4 py-2.5 rounded-xl text-sm text-white placeholder:text-white/20 border border-white/5 focus:border-blue-500/30 focus:outline-none transition"
+                    style={{ background: 'rgba(10,10,26,0.8)' }}
                   />
                   <button
                     onClick={handleSend}
                     disabled={!newMessage.trim() || sending}
                     className="px-4 py-2.5 rounded-xl text-sm font-medium text-white transition disabled:opacity-30"
-                    style={{ background: '#0D9488' }}>
+                    style={{ background: '#3B82F6' }}>
                     {sending ? '...' : 'Send'}
                   </button>
                 </div>

@@ -242,10 +242,10 @@ export default function PhoneInput({
 
         {open && (
           <div
-            className="absolute top-full left-0 mt-1 w-64 max-h-60 overflow-hidden rounded-xl border border-white/10 bg-[#1E293B] shadow-2xl z-50"
+            className="absolute top-full left-0 mt-1 w-64 max-h-60 overflow-hidden rounded-xl border border-white/10 bg-[#0a0a1a] shadow-2xl z-50"
             ref={listRef}
           >
-            <div className="sticky top-0 p-2 bg-[#1E293B] border-b border-white/5">
+            <div className="sticky top-0 p-2 bg-[#0a0a1a] border-b border-white/5">
               <input
                 ref={searchRef}
                 type="text"

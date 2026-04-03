@@ -19,7 +19,7 @@ export default function PublicNav() {
           <Link href="/contact" className="hidden sm:inline-block px-3 py-2 text-sm text-white/50 hover:text-white transition-colors">Contact</Link>
           <Link href="/?action=login" className="px-4 py-2 text-sm text-white/50 hover:text-white transition-colors">Log In</Link>
           <Link href="/" className="px-5 py-2.5 text-sm font-medium text-white rounded-[10px] transition-all hover:scale-[1.02]"
-            style={{ background: '#0D9488', boxShadow: '0 0 20px rgba(13,148,136,0.2)' }}>
+            style={{ background: '#3B82F6', boxShadow: '0 0 20px rgba(59,130,246,0.2)' }}>
             Get Started
           </Link>
         </div>

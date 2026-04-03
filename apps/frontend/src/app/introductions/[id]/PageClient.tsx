@@ -14,7 +14,7 @@ const personaIcon: Record<string, string> = {
 const statusConfig: Record<string, { bg: string; text: string; label: string; icon: string }> = {
   PENDING_APPROVAL: { bg: 'rgba(245,158,11,0.15)', text: '#fbbf24', label: 'Review Required', icon: '⏳' },
   APPROVED: { bg: 'rgba(59,130,246,0.15)', text: '#93c5fd', label: 'Approved', icon: '✅' },
-  SENT: { bg: 'rgba(13,148,136,0.15)', text: '#5EEAD4', label: 'Sent', icon: '📤' },
+  SENT: { bg: 'rgba(59,130,246,0.15)', text: '#93C5FD', label: 'Sent', icon: '📤' },
   VIEWED: { bg: 'rgba(59,130,246,0.15)', text: '#93c5fd', label: 'Viewed', icon: '👀' },
   RESPONDED: { bg: 'rgba(16,185,129,0.15)', text: '#6ee7b7', label: 'Responded', icon: '💬' },
   FOLLOWED_UP: { bg: 'rgba(245,158,11,0.15)', text: '#fbbf24', label: 'Follow-up Sent', icon: '🔔' },
@@ -24,7 +24,7 @@ const statusConfig: Record<string, { bg: string; text: string; label: string; ic
 
 const outcomeLabels: Record<string, { label: string; icon: string; color: string }> = {
   GREAT_MEETING: { label: 'Great meeting', icon: '🎉', color: '#10B981' },
-  GOOD_CHAT: { label: 'Good chat', icon: '👍', color: '#0D9488' },
+  GOOD_CHAT: { label: 'Good chat', icon: '👍', color: '#3B82F6' },
   DIDNT_MEET: { label: "Didn't meet", icon: '😕', color: '#f59e0b' },
   NOT_A_FIT: { label: 'Not a fit', icon: '🤷', color: '#ef4444' },
 };
@@ -65,8 +65,8 @@ export default function IntroductionDetailPage() {
 
   if (loading || !intro) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0F172A' }}>
-        <div className="w-5 h-5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#050510' }}>
+        <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -137,8 +137,8 @@ export default function IntroductionDetailPage() {
   const hoursUntilAuto = Math.max(0, Math.round((autoApproveDate.getTime() - Date.now()) / (60 * 60 * 1000)));
 
   return (
-    <div className="min-h-screen" style={{ background: '#0F172A' }}>
-      <header className="sticky top-0 z-10 border-b border-white/5" style={{ background: 'rgba(13,11,26,0.9)', backdropFilter: 'blur(20px)' }}>
+    <div className="min-h-screen" style={{ background: '#050510' }}>
+      <header className="sticky top-0 z-10 border-b border-white/5" style={{ background: 'rgba(5,5,16,0.85)', backdropFilter: 'blur(20px)' }}>
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={() => router.push('/introductions')} className="text-white/30 hover:text-white/60 transition text-sm">← Back</button>
@@ -152,10 +152,10 @@ export default function IntroductionDetailPage() {
       </header>
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-        <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(30,41,59,0.6)' }}>
+        <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(10,10,26,0.8)' }}>
           <div className="flex items-center gap-4 mb-4">
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl"
-              style={{ background: 'linear-gradient(135deg, #0D948815, #0F766E15)', border: '1px solid rgba(13,148,136,0.15)' }}>
+              style={{ background: 'linear-gradient(135deg, #3B82F615, #8B5CF615)', border: '1px solid rgba(59,130,246,0.15)' }}>
               {personaIcon[profile?.persona || 'OTHER']}
             </div>
             <div>
@@ -188,7 +188,7 @@ export default function IntroductionDetailPage() {
         </div>
 
         {intro.introText && (
-          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(30,41,59,0.6)' }}>
+          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(10,10,26,0.8)' }}>
             <p className="text-[10px] uppercase tracking-wider text-white/30 mb-3 font-medium">
               {isPending ? 'Introduction Preview — Review before sending' : 'Introduction Text'}
             </p>
@@ -196,12 +196,12 @@ export default function IntroductionDetailPage() {
               <div className="space-y-3">
                 <textarea value={editText} onChange={(e) => setEditText(e.target.value)}
                   className="w-full bg-transparent text-white/80 text-sm leading-relaxed resize-none outline-none min-h-[200px] border rounded-xl p-4"
-                  style={{ borderColor: 'rgba(13,148,136,0.3)' }}
+                  style={{ borderColor: 'rgba(59,130,246,0.3)' }}
                 />
                 <div className="flex gap-2">
                   <button onClick={handleSaveEdit} disabled={actionLoading === 'edit'}
                     className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50"
-                    style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
+                    style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
                     {actionLoading === 'edit' ? 'Saving...' : 'Save Changes'}
                   </button>
                   <button onClick={() => setEditMode(false)}
@@ -211,7 +211,7 @@ export default function IntroductionDetailPage() {
                 </div>
               </div>
             ) : (
-              <div className="rounded-xl border p-5" style={{ background: 'rgba(13,148,136,0.03)', borderColor: 'rgba(13,148,136,0.1)' }}>
+              <div className="rounded-xl border p-5" style={{ background: 'rgba(59,130,246,0.03)', borderColor: 'rgba(59,130,246,0.1)' }}>
                 <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{intro.introText}</p>
               </div>
             )}
@@ -219,12 +219,12 @@ export default function IntroductionDetailPage() {
         )}
 
         {intro.talkingPoints?.length > 0 && !editMode && (
-          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(30,41,59,0.6)' }}>
+          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(10,10,26,0.8)' }}>
             <p className="text-[10px] uppercase tracking-wider text-white/30 mb-3 font-medium">Conversation Starters</p>
             <div className="space-y-3">
               {intro.talkingPoints.map((tp: string, i: number) => (
                 <div key={i} className="flex gap-3 items-start">
-                  <span className="text-teal-400/60 mt-0.5 flex-shrink-0 text-sm">💡</span>
+                  <span className="text-blue-400/60 mt-0.5 flex-shrink-0 text-sm">💡</span>
                   <span className="text-white/50 text-sm">{tp}</span>
                 </div>
               ))}
@@ -233,13 +233,13 @@ export default function IntroductionDetailPage() {
         )}
 
         {intro.status !== 'PENDING_APPROVAL' && intro.status !== 'CANCELLED' && (
-          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(30,41,59,0.6)' }}>
+          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(10,10,26,0.8)' }}>
             <p className="text-[10px] uppercase tracking-wider text-white/30 mb-3 font-medium">Contact Information</p>
             <div className="space-y-2">
               <p className="text-sm text-white/60">📧 {other.email}</p>
               {profile?.linkedinUrl && (
                 <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer"
-                  className="text-sm text-teal-400/80 hover:text-teal-300 transition block">
+                  className="text-sm text-blue-400/80 hover:text-blue-300 transition block">
                   🔗 {profile.linkedinUrl}
                 </a>
               )}
@@ -248,13 +248,13 @@ export default function IntroductionDetailPage() {
           </div>
         )}
 
-        <div className="rounded-2xl border border-white/5 p-6 space-y-3" style={{ background: 'rgba(30,41,59,0.6)' }}>
+        <div className="rounded-2xl border border-white/5 p-6 space-y-3" style={{ background: 'rgba(10,10,26,0.8)' }}>
           {isPending && !editMode && (
             <>
               <div className="flex gap-2">
                 <button onClick={handleApprove} disabled={actionLoading === 'approve'}
                   className="flex-1 py-3 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50"
-                  style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
+                  style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
                   {actionLoading === 'approve' ? 'Sending...' : '✓ Approve & Send'}
                 </button>
                 <button onClick={() => { setEditText(intro.introText || ''); setEditMode(true); }}
@@ -272,7 +272,7 @@ export default function IntroductionDetailPage() {
           {canFeedback && !showOutcome && (
             <button onClick={() => setShowOutcome(true)}
               className="w-full py-3 rounded-xl text-sm font-semibold text-white transition"
-              style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
+              style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
               How did it go? Share feedback
             </button>
           )}
@@ -285,7 +285,7 @@ export default function IntroductionDetailPage() {
                   <button key={key} onClick={() => handleOutcome(key)}
                     disabled={actionLoading === 'outcome'}
                     className="py-4 rounded-xl text-sm font-medium text-white/70 hover:text-white transition border border-white/10 hover:border-white/20 disabled:opacity-50"
-                    style={{ background: 'rgba(30,41,59,0.8)' }}>
+                    style={{ background: 'rgba(10,10,26,0.85)' }}>
                     <span className="block text-xl mb-1">{val.icon}</span>
                     {val.label}
                   </button>

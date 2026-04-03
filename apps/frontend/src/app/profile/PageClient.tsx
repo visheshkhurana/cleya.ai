@@ -182,9 +182,9 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0F172A' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#050510' }}>
         <div className="flex items-center gap-3">
-          <div className="w-5 h-5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
           <p className="text-slate-400 text-sm">Loading profile...</p>
         </div>
       </div>
@@ -197,8 +197,8 @@ export default function ProfilePage() {
   const isTalent = persona === 'TALENT' || persona === 'JOB_SEEKER' || persona === 'FREELANCER';
 
   return (
-    <div className="min-h-screen" style={{ background: '#0F172A' }}>
-      <header className="sticky top-0 z-10 border-b border-white/5" style={{ background: 'rgba(13,11,26,0.9)', backdropFilter: 'blur(20px)' }}>
+    <div className="min-h-screen" style={{ background: '#050510' }}>
+      <header className="sticky top-0 z-10 border-b border-white/5" style={{ background: 'rgba(5,5,16,0.85)', backdropFilter: 'blur(20px)' }}>
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={() => router.push('/dashboard')} className="text-white/30 hover:text-white/60 transition text-sm hidden sm:block">← Back</button>
@@ -208,7 +208,7 @@ export default function ProfilePage() {
             {saved && <span className="text-xs text-green-400 hidden sm:inline">Saved ✓</span>}
             <button onClick={handleSave} disabled={saving}
               className="px-4 py-1.5 text-xs font-medium rounded-lg text-white transition disabled:opacity-40"
-              style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
+              style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
               {saving ? 'Saving...' : 'Save'}
             </button>
             <div className="sm:hidden"><MobileNav /></div>
@@ -217,13 +217,13 @@ export default function ProfilePage() {
       </header>
 
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
-        <div className="rounded-2xl border border-white/5 p-6 flex items-center gap-4" style={{ background: 'rgba(30,41,59,0.6)' }}>
+        <div className="rounded-2xl border border-white/5 p-6 flex items-center gap-4" style={{ background: 'rgba(10,10,26,0.8)' }}>
           {profile.avatarUrl ? (
             <img src={profile.avatarUrl} alt={profile.currentRole || 'Profile'} referrerPolicy="no-referrer"
               className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 border border-white/10" />
           ) : (
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl"
-              style={{ background: 'linear-gradient(135deg, #0D948820, #0F766E20)', border: '1px solid rgba(13,148,136,0.15)' }}>
+              style={{ background: 'linear-gradient(135deg, #3B82F620, #8B5CF620)', border: '1px solid rgba(59,130,246,0.15)' }}>
               {personaIcon[persona] || '💬'}
             </div>
           )}
@@ -231,7 +231,7 @@ export default function ProfilePage() {
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-white">{profile.currentRole || 'Your Profile'}</h2>
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium border"
-                style={{ background: 'rgba(13,148,136,0.1)', borderColor: 'rgba(13,148,136,0.2)', color: '#5EEAD4' }}>
+                style={{ background: 'rgba(59,130,246,0.1)', borderColor: 'rgba(59,130,246,0.2)', color: '#93C5FD' }}>
                 {personaLabel[persona] || persona}
               </span>
               {profile.linkedinVerified && (
@@ -245,13 +245,13 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/5 p-4" style={{ background: 'rgba(30,41,59,0.6)' }}>
+        <div className="rounded-2xl border border-white/5 p-4" style={{ background: 'rgba(10,10,26,0.8)' }}>
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-white/50 uppercase tracking-wide">Profile Completion</span>
-            <span className="text-sm font-bold" style={{ color: completenessScore === 100 ? '#10b981' : '#5EEAD4' }}>{completenessScore}%</span>
+            <span className="text-sm font-bold" style={{ color: completenessScore === 100 ? '#10b981' : '#93C5FD' }}>{completenessScore}%</span>
           </div>
           <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${completenessScore}%`, background: completenessScore === 100 ? '#10b981' : 'linear-gradient(90deg, #0D9488, #2DD4BF)' }} />
+            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${completenessScore}%`, background: completenessScore === 100 ? '#10b981' : 'linear-gradient(90deg, #3B82F6, #60A5FA)' }} />
           </div>
           {getMissingFields().length > 0 && (
             <p className="text-[11px] mt-2" style={{ color: '#94A3B8' }}>
@@ -264,7 +264,7 @@ export default function ProfilePage() {
           <div className="rounded-xl p-3 text-sm text-red-400 bg-red-500/10 border border-red-500/20">{error}</div>
         )}
 
-        <div className="rounded-2xl border border-white/5 p-6 space-y-5" style={{ background: 'rgba(30,41,59,0.6)' }}>
+        <div className="rounded-2xl border border-white/5 p-6 space-y-5" style={{ background: 'rgba(10,10,26,0.8)' }}>
           <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Basic Information</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -333,7 +333,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: 'rgba(30,41,59,0.6)' }}>
+        <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: 'rgba(10,10,26,0.8)' }}>
           <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Industries</h3>
           <div className="flex flex-wrap gap-2">
             {industryOptions.map((ind) => {
@@ -342,10 +342,10 @@ export default function ProfilePage() {
                 <button key={ind} onClick={() => toggleIndustry(ind)}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
                     selected
-                      ? 'border-teal-500/40 text-teal-300'
+                      ? 'border-blue-500/40 text-blue-300'
                       : 'border-white/10 text-white/40 hover:border-white/20 hover:text-white/60'
                   }`}
-                  style={selected ? { background: 'rgba(13,148,136,0.15)' } : { background: 'rgba(255,255,255,0.03)' }}>
+                  style={selected ? { background: 'rgba(59,130,246,0.15)' } : { background: 'rgba(255,255,255,0.03)' }}>
                   {ind === 'other' ? 'Other' : ind.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/\bAi Ml\b/, 'AI/ML').replace(/\bSaas\b/, 'SaaS').replace(/\bE Commerce\b/, 'E-Commerce')}
                 </button>
               );
@@ -358,7 +358,7 @@ export default function ProfilePage() {
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomIndustry(); } }} />
               <button onClick={addCustomIndustry}
                 className="px-4 py-3 rounded-2xl text-xs font-semibold text-white transition"
-                style={{ background: '#0D9488' }}>
+                style={{ background: '#3B82F6' }}>
                 Add
               </button>
             </div>
@@ -366,8 +366,8 @@ export default function ProfilePage() {
           {(profile.industries || []).filter(i => !industryOptions.includes(i)).length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2">
               {(profile.industries || []).filter(i => !industryOptions.includes(i)).map(ind => (
-                <span key={ind} className="px-3 py-1.5 rounded-full text-xs font-medium border border-teal-500/40 text-teal-300 flex items-center gap-1.5"
-                  style={{ background: 'rgba(13,148,136,0.15)' }}>
+                <span key={ind} className="px-3 py-1.5 rounded-full text-xs font-medium border border-blue-500/40 text-blue-300 flex items-center gap-1.5"
+                  style={{ background: 'rgba(59,130,246,0.15)' }}>
                   {ind.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
                   <button onClick={() => updateField('industries', (profile.industries || []).filter(i => i !== ind))}
                     className="text-white/40 hover:text-white/70 text-xs">×</button>
@@ -378,7 +378,7 @@ export default function ProfilePage() {
         </div>
 
         {isFounder && (
-          <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: 'rgba(30,41,59,0.6)' }}>
+          <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: 'rgba(10,10,26,0.8)' }}>
             <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Founder Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -399,7 +399,7 @@ export default function ProfilePage() {
         )}
 
         {isInvestor && (
-          <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: 'rgba(30,41,59,0.6)' }}>
+          <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: 'rgba(10,10,26,0.8)' }}>
             <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Investor Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -417,7 +417,7 @@ export default function ProfilePage() {
         )}
 
         {isTalent && (
-          <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: 'rgba(30,41,59,0.6)' }}>
+          <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: 'rgba(10,10,26,0.8)' }}>
             <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Talent Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -436,8 +436,8 @@ export default function ProfilePage() {
 
         <div className="flex justify-end pt-4 pb-8">
           <button onClick={handleSave} disabled={saving}
-            className="px-8 py-3 rounded-2xl text-white font-semibold text-sm transition-all disabled:opacity-40 shadow-lg shadow-teal-500/20"
-            style={{ background: 'linear-gradient(135deg, #0D9488, #0F766E)' }}>
+            className="px-8 py-3 rounded-2xl text-white font-semibold text-sm transition-all disabled:opacity-40 shadow-lg shadow-blue-500/20"
+            style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
             {saving ? 'Saving...' : saved ? 'Saved ✓' : 'Save Changes'}
           </button>
         </div>

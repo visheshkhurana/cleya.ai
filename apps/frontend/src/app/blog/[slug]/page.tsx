@@ -98,10 +98,10 @@ export default function BlogPostPage() {
 
   if (!post) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0F172A' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#050510' }}>
         <div className="text-center">
           <h1 className="text-4xl font-bold text-white mb-4">Post Not Found</h1>
-          <Link href="/blog" className="px-6 py-3 rounded-xl text-white font-medium text-sm" style={{ background: '#0D9488' }}>
+          <Link href="/blog" className="px-6 py-3 rounded-xl text-white font-medium text-sm" style={{ background: '#3B82F6' }}>
             Back to Blog
           </Link>
         </div>
@@ -110,14 +110,14 @@ export default function BlogPostPage() {
   }
 
   return (
-    <div className="min-h-screen font-sans" style={{ background: '#0F172A' }}>
+    <div className="min-h-screen font-sans" style={{ background: '#050510' }}>
       <PublicNav />
 
       <article className="max-w-3xl mx-auto px-6 py-12">
         <header className="mb-10">
           <div className="flex items-center gap-3 mb-4">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-white"
-              style={{ background: '#0D9488' }}>
+              style={{ background: '#3B82F6' }}>
               {post.category}
             </span>
             <span className="text-xs" style={{ color: '#64748B' }}>{post.readTime}</span>
@@ -125,7 +125,7 @@ export default function BlogPostPage() {
           <h1 className="font-display text-3xl sm:text-4xl font-bold text-white tracking-tight mb-6">{post.title}</h1>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
-              style={{ background: 'rgba(13,148,136,0.15)', color: '#5EEAD4' }}>
+              style={{ background: 'rgba(59,130,246,0.15)', color: '#93C5FD' }}>
               {post.author[0]}
             </div>
             <div>
@@ -150,7 +150,7 @@ export default function BlogPostPage() {
                     <p key={j} className="text-sm leading-relaxed mb-3" style={{ color: '#CBD5E1' }}>
                       {line.startsWith('- ') ? (
                         <span className="flex items-start gap-2">
-                          <span style={{ color: '#0D9488' }}>•</span>
+                          <span style={{ color: '#3B82F6' }}>•</span>
                           <span>{line.replace('- ', '')}</span>
                         </span>
                       ) : line}
@@ -165,14 +165,14 @@ export default function BlogPostPage() {
           })}
         </div>
 
-        <div className="mt-12 rounded-2xl border border-teal-500/15 p-6" style={{ background: 'rgba(13,148,136,0.06)' }}>
+        <div className="mt-12 rounded-2xl border border-blue-500/15 p-6" style={{ background: 'rgba(59,130,246,0.06)' }}>
           <h3 className="text-lg font-semibold text-white mb-2">Ready to put these insights into action?</h3>
           <p className="text-sm mb-4" style={{ color: '#94A3B8' }}>
             Join Cleya.ai and connect with the right investors, founders, and operators for your startup.
           </p>
           <Link href="/"
             className="inline-block px-6 py-3 rounded-xl text-white font-medium text-sm transition hover:scale-[1.02]"
-            style={{ background: '#0D9488' }}>
+            style={{ background: '#3B82F6' }}>
             Get Started Free →
           </Link>
         </div>

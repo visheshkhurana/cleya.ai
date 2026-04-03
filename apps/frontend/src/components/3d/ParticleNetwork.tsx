@@ -70,7 +70,7 @@ export default function ParticleNetwork() {
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < connectionThreshold) {
             const alpha = (1 - dist / connectionThreshold) * 0.15;
-            ctx.strokeStyle = `rgba(13,148,136,${alpha})`;
+            ctx.strokeStyle = `rgba(59,130,246,${alpha})`;
             ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
