@@ -106,6 +106,7 @@ GUPSHUP_API_KEY = "sk_3c07d74e1e9a4785aae88e25a09b43f8"
 GUPSHUP_APP_NAME = "cleyaai"
 GUPSHUP_SOURCE_NUMBER = "13688005877"
 GUPSHUP_TEMPLATE_NAMESPACE = "48b37188_29c7_4cff_ae93_e8fcbc6d0bd7"
+GOOGLE_REDIRECT_URI = "https://boardy-ai-platform.replit.app/api/calendar/callback"
 
 [userenv.development]
 FRONTEND_URL = "https://boardy-ai-platform.replit.dev"
