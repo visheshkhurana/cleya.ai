@@ -299,11 +299,12 @@ export default function NetworkCanvas() {
   if (!mounted) return <div className="fixed inset-0" style={{ background: '#050510' }} />;
 
   return (
-    <div className="fixed inset-0 z-0" style={{ background: '#050510' }}>
+    <div className="fixed inset-0 z-0 pointer-events-none" style={{ background: '#050510' }}>
       <Canvas
         camera={{ position: [0, 2, 15], fov: 60, near: 0.1, far: 100 }}
         dpr={[1, 1.5]}
         gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+        style={{ pointerEvents: 'none' }}
       >
         <Scene scrollProgress={scrollProgress} />
       </Canvas>

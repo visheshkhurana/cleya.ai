@@ -409,7 +409,7 @@ export default function Home() {
       {/* ════════════════════════════════════════════
           SCENE 2: PROFILE LAYER — DATA VISUALIZATION
           ════════════════════════════════════════════ */}
-      <section className="relative z-10 py-32 sm:py-40">
+      <section className="relative z-10 py-32 sm:py-40" style={{ background: '#050510' }}>
         <div className="max-w-6xl mx-auto px-6">
           <AnimatedSection className="grid lg:grid-cols-2 gap-16 items-center">
             <motion.div variants={fadeUp}>
@@ -470,7 +470,7 @@ export default function Home() {
       {/* ════════════════════════════════════════════
           SCENE 3: AI MATCHING ENGINE
           ════════════════════════════════════════════ */}
-      <section id="how-it-works" className="relative z-10 py-32 sm:py-40">
+      <section id="how-it-works" className="relative z-10 py-32 sm:py-40" style={{ background: '#050510' }}>
         <div className="max-w-6xl mx-auto px-6">
           <AnimatedSection className="text-center mb-20">
             <motion.div variants={fadeUp} className="text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#3B82F6' }}>
@@ -530,7 +530,7 @@ export default function Home() {
       {/* ════════════════════════════════════════════
           SCENE 4: USE CASES — FLOATING MODULES
           ════════════════════════════════════════════ */}
-      <section className="relative z-10 py-32 sm:py-40">
+      <section className="relative z-10 py-32 sm:py-40" style={{ background: '#050510' }}>
         <div className="max-w-6xl mx-auto px-6">
           <AnimatedSection className="text-center mb-16">
             <motion.div variants={fadeUp} className="text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#A78BFA' }}>
@@ -605,7 +605,7 @@ export default function Home() {
       {/* ════════════════════════════════════════════
           SCENE 5: SOCIAL PROOF — TESTIMONIALS
           ════════════════════════════════════════════ */}
-      <section className="relative z-10 py-24">
+      <section className="relative z-10 py-24" style={{ background: '#050510' }}>
         <div className="overflow-hidden py-8">
           <div className="flex animate-marquee whitespace-nowrap">
             {[...testimonials, ...testimonials].map((t, i) => (
@@ -651,7 +651,7 @@ export default function Home() {
       {/* ════════════════════════════════════════════
           SCENE 6: LIVE NETWORK — STATS
           ════════════════════════════════════════════ */}
-      <section className="relative z-10 py-32">
+      <section className="relative z-10 py-32" style={{ background: '#050510' }}>
         <div className="max-w-4xl mx-auto px-6">
           <AnimatedSection className="text-center mb-16">
             <motion.div variants={fadeUp} className="text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#06B6D4' }}>
@@ -683,7 +683,7 @@ export default function Home() {
       {/* ════════════════════════════════════════════
           SCENE 7: FINAL CTA — INFINITE NETWORK
           ════════════════════════════════════════════ */}
-      <section className="relative z-10 py-32 sm:py-44">
+      <section className="relative z-10 py-32 sm:py-44" style={{ background: '#050510' }}>
         <AnimatedSection className="relative max-w-3xl mx-auto px-6 text-center">
           <motion.div variants={fadeUp} className="mb-8">
             <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-8 pulse-ring"
@@ -715,7 +715,7 @@ export default function Home() {
       </section>
 
       {/* FOOTER */}
-      <footer role="contentinfo" className="relative z-10 border-t border-white/[0.04] py-12">
+      <footer role="contentinfo" className="relative z-10 border-t border-white/[0.04] py-12" style={{ background: '#050510' }}>
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2.5">
