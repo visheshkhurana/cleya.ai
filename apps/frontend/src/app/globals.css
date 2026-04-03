@@ -230,6 +230,28 @@
 .scroll-section.scroll-visible .scroll-item:nth-child(3) { transition-delay: 0.2s; }
 .scroll-section.scroll-visible .scroll-item:nth-child(4) { transition-delay: 0.3s; }
 
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.typing-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  background: #60A5FA;
+  vertical-align: text-bottom;
+  margin-left: 1px;
+  animation: blink-cursor 0.8s step-end infinite;
+}
+
+@keyframes cta-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(59,130,246,0.25), 0 0 60px rgba(59,130,246,0.1); }
+  50% { box-shadow: 0 0 30px rgba(59,130,246,0.4), 0 0 80px rgba(139,92,246,0.2); }
+}
+.cta-glow {
+  animation: cta-pulse 3s ease-in-out infinite;
+}
+
 .dot-grid {
   background-image: radial-gradient(rgba(59,130,246,0.05) 1px, transparent 1px);
   background-size: 24px 24px;

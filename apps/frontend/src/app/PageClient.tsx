@@ -23,6 +23,187 @@ function getPasswordStrength(pw: string): { label: string; color: string; width:
   return { label: 'Strong', color: '#10b981', width: '100%' };
 }
 
+const HERO_PHRASES = [
+  'raise a round',
+  'find a co-founder',
+  'source deals',
+  'hire senior talent',
+  'get warm intros',
+];
+
+function RotatingTypewriter() {
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  const [charIndex, setCharIndex] = useState(0);
+  const [deleting, setDeleting] = useState(false);
+  const phrase = HERO_PHRASES[phraseIndex];
+
+  useEffect(() => {
+    const speed = deleting ? 35 : 65;
+    const timer = setTimeout(() => {
+      if (!deleting && charIndex < phrase.length) {
+        setCharIndex(charIndex + 1);
+      } else if (!deleting && charIndex === phrase.length) {
+        setTimeout(() => setDeleting(true), 1800);
+      } else if (deleting && charIndex > 0) {
+        setCharIndex(charIndex - 1);
+      } else {
+        setDeleting(false);
+        setPhraseIndex((phraseIndex + 1) % HERO_PHRASES.length);
+      }
+    }, speed);
+    return () => clearTimeout(timer);
+  }, [charIndex, deleting, phrase, phraseIndex]);
+
+  return (
+    <span className="inline-block min-w-[180px]">
+      <span className="gradient-text">{phrase.slice(0, charIndex)}</span>
+      <span className="typing-cursor" />
+    </span>
+  );
+}
+
+const PROFILE_FIELDS = [
+  { label: 'Name', value: 'Arjun Mehta', icon: '👤' },
+  { label: 'Role', value: 'Founder & CEO', icon: '💼' },
+  { label: 'Sector', value: 'Fintech · Payments', icon: '🏢' },
+  { label: 'Stage', value: 'Series A · $2M ARR', icon: '📈' },
+  { label: 'Location', value: 'Bangalore, India', icon: '📍' },
+  { label: 'Looking for', value: 'Lead Investor · $5-8M', icon: '🎯' },
+];
+
+function ProfileBuilder({ active }: { active: boolean }) {
+  const [visibleFields, setVisibleFields] = useState(0);
+  const [typingChars, setTypingChars] = useState(0);
+  const [matchScore, setMatchScore] = useState(0);
+
+  useEffect(() => {
+    if (!active) return;
+    setVisibleFields(0);
+    setTypingChars(0);
+    setMatchScore(0);
+  }, [active]);
+
+  useEffect(() => {
+    if (!active || visibleFields >= PROFILE_FIELDS.length) {
+      if (active && visibleFields >= PROFILE_FIELDS.length && matchScore < 94) {
+        const t = setTimeout(() => setMatchScore(prev => Math.min(prev + 2, 94)), 30);
+        return () => clearTimeout(t);
+      }
+      return;
+    }
+    const currentField = PROFILE_FIELDS[visibleFields];
+    if (typingChars < currentField.value.length) {
+      const t = setTimeout(() => setTypingChars(prev => prev + 1), 40);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(() => {
+      setVisibleFields(prev => prev + 1);
+      setTypingChars(0);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [active, visibleFields, typingChars, matchScore]);
+
+  return (
+    <div className="rounded-2xl p-6 relative overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(20px)' }}>
+      <div className="flex items-center gap-3 mb-5 pb-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="w-12 h-12 rounded-full flex items-center justify-center text-lg" style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.2), rgba(139,92,246,0.2))', border: '1px solid rgba(59,130,246,0.3)' }}>
+          {visibleFields > 0 ? '👤' : '?'}
+        </div>
+        <div>
+          <p className="text-sm font-medium text-white">{visibleFields > 0 ? PROFILE_FIELDS[0].value : 'Building profile...'}</p>
+          <p className="text-xs text-white/30">{visibleFields > 1 ? PROFILE_FIELDS[1].value : 'Analyzing...'}</p>
+        </div>
+        {matchScore > 0 && (
+          <div className="ml-auto text-right">
+            <div className="text-xs text-white/30">AI Match Score</div>
+            <div className="text-lg font-bold" style={{ color: '#3B82F6' }}>{matchScore}%</div>
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-3">
+        {PROFILE_FIELDS.map((field, i) => (
+          <div key={i} className="flex items-center gap-3 transition-all duration-500" style={{ opacity: i <= visibleFields ? 1 : 0.15, transform: i <= visibleFields ? 'translateX(0)' : 'translateX(10px)' }}>
+            <span className="text-sm w-5 text-center">{field.icon}</span>
+            <span className="text-xs text-white/40 w-20 shrink-0">{field.label}</span>
+            <div className="flex-1 h-8 rounded-lg flex items-center px-3" style={{ background: 'rgba(255,255,255,0.03)', border: i === visibleFields && i < PROFILE_FIELDS.length ? '1px solid rgba(59,130,246,0.3)' : '1px solid rgba(255,255,255,0.04)' }}>
+              {i < visibleFields ? (
+                <span className="text-sm text-white/80">{field.value}</span>
+              ) : i === visibleFields ? (
+                <span className="text-sm">
+                  <span className="text-white/80">{field.value.slice(0, typingChars)}</span>
+                  <span className="typing-cursor" />
+                </span>
+              ) : (
+                <span className="text-sm text-white/15">—</span>
+              )}
+            </div>
+            {i < visibleFields && (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" className="shrink-0"><path d="M20 6L9 17l-5-5" /></svg>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {matchScore > 0 && (
+        <div className="mt-5 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-white/40">Profile completeness</span>
+            <span className="text-xs font-medium" style={{ color: '#10b981' }}>Complete</span>
+          </div>
+          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${matchScore}%`, background: 'linear-gradient(90deg, #3B82F6, #8B5CF6)' }} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProfileSection() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(false);
+  useEffect(() => {
+    if (!ref.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setActive(true); observer.disconnect(); } },
+      { rootMargin: '-100px' }
+    );
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={ref} className="grid lg:grid-cols-2 gap-16 items-center">
+      <div className={`scroll-section ${active ? 'scroll-visible' : ''}`}>
+        <div className="scroll-item">
+          <div className="text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#8B5CF6' }}>
+            Watch It Work
+          </div>
+          <h2 className="font-sans font-bold text-white mb-6 tracking-tight" style={{ fontSize: 'clamp(28px, 3vw + 8px, 44px)' }}>
+            Your profile becomes<br />
+            <span style={{ color: '#60A5FA' }}>structured intelligence</span>
+          </h2>
+          <p className="text-base leading-relaxed mb-8 max-w-lg" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            Cleya transforms your professional identity into a rich data profile — sector, stage, check size, intent, geography — creating a multi-dimensional map of who you are and what you need.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {['Sector & Stage', 'Investment Thesis', 'Geographic Reach', 'Connection Intent'].map((item, i) => (
+              <div key={i} className="flex items-center gap-2 px-4 py-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div className="w-1.5 h-1.5 rounded-full" style={{ background: i % 2 === 0 ? '#3B82F6' : '#8B5CF6' }} />
+                <span className="text-xs text-white/60">{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className={`transition-all duration-700 ${active ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`} style={{ transitionDelay: '0.3s' }}>
+        <ProfileBuilder active={active} />
+      </div>
+    </div>
+  );
+}
+
 function AnimatedSection({ children, className = '', style = {} }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -346,20 +527,21 @@ export default function Home() {
               <span className="gradient-text">What Matters</span>
             </h1>
 
-            <p
+            <div
               className="leading-relaxed mb-12 max-w-[520px] hero-fade-in"
               style={{ color: 'rgba(255,255,255,0.6)', fontSize: 'clamp(16px, 1vw + 12px, 20px)', animationDelay: '0.7s' }}
             >
-              AI-powered matchmaking for founders, investors, and talent across India's startup ecosystem. Every connection is intentional.
-            </p>
+              Whether you want to <RotatingTypewriter /><br />
+              Cleya's AI finds the right people — so every connection is intentional.
+            </div>
 
             <div
               className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 hero-fade-in"
               style={{ animationDelay: '0.9s' }}
             >
               <button onClick={() => { setShowAuth(true); setMode('signup'); }}
-                className="group px-10 py-4 rounded-full text-white font-medium text-[15px] transition-all duration-300 hover:scale-[1.03]"
-                style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', boxShadow: '0 0 40px rgba(59,130,246,0.25)' }}>
+                className="group cta-glow px-10 py-4 rounded-full text-white font-medium text-[15px] transition-all duration-300 hover:scale-[1.03]"
+                style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
                 Enter the Network
                 <span className="inline-block ml-2 transition-transform group-hover:translate-x-1">→</span>
               </button>
@@ -390,59 +572,7 @@ export default function Home() {
           ════════════════════════════════════════════ */}
       <section className="relative z-10 py-32 sm:py-40" style={{ background: '#050510' }}>
         <div className="max-w-6xl mx-auto px-6">
-          <AnimatedSection className="grid lg:grid-cols-2 gap-16 items-center">
-            <div className="scroll-item">
-              <div className="text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#8B5CF6' }}>
-                Identity Layer
-              </div>
-              <h2 className="font-sans font-bold text-white mb-6 tracking-tight" style={{ fontSize: 'clamp(28px, 3vw + 8px, 44px)' }}>
-                Your profile becomes<br />
-                <span style={{ color: '#60A5FA' }}>structured intelligence</span>
-              </h2>
-              <p className="text-base leading-relaxed mb-8 max-w-lg" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                Cleya transforms your professional identity into a rich data profile — sector, stage, check size, intent, geography — creating a multi-dimensional map of who you are and what you need.
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                {['Sector & Stage', 'Investment Thesis', 'Geographic Reach', 'Connection Intent'].map((item, i) => (
-                  <div key={i} className="flex items-center gap-2 px-4 py-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div className="w-1.5 h-1.5 rounded-full" style={{ background: i % 2 === 0 ? '#3B82F6' : '#8B5CF6' }} />
-                    <span className="text-xs text-white/60">{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="scroll-item relative">
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { name: 'Arjun M.', role: 'Founder · Fintech', match: '94%', color: '#3B82F6' },
-                  { name: 'Meera I.', role: 'VC Partner · Seed', match: '91%', color: '#8B5CF6' },
-                  { name: 'Siddharth A.', role: 'Angel · Pre-Seed', match: '88%', color: '#06B6D4' },
-                  { name: 'Priya S.', role: 'Founder · HealthTech', match: '86%', color: '#A78BFA' },
-                ].map((profile, i) => (
-                  <div key={i} className="p-5 rounded-2xl float-subtle" style={{
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    animationDelay: `${i * 0.5}s`,
-                    backdropFilter: 'blur(20px)',
-                  }}>
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center mb-3 text-xs font-bold text-white"
-                      style={{ background: `${profile.color}20`, border: `1px solid ${profile.color}30` }}>
-                      {profile.name.split(' ').map(n => n[0]).join('')}
-                    </div>
-                    <p className="text-sm font-medium text-white mb-0.5">{profile.name}</p>
-                    <p className="text-xs text-white/40 mb-3">{profile.role}</p>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                        <div className="h-full rounded-full" style={{ width: profile.match, background: profile.color }} />
-                      </div>
-                      <span className="text-[10px] font-medium" style={{ color: profile.color }}>{profile.match}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </AnimatedSection>
+          <ProfileSection />
         </div>
       </section>
 
