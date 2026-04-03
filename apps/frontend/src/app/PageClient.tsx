@@ -322,6 +322,308 @@ function ProfileSection() {
   );
 }
 
+const CHAT_MESSAGE = "I'm raising a Series A for my fintech startup. Looking for investors who've backed similar companies in India.";
+const CHAT_MATCHES = [
+  { name: 'Meera I.', role: 'VC Partner · Seed Stage', match: 94, color: '#3B82F6', initials: 'MI' },
+  { name: 'Vikram R.', role: 'Angel · Fintech Focus', match: 91, color: '#8B5CF6', initials: 'VR' },
+  { name: 'Siddharth A.', role: 'LP · Growth Capital', match: 88, color: '#06B6D4', initials: 'SA' },
+];
+
+function ChatDemo() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [step, setStep] = useState(0);
+  const [typedChars, setTypedChars] = useState(0);
+  const [thinkingDots, setThinkingDots] = useState(0);
+  const [visibleMatches, setVisibleMatches] = useState(-1);
+  const [introSent, setIntroSent] = useState(false);
+  const [btnClicked, setBtnClicked] = useState(false);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting && step === 0) { setStep(1); observer.disconnect(); } },
+      { rootMargin: '-120px' }
+    );
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [step]);
+
+  useEffect(() => {
+    return () => { timersRef.current.forEach(t => clearTimeout(t)); };
+  }, []);
+
+  useEffect(() => {
+    if (step !== 1) return;
+    if (typedChars < CHAT_MESSAGE.length) {
+      const t = setTimeout(() => setTypedChars(p => p + 1), 28);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(() => setStep(2), 600);
+    timersRef.current.push(t);
+    return () => clearTimeout(t);
+  }, [step, typedChars]);
+
+  useEffect(() => {
+    if (step !== 2) return;
+    if (thinkingDots < 6) {
+      const t = setTimeout(() => setThinkingDots(p => p + 1), 350);
+      return () => clearTimeout(t);
+    }
+    CHAT_MATCHES.forEach((_, i) => {
+      const t = setTimeout(() => setVisibleMatches(i), 200 + i * 300);
+      timersRef.current.push(t);
+    });
+    const t = setTimeout(() => setStep(3), 200 + CHAT_MATCHES.length * 300 + 500);
+    timersRef.current.push(t);
+  }, [step, thinkingDots]);
+
+  useEffect(() => {
+    if (step !== 3) return;
+    const t1 = setTimeout(() => setBtnClicked(true), 800);
+    const t2 = setTimeout(() => setIntroSent(true), 1600);
+    timersRef.current.push(t1, t2);
+  }, [step]);
+
+  const activeStep = step >= 3 ? 2 : step >= 2 ? 1 : 0;
+
+  return (
+    <div ref={ref} className="grid lg:grid-cols-2 gap-12 items-center">
+      <div>
+        <div className="text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#3B82F6' }}>
+          Intelligence Engine
+        </div>
+        <h2 className="font-sans font-bold text-white mb-6 tracking-tight" style={{ fontSize: 'clamp(28px, 3vw + 8px, 44px)' }}>
+          See Cleya in action
+        </h2>
+        <p className="text-base leading-relaxed mb-10 max-w-lg" style={{ color: 'rgba(255,255,255,0.4)' }}>
+          Tell Cleya what you need. Watch it find, rank, and introduce the right people — in seconds.
+        </p>
+
+        <div className="space-y-6">
+          {[
+            { label: 'You describe your intent', desc: "Type what you're looking for — a raise, a hire, a partner." },
+            { label: 'Cleya finds your matches', desc: 'AI scores and ranks your network in real time.' },
+            { label: 'One-click warm intro', desc: 'Send a contextual introduction with a single tap.' },
+          ].map((s, i) => (
+            <div key={i} className="flex gap-4 items-start transition-all duration-500"
+              style={{ opacity: i <= activeStep ? 1 : 0.3 }}>
+              <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold transition-all duration-500"
+                style={{
+                  background: i <= activeStep ? `${['#3B82F6','#8B5CF6','#06B6D4'][i]}15` : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${i <= activeStep ? `${['#3B82F6','#8B5CF6','#06B6D4'][i]}40` : 'rgba(255,255,255,0.06)'}`,
+                  color: i <= activeStep ? ['#3B82F6','#8B5CF6','#06B6D4'][i] : 'rgba(255,255,255,0.2)',
+                  boxShadow: i === activeStep ? `0 0 16px ${['#3B82F6','#8B5CF6','#06B6D4'][i]}25` : 'none',
+                }}>
+                {i + 1}
+              </div>
+              <div>
+                <p className={`text-sm font-medium transition-colors duration-500 ${i <= activeStep ? 'text-white' : 'text-white/30'}`}>{s.label}</p>
+                <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>{s.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex justify-center">
+        <div className="w-[320px] rounded-[2rem] p-3 relative" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 0 80px rgba(59,130,246,0.06)' }}>
+          <div className="rounded-[1.4rem] overflow-hidden" style={{ background: '#0A0A1A' }}>
+            <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
+                <span className="text-white font-bold text-[10px]">C</span>
+              </div>
+              <span className="text-xs font-medium text-white/70">Cleya AI</span>
+              <div className="ml-auto flex gap-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
+              </div>
+            </div>
+
+            <div className="p-4 space-y-3 min-h-[380px]">
+              <div className="flex justify-center">
+                <span className="text-[10px] text-white/20 px-3 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.03)' }}>Today</span>
+              </div>
+
+              {step >= 1 && (
+                <div className="flex justify-end">
+                  <div className="max-w-[220px] px-3 py-2.5 rounded-2xl rounded-br-md text-[12px] leading-relaxed text-white/90" style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.2), rgba(139,92,246,0.15))', border: '1px solid rgba(59,130,246,0.15)' }}>
+                    {CHAT_MESSAGE.slice(0, typedChars)}
+                    {typedChars < CHAT_MESSAGE.length && <span className="typing-cursor" />}
+                  </div>
+                </div>
+              )}
+
+              {step >= 2 && thinkingDots < 6 && (
+                <div className="flex justify-start">
+                  <div className="px-4 py-3 rounded-2xl rounded-bl-md flex gap-1.5" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                    {[0,1,2].map(d => (
+                      <div key={d} className="w-1.5 h-1.5 rounded-full bg-white/40 animate-bounce" style={{ animationDelay: `${d * 150}ms` }} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {step >= 2 && thinkingDots >= 6 && (
+                <div className="flex justify-start">
+                  <div className="px-3 py-2 rounded-2xl rounded-bl-md text-[11px] text-white/60" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                    Found <span className="text-white font-medium">3 matches</span> in your network:
+                  </div>
+                </div>
+              )}
+
+              {visibleMatches >= 0 && CHAT_MATCHES.map((m, i) => (
+                i <= visibleMatches && (
+                  <div key={i} className="transition-all duration-400"
+                    style={{ opacity: 1, transform: 'translateY(0)', animation: 'slideUp 0.3s ease-out' }}>
+                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0"
+                        style={{ background: `${m.color}18`, color: m.color, border: `1px solid ${m.color}30` }}>
+                        {m.initials}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-medium text-white truncate">{m.name}</p>
+                        <p className="text-[9px] text-white/30 truncate">{m.role}</p>
+                      </div>
+                      <div className="text-[11px] font-bold shrink-0" style={{ color: m.color }}>{m.match}%</div>
+                    </div>
+                  </div>
+                )
+              ))}
+
+              {step >= 3 && !introSent && (
+                <div className="flex justify-center pt-1">
+                  <button className={`px-5 py-2 rounded-full text-[11px] font-medium text-white transition-all duration-300 ${btnClicked ? 'scale-95 opacity-70' : 'scale-100'}`}
+                    style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
+                    Send Intro to Meera I. →
+                  </button>
+                </div>
+              )}
+
+              {introSent && (
+                <div className="flex justify-start">
+                  <div className="px-3 py-2.5 rounded-2xl rounded-bl-md text-[11px] leading-relaxed" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.15)' }}>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5"><path d="M20 6L9 17l-5-5" /></svg>
+                      <span className="text-green-400 font-medium">Introduction sent</span>
+                    </div>
+                    <span className="text-white/50">to Meera I. with context about your Series A raise.</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const USE_CASE_PREVIEWS = {
+  FOUNDER: [
+    { label: 'Pre-Seed Round', status: 'Intro sent', statusColor: '#3B82F6', amount: '$500K' },
+    { label: 'Series A Lead', status: 'Meeting set', statusColor: '#10b981', amount: '$4M' },
+    { label: 'Strategic Angel', status: 'Matched', statusColor: '#8B5CF6', amount: '$100K' },
+  ],
+  INVESTOR: [
+    { label: 'Fintech · Seed', stage: 'Pre-pitch', score: 96, color: '#3B82F6' },
+    { label: 'HealthTech · A', stage: 'Deck received', score: 91, color: '#8B5CF6' },
+    { label: 'SaaS · Pre-Seed', stage: 'New match', score: 88, color: '#06B6D4' },
+  ],
+  TALENT: [
+    { label: 'Founding Engineer', company: 'Stealth Fintech', fit: 'Strong', fitColor: '#10b981' },
+    { label: 'Head of Product', company: 'Series B SaaS', fit: 'Good', fitColor: '#3B82F6' },
+    { label: 'Growth Lead', company: 'Seed HealthTech', fit: 'Strong', fitColor: '#10b981' },
+  ],
+};
+
+function UseCaseCard({ persona, setShowAuth, setMode, setSelectedPersona }: {
+  persona: { title: string; tagline: string; desc: string; cta: string; personaValue: string; accentColor: string; gradient: string; borderColor: string };
+  setShowAuth: (v: boolean) => void; setMode: (v: 'login' | 'signup') => void; setSelectedPersona: (v: string) => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const [tapped, setTapped] = useState(false);
+  const previews = USE_CASE_PREVIEWS[persona.personaValue as keyof typeof USE_CASE_PREVIEWS];
+  const revealed = hovered || tapped;
+
+  return (
+    <div className="scroll-item perspective-[1200px]">
+      <div
+        className="relative rounded-2xl cursor-pointer h-full group transition-all duration-500"
+        style={{
+          background: persona.gradient,
+          border: `1px solid ${revealed ? `${persona.accentColor}30` : persona.borderColor}`,
+          transform: revealed ? 'translateY(-8px)' : 'translateY(0)',
+          boxShadow: revealed ? `0 20px 60px ${persona.accentColor}12` : 'none',
+        }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onTouchStart={() => setTapped(p => !p)}
+        onClick={() => { if (tapped) return; setShowAuth(true); setMode('signup'); setSelectedPersona(persona.personaValue); }}
+      >
+        <div className="p-8 pb-4">
+          <div className="mb-5 w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-500"
+            style={{
+              background: `${persona.accentColor}15`,
+              border: `1px solid ${persona.accentColor}25`,
+              boxShadow: revealed ? `0 0 20px ${persona.accentColor}20` : 'none',
+            }}>
+            <div className="w-3.5 h-3.5 rounded-sm rotate-45 transition-transform duration-500" style={{ background: persona.accentColor, transform: revealed ? 'rotate(225deg) scale(1.1)' : 'rotate(45deg)' }} />
+          </div>
+          <h3 className="font-bold text-white text-xl mb-1">{persona.title}</h3>
+          <p className="text-sm font-medium mb-3" style={{ color: persona.accentColor }}>{persona.tagline}</p>
+          <p className="text-sm leading-relaxed mb-4" style={{ color: 'rgba(255,255,255,0.4)' }}>{persona.desc}</p>
+        </div>
+
+        <div className="overflow-hidden transition-all duration-500" style={{ maxHeight: revealed ? '200px' : '0', opacity: revealed ? 1 : 0 }}>
+          <div className="px-8 pb-4">
+            <div className="rounded-xl overflow-hidden" style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.04)' }}>
+              {persona.personaValue === 'FOUNDER' && (previews as typeof USE_CASE_PREVIEWS.FOUNDER).map((p, i) => (
+                <div key={i} className="flex items-center justify-between px-3 py-2.5" style={{ borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                  <div>
+                    <p className="text-[11px] font-medium text-white/80">{p.label}</p>
+                    <p className="text-[10px]" style={{ color: p.statusColor }}>{p.status}</p>
+                  </div>
+                  <span className="text-[11px] font-bold text-white/50">{p.amount}</span>
+                </div>
+              ))}
+              {persona.personaValue === 'INVESTOR' && (previews as typeof USE_CASE_PREVIEWS.INVESTOR).map((p, i) => (
+                <div key={i} className="flex items-center justify-between px-3 py-2.5" style={{ borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                  <div>
+                    <p className="text-[11px] font-medium text-white/80">{p.label}</p>
+                    <p className="text-[10px] text-white/30">{p.stage}</p>
+                  </div>
+                  <span className="text-[11px] font-bold" style={{ color: p.color }}>{p.score}%</span>
+                </div>
+              ))}
+              {persona.personaValue === 'TALENT' && (previews as typeof USE_CASE_PREVIEWS.TALENT).map((p, i) => (
+                <div key={i} className="flex items-center justify-between px-3 py-2.5" style={{ borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                  <div>
+                    <p className="text-[11px] font-medium text-white/80">{p.label}</p>
+                    <p className="text-[10px] text-white/30">{p.company}</p>
+                  </div>
+                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ color: p.fitColor, background: `${p.fitColor}15` }}>{p.fit}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="px-8 pb-6">
+          <span className="inline-flex items-center gap-2 text-sm font-medium text-white/40 group-hover:text-white transition-colors">
+            {persona.cta}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="transition-transform group-hover:translate-x-1">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </span>
+        </div>
+
+        <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+          style={{ boxShadow: `0 0 40px ${persona.accentColor}15` }} />
+      </div>
+    </div>
+  );
+}
+
 function AnimatedSection({ children, className = '', style = {} }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -695,67 +997,16 @@ export default function Home() {
       </section>
 
       {/* ════════════════════════════════════════════
-          SCENE 3: AI MATCHING ENGINE
+          SCENE 3: AI MATCHING ENGINE — INTERACTIVE CHAT DEMO
           ════════════════════════════════════════════ */}
       <section id="how-it-works" className="relative z-10 py-32 sm:py-40" style={{ background: '#050510' }}>
         <div className="max-w-6xl mx-auto px-6">
-          <AnimatedSection className="text-center mb-20">
-            <div className="scroll-item text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#3B82F6' }}>
-              Intelligence Engine
-            </div>
-            <h2 className="scroll-item font-sans font-bold text-white mb-5 tracking-tight" style={{ fontSize: 'clamp(28px, 3.5vw + 8px, 48px)' }}>
-              {t('howItWorks.title')}
-            </h2>
-            <p className="scroll-item text-base max-w-lg mx-auto" style={{ color: 'rgba(255,255,255,0.4)' }}>
-              {t('howItWorks.subtitle')}
-            </p>
-          </AnimatedSection>
-
-          <AnimatedSection className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                num: '01',
-                title: t('howItWorks.step1.title'),
-                desc: t('howItWorks.step1.desc'),
-                color: '#3B82F6',
-              },
-              {
-                num: '02',
-                title: t('howItWorks.step2.title'),
-                desc: t('howItWorks.step2.desc'),
-                color: '#8B5CF6',
-              },
-              {
-                num: '03',
-                title: t('howItWorks.step3.title'),
-                desc: t('howItWorks.step3.desc'),
-                color: '#06B6D4',
-              },
-            ].map((step, i) => (
-              <div key={i} className="scroll-item">
-                <div className="relative rounded-2xl p-8 h-full group hover:scale-[1.02] transition-transform duration-300"
-                  style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div className="absolute top-4 right-6 font-sans text-[80px] font-bold leading-none pointer-events-none select-none"
-                    style={{ color: `${step.color}08` }}>{step.num}</div>
-                  <div className="relative">
-                    <div className="mb-6 w-12 h-12 rounded-xl flex items-center justify-center"
-                      style={{ background: `${step.color}10`, border: `1px solid ${step.color}20` }}>
-                      <div className="w-3 h-3 rounded-full" style={{ background: step.color, boxShadow: `0 0 20px ${step.color}60` }} />
-                    </div>
-                    <h3 className="font-semibold text-white text-lg mb-3">{step.title}</h3>
-                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.4)' }}>{step.desc}</p>
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 h-px opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ background: `linear-gradient(90deg, transparent, ${step.color}40, transparent)` }} />
-                </div>
-              </div>
-            ))}
-          </AnimatedSection>
+          <ChatDemo />
         </div>
       </section>
 
       {/* ════════════════════════════════════════════
-          SCENE 4: USE CASES — FLOATING MODULES
+          SCENE 4: USE CASES — INTERACTIVE HOVER CARDS
           ════════════════════════════════════════════ */}
       <section className="relative z-10 py-32 sm:py-40" style={{ background: '#050510' }}>
         <div className="max-w-6xl mx-auto px-6">
@@ -801,29 +1052,7 @@ export default function Home() {
                 accentColor: '#06B6D4',
               },
             ].map((persona, i) => (
-              <div key={i} className="scroll-item">
-                <div
-                  className="relative rounded-2xl p-8 cursor-pointer h-full group hover:scale-[1.02] transition-all duration-300"
-                  style={{ background: persona.gradient, border: `1px solid ${persona.borderColor}` }}
-                  onClick={() => { setShowAuth(true); setMode('signup'); setSelectedPersona(persona.personaValue); }}
-                >
-                  <div className="mb-6 w-12 h-12 rounded-xl flex items-center justify-center"
-                    style={{ background: `${persona.accentColor}15`, border: `1px solid ${persona.accentColor}25` }}>
-                    <div className="w-4 h-4 rounded-sm rotate-45" style={{ background: persona.accentColor }} />
-                  </div>
-                  <h3 className="font-bold text-white text-xl mb-1">{persona.title}</h3>
-                  <p className="text-sm font-medium mb-3" style={{ color: persona.accentColor }}>{persona.tagline}</p>
-                  <p className="text-sm leading-relaxed mb-6" style={{ color: 'rgba(255,255,255,0.4)' }}>{persona.desc}</p>
-                  <span className="inline-flex items-center gap-2 text-sm font-medium text-white/40 group-hover:text-white transition-colors">
-                    {persona.cta}
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="transition-transform group-hover:translate-x-1">
-                      <path d="M5 12h14M12 5l7 7-7 7" />
-                    </svg>
-                  </span>
-                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-                    style={{ boxShadow: `0 0 40px ${persona.accentColor}15` }} />
-                </div>
-              </div>
+              <UseCaseCard key={i} persona={persona} setShowAuth={setShowAuth} setMode={setMode} setSelectedPersona={setSelectedPersona} />
             ))}
           </AnimatedSection>
         </div>

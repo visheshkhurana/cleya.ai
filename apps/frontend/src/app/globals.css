@@ -257,6 +257,10 @@
   50% { transform: scale(1.04); }
   100% { transform: scale(1); }
 }
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 .dimension-tag-lit {
   animation: tag-pulse 0.5s ease-out;
 }
