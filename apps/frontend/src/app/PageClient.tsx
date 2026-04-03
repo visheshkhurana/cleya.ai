@@ -624,6 +624,58 @@ function UseCaseCard({ persona, setShowAuth, setMode, setSelectedPersona }: {
   );
 }
 
+const ACTIVITY_FEED = [
+  { text: 'Meera matched with Vikram', time: '2min ago', color: '#3B82F6' },
+  { text: 'Arjun sent intro to Nandini', time: '5min ago', color: '#8B5CF6' },
+  { text: 'Priya matched with Siddharth', time: '8min ago', color: '#06B6D4' },
+  { text: 'Rahul connected with Kavya', time: '12min ago', color: '#A78BFA' },
+  { text: 'Deepak matched with Ananya', time: '15min ago', color: '#3B82F6' },
+  { text: 'Sneha sent intro to Rohan', time: '18min ago', color: '#8B5CF6' },
+  { text: 'Aditya matched with Pooja', time: '22min ago', color: '#06B6D4' },
+  { text: 'Neha connected with Kartik', time: '25min ago', color: '#A78BFA' },
+];
+
+function AnimatedCounter({ target, suffix = '', color, label }: { target: number; suffix?: string; color: string; label: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [count, setCount] = useState(0);
+  const startedRef = useRef(false);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !startedRef.current) {
+          startedRef.current = true;
+          const duration = 1800;
+          const startTime = performance.now();
+          const step = (now: number) => {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            setCount(Math.round(eased * target));
+            if (progress < 1) requestAnimationFrame(step);
+          };
+          requestAnimationFrame(step);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '-60px' }
+    );
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [target]);
+
+  return (
+    <div ref={ref} className="text-center p-6 rounded-2xl"
+      style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+      <div className="font-bold text-3xl sm:text-4xl mb-1 tabular-nums" style={{ color }}>
+        {count}{suffix}
+      </div>
+      <div className="text-xs text-white/30 uppercase tracking-wider">{label}</div>
+    </div>
+  );
+}
+
 function AnimatedSection({ children, className = '', style = {} }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -1081,7 +1133,7 @@ export default function Home() {
 
         <AnimatedSection className="max-w-4xl mx-auto px-6 mt-20">
           <div className="scroll-item">
-            <div className="rounded-2xl p-8 sm:p-14 relative overflow-hidden"
+            <div className="rounded-2xl p-8 sm:p-14 relative overflow-hidden testimonial-featured"
               style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(20px)' }}>
               <div className="absolute top-0 right-0 w-[400px] h-[400px] rounded-full pointer-events-none"
                 style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 70%)' }} />
@@ -1105,7 +1157,7 @@ export default function Home() {
       </section>
 
       {/* ════════════════════════════════════════════
-          SCENE 6: LIVE NETWORK — STATS
+          SCENE 6: LIVE NETWORK — ANIMATED STATS
           ════════════════════════════════════════════ */}
       <section className="relative z-10 py-32" style={{ background: '#050510' }}>
         <div className="max-w-4xl mx-auto px-6">
@@ -1118,21 +1170,23 @@ export default function Home() {
             </h2>
           </AnimatedSection>
 
-          <AnimatedSection className="grid grid-cols-3 gap-6 max-w-2xl mx-auto">
-            {[
-              { label: 'Members', value: platformStats?.memberCount || 24, suffix: '+', color: '#3B82F6' },
-              { label: 'Matches', value: platformStats?.matchCount || 150, suffix: '+', color: '#8B5CF6' },
-              { label: 'Intros Made', value: platformStats?.introductionCount || 89, suffix: '+', color: '#06B6D4' },
-            ].map((stat, i) => (
-              <div key={i} className="scroll-item text-center p-6 rounded-2xl"
-                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                <div className="font-bold text-3xl sm:text-4xl mb-1" style={{ color: stat.color }}>
-                  {stat.value}{stat.suffix}
+          <div className="grid grid-cols-3 gap-6 max-w-2xl mx-auto mb-16">
+            <AnimatedCounter target={49} suffix="+" color="#3B82F6" label="Cities" />
+            <AnimatedCounter target={31} suffix="+" color="#8B5CF6" label="Industries" />
+            <AnimatedCounter target={1} suffix=" Lakh+" color="#06B6D4" label="Connections" />
+          </div>
+
+          <div className="overflow-hidden py-4" style={{ mask: 'linear-gradient(90deg, transparent, black 10%, black 90%, transparent)', WebkitMask: 'linear-gradient(90deg, transparent, black 10%, black 90%, transparent)' }}>
+            <div className="flex activity-ticker whitespace-nowrap">
+              {[...ACTIVITY_FEED, ...ACTIVITY_FEED].map((item, i) => (
+                <div key={i} className="inline-flex items-center gap-2 mx-6 flex-shrink-0">
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: item.color }} />
+                  <span className="text-xs text-white/40">{item.text}</span>
+                  <span className="text-[10px] text-white/20">— {item.time}</span>
                 </div>
-                <div className="text-xs text-white/30 uppercase tracking-wider">{stat.label}</div>
-              </div>
-            ))}
-          </AnimatedSection>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1152,12 +1206,15 @@ export default function Home() {
             Your next opportunity is<br />
             <span className="gradient-text">already in the network</span>
           </h2>
-          <p className="scroll-item text-base mb-14 max-w-lg mx-auto" style={{ color: 'rgba(255,255,255,0.4)' }}>
+          <p className="scroll-item text-base mb-8 max-w-lg mx-auto" style={{ color: 'rgba(255,255,255,0.4)' }}>
             Join the founders, investors, and operators who are building meaningful connections through AI.
+          </p>
+          <p className="scroll-item urgency-text text-sm font-medium mb-8" style={{ color: '#F59E0B' }}>
+            Only 23 spots remaining this month
           </p>
           <div className="scroll-item flex flex-col sm:flex-row items-center justify-center gap-4">
             <button onClick={() => { setShowAuth(true); setMode('signup'); }}
-              className="group px-12 py-4 rounded-full text-white font-medium text-[15px] transition-all duration-300 hover:scale-[1.03]"
+              className="group cta-shimmer px-12 py-4 rounded-full text-white font-medium text-[15px] transition-all duration-300 hover:scale-[1.03]"
               style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', boxShadow: '0 0 50px rgba(59,130,246,0.3)' }}>
               Enter the Network
               <span className="inline-block ml-2 transition-transform group-hover:translate-x-1">→</span>
