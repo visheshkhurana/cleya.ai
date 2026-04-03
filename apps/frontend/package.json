@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 5000",
-    "build": "node build.js",
+    "build": "NODE_ENV=production next build",
     "start": "next start --port 5000"
   },
   "dependencies": {
@@ -18,8 +18,8 @@
     "lucide-react": "^0.316.0",
     "next": "^14.1.0",
     "postcss": "^8.4.33",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
     "react-markdown": "^10.1.0",
     "react-phone-number-input": "^3.4.16",
     "tailwindcss": "^3.4.1",
@@ -32,6 +32,6 @@
     "typescript": "^5.3.3"
   },
   "optionalDependencies": {
-    "@next/swc-linux-x64-gnu": "14.2.35"
+    "@next/swc-linux-x64-gnu": "14.2.33"
   }
 }

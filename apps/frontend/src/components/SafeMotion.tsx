@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, forwardRef, createElement } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, createElement } from 'react';
 import { getGlobalMounted, addMountListener } from '@/lib/mountState';
 
 const MOTION_KEYS = new Set([
@@ -19,13 +19,24 @@ function stripMotionProps(props: Record<string, unknown>) {
   return clean;
 }
 
-function useGlobalMounted() {
+function useHydrationSafeMounted() {
   const [mounted, setMounted] = useState(false);
+  const hydrated = useRef(false);
+
   useEffect(() => {
-    if (getGlobalMounted()) setMounted(true);
-    const unsub = addMountListener(() => setMounted(getGlobalMounted()));
-    return unsub;
+    hydrated.current = true;
+    if (getGlobalMounted()) {
+      setMounted(true);
+    }
+    const unsub = addMountListener(() => {
+      if (hydrated.current) setMounted(getGlobalMounted());
+    });
+    return () => {
+      unsub();
+      hydrated.current = false;
+    };
   }, []);
+
   return mounted;
 }
 
@@ -45,11 +56,13 @@ function loadFramerMotion() {
 
 function makeSafe(tag: string) {
   return forwardRef((props: any, ref: any) => {
-    const mounted = useGlobalMounted();
-    const [fmLoaded, setFmLoaded] = useState(!!framerMotion);
+    const mounted = useHydrationSafeMounted();
+    const [fmLoaded, setFmLoaded] = useState(false);
 
     useEffect(() => {
-      if (!framerMotion) {
+      if (framerMotion) {
+        setFmLoaded(true);
+      } else {
         loadFramerMotion().then(() => setFmLoaded(!!framerMotion));
       }
     }, []);
@@ -78,11 +91,13 @@ export const motion = {
 };
 
 export function SafeAnimatePresence({ children, ...props }: any) {
-  const mounted = useGlobalMounted();
-  const [fmLoaded, setFmLoaded] = useState(!!framerAP);
+  const mounted = useHydrationSafeMounted();
+  const [fmLoaded, setFmLoaded] = useState(false);
 
   useEffect(() => {
-    if (!framerAP) {
+    if (framerAP) {
+      setFmLoaded(true);
+    } else {
       loadFramerMotion().then(() => setFmLoaded(!!framerAP));
     }
   }, []);

@@ -25,8 +25,8 @@ export default function LanguageSwitcher() {
       aria-label={locale === 'en' ? 'Switch to Hindi' : 'Switch to English'}
       title={locale === 'en' ? '\u0939\u093F\u0902\u0926\u0940 \u092E\u0947\u0902 \u092C\u0926\u0932\u0947\u0902' : 'Switch to English'}
     >
-      <span className="text-sm">{flag}</span>
-      <span>{label}</span>
+      <span className="text-sm" suppressHydrationWarning>{flag}</span>
+      <span suppressHydrationWarning>{label}</span>
     </button>
   );
 }

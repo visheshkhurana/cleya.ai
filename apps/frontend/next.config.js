@@ -6,6 +6,14 @@ const nextConfig = {
   experimental: {
     missingSuspenseWithCSRBailout: false,
   },
+  transpilePackages: [
+    'react-markdown',
+    'react-phone-number-input',
+    'lenis',
+    'three',
+    '@react-three/fiber',
+    '@react-three/drei',
+  ],
   allowedDevOrigins: ['*.replit.dev', '*.kirk.replit.dev'],
   compress: true,
   poweredByHeader: false,
