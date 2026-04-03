@@ -252,6 +252,15 @@
   animation: cta-pulse 3s ease-in-out infinite;
 }
 
+@keyframes tag-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+.dimension-tag-lit {
+  animation: tag-pulse 0.5s ease-out;
+}
+
 .dot-grid {
   background-image: radial-gradient(rgba(59,130,246,0.05) 1px, transparent 1px);
   background-size: 24px 24px;

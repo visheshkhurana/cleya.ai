@@ -71,16 +71,18 @@ const PROFILE_FIELDS = [
   { label: 'Looking for', value: 'Lead Investor · $5-8M', icon: '🎯' },
 ];
 
-function ProfileBuilder({ active }: { active: boolean }) {
+function ProfileBuilder({ active, onComplete }: { active: boolean; onComplete?: () => void }) {
   const [visibleFields, setVisibleFields] = useState(0);
   const [typingChars, setTypingChars] = useState(0);
   const [matchScore, setMatchScore] = useState(0);
+  const completedRef = useRef(false);
 
   useEffect(() => {
     if (!active) return;
     setVisibleFields(0);
     setTypingChars(0);
     setMatchScore(0);
+    completedRef.current = false;
   }, [active]);
 
   useEffect(() => {
@@ -88,6 +90,10 @@ function ProfileBuilder({ active }: { active: boolean }) {
       if (active && visibleFields >= PROFILE_FIELDS.length && matchScore < 94) {
         const t = setTimeout(() => setMatchScore(prev => Math.min(prev + 2, 94)), 30);
         return () => clearTimeout(t);
+      }
+      if (active && matchScore >= 94 && !completedRef.current) {
+        completedRef.current = true;
+        onComplete?.();
       }
       return;
     }
@@ -160,9 +166,18 @@ function ProfileBuilder({ active }: { active: boolean }) {
   );
 }
 
+const DIMENSION_TAGS = [
+  { label: 'Sector & Stage', color: '#3B82F6' },
+  { label: 'Investment Thesis', color: '#8B5CF6' },
+  { label: 'Geographic Reach', color: '#3B82F6' },
+  { label: 'Connection Intent', color: '#8B5CF6' },
+];
+
 function ProfileSection() {
   const ref = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(false);
+  const [litTags, setLitTags] = useState(-1);
+
   useEffect(() => {
     if (!ref.current) return;
     const observer = new IntersectionObserver(
@@ -171,6 +186,16 @@ function ProfileSection() {
     );
     observer.observe(ref.current);
     return () => observer.disconnect();
+  }, []);
+
+  const handleProfileComplete = useCallback(() => {
+    let idx = 0;
+    const tick = () => {
+      setLitTags(idx);
+      idx++;
+      if (idx < DIMENSION_TAGS.length) setTimeout(tick, 400);
+    };
+    setTimeout(tick, 300);
   }, []);
 
   return (
@@ -188,17 +213,26 @@ function ProfileSection() {
             Cleya transforms your professional identity into a rich data profile — sector, stage, check size, intent, geography — creating a multi-dimensional map of who you are and what you need.
           </p>
           <div className="grid grid-cols-2 gap-3">
-            {['Sector & Stage', 'Investment Thesis', 'Geographic Reach', 'Connection Intent'].map((item, i) => (
-              <div key={i} className="flex items-center gap-2 px-4 py-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <div className="w-1.5 h-1.5 rounded-full" style={{ background: i % 2 === 0 ? '#3B82F6' : '#8B5CF6' }} />
-                <span className="text-xs text-white/60">{item}</span>
-              </div>
-            ))}
+            {DIMENSION_TAGS.map((tag, i) => {
+              const lit = i <= litTags;
+              return (
+                <div key={i} className={`flex items-center gap-2 px-4 py-3 rounded-xl transition-all duration-500 ${lit ? 'dimension-tag-lit' : ''}`}
+                  style={{
+                    background: lit ? `${tag.color}12` : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${lit ? `${tag.color}40` : 'rgba(255,255,255,0.05)'}`,
+                    boxShadow: lit ? `0 0 20px ${tag.color}15` : 'none',
+                  }}>
+                  <div className="w-1.5 h-1.5 rounded-full transition-all duration-500" style={{ background: tag.color, boxShadow: lit ? `0 0 8px ${tag.color}` : 'none', transform: lit ? 'scale(1.4)' : 'scale(1)' }} />
+                  <span className={`text-xs transition-colors duration-500 ${lit ? 'text-white/90' : 'text-white/40'}`}>{tag.label}</span>
+                  {lit && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={tag.color} strokeWidth="2.5" className="ml-auto shrink-0"><path d="M20 6L9 17l-5-5" /></svg>}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
       <div className={`transition-all duration-700 ${active ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`} style={{ transitionDelay: '0.3s' }}>
-        <ProfileBuilder active={active} />
+        <ProfileBuilder active={active} onComplete={handleProfileComplete} />
       </div>
     </div>
   );
