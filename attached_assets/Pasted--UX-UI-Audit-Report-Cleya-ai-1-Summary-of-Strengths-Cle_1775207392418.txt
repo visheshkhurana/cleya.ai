@@ -1,0 +1,145 @@
+---
+
+# UX/UI Audit Report — Cleya.ai
+
+## 1. Summary of Strengths
+
+Cleya.ai has a strong conceptual foundation and several things working well. The dark theme with gradient highlights creates a premium, tech-forward aesthetic that resonates with the Indian startup ecosystem audience. The three-persona segmentation (Founders, Investors, Talent & Operators) on the homepage is clear and immediately helps visitors self-identify. The "See Cleya in Action" section with the three-step flow (describe intent → AI matches → one-click intro) is concise and does a good job communicating the core value proposition. The profile creation experience in the dashboard is well-structured, with a clear completeness bar (88%), organized sections for industries and founder details, and an intuitive chip-selection interface. The sign-up modal is well-designed with smart role selection (Founder/Investor/Talent) using icons, and LinkedIn SSO reduces friction. The pricing page is clear with a freemium model that lowers the barrier to entry. The AI chat interface provides a clean, simple messaging experience. Blog content is relevant and targeted at the core personas.
+
+---
+
+## 2. Issues & Opportunities
+
+### Navigation & Information Architecture (Critical)
+
+**Two entirely different navigation systems exist across the site.** The homepage uses "How It Works / Pricing / Blog / Hindi toggle / Log In / Get Started" while internal pages (About, Features, Contact, Privacy, Terms) use "About / Features / Contact / Log In / Get Started." There is no unified navigation. A user on the Features page cannot reach Pricing or the Blog, and a user on the homepage cannot reach the About or Features pages — these feel like two separate websites stitched together. This violates Nielsen's consistency and standards heuristic and will confuse users navigating between pages.
+
+**The "How It Works" nav button on the homepage does nothing.** It appears to be a scroll-anchor that should jump to the relevant section, but clicking it produces no visible result. This is a broken interaction that erodes trust.
+
+**The "Get Started" button in the homepage header is non-functional.** Clicking it does not open the sign-up modal or navigate anywhere. Only the "Log In" button works. For a members-only platform where conversion is critical, having the primary CTA be a dead button is a severe conversion leak.
+
+**Three different navigation patterns exist in the logged-in app.** The Dashboard has a full top nav bar (Matches, Introductions, Chat, Profile, Settings). The Matches and Introductions pages use a simpler "← Back" plus page title pattern. The Settings page uses a breadcrumb-style "Dashboard > Profile > Settings" text nav. This inconsistency makes navigation unpredictable for logged-in users.
+
+### Visual Design & Branding (High Priority)
+
+**The logo changes between the homepage and internal pages.** The homepage shows a blue rounded-square "C" icon, while internal pages (About, Features, Contact, etc.) display a green infinity/glasses "∞" icon. This is a fundamental brand identity fracture that undermines credibility, especially for a platform asking professionals to trust it with their network.
+
+**The footer logo on the app (boardy-ai-platform.replit.app) uses yet another logo variant** — a circular interlinked "∞" in a different style from both the homepage and the internal pages.
+
+**Low contrast body text.** The muted gray sub-text (the "Whether you want to..." paragraph, the "Explore" link, and section descriptions) against the dark background has poor contrast. It appears to be approximately #7a7a8a text on a #0a0a1a background, which likely fails WCAG AA minimum contrast ratio of 4.5:1 for normal text. This affects readability for all users and is an accessibility failure.
+
+**The animated typewriter text in the hero** ("hire senior talent," "raise a round," "find a partner," "get warm intros") sometimes appears mid-word during page load, which looks glitchy (e.g., "fi" or "hire seni" visible during transitions).
+
+**Excessive empty space between sections.** The gap between "See Cleya in Action" and "Built for Every Role" sections is disproportionately large — nearly an entire viewport height of empty dark space. This makes the page feel unfinished and may cause users to think they've reached the bottom.
+
+### Content & Microcopy (Medium-High Priority)
+
+**The "Live Network" stats display "0+" on initial load before animating up to real numbers** (49+ Cities, 31+ Industries, 1 Lakh+ Connections). This "counting up from zero" animation means users who scroll quickly or have slow connections see zeros — which actively communicates "empty network" and undermines the social proof this section is meant to provide.
+
+**Hindi localization is incomplete.** The Hindi toggle translates navigation items and the members-only badge, but leaves the headline, sub-headline, body text, buttons ("Enter the Network," "Explore"), and all section content in English. This half-translated state is worse than no translation at all — it signals lack of attention to detail and may alienate Hindi-preferring users.
+
+**The homepage says "Members-only · Invite or Apply" but the sign-up form allows direct account creation** with just name, email, and password. There's no visible invitation code field or application review step. This contradicts the exclusivity messaging and creates a trust gap.
+
+**Testimonial names appear fabricated.** All testimonials use first name + last initial format (Arjun M., Meera I., Priya S., Rahul V., Nandini R.) with specific claims like "Partner · Blume Ventures" and "Venture Partner · Elevation Capital." If these are real, full attribution would be more credible. If fabricated, this is a significant trust risk — especially given the target audience of sophisticated investors and founders who may recognize these VC firm names.
+
+**"Only 23 spots remaining this month"** — this urgency scarcity tactic needs to be real-time or risk being perceived as manipulative, particularly by the discerning professional audience.
+
+### Interaction Design (High Priority)
+
+**Domain split between cleya.ai and boardy-ai-platform.replit.app.** The marketing site lives on cleya.ai, but the actual app (chat, dashboard, profile, matches) runs on boardy-ai-platform.replit.app. Users jumping between these domains experience a jarring context switch. The Replit subdomain also signals "prototype/early-stage" rather than "production-ready platform," which could deter professional investors.
+
+**The match card on the Matches page shows "30% · Possible Fit"** for an investor match. A 30% match score labeled "Possible Fit" is discouraging. If this is the best match the AI can surface, users may question the platform's value. The match scoring rubric and labeling need recalibration — or users need context about what these scores mean.
+
+**The "Why connect" explanation on match cards** reads generically: it restates the platform description rather than providing personalized reasoning specific to the founder-investor fit. This undermines the AI's perceived intelligence.
+
+**The profile page lacks "Unsaved changes" warnings.** A user can modify fields and navigate away without any prompt to save, potentially losing work. This violates the error prevention heuristic.
+
+**The chat interface lacks guided prompts.** A new user sees only "Message Cleya..." with no suggested actions, sample queries, or quick-action buttons. For a tool that requires users to articulate intent, starter prompts like "Help me find investors in my sector" or "Who should I connect with this week?" would significantly reduce blank-page anxiety.
+
+### Accessibility & Responsiveness (High Priority)
+
+**No skip-navigation link exists.** Keyboard users must tab through all navigation items to reach main content, violating WCAG 2.1 Level A.
+
+**No responsive mobile layout.** At 375px width, the page does not collapse into a mobile-friendly layout. The full desktop navigation with all items remains visible and likely causes horizontal overflow or cramped touch targets on actual mobile devices. Given that India's startup ecosystem is heavily mobile-first, this is a critical gap.
+
+**At least one input field lacks a proper label** (detected in the accessibility audit). Form inputs without associated labels are invisible to screen readers.
+
+**No visible focus indicators observed** on interactive elements beyond browser defaults. Custom focus styles are needed for keyboard navigation.
+
+**The animated floating particle/dot background** adds visual noise and may cause issues for users with vestibular disorders or motion sensitivities. There's no "reduce motion" preference respected via the `prefers-reduced-motion` media query.
+
+### Performance & Technical Issues
+
+**Page load performance is good** — DOM interactive at ~462ms and full load at ~955ms with minimal transfer size. The site is technically lightweight.
+
+**The /register URL returns a 404 page** rather than redirecting to the sign-up modal or another valid destination. If any marketing material, email, or backlink points to /register, users hit a dead end.
+
+**The 404 page strips all navigation.** There's no header nav, no footer — just a crystal ball emoji, "Page not found," and a "Go to Homepage" button. A user who lands here has no way to explore the site without going back to the homepage.
+
+### Customer Journey & Business Alignment
+
+**The founder-to-investor conversion path has unnecessary friction.** A founder must: (1) land on the homepage, (2) find a working CTA (only "Enter the Network" or "Log In" work), (3) sign up with a form, (4) create a profile, (5) navigate to the chat, (6) articulate their intent in text, (7) wait for a match, (8) review it on a separate page. The "one-click warm intro" promise from the marketing site requires at minimum 8 steps.
+
+**No onboarding flow exists after sign-up.** After creating an account, users land on a dashboard with minimal guidance. There's no wizard, tour, or progressive disclosure to walk them through completing their profile, finding their first match, or sending their first intro.
+
+**The pricing page is disconnected from the app.** It lives on cleya.ai/pricing with the alternate navigation, while the app itself runs on a different domain with no visible upgrade path or plan indicator in the dashboard or settings.
+
+---
+
+## 3. Prioritized Recommendations
+
+### Quick Wins (Low Effort, High Impact)
+
+**Fix the "Get Started" button.** Wire it to open the sign-up modal, matching the "Log In" button behavior. This is likely a single onclick handler fix and directly impacts conversion.
+
+**Fix the "How It Works" nav link.** Either make it scroll to the relevant section or link to a dedicated page. A broken nav item on the homepage damages first impressions.
+
+**Set counter animation starting values to the actual numbers** (or near them) instead of zero. Alternatively, use the `IntersectionObserver` to trigger the animation only when scrolled into view, ensuring users never see "0+."
+
+**Add suggested prompts to the chat interface.** Three to four contextual buttons like "Find investors for me," "Suggest networking connections," "Help me improve my profile" below the welcome message would dramatically increase first-message engagement.
+
+**Unify the logo.** Choose one logo mark and deploy it site-wide. The blue "C" square feels more polished and brand-appropriate — use it everywhere.
+
+### Medium-Term Improvements (Moderate Effort, High Impact)
+
+**Unify the navigation across all pages.** Create a single nav component that includes all key links: How It Works, Features, Pricing, Blog, About, Contact, language toggle, Log In, Get Started. Use a consistent order and structure across the marketing site.
+
+**Build a proper mobile-responsive layout.** Implement a hamburger/drawer menu at mobile breakpoints, stack the three-column persona cards vertically, and ensure touch targets are at least 44×44px. This is essential for the Indian market.
+
+**Create a post-signup onboarding flow.** A three-to-five step guided wizard that helps users complete their profile, select industries, set their connection intent, and make their first match request. Show a progress bar and celebrate completion.
+
+**Improve match card quality.** The "Why connect" section should use actually personalized AI reasoning, referencing the specific user's sector, stage, and intent vs. the match's thesis. Replace generic platform descriptions with contextual rationale.
+
+**Complete the Hindi translation.** Either fully localize the entire site in Hindi (headlines, body, buttons, sections, form labels, and the app itself) or remove the toggle until it's ready. A partial translation is worse than none.
+
+**Fix the domain split.** Serve the app from a cleya.ai subdomain (e.g., app.cleya.ai) rather than boardy-ai-platform.replit.app. This improves trust, SEO, and brand perception.
+
+### Longer-Term Enhancements (Higher Effort, Strategic Impact)
+
+**Implement a true invitation/application flow** to match the "Members-only" messaging. Add an invite code field, application review step, or waitlist with status updates. This creates genuine exclusivity and builds anticipation.
+
+**Add accessibility compliance.** Implement skip-nav links, visible focus indicators, `prefers-reduced-motion` support for the particle animations, proper ARIA labels for all interactive elements, and ensure all text meets WCAG AA contrast ratios (4.5:1 for body text, 3:1 for large text).
+
+**Build an integrated upgrade path.** Show the user's current plan in the dashboard, add a visible "Upgrade" button, and surface the pricing page within the app experience rather than on a separate domain.
+
+**Add behavioral analytics and error tracking.** Instrument key conversion points (sign-up modal open rate, form completion, first chat message, first match view, first intro sent) to identify where users drop off and measure the impact of improvements.
+
+**Redesign the empty states.** The Introductions page's "No introductions yet" and the Dashboard's "No activity yet" states should provide richer guidance, examples of what the page will look like with data, and clear calls-to-action rather than hollow placeholder text.
+
+---
+
+## 4. Rationale Summary
+
+The most critical findings center around broken interactive elements (dead "Get Started" and "How It Works" buttons), fractured brand identity (three different logos), and inconsistent navigation (two different nav systems across marketing pages, three different patterns in the app). These issues violate multiple Nielsen heuristics simultaneously: consistency and standards, visibility of system status, user control and freedom, and error prevention. For a platform that asks professionals to trust it with high-stakes networking (fundraising, deal sourcing, hiring), these inconsistencies directly undermine credibility.
+
+The accessibility gaps (no skip nav, low contrast text, no mobile layout, no motion preference support) exclude users and create legal risk. The incomplete Hindi localization and false exclusivity signals (members-only badge with open sign-up) create trust deficits with exactly the audience Cleya needs to win over.
+
+---
+
+## 5. Next Steps & Open Questions
+
+The following information would strengthen this audit considerably:
+
+What are the current sign-up conversion rates and where do users drop off in the funnel? Are there analytics on the chat interface showing what users' first messages tend to be (or if they struggle to start)? What percentage of users complete their profile vs. abandon at 88%? Is there data on match acceptance rates and how users perceive the "Possible Fit" / percentage scoring? Has any usability testing been conducted with actual founders, investors, or operators? What is the roadmap for the Hindi localization — is it intended to be full-site? Is the "boardy-ai-platform" Replit deployment intended to be permanent, or is there a plan to migrate to cleya.ai infrastructure? Are the testimonials from real users, and if so, would they consent to fuller attribution?
+
+I would recommend conducting five to eight moderated usability tests with one representative from each persona (founder, investor, talent) to validate these findings and uncover additional friction points that a heuristic review cannot surface.

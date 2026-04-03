@@ -50,6 +50,14 @@ Builds in dependency order: prisma generate → types → db → ai → matching
 
 **AppShell pattern:** `AppShell.tsx` wraps all app pages with ParticleNetwork 3D background (dynamically imported, SSR-safe), dot-grid overlay, and proper z-indexing. CSS utility classes in `globals.css`: `glass-card-glow` (hoverable glassmorphism card), `glass-header` (frosted sticky header), `glass-stat` (animated stat card), `gradient-text` (blue-to-purple text gradient), `fade-up`/`fade-up-d1`/`fade-up-d2`/`fade-up-d3` (entrance animations), `cta-shimmer` (shimmer sweep on CTA buttons), `glow-pulse` (pulsing glow effect). All authenticated and public pages use AppShell. The landing page (`PageClient.tsx`) has its own 3D setup and does not use AppShell.
 
+**AppNav component:** `AppNav.tsx` provides unified navigation across all logged-in pages (Dashboard, Matches, Intros, AI Secretary, Profile, Settings). Highlights the active page, includes MobileNav drawer for mobile. Used by dashboard, matches, introductions, introductions/[id], profile, settings, secretary, messages. Chat page uses its own custom header.
+
+**PublicNav component:** `PublicNav.tsx` provides unified navigation for public/marketing pages (About, Features, Pricing, Blog, Contact + Log In/Get Started). Blue "C" square logo used site-wide (nav, footer, 404).
+
+**Logo:** Blue-to-purple gradient square with white "C" — used consistently across homepage nav, PublicNav, AppNav, AppFooter, and 404 page.
+
+**/register route:** Redirects to `/?action=signup` (server-side redirect via Next.js).
+
 **SafeMotion pattern:** `SafeMotion.tsx` provides SSR-safe framer-motion wrappers. Uses a global `notifyMounted()` pattern (called from `ClientProviders` in layout) instead of `useContext` — because React's context dispatcher is null during Next.js static page generation. Components render plain HTML elements until mount, then switch to framer-motion components. The homepage uses `export const dynamic = 'force-dynamic'` to skip static prerendering entirely (framer-motion + Next.js SSG are incompatible).
 
 ## Production Start

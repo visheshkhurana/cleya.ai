@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
-import MobileNav from '@/components/MobileNav';
+import AppNav from '@/components/AppNav';
 import AppShell from '@/components/AppShell';
 
 interface Partner {
@@ -152,15 +152,7 @@ export default function MessagesPage() {
 
   return (
     <AppShell className="font-sans flex flex-col">
-      <header className="glass-header">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={() => router.push('/dashboard')} className="text-white/30 hover:text-white/60 transition text-sm hidden sm:block">← Back</button>
-            <h1 className="font-semibold text-white text-sm">Messages</h1>
-          </div>
-          <div className="sm:hidden"><MobileNav /></div>
-        </div>
-      </header>
+      <AppNav />
 
       <div className="flex-1 flex max-w-5xl mx-auto w-full">
         <div className={`w-full sm:w-80 border-r border-white/5 flex-shrink-0 ${selectedPartner ? 'hidden sm:block' : ''}`}>

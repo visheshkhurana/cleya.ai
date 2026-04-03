@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import NotificationCenter from '@/components/NotificationCenter';
-import MobileNav from '@/components/MobileNav';
+import AppNav from '@/components/AppNav';
 import { analytics, identifyUser } from '@/lib/posthog';
 import { setUser as setSentryUser } from '@/lib/sentry';
 import AppFooter from '@/components/AppFooter';
@@ -276,51 +276,7 @@ export default function DashboardPage() {
 
   return (
     <AppShell>
-      <header role="banner" className="sticky top-0 z-10 glass-header">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-blue-500/20"
-              style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
-              C
-            </div>
-            <h1 className="font-semibold text-white text-sm">Cleya.ai</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="hidden md:flex items-center gap-2">
-              <button onClick={() => router.push('/matches')}
-                className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-white/50 hover:text-white/80 hover:border-white/20 transition">
-                Matches {matchStats.pending > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-blue-500 text-white">{matchStats.pending}</span>}
-              </button>
-              <button onClick={() => router.push('/introductions')}
-                className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-white/50 hover:text-white/80 hover:border-white/20 transition">
-                Introductions
-              </button>
-              <button onClick={() => router.push('/chat')}
-                className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-white/50 hover:text-white/80 hover:border-white/20 transition">
-                Chat
-              </button>
-              <button onClick={() => router.push('/profile')}
-                className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-white/50 hover:text-white/80 hover:border-white/20 transition">
-                Profile
-              </button>
-              <button onClick={() => router.push('/settings')}
-                className="px-3 py-1.5 text-xs rounded-lg border border-white/10 text-white/50 hover:text-white/80 hover:border-white/20 transition">
-                Settings
-              </button>
-            </div>
-            <NotificationCenter />
-            <div className="hidden md:flex items-center">
-              <button onClick={() => { api.logout().then(() => router.push('/')); }}
-                className="text-xs text-white/30 hover:text-white/60 transition px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20">
-                Sign out
-              </button>
-            </div>
-            <div className="flex md:hidden items-center">
-              <MobileNav />
-            </div>
-          </div>
-        </div>
-      </header>
+      <AppNav rightContent={<NotificationCenter />} />
 
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
         {user && !user.emailVerified && (

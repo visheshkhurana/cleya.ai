@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import NotificationCenter from '@/components/NotificationCenter';
-import MobileNav from '@/components/MobileNav';
+import AppNav from '@/components/AppNav';
 import VerificationBadge from '@/components/VerificationBadge';
 import { analytics } from '@/lib/posthog';
 import { useToast } from '@/components/Toast';
@@ -404,14 +404,10 @@ export default function MatchesPage() {
 
   return (
     <AppShell>
-      <header className="glass-header">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={() => router.push('/dashboard')} className="text-white/30 hover:text-white/60 transition text-sm hidden sm:block">← Back</button>
-            <h1 className="font-semibold text-white text-sm">Your Matches</h1>
-          </div>
+      <AppNav rightContent={<NotificationCenter />} />
+      <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+          <h1 className="font-semibold text-white text-sm">Your Matches</h1>
           <div className="flex items-center gap-2 sm:gap-3">
-          <div className="hidden sm:block"><NotificationCenter /></div>
           <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: 'rgba(59,130,246,0.08)' }}>
             {[
               { id: 'pending' as Tab, label: `Pending (${pendingMatches.length})` },
@@ -431,10 +427,8 @@ export default function MatchesPage() {
               </button>
             ))}
           </div>
-          <div className="sm:hidden"><MobileNav /></div>
           </div>
         </div>
-      </header>
 
       <div className="max-w-3xl mx-auto px-4 py-6">
         <div className="mb-5">

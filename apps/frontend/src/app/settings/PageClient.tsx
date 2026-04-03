@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
-import MobileNav from '@/components/MobileNav';
+import AppNav from '@/components/AppNav';
 import AppFooter from '@/components/AppFooter';
 import AppShell from '@/components/AppShell';
 import { resetUser } from '@/lib/posthog';
@@ -152,19 +152,7 @@ export default function SettingsPage() {
 
   return (
     <AppShell>
-      <nav className="glass-header">
-        <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => router.push('/dashboard')}>
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold"
-            style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>C</div>
-          <span className="text-white font-semibold text-sm sm:text-base">Cleya.ai</span>
-        </div>
-        <div className="hidden sm:flex items-center gap-4">
-          <button onClick={() => router.push('/dashboard')} className="text-sm text-white/50 hover:text-white/80 transition bg-transparent border-0 cursor-pointer">Dashboard</button>
-          <button onClick={() => router.push('/profile')} className="text-sm text-white/50 hover:text-white/80 transition bg-transparent border-0 cursor-pointer">Profile</button>
-          <span className="text-sm font-semibold" style={{ color: '#3B82F6' }}>Settings</span>
-        </div>
-        <div className="sm:hidden"><MobileNav /></div>
-      </nav>
+      <AppNav />
 
       <div style={{ maxWidth: '640px', margin: '0 auto', padding: '24px 16px' }} className="sm:!p-10">
         <h1 className="text-xl sm:text-[28px] font-bold text-white mb-2">Settings</h1>

@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
-import MobileNav from '@/components/MobileNav';
+import AppNav from '@/components/AppNav';
 import PhoneInput, { validatePhone } from '@/components/PhoneInput';
 import { analytics } from '@/lib/posthog';
 import { useToast } from '@/components/Toast';
@@ -199,23 +199,16 @@ export default function ProfilePage() {
 
   return (
     <AppShell>
-      <header className="glass-header">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={() => router.push('/dashboard')} className="text-white/30 hover:text-white/60 transition text-sm hidden sm:block">← Back</button>
-            <h1 className="font-semibold text-white text-sm">Edit Profile</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            {saved && <span className="text-xs text-green-400 hidden sm:inline">Saved ✓</span>}
-            <button onClick={handleSave} disabled={saving}
-              className="px-4 py-1.5 text-xs font-medium rounded-lg text-white transition disabled:opacity-40"
-              style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
-              {saving ? 'Saving...' : 'Save'}
-            </button>
-            <div className="sm:hidden"><MobileNav /></div>
-          </div>
+      <AppNav rightContent={
+        <div className="flex items-center gap-2">
+          {saved && <span className="text-xs text-green-400 hidden sm:inline">Saved ✓</span>}
+          <button onClick={handleSave} disabled={saving}
+            className="px-4 py-1.5 text-xs font-medium rounded-lg text-white transition disabled:opacity-40"
+            style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
+            {saving ? 'Saving...' : 'Save'}
+          </button>
         </div>
-      </header>
+      } />
 
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
         <div className="rounded-2xl border border-white/5 p-6 flex items-center gap-4" style={{ background: 'rgba(10,10,26,0.8)' }}>

@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useRouter, useParams } from 'next/navigation';
-import MobileNav from '@/components/MobileNav';
+import AppNav from '@/components/AppNav';
 import NotificationCenter from '@/components/NotificationCenter';
 import AppShell from '@/components/AppShell';
 
@@ -139,18 +139,7 @@ export default function IntroductionDetailPage() {
 
   return (
     <AppShell>
-      <header className="sticky top-0 z-10 border-b border-white/5" style={{ background: 'rgba(5,5,16,0.85)', backdropFilter: 'blur(20px)' }}>
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={() => router.push('/introductions')} className="text-white/30 hover:text-white/60 transition text-sm">← Back</button>
-            <h1 className="font-semibold text-white text-sm">Introduction</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="hidden sm:block"><NotificationCenter /></div>
-            <div className="sm:hidden"><MobileNav /></div>
-          </div>
-        </div>
-      </header>
+      <AppNav rightContent={<NotificationCenter />} />
 
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
         <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(10,10,26,0.8)' }}>

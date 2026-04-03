@@ -3,7 +3,7 @@ import AppShell from '@/components/AppShell';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
-import MobileNav from '@/components/MobileNav';
+import AppNav from '@/components/AppNav';
 import NotificationCenter from '@/components/NotificationCenter';
 
 interface IntroData {
@@ -163,23 +163,15 @@ export default function IntroductionsPage() {
 
   return (
     <AppShell>
-      <header className="glass-header">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={() => router.push('/dashboard')} className="text-white/30 hover:text-white/60 transition text-sm hidden sm:block">← Back</button>
-            <h1 className="font-semibold text-white text-sm">Introductions</h1>
-            {pendingCount > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(245,158,11,0.2)', color: '#fbbf24' }}>
-                {pendingCount} to review
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="hidden sm:block"><NotificationCenter /></div>
-            <div className="sm:hidden"><MobileNav /></div>
-          </div>
-        </div>
-      </header>
+      <AppNav rightContent={<NotificationCenter />} />
+      <div className="max-w-3xl mx-auto px-4 pt-3 flex items-center gap-3">
+        <h2 className="font-semibold text-white text-sm">Introductions</h2>
+        {pendingCount > 0 && (
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(245,158,11,0.2)', color: '#fbbf24' }}>
+            {pendingCount} to review
+          </span>
+        )}
+      </div>
 
       <div className="max-w-3xl mx-auto px-4 py-6">
         {introductions.length === 0 ? (

@@ -286,7 +286,7 @@ function ProfileSection() {
             Your profile becomes<br />
             <span style={{ color: '#60A5FA' }}>structured intelligence</span>
           </h2>
-          <p className="text-base leading-relaxed mb-8 max-w-lg" style={{ color: 'rgba(255,255,255,0.4)' }}>
+          <p className="text-base leading-relaxed mb-8 max-w-lg" style={{ color: 'rgba(255,255,255,0.6)' }}>
             Cleya transforms your professional identity into a rich data profile — then instantly finds your best matches across the network.
           </p>
           <div className="grid grid-cols-2 gap-3">
@@ -399,7 +399,7 @@ function ChatDemo() {
         <h2 className="font-sans font-bold text-white mb-6 tracking-tight" style={{ fontSize: 'clamp(28px, 3vw + 8px, 44px)' }}>
           See Cleya in action
         </h2>
-        <p className="text-base leading-relaxed mb-10 max-w-lg" style={{ color: 'rgba(255,255,255,0.4)' }}>
+        <p className="text-base leading-relaxed mb-10 max-w-lg" style={{ color: 'rgba(255,255,255,0.6)' }}>
           Tell Cleya what you need. Watch it find, rank, and introduce the right people — in seconds.
         </p>
 
@@ -580,7 +580,7 @@ function UseCaseCard({ persona, setShowAuth, setMode, setSelectedPersona }: {
           </div>
           <h3 className="font-bold text-white text-xl mb-1">{persona.title}</h3>
           <p className="text-sm font-medium mb-3" style={{ color: persona.accentColor }}>{persona.tagline}</p>
-          <p className="text-sm leading-relaxed mb-4" style={{ color: 'rgba(255,255,255,0.4)' }}>{persona.desc}</p>
+          <p className="text-sm leading-relaxed mb-4" style={{ color: 'rgba(255,255,255,0.55)' }}>{persona.desc}</p>
         </div>
 
         <div className="overflow-hidden transition-all duration-500" style={{ maxHeight: revealed ? '200px' : '0', opacity: revealed ? 1 : 0 }}>
@@ -646,23 +646,27 @@ const ACTIVITY_FEED = [
 
 function AnimatedCounter({ target, suffix = '', color, label }: { target: number; suffix?: string; color: string; label: string }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [count, setCount] = useState(0);
+  const [count, setCount] = useState(target);
   const startedRef = useRef(false);
 
   useEffect(() => {
     if (!ref.current) return;
+    setCount(target);
+    startedRef.current = false;
     let rafId: number;
+    const startFrom = Math.max(Math.floor(target * 0.7), 1);
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !startedRef.current) {
           startedRef.current = true;
-          const duration = 1800;
+          setCount(startFrom);
+          const duration = 1200;
           const startTime = performance.now();
           const step = (now: number) => {
             const elapsed = now - startTime;
             const progress = Math.min(elapsed / duration, 1);
             const eased = 1 - Math.pow(1 - progress, 3);
-            setCount(Math.round(eased * target));
+            setCount(Math.round(startFrom + eased * (target - startFrom)));
             if (progress < 1) rafId = requestAnimationFrame(step);
           };
           rafId = requestAnimationFrame(step);
@@ -785,6 +789,11 @@ export default function Home() {
         const toastMsg = sessionStorage.getItem('cleo_login_toast');
         setError(toastMsg || 'Please log in to continue');
         sessionStorage.removeItem('cleo_login_toast');
+        window.history.replaceState({}, '', '/');
+      }
+      if (urlAction === 'signup') {
+        setMode('signup');
+        setShowAuth(true);
         window.history.replaceState({}, '', '/');
       }
     }
@@ -929,13 +938,19 @@ export default function Home() {
           </div>
 
           <div className="hidden md:flex items-center gap-1">
-            <button onClick={() => scrollToSection('how-it-works')} className="px-4 py-2 text-sm text-white/40 hover:text-white transition-colors rounded-lg hover:bg-white/[0.03]">
+            <button onClick={() => scrollToSection('how-it-works')} className="px-4 py-2 text-sm text-white/50 hover:text-white transition-colors rounded-lg hover:bg-white/[0.03]">
               {t('nav.howItWorks')}
             </button>
-            <Link href="/pricing" className="px-4 py-2 text-sm text-white/40 hover:text-white transition-colors rounded-lg hover:bg-white/[0.03]">
+            <Link href="/about" className="px-4 py-2 text-sm text-white/50 hover:text-white transition-colors rounded-lg hover:bg-white/[0.03]">
+              About
+            </Link>
+            <Link href="/features" className="px-4 py-2 text-sm text-white/50 hover:text-white transition-colors rounded-lg hover:bg-white/[0.03]">
+              Features
+            </Link>
+            <Link href="/pricing" className="px-4 py-2 text-sm text-white/50 hover:text-white transition-colors rounded-lg hover:bg-white/[0.03]">
               {t('nav.pricing')}
             </Link>
-            <Link href="/blog" className="px-4 py-2 text-sm text-white/40 hover:text-white transition-colors rounded-lg hover:bg-white/[0.03]">
+            <Link href="/blog" className="px-4 py-2 text-sm text-white/50 hover:text-white transition-colors rounded-lg hover:bg-white/[0.03]">
               {t('nav.blog')}
             </Link>
           </div>
@@ -972,8 +987,11 @@ export default function Home() {
               >
                 <button onClick={() => { scrollToSection('how-it-works'); setMobileMenuOpen(false); }}
                   className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">{t('nav.howItWorks')}</button>
+                <Link href="/about" className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">About</Link>
+                <Link href="/features" className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">Features</Link>
                 <Link href="/pricing" className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">{t('nav.pricing')}</Link>
                 <Link href="/blog" className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">{t('nav.blog')}</Link>
+                <Link href="/contact" className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">Contact</Link>
                 <div className="px-3 py-2"><LanguageSwitcher /></div>
                 <button onClick={() => { setShowAuth(true); setMode('login'); setMobileMenuOpen(false); }}
                   className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">{t('nav.login')}</button>
@@ -1052,7 +1070,7 @@ export default function Home() {
       {/* ════════════════════════════════════════════
           SCENE 2: PROFILE LAYER — DATA VISUALIZATION
           ════════════════════════════════════════════ */}
-      <section className="relative z-10 py-32 sm:py-40" style={{ background: '#050510' }}>
+      <section className="relative z-10 py-20 sm:py-28" style={{ background: '#050510' }}>
         <div className="max-w-6xl mx-auto px-6">
           <ProfileSection />
         </div>
@@ -1061,7 +1079,7 @@ export default function Home() {
       {/* ════════════════════════════════════════════
           SCENE 3: AI MATCHING ENGINE — INTERACTIVE CHAT DEMO
           ════════════════════════════════════════════ */}
-      <section id="how-it-works" className="relative z-10 py-32 sm:py-40" style={{ background: '#050510' }}>
+      <section id="how-it-works" className="relative z-10 py-20 sm:py-28" style={{ background: '#050510' }}>
         <div className="max-w-6xl mx-auto px-6">
           <ChatDemo />
         </div>
@@ -1070,7 +1088,7 @@ export default function Home() {
       {/* ════════════════════════════════════════════
           SCENE 4: USE CASES — INTERACTIVE HOVER CARDS
           ════════════════════════════════════════════ */}
-      <section className="relative z-10 py-32 sm:py-40" style={{ background: '#050510' }}>
+      <section className="relative z-10 py-20 sm:py-28" style={{ background: '#050510' }}>
         <div className="max-w-6xl mx-auto px-6">
           <AnimatedSection className="text-center mb-16">
             <div className="scroll-item text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#A78BFA' }}>
@@ -1169,7 +1187,7 @@ export default function Home() {
       {/* ════════════════════════════════════════════
           SCENE 6: LIVE NETWORK — ANIMATED STATS
           ════════════════════════════════════════════ */}
-      <section className="relative z-10 py-32" style={{ background: '#050510' }}>
+      <section className="relative z-10 py-20 sm:py-28" style={{ background: '#050510' }}>
         <div className="max-w-4xl mx-auto px-6">
           <AnimatedSection className="text-center mb-16">
             <div className="scroll-item text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#06B6D4' }}>
@@ -1203,7 +1221,7 @@ export default function Home() {
       {/* ════════════════════════════════════════════
           SCENE 7: FINAL CTA — INFINITE NETWORK
           ════════════════════════════════════════════ */}
-      <section className="relative z-10 py-32 sm:py-44" style={{ background: '#050510' }}>
+      <section className="relative z-10 py-20 sm:py-28" style={{ background: '#050510' }}>
         <AnimatedSection className="relative max-w-3xl mx-auto px-6 text-center">
           <div className="scroll-item mb-8">
             <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-8 pulse-ring"
@@ -1216,7 +1234,7 @@ export default function Home() {
             Your next opportunity is<br />
             <span className="gradient-text">already in the network</span>
           </h2>
-          <p className="scroll-item text-base mb-8 max-w-lg mx-auto" style={{ color: 'rgba(255,255,255,0.4)' }}>
+          <p className="scroll-item text-base mb-8 max-w-lg mx-auto" style={{ color: 'rgba(255,255,255,0.6)' }}>
             Join the founders, investors, and operators who are building meaningful connections through AI.
           </p>
           <p className="scroll-item urgency-text text-sm font-medium mb-8" style={{ color: '#F59E0B' }}>
@@ -1327,7 +1345,7 @@ export default function Home() {
                   <form onSubmit={handleForgotPassword} className="space-y-4">
                     <p className="text-sm mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Enter your email and we&apos;ll send you a reset link.</p>
                     <div>
-                      <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.4)' }}>Email</label>
+                      <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.5)' }}>Email</label>
                       <input type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} placeholder="you@example.com" required className="input-dark" />
                     </div>
                     <button type="submit" disabled={forgotLoading} className="btn-primary">{forgotLoading ? 'Sending...' : 'Send Reset Link'}</button>
@@ -1339,7 +1357,7 @@ export default function Home() {
                   <form onSubmit={handleSubmit} className="space-y-4">
                     {mode === 'signup' && (
                       <div>
-                        <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.4)' }}>Full Name</label>
+                        <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.5)' }}>Full Name</label>
                         <input type="text" value={fullName} onChange={(e) => { setFullName(e.target.value); setFieldErrors(prev => { const n = {...prev}; delete n.fullName; return n; }); }}
                           placeholder="Your full name" autoComplete="name" className="input-dark"
                           style={fieldErrors.fullName ? { borderColor: '#ef4444' } : {}} />
@@ -1348,7 +1366,7 @@ export default function Home() {
                     )}
                     {mode === 'signup' && (
                       <div>
-                        <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.4)' }}>I am a</label>
+                        <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.5)' }}>I am a</label>
                         <div className="grid grid-cols-3 gap-2">
                           {[
                             { value: 'FOUNDER', label: 'Founder', icon: '🚀' },
@@ -1370,7 +1388,7 @@ export default function Home() {
                       </div>
                     )}
                     <div>
-                      <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.4)' }}>Email</label>
+                      <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.5)' }}>Email</label>
                       <input type="email" value={email} onChange={(e) => { setEmail(e.target.value); setFieldErrors(prev => { const n = {...prev}; delete n.email; return n; }); }}
                         placeholder="you@example.com" className="input-dark" autoFocus
                         style={fieldErrors.email ? { borderColor: '#ef4444' } : {}}
@@ -1378,7 +1396,7 @@ export default function Home() {
                       {fieldErrors.email && <p className="text-[10px] mt-1 text-red-400">{fieldErrors.email}</p>}
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.4)' }}>Password</label>
+                      <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.5)' }}>Password</label>
                       <input type="password" value={password} onChange={(e) => { setPassword(e.target.value); setFieldErrors(prev => { const n = {...prev}; delete n.password; return n; }); }}
                         placeholder={mode === 'signup' ? 'Min 8 chars, letter + number' : 'Your password'}
                         className="input-dark" style={fieldErrors.password ? { borderColor: '#ef4444' } : {}}
@@ -1398,7 +1416,7 @@ export default function Home() {
                     </div>
                     {mode === 'signup' && (
                       <div>
-                        <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.4)' }}>Confirm Password</label>
+                        <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.5)' }}>Confirm Password</label>
                         <input type="password" value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setFieldErrors(prev => { const n = {...prev}; delete n.confirmPassword; return n; }); }}
                           placeholder="Confirm your password" className="input-dark"
                           style={fieldErrors.confirmPassword ? { borderColor: '#ef4444' } : {}}

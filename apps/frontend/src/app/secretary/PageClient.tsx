@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../lib/api';
 import NotificationCenter from '../../components/NotificationCenter';
-import MobileNav from '../../components/MobileNav';
+import AppNav from '@/components/AppNav';
 
 interface ChatMessage {
   id?: string;
@@ -156,36 +156,7 @@ export default function SecretaryPage() {
 
   return (
     <AppShell className="flex flex-col">
-      <nav className="sticky top-0 z-50 glass-header">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <a href="/dashboard" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#3B82F6] to-[#8B5CF6] flex items-center justify-center text-white font-bold text-sm">C</div>
-              <span className="text-white font-semibold hidden sm:block">Cleya.ai</span>
-            </a>
-            <span className="text-white/20 hidden sm:block">|</span>
-            <span className="text-[#5eead4] font-medium text-sm">AI Secretary</span>
-          </div>
-          <div className="hidden md:flex items-center gap-6">
-            {[
-              { href: '/dashboard', label: 'Dashboard' },
-              { href: '/matches', label: 'Matches' },
-              { href: '/messages', label: 'Messages' },
-              { href: '/secretary', label: 'Secretary', active: true },
-              { href: '/settings', label: 'Settings' },
-            ].map(l => (
-              <a key={l.href} href={l.href}
-                className={`text-sm transition-colors ${l.active ? 'text-[#5eead4] font-medium' : 'text-white/50 hover:text-white/80'}`}>
-                {l.label}
-              </a>
-            ))}
-            <NotificationCenter />
-          </div>
-          <div className="md:hidden">
-            <MobileNav />
-          </div>
-        </div>
-      </nav>
+      <AppNav rightContent={<NotificationCenter />} />
 
       <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
         <div className="px-4 py-3 flex items-center justify-between border-b border-white/[0.06]">
