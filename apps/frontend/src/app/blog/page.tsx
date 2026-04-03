@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import PublicNav from '@/components/PublicNav';
+import AppShell from '@/components/AppShell';
 
 const posts = [
   {
@@ -59,7 +60,7 @@ const categoryColors: Record<string, string> = {
 
 export default function BlogPage() {
   return (
-    <div className="min-h-screen font-sans" style={{ background: '#050510' }}>
+    <AppShell className="font-sans">
       <PublicNav />
 
       <section className="pt-16 pb-10 text-center">
@@ -123,6 +124,6 @@ export default function BlogPage() {
           </Link>
         </div>
       </section>
-    </div>
+    </AppShell>
   );
 }

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
+import AppShell from '@/components/AppShell';
 
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
@@ -31,7 +32,7 @@ export default function ResetPasswordPage() {
 
   if (!token) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#050510' }}>
+      <AppShell>
         <div className="text-center max-w-sm">
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: '#3B82F6' }}>
             <span className="text-white text-xl font-bold">C</span>
@@ -40,13 +41,13 @@ export default function ResetPasswordPage() {
           <p className="text-sm mb-6" style={{ color: '#94A3B8' }}>This password reset link is invalid or has expired.</p>
           <a href="/" className="inline-block px-6 py-2.5 rounded-lg text-sm font-medium text-white" style={{ background: '#3B82F6' }}>Back to Home</a>
         </div>
-      </div>
+      </AppShell>
     );
   }
 
   if (status === 'success') {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#050510' }}>
+      <AppShell>
         <div className="text-center max-w-sm">
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: '#10B981' }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M20 6L9 17l-5-5" /></svg>
@@ -55,12 +56,12 @@ export default function ResetPasswordPage() {
           <p className="text-sm mb-6" style={{ color: '#94A3B8' }}>You can now log in with your new password.</p>
           <a href="/" className="inline-block px-6 py-2.5 rounded-lg text-sm font-medium text-white" style={{ background: '#3B82F6' }}>Log In</a>
         </div>
-      </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#050510' }}>
+    <AppShell>
       <div className="w-full max-w-sm">
         <div className="text-center mb-6">
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ background: '#3B82F6' }}>
@@ -84,6 +85,6 @@ export default function ResetPasswordPage() {
           </button>
         </form>
       </div>
-    </div>
+    </AppShell>
   );
 }

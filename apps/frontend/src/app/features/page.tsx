@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import PublicNav from '@/components/PublicNav';
+import AppShell from '@/components/AppShell';
 
 const features = [
   {
@@ -47,7 +48,7 @@ const features = [
 
 export default function FeaturesPage() {
   return (
-    <div className="min-h-screen" style={{ background: '#050510' }}>
+    <AppShell>
       <PublicNav />
 
       <main className="max-w-6xl mx-auto px-6 py-16">
@@ -86,6 +87,6 @@ export default function FeaturesPage() {
           <p className="text-xs text-white/30">&copy; 2025 Cleya.ai. All rights reserved.</p>
         </div>
       </footer>
-    </div>
+    </AppShell>
   );
 }

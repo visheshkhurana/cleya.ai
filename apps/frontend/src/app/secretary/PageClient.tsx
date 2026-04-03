@@ -1,4 +1,5 @@
 'use client';
+import AppShell from '@/components/AppShell';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -147,15 +148,15 @@ export default function SecretaryPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-[#050510] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="w-10 h-10 border-2 border-cleya-400 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#050510] flex flex-col">
-      <nav className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#050510]/95 backdrop-blur-xl">
+    <AppShell className="flex flex-col">
+      <nav className="sticky top-0 z-50 glass-header">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <a href="/dashboard" className="flex items-center gap-2">
@@ -300,6 +301,6 @@ export default function SecretaryPage() {
           </form>
         </div>
       </div>
-    </div>
+    </AppShell>
   );
 }

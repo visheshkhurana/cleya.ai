@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import PublicNav from '@/components/PublicNav';
+import AppShell from '@/components/AppShell';
 
 const cityData: Record<string, {
   name: string;
@@ -83,7 +84,7 @@ export default function CityPage() {
 
   if (!city) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#050510' }}>
+      <AppShell>
         <div className="text-center">
           <h1 className="text-4xl font-bold text-white mb-4">City Not Found</h1>
           <p className="mb-6" style={{ color: '#94A3B8' }}>We haven&apos;t launched in this city yet.</p>
@@ -91,12 +92,12 @@ export default function CityPage() {
             Back to Home
           </Link>
         </div>
-      </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="min-h-screen font-sans" style={{ background: '#050510' }}>
+    <AppShell>
       <PublicNav />
 
       <section className="py-20 text-center relative overflow-hidden">
@@ -220,6 +221,6 @@ export default function CityPage() {
           <p className="text-xs" style={{ color: '#64748B' }}>Cleya.ai — AI-powered networking for India&apos;s startup ecosystem</p>
         </div>
       </footer>
-    </div>
+    </AppShell>
   );
 }

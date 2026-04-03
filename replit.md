@@ -14,7 +14,7 @@ Monorepo with:
 - `packages/types` — Shared TypeScript types
 
 ## Stack
-- **Frontend:** Next.js 14, React 18, Tailwind CSS (dark premium theme — #050510 bg, blue/purple gradients), Framer Motion 10, Lenis (smooth scroll)
+- **Frontend:** Next.js 14, React 18, Tailwind CSS (dark premium theme — #050510 bg, blue/purple gradients), Framer Motion 10, Lenis (smooth scroll), AppShell component (ParticleNetwork + dot-grid overlay for all pages)
 - **Mobile:** Expo SDK 52 (React Native 0.76), expo-router 4, React Query, SecureStore for auth tokens
 - **Backend:** Express, TypeScript, WebSocket
 - **Database:** PostgreSQL (Replit built-in), Prisma ORM, pgvector
@@ -47,6 +47,8 @@ Starts both frontend (port 5000) and backend (port 3001) concurrently.
 npm run build
 ```
 Builds in dependency order: prisma generate → types → db → ai → matching → conversation-engine → api → backend (tsc) → frontend (next build). All packages compile TypeScript to `dist/` with `main` pointing to `./dist/index.js`. Frontend build script (`build.js`) handles the Next.js 14 `_not-found` prerender bug: (1) generates fallback `prerender-manifest.json` with `notFoundRoutes: []` to prevent RSC contamination, (2) fixes `_buildManifest.js` by merging app routes from `app-build-manifest.json` into the client-side manifest (the build exits with error before writing page routes, leaving the manifest incomplete).
+
+**AppShell pattern:** `AppShell.tsx` wraps all app pages with ParticleNetwork 3D background (dynamically imported, SSR-safe), dot-grid overlay, and proper z-indexing. CSS utility classes in `globals.css`: `glass-card-glow` (hoverable glassmorphism card), `glass-header` (frosted sticky header), `glass-stat` (animated stat card), `gradient-text` (blue-to-purple text gradient), `fade-up`/`fade-up-d1`/`fade-up-d2`/`fade-up-d3` (entrance animations), `cta-shimmer` (shimmer sweep on CTA buttons), `glow-pulse` (pulsing glow effect). All authenticated and public pages use AppShell. The landing page (`PageClient.tsx`) has its own 3D setup and does not use AppShell.
 
 **SafeMotion pattern:** `SafeMotion.tsx` provides SSR-safe framer-motion wrappers. Uses a global `notifyMounted()` pattern (called from `ClientProviders` in layout) instead of `useContext` — because React's context dispatcher is null during Next.js static page generation. Components render plain HTML elements until mount, then switch to framer-motion components. The homepage uses `export const dynamic = 'force-dynamic'` to skip static prerendering entirely (framer-motion + Next.js SSG are incompatible).
 

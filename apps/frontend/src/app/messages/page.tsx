@@ -3,6 +3,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import MobileNav from '@/components/MobileNav';
+import AppShell from '@/components/AppShell';
 
 interface Partner {
   id: string;
@@ -143,15 +144,15 @@ export default function MessagesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#050510' }}>
+      <AppShell className="flex items-center justify-center">
         <div className="w-10 h-10 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-      </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="min-h-screen font-sans flex flex-col" style={{ background: '#050510' }}>
-      <header className="sticky top-0 z-10 border-b border-white/5" style={{ background: 'rgba(5,5,16,0.85)', backdropFilter: 'blur(20px)' }}>
+    <AppShell className="font-sans flex flex-col">
+      <header className="glass-header">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={() => router.push('/dashboard')} className="text-white/30 hover:text-white/60 transition text-sm hidden sm:block">← Back</button>
@@ -282,6 +283,6 @@ export default function MessagesPage() {
           )}
         </div>
       </div>
-    </div>
+    </AppShell>
   );
 }

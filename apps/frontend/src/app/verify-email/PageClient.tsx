@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
+import AppShell from '@/components/AppShell';
 
 export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
@@ -17,7 +18,7 @@ export default function VerifyEmailPage() {
   }, [token]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#050510' }}>
+    <AppShell>
       <div className="text-center max-w-sm">
         {status === 'loading' && (
           <>
@@ -46,6 +47,6 @@ export default function VerifyEmailPage() {
           </>
         )}
       </div>
-    </div>
+    </AppShell>
   );
 }

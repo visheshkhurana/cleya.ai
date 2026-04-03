@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import PublicNav from '@/components/PublicNav';
+import AppShell from '@/components/AppShell';
 
 const FAQ_ITEMS = [
   { q: 'How does Cleya.ai match me with the right people?', a: 'Cleya uses AI-powered matching that considers your industry, stage, goals, and preferences to find highly relevant connections. Our algorithm achieves 94% match accuracy.' },
@@ -31,7 +32,7 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: '#050510' }}>
+    <AppShell>
       <PublicNav />
 
       <main className="max-w-3xl mx-auto px-6 py-16" role="main">
@@ -149,6 +150,6 @@ export default function ContactPage() {
           <p className="text-xs text-white/30">&copy; 2026 Cleya.ai. All rights reserved.</p>
         </div>
       </footer>
-    </div>
+    </AppShell>
   );
 }

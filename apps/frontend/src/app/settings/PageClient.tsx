@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import MobileNav from '@/components/MobileNav';
 import AppFooter from '@/components/AppFooter';
+import AppShell from '@/components/AppShell';
 import { resetUser } from '@/lib/posthog';
 import { setUser as setSentryUser } from '@/lib/sentry';
 
@@ -122,15 +123,9 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: '#050510',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>
-        <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '16px' }}>Loading...</div>
-      </div>
+      <AppShell className="flex items-center justify-center">
+        <div className="text-white/40 text-base">Loading...</div>
+      </AppShell>
     );
   }
 
@@ -156,8 +151,8 @@ export default function SettingsPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050510' }}>
-      <nav className="sticky top-0 z-10 border-b border-white/5 px-4 sm:px-8 py-3 flex items-center justify-between" style={{ background: 'rgba(5,5,16,0.85)', backdropFilter: 'blur(20px)' }}>
+    <AppShell>
+      <nav className="glass-header">
         <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => router.push('/dashboard')}>
           <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold"
             style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>C</div>
@@ -711,6 +706,6 @@ export default function SettingsPage() {
         </section>
       </div>
       <AppFooter />
-    </div>
+    </AppShell>
   );
 }

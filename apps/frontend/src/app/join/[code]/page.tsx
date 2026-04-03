@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import AppShell from '@/components/AppShell';
 
 interface InviteInfo {
   valid: boolean;
@@ -71,15 +72,15 @@ export default function JoinPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#050510' }}>
+      <AppShell>
         <div className="w-10 h-10 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-      </div>
+      </AppShell>
     );
   }
 
   if (!inviteInfo?.valid) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#050510' }}>
+      <AppShell>
         <div className="max-w-md w-full text-center rounded-2xl border border-white/[0.08] p-8" style={{ background: 'rgba(10,10,26,0.8)' }}>
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(239,68,68,0.1)' }}>
             <span className="text-2xl">🔗</span>
@@ -93,12 +94,12 @@ export default function JoinPage() {
             Go to Homepage
           </a>
         </div>
-      </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#050510' }}>
+    <AppShell>
       <div className="w-full max-w-sm">
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-3"
@@ -182,6 +183,6 @@ export default function JoinPage() {
           </p>
         </div>
       </div>
-    </div>
+    </AppShell>
   );
 }

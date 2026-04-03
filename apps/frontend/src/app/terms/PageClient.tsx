@@ -1,9 +1,10 @@
 'use client';
 import PublicNav from '@/components/PublicNav';
+import AppShell from '@/components/AppShell';
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen" style={{ background: '#050510' }}>
+    <AppShell>
       <PublicNav />
 
       <main className="max-w-4xl mx-auto px-6 py-16">
@@ -103,6 +104,6 @@ export default function TermsPage() {
           <p className="text-xs" style={{ color: 'rgba(255,255,255,0.2)' }}>&copy; {new Date().getFullYear()} Cleya.ai. All rights reserved.</p>
         </div>
       </footer>
-    </div>
+    </AppShell>
   );
 }

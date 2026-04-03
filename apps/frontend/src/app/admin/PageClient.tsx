@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import PhoneInput from '@/components/PhoneInput';
+import AppShell from '@/components/AppShell';
 
 interface Stats {
   totalUsers: number;
@@ -165,7 +166,7 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#050510]">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="flex items-center gap-3">
           <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
           <p className="text-blue-300">Loading dashboard...</p>
@@ -176,7 +177,7 @@ export default function AdminDashboard() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#050510]">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
           <p className="text-red-400">{error}</p>
           <button
@@ -212,8 +213,8 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050510]">
-      <header className="bg-[rgba(10,10,26,0.8)]/80 backdrop-blur-sm border-b border-blue-500/10 px-4 sm:px-6 py-3 sm:py-4 sticky top-0 z-10">
+    <AppShell>
+      <header className="glass-header px-4 sm:px-6 py-3 sm:py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-bold flex items-center justify-center shadow-lg shadow-blue-500/20">
@@ -1052,6 +1053,6 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
-    </div>
+    </AppShell>
   );
 }

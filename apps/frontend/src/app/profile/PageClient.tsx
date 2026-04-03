@@ -7,6 +7,7 @@ import PhoneInput, { validatePhone } from '@/components/PhoneInput';
 import { analytics } from '@/lib/posthog';
 import { useToast } from '@/components/Toast';
 import AppFooter from '@/components/AppFooter';
+import AppShell from '@/components/AppShell';
 
 interface ProfileData {
   persona?: string;
@@ -182,12 +183,12 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#050510' }}>
+      <AppShell className="flex items-center justify-center">
         <div className="flex items-center gap-3">
           <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
           <p className="text-slate-400 text-sm">Loading profile...</p>
         </div>
-      </div>
+      </AppShell>
     );
   }
 
@@ -197,8 +198,8 @@ export default function ProfilePage() {
   const isTalent = persona === 'TALENT' || persona === 'JOB_SEEKER' || persona === 'FREELANCER';
 
   return (
-    <div className="min-h-screen" style={{ background: '#050510' }}>
-      <header className="sticky top-0 z-10 border-b border-white/5" style={{ background: 'rgba(5,5,16,0.85)', backdropFilter: 'blur(20px)' }}>
+    <AppShell>
+      <header className="glass-header">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={() => router.push('/dashboard')} className="text-white/30 hover:text-white/60 transition text-sm hidden sm:block">← Back</button>
@@ -444,6 +445,6 @@ export default function ProfilePage() {
       </div>
 
       <AppFooter />
-    </div>
+    </AppShell>
   );
 }

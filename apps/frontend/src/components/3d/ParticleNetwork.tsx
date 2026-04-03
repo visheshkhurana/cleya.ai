@@ -83,7 +83,7 @@ export default function ParticleNetwork() {
       for (const p of particles) {
         ctx.beginPath();
         ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(45,212,191,0.7)';
+        ctx.fillStyle = 'rgba(147,197,253,0.6)';
         ctx.fill();
       }
 

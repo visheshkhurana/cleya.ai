@@ -1,6 +1,7 @@
 'use client';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import AppShell from '@/components/AppShell';
 
 export default function LoginRedirect() {
   const router = useRouter();
@@ -10,11 +11,11 @@ export default function LoginRedirect() {
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: '#050510' }}>
+    <AppShell>
       <div className="flex items-center gap-3">
         <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
         <p className="text-white/60 text-sm">Redirecting to login...</p>
       </div>
-    </div>
+    </AppShell>
   );
 }

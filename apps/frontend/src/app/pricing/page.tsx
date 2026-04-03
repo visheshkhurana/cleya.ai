@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import PublicNav from '@/components/PublicNav';
+import AppShell from '@/components/AppShell';
 
 const plans = [
   {
@@ -93,7 +94,7 @@ export default function PricingPage() {
   const [annual, setAnnual] = useState(false);
 
   return (
-    <div className="min-h-screen font-sans" style={{ background: '#050510' }}>
+    <AppShell className="font-sans">
       <PublicNav />
 
       <section className="pt-16 pb-8 text-center">
@@ -216,6 +217,6 @@ export default function PricingPage() {
           </Link>
         </div>
       </section>
-    </div>
+    </AppShell>
   );
 }

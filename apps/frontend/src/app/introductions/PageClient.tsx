@@ -1,4 +1,5 @@
 'use client';
+import AppShell from '@/components/AppShell';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
@@ -151,18 +152,18 @@ export default function IntroductionsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#050510' }}>
+      <AppShell>
         <div className="flex items-center gap-3">
           <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
           <p className="text-white/40 text-sm">Loading introductions...</p>
         </div>
-      </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#050510' }}>
-      <header className="sticky top-0 z-10 border-b border-white/5" style={{ background: 'rgba(5,5,16,0.85)', backdropFilter: 'blur(20px)' }}>
+    <AppShell>
+      <header className="glass-header">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={() => router.push('/dashboard')} className="text-white/30 hover:text-white/60 transition text-sm hidden sm:block">← Back</button>
@@ -287,7 +288,7 @@ export default function IntroductionsPage() {
           onRecordOutcome={(outcome) => handleOutcome(selectedIntro, outcome)}
         />
       )}
-    </div>
+    </AppShell>
   );
 }
 

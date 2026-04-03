@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import PublicNav from '@/components/PublicNav';
+import AppShell from '@/components/AppShell';
 
 const team = [
   { name: 'Rahul Sharma', role: 'Founder & CEO', bio: 'Ex-product lead at a unicorn. Building the networking layer for India\'s startup ecosystem.' },
@@ -19,7 +20,7 @@ const backers = ['Sequoia Scouts', 'Antler India', 'TiE Delhi', 'Nasscom', 'T-Hu
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen font-sans" style={{ background: '#050510' }}>
+    <AppShell className="font-sans">
       <PublicNav />
 
       <div className="max-w-3xl mx-auto px-6 py-16 space-y-16">
@@ -139,6 +140,6 @@ export default function AboutPage() {
           </Link>
         </div>
       </div>
-    </div>
+    </AppShell>
   );
 }

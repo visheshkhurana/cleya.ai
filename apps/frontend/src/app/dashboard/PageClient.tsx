@@ -7,6 +7,7 @@ import MobileNav from '@/components/MobileNav';
 import { analytics, identifyUser } from '@/lib/posthog';
 import { setUser as setSentryUser } from '@/lib/sentry';
 import AppFooter from '@/components/AppFooter';
+import AppShell from '@/components/AppShell';
 
 interface UserProfile {
   persona?: string;
@@ -221,25 +222,25 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen" style={{ background: '#050510' }}>
+      <AppShell>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-12">
           <div className="h-8 w-48 rounded-lg animate-pulse mb-6" style={{ background: 'rgba(255,255,255,0.05)' }} />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             {[1,2,3].map(i => (
-              <div key={i} className="rounded-2xl p-6 border border-white/5 animate-pulse" style={{ background: 'rgba(255,255,255,0.03)' }}>
+              <div key={i} className="glass-stat p-6 animate-pulse">
                 <div className="h-4 w-20 rounded mb-3" style={{ background: 'rgba(255,255,255,0.06)' }} />
                 <div className="h-8 w-16 rounded" style={{ background: 'rgba(255,255,255,0.08)' }} />
               </div>
             ))}
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 rounded-2xl p-6 border border-white/5 animate-pulse" style={{ background: 'rgba(255,255,255,0.03)' }}>
+            <div className="lg:col-span-2 glass-card-glow p-6 animate-pulse">
               <div className="h-5 w-32 rounded mb-4" style={{ background: 'rgba(255,255,255,0.06)' }} />
               <div className="space-y-3">
                 {[1,2,3].map(i => <div key={i} className="h-20 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }} />)}
               </div>
             </div>
-            <div className="rounded-2xl p-6 border border-white/5 animate-pulse" style={{ background: 'rgba(255,255,255,0.03)' }}>
+            <div className="glass-card-glow p-6 animate-pulse">
               <div className="h-5 w-24 rounded mb-4" style={{ background: 'rgba(255,255,255,0.06)' }} />
               <div className="space-y-3">
                 {[1,2,3,4].map(i => <div key={i} className="h-10 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)' }} />)}
@@ -247,7 +248,7 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-      </div>
+      </AppShell>
     );
   }
 
@@ -274,8 +275,8 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: '#050510' }}>
-      <header role="banner" className="sticky top-0 z-10 border-b border-white/5" style={{ background: 'rgba(5,5,16,0.85)', backdropFilter: 'blur(20px)' }}>
+    <AppShell>
+      <header role="banner" className="sticky top-0 z-10 glass-header">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-blue-500/20"
@@ -377,7 +378,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(10,10,26,0.8)' }}>
+        <div className="glass-card-glow p-6 fade-up">
           <div className="flex items-start gap-4">
             {profile?.avatarUrl && !avatarError ? (
               <img src={profile.avatarUrl} alt={user?.name || 'Profile'} referrerPolicy="no-referrer"
@@ -417,18 +418,18 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 fade-up">
           {[
             { label: 'Total Matches', value: matchStats.total, icon: '🤝', color: '#3B82F6' },
             { label: 'Pending Review', value: matchStats.pending, icon: '⏳', color: '#f59e0b' },
             { label: 'Accepted Intros', value: matchStats.accepted, icon: '✅', color: '#10b981' },
           ].map((stat) => (
-            <div key={stat.label} className="rounded-2xl border border-white/5 p-5" style={{ background: 'rgba(10,10,26,0.8)' }}>
+            <div key={stat.label} className="glass-stat p-5">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-lg">{stat.icon}</span>
                 <p className="text-xs font-medium uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.35)' }}>{stat.label}</p>
               </div>
-              <p className="text-3xl font-bold text-white">{stat.value}</p>
+              <p className="text-3xl font-bold gradient-text">{stat.value}</p>
             </div>
           ))}
         </div>
@@ -455,7 +456,7 @@ export default function DashboardPage() {
         {recentMatches.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Your Matches</h3>
+              <h3 className="text-sm font-semibold uppercase tracking-wider gradient-text">Your Matches</h3>
               <button onClick={() => router.push('/matches')} className="text-xs text-blue-400 hover:text-blue-300 transition">
                 View All →
               </button>
@@ -469,8 +470,7 @@ export default function DashboardPage() {
                 const isPending = myResponse === 'PENDING' && match.status !== 'REJECTED' && match.status !== 'ACCEPTED';
 
                 return (
-                  <div key={match.id} className="rounded-2xl border border-white/5 p-4 hover:border-blue-500/15 transition"
-                    style={{ background: 'rgba(10,10,26,0.8)' }}>
+                  <div key={match.id} className="glass-card-glow p-4">
                     <div className="flex items-start gap-3 mb-3">
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
                         style={{ background: 'linear-gradient(135deg, #3B82F615, #8B5CF615)', border: '1px solid rgba(59,130,246,0.12)' }}>
@@ -521,12 +521,11 @@ export default function DashboardPage() {
         )}
 
         <div>
-          <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider mb-4">Quick Actions</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-wider mb-4 gradient-text">Quick Actions</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <button
               onClick={() => router.push('/matches')}
-              className="rounded-2xl border border-white/5 p-5 text-left hover:border-blue-500/20 transition group"
-              style={{ background: 'rgba(10,10,26,0.8)' }}
+              className="glass-card-glow p-5 text-left group"
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-2xl">🎯</span>
@@ -542,8 +541,7 @@ export default function DashboardPage() {
             <button
               onClick={handleFindMatches}
               disabled={findingMatches}
-              className="rounded-2xl border border-white/5 p-5 text-left hover:border-blue-500/20 transition group disabled:opacity-60"
-              style={{ background: 'rgba(10,10,26,0.8)' }}
+              className="glass-card-glow p-5 text-left group disabled:opacity-60"
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-2xl">🔍</span>
@@ -557,8 +555,7 @@ export default function DashboardPage() {
 
             <button
               onClick={() => router.push('/profile')}
-              className="rounded-2xl border border-white/5 p-5 text-left hover:border-blue-500/20 transition group"
-              style={{ background: 'rgba(10,10,26,0.8)' }}
+              className="glass-card-glow p-5 text-left group"
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-2xl">✏️</span>
@@ -570,8 +567,7 @@ export default function DashboardPage() {
 
             <button
               onClick={() => router.push('/secretary')}
-              className="rounded-2xl border border-white/5 p-5 text-left hover:border-blue-500/20 transition group"
-              style={{ background: 'rgba(10,10,26,0.8)' }}
+              className="glass-card-glow p-5 text-left group"
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-2xl">🤖</span>
@@ -585,7 +581,7 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {inviteCodes.length > 0 && (
-            <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(10,10,26,0.8)' }}>
+            <div className="glass-card-glow p-6">
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-xl">🎟️</span>
                 <h3 className="font-semibold text-white text-sm">Share Cleya</h3>
@@ -610,7 +606,7 @@ export default function DashboardPage() {
             </div>
           )}
 
-          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(10,10,26,0.8)' }}>
+          <div className="glass-card-glow p-6">
             <div className="flex items-center gap-2 mb-4">
               <span className="text-xl">📊</span>
               <h3 className="font-semibold text-white text-sm">Recent Activity</h3>
@@ -638,7 +634,7 @@ export default function DashboardPage() {
         </div>
 
         {profile?.industries && profile.industries.length > 0 && (
-          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(10,10,26,0.8)' }}>
+          <div className="glass-card-glow p-6">
             <h3 className="font-semibold text-white mb-3 text-sm">Your Industries</h3>
             <div className="flex flex-wrap gap-2">
               {profile.industries.map((ind) => (
@@ -763,6 +759,6 @@ export default function DashboardPage() {
       )}
 
       <AppFooter />
-    </div>
+    </AppShell>
   );
 }

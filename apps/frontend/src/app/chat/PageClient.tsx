@@ -6,6 +6,7 @@ import { ChatBubble } from '@/components/chat/ChatBubble';
 import { ChoiceButtons } from '@/components/chat/ChoiceButtons';
 import { DynamicForm } from '@/components/forms/DynamicForm';
 import { TypingIndicator } from '@/components/chat/TypingIndicator';
+import AppShell from '@/components/AppShell';
 
 interface Message {
   sender: 'AI' | 'USER';
@@ -234,7 +235,7 @@ export default function ChatPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#050510' }}>
+      <AppShell className="flex items-center justify-center">
         <div className="text-center">
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 glow-pulse"
             style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
@@ -242,14 +243,13 @@ export default function ChatPage() {
           </div>
           <p className="text-sm text-white/40">Starting conversation...</p>
         </div>
-      </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col overflow-x-hidden" style={{ background: '#050510' }}>
-      <header className="px-4 py-3 flex items-center gap-3 sticky top-0 z-10 border-b border-white/5"
-        style={{ background: 'rgba(5,5,16,0.85)', backdropFilter: 'blur(20px)' }}>
+    <AppShell className="flex flex-col overflow-x-hidden">
+      <header className="glass-header">
         <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
           style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
           C
@@ -381,6 +381,6 @@ export default function ChatPage() {
           )}
         </form>
       )}
-    </div>
+    </AppShell>
   );
 }

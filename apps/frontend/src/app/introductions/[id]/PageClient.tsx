@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import { useRouter, useParams } from 'next/navigation';
 import MobileNav from '@/components/MobileNav';
 import NotificationCenter from '@/components/NotificationCenter';
+import AppShell from '@/components/AppShell';
 
 const personaIcon: Record<string, string> = {
   FOUNDER: '🚀', INVESTOR: '💰', TALENT: '🎯', DEAL_PARTNER: '🤝',
@@ -65,9 +66,9 @@ export default function IntroductionDetailPage() {
 
   if (loading || !intro) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#050510' }}>
+      <AppShell>
         <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-      </div>
+      </AppShell>
     );
   }
 
@@ -137,7 +138,7 @@ export default function IntroductionDetailPage() {
   const hoursUntilAuto = Math.max(0, Math.round((autoApproveDate.getTime() - Date.now()) / (60 * 60 * 1000)));
 
   return (
-    <div className="min-h-screen" style={{ background: '#050510' }}>
+    <AppShell>
       <header className="sticky top-0 z-10 border-b border-white/5" style={{ background: 'rgba(5,5,16,0.85)', backdropFilter: 'blur(20px)' }}>
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -310,6 +311,6 @@ export default function IntroductionDetailPage() {
           {intro.followUpAt && <p>Follow-up scheduled: {new Date(intro.followUpAt).toLocaleString()}</p>}
         </div>
       </div>
-    </div>
+    </AppShell>
   );
 }

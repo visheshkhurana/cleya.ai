@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import PublicNav from '@/components/PublicNav';
+import AppShell from '@/components/AppShell';
 
 const blogPosts: Record<string, {
   title: string;
@@ -98,19 +99,19 @@ export default function BlogPostPage() {
 
   if (!post) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#050510' }}>
+      <AppShell className="flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-white mb-4">Post Not Found</h1>
-          <Link href="/blog" className="px-6 py-3 rounded-xl text-white font-medium text-sm" style={{ background: '#3B82F6' }}>
+          <h1 className="text-4xl font-bold gradient-text mb-4">Post Not Found</h1>
+          <Link href="/blog" className="px-6 py-3 rounded-xl text-white font-medium text-sm cta-shimmer" style={{ background: '#3B82F6' }}>
             Back to Blog
           </Link>
         </div>
-      </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="min-h-screen font-sans" style={{ background: '#050510' }}>
+    <AppShell className="font-sans">
       <PublicNav />
 
       <article className="max-w-3xl mx-auto px-6 py-12">
@@ -177,6 +178,6 @@ export default function BlogPostPage() {
           </Link>
         </div>
       </article>
-    </div>
+    </AppShell>
   );
 }

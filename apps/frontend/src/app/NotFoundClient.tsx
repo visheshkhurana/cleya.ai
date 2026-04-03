@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import AppShell from '@/components/AppShell';
 
 export default function NotFoundClient() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -13,62 +14,27 @@ export default function NotFoundClient() {
   }, []);
 
   return (
-    <div style={{
-      background: '#050510',
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}>
+    <AppShell className="flex items-center justify-center">
       <div style={{ textAlign: 'center', padding: '0 1rem' }}>
-        <div style={{
-          width: '5rem',
-          height: '5rem',
-          margin: '0 auto 1.5rem',
-          borderRadius: '1rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '2.25rem',
-          background: 'linear-gradient(135deg, rgba(59,130,246,0.08), rgba(78,47,216,0.08))',
-          border: '1px solid rgba(59,130,246,0.12)',
-        }}>
+        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl flex items-center justify-center text-4xl glass-card-glow">
           🔮
         </div>
-        <h1 style={{ fontSize: '3.75rem', fontWeight: 'bold', color: 'white', marginBottom: '0.5rem' }}>404</h1>
-        <p style={{ fontSize: '1.25rem', color: 'rgba(255,255,255,0.6)', marginBottom: '0.5rem' }}>Page not found</p>
-        <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.3)', marginBottom: '2rem', maxWidth: '24rem', margin: '0 auto 2rem' }}>
+        <h1 className="text-7xl font-bold gradient-text mb-2">404</h1>
+        <p className="text-xl text-white/60 mb-2">Page not found</p>
+        <p className="text-sm text-white/30 mb-8 max-w-sm mx-auto">
           The page you are looking for does not exist or has been moved.
         </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', justifyContent: 'center', alignItems: 'center' }}>
-          <a href={isLoggedIn ? '/dashboard' : '/'} style={{
-            display: 'inline-block',
-            padding: '0.75rem 1.5rem',
-            borderRadius: '1rem',
-            fontSize: '0.875rem',
-            fontWeight: 500,
-            color: 'white',
-            background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)',
-            textDecoration: 'none',
-          }}>
+        <div className="flex flex-col gap-3 items-center">
+          <a href={isLoggedIn ? '/dashboard' : '/'} className="inline-block px-6 py-3 rounded-2xl text-sm font-medium text-white bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] cta-shimmer">
             {isLoggedIn ? 'Go to Dashboard' : 'Go to Homepage'}
           </a>
           {isLoggedIn && (
-            <a href="/" style={{
-              display: 'inline-block',
-              padding: '0.75rem 1.5rem',
-              borderRadius: '1rem',
-              fontSize: '0.875rem',
-              fontWeight: 500,
-              color: 'rgba(255,255,255,0.5)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              textDecoration: 'none',
-            }}>
+            <a href="/" className="inline-block px-6 py-3 rounded-2xl text-sm font-medium text-white/50 border border-white/10 hover:border-white/20 transition">
               Back to Home
             </a>
           )}
         </div>
       </div>
-    </div>
+    </AppShell>
   );
 }
