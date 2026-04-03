@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 5000",
-    "build": "NODE_ENV=production next build",
+    "build": "NEXT_IGNORE_INCORRECT_LOCKFILE=1 NODE_ENV=production next build",
     "start": "next start --port 5000"
   },
   "dependencies": {
