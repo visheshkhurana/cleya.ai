@@ -31,23 +31,23 @@ const nextConfig = {
   },
   async headers() {
     return [
-      {
+      ...(isDev ? [{
         source: '/(.*)',
         headers: [
-          { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate, proxy-revalidate' },
+          { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate' },
           { key: 'Pragma', value: 'no-cache' },
-          { key: 'Expires', value: '0' },
-          { key: 'Surrogate-Control', value: 'no-store' },
-          ...(isDev ? [] : [
-            { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
-            { key: 'X-Content-Type-Options', value: 'nosniff' },
-            { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
-            { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-            { key: 'X-DNS-Prefetch-Control', value: 'on' },
-            { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
-          ]),
         ],
-      },
+      }] : [{
+        source: '/(.*)',
+        headers: [
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'X-DNS-Prefetch-Control', value: 'on' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+        ],
+      }]),
     ];
   },
 };

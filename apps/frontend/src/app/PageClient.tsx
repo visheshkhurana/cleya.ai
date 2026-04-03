@@ -38,12 +38,14 @@ function RotatingTypewriter() {
   const phrase = HERO_PHRASES[phraseIndex];
 
   useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
     const speed = deleting ? 35 : 65;
     const timer = setTimeout(() => {
       if (!deleting && charIndex < phrase.length) {
         setCharIndex(charIndex + 1);
       } else if (!deleting && charIndex === phrase.length) {
-        setTimeout(() => setDeleting(true), 1800);
+        const pauseTimer = setTimeout(() => setDeleting(true), 1800);
+        timers.push(pauseTimer);
       } else if (deleting && charIndex > 0) {
         setCharIndex(charIndex - 1);
       } else {
@@ -51,7 +53,8 @@ function RotatingTypewriter() {
         setPhraseIndex((phraseIndex + 1) % HERO_PHRASES.length);
       }
     }, speed);
-    return () => clearTimeout(timer);
+    timers.push(timer);
+    return () => timers.forEach(t => clearTimeout(t));
   }, [charIndex, deleting, phrase, phraseIndex]);
 
   return (
@@ -548,6 +551,9 @@ function UseCaseCard({ persona, setShowAuth, setMode, setSelectedPersona }: {
   return (
     <div className="scroll-item perspective-[1200px]">
       <div
+        role="button"
+        tabIndex={0}
+        aria-label={`${persona.title}: ${persona.tagline}`}
         className="relative rounded-2xl cursor-pointer h-full group transition-all duration-500"
         style={{
           background: persona.gradient,
@@ -559,6 +565,9 @@ function UseCaseCard({ persona, setShowAuth, setMode, setSelectedPersona }: {
         onMouseLeave={() => setHovered(false)}
         onTouchStart={() => setTapped(p => !p)}
         onClick={() => { if (tapped) return; setShowAuth(true); setMode('signup'); setSelectedPersona(persona.personaValue); }}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowAuth(true); setMode('signup'); setSelectedPersona(persona.personaValue); } }}
+        onFocus={() => setHovered(true)}
+        onBlur={() => setHovered(false)}
       >
         <div className="p-8 pb-4">
           <div className="mb-5 w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-500"
@@ -642,6 +651,7 @@ function AnimatedCounter({ target, suffix = '', color, label }: { target: number
 
   useEffect(() => {
     if (!ref.current) return;
+    let rafId: number;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !startedRef.current) {
@@ -653,16 +663,16 @@ function AnimatedCounter({ target, suffix = '', color, label }: { target: number
             const progress = Math.min(elapsed / duration, 1);
             const eased = 1 - Math.pow(1 - progress, 3);
             setCount(Math.round(eased * target));
-            if (progress < 1) requestAnimationFrame(step);
+            if (progress < 1) rafId = requestAnimationFrame(step);
           };
-          requestAnimationFrame(step);
+          rafId = requestAnimationFrame(step);
           observer.disconnect();
         }
       },
       { rootMargin: '-60px' }
     );
     observer.observe(ref.current);
-    return () => observer.disconnect();
+    return () => { observer.disconnect(); cancelAnimationFrame(rafId); };
   }, [target]);
 
   return (
