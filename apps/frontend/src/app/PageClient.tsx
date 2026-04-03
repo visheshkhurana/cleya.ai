@@ -23,48 +23,27 @@ function getPasswordStrength(pw: string): { label: string; color: string; width:
   return { label: 'Strong', color: '#10b981', width: '100%' };
 }
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 40 },
-  visible: { opacity: 1, y: 0 },
-};
-
-const stagger = {
-  visible: { transition: { staggerChildren: 0.15 } },
-};
-
-function useInView(ref: React.RefObject<Element | null>, options?: { once?: boolean; margin?: string }) {
-  const [inView, setInView] = useState(false);
+function AnimatedSection({ children, className = '', style = {} }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
   useEffect(() => {
     if (!ref.current) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setInView(true);
-          if (options?.once) observer.disconnect();
+          setVisible(true);
+          observer.disconnect();
         }
       },
-      { rootMargin: options?.margin || '0px' }
+      { rootMargin: '-60px' }
     );
     observer.observe(ref.current);
     return () => observer.disconnect();
   }, []);
-  return inView;
-}
-
-function AnimatedSection({ children, className = '', style = {} }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: '-80px' });
   return (
-    <motion.div
-      ref={ref}
-      initial="hidden"
-      animate={isInView ? 'visible' : 'hidden'}
-      variants={stagger}
-      className={className}
-      style={style}
-    >
+    <div ref={ref} className={`scroll-section ${visible ? 'scroll-visible' : ''} ${className}`} style={style}>
       {children}
-    </motion.div>
+    </div>
   );
 }
 
@@ -412,7 +391,7 @@ export default function Home() {
       <section className="relative z-10 py-32 sm:py-40" style={{ background: '#050510' }}>
         <div className="max-w-6xl mx-auto px-6">
           <AnimatedSection className="grid lg:grid-cols-2 gap-16 items-center">
-            <motion.div variants={fadeUp}>
+            <div className="scroll-item">
               <div className="text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#8B5CF6' }}>
                 Identity Layer
               </div>
@@ -431,9 +410,9 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-            </motion.div>
+            </div>
 
-            <motion.div variants={fadeUp} className="relative">
+            <div className="scroll-item relative">
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { name: 'Arjun M.', role: 'Founder · Fintech', match: '94%', color: '#3B82F6' },
@@ -462,7 +441,7 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-            </motion.div>
+            </div>
           </AnimatedSection>
         </div>
       </section>
@@ -473,15 +452,15 @@ export default function Home() {
       <section id="how-it-works" className="relative z-10 py-32 sm:py-40" style={{ background: '#050510' }}>
         <div className="max-w-6xl mx-auto px-6">
           <AnimatedSection className="text-center mb-20">
-            <motion.div variants={fadeUp} className="text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#3B82F6' }}>
+            <div className="scroll-item text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#3B82F6' }}>
               Intelligence Engine
-            </motion.div>
-            <motion.h2 variants={fadeUp} className="font-sans font-bold text-white mb-5 tracking-tight" style={{ fontSize: 'clamp(28px, 3.5vw + 8px, 48px)' }}>
+            </div>
+            <h2 className="scroll-item font-sans font-bold text-white mb-5 tracking-tight" style={{ fontSize: 'clamp(28px, 3.5vw + 8px, 48px)' }}>
               {t('howItWorks.title')}
-            </motion.h2>
-            <motion.p variants={fadeUp} className="text-base max-w-lg mx-auto" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            </h2>
+            <p className="scroll-item text-base max-w-lg mx-auto" style={{ color: 'rgba(255,255,255,0.4)' }}>
               {t('howItWorks.subtitle')}
-            </motion.p>
+            </p>
           </AnimatedSection>
 
           <AnimatedSection className="grid md:grid-cols-3 gap-6">
@@ -505,7 +484,7 @@ export default function Home() {
                 color: '#06B6D4',
               },
             ].map((step, i) => (
-              <motion.div key={i} variants={fadeUp}>
+              <div key={i} className="scroll-item">
                 <div className="relative rounded-2xl p-8 h-full group hover:scale-[1.02] transition-transform duration-300"
                   style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
                   <div className="absolute top-4 right-6 font-sans text-[80px] font-bold leading-none pointer-events-none select-none"
@@ -521,7 +500,7 @@ export default function Home() {
                   <div className="absolute bottom-0 left-0 right-0 h-px opacity-0 group-hover:opacity-100 transition-opacity"
                     style={{ background: `linear-gradient(90deg, transparent, ${step.color}40, transparent)` }} />
                 </div>
-              </motion.div>
+              </div>
             ))}
           </AnimatedSection>
         </div>
@@ -533,12 +512,12 @@ export default function Home() {
       <section className="relative z-10 py-32 sm:py-40" style={{ background: '#050510' }}>
         <div className="max-w-6xl mx-auto px-6">
           <AnimatedSection className="text-center mb-16">
-            <motion.div variants={fadeUp} className="text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#A78BFA' }}>
+            <div className="scroll-item text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#A78BFA' }}>
               Built for Every Role
-            </motion.div>
-            <motion.h2 variants={fadeUp} className="font-sans font-bold text-white mb-5 tracking-tight" style={{ fontSize: 'clamp(28px, 3.5vw + 8px, 48px)' }}>
+            </div>
+            <h2 className="scroll-item font-sans font-bold text-white mb-5 tracking-tight" style={{ fontSize: 'clamp(28px, 3.5vw + 8px, 48px)' }}>
               Whether you're raising, investing,<br />or building
-            </motion.h2>
+            </h2>
           </AnimatedSection>
 
           <AnimatedSection className="grid md:grid-cols-3 gap-6">
@@ -574,7 +553,7 @@ export default function Home() {
                 accentColor: '#06B6D4',
               },
             ].map((persona, i) => (
-              <motion.div key={i} variants={fadeUp}>
+              <div key={i} className="scroll-item">
                 <div
                   className="relative rounded-2xl p-8 cursor-pointer h-full group hover:scale-[1.02] transition-all duration-300"
                   style={{ background: persona.gradient, border: `1px solid ${persona.borderColor}` }}
@@ -596,7 +575,7 @@ export default function Home() {
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
                     style={{ boxShadow: `0 0 40px ${persona.accentColor}15` }} />
                 </div>
-              </motion.div>
+              </div>
             ))}
           </AnimatedSection>
         </div>
@@ -624,7 +603,7 @@ export default function Home() {
         </div>
 
         <AnimatedSection className="max-w-4xl mx-auto px-6 mt-20">
-          <motion.div variants={fadeUp}>
+          <div className="scroll-item">
             <div className="rounded-2xl p-8 sm:p-14 relative overflow-hidden"
               style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(20px)' }}>
               <div className="absolute top-0 right-0 w-[400px] h-[400px] rounded-full pointer-events-none"
@@ -644,7 +623,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         </AnimatedSection>
       </section>
 
@@ -654,12 +633,12 @@ export default function Home() {
       <section className="relative z-10 py-32" style={{ background: '#050510' }}>
         <div className="max-w-4xl mx-auto px-6">
           <AnimatedSection className="text-center mb-16">
-            <motion.div variants={fadeUp} className="text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#06B6D4' }}>
+            <div className="scroll-item text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#06B6D4' }}>
               Live Network
-            </motion.div>
-            <motion.h2 variants={fadeUp} className="font-sans font-bold text-white mb-4 tracking-tight" style={{ fontSize: 'clamp(28px, 3vw + 8px, 44px)' }}>
+            </div>
+            <h2 className="scroll-item font-sans font-bold text-white mb-4 tracking-tight" style={{ fontSize: 'clamp(28px, 3vw + 8px, 44px)' }}>
               A growing ecosystem of builders
-            </motion.h2>
+            </h2>
           </AnimatedSection>
 
           <AnimatedSection className="grid grid-cols-3 gap-6 max-w-2xl mx-auto">
@@ -668,13 +647,13 @@ export default function Home() {
               { label: 'Matches', value: platformStats?.matchCount || 150, suffix: '+', color: '#8B5CF6' },
               { label: 'Intros Made', value: platformStats?.introductionCount || 89, suffix: '+', color: '#06B6D4' },
             ].map((stat, i) => (
-              <motion.div key={i} variants={fadeUp} className="text-center p-6 rounded-2xl"
+              <div key={i} className="scroll-item text-center p-6 rounded-2xl"
                 style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
                 <div className="font-bold text-3xl sm:text-4xl mb-1" style={{ color: stat.color }}>
                   {stat.value}{stat.suffix}
                 </div>
                 <div className="text-xs text-white/30 uppercase tracking-wider">{stat.label}</div>
-              </motion.div>
+              </div>
             ))}
           </AnimatedSection>
         </div>
@@ -685,21 +664,21 @@ export default function Home() {
           ════════════════════════════════════════════ */}
       <section className="relative z-10 py-32 sm:py-44" style={{ background: '#050510' }}>
         <AnimatedSection className="relative max-w-3xl mx-auto px-6 text-center">
-          <motion.div variants={fadeUp} className="mb-8">
+          <div className="scroll-item mb-8">
             <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-8 pulse-ring"
               style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', boxShadow: '0 0 60px rgba(59,130,246,0.3)' }}>
               <span className="text-white font-bold text-xl">C</span>
             </div>
-          </motion.div>
+          </div>
 
-          <motion.h2 variants={fadeUp} className="font-sans font-bold text-white mb-6 tracking-tight leading-tight" style={{ fontSize: 'clamp(28px, 4vw + 8px, 52px)' }}>
+          <h2 className="scroll-item font-sans font-bold text-white mb-6 tracking-tight leading-tight" style={{ fontSize: 'clamp(28px, 4vw + 8px, 52px)' }}>
             Your next opportunity is<br />
             <span className="gradient-text">already in the network</span>
-          </motion.h2>
-          <motion.p variants={fadeUp} className="text-base mb-14 max-w-lg mx-auto" style={{ color: 'rgba(255,255,255,0.4)' }}>
+          </h2>
+          <p className="scroll-item text-base mb-14 max-w-lg mx-auto" style={{ color: 'rgba(255,255,255,0.4)' }}>
             Join the founders, investors, and operators who are building meaningful connections through AI.
-          </motion.p>
-          <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          </p>
+          <div className="scroll-item flex flex-col sm:flex-row items-center justify-center gap-4">
             <button onClick={() => { setShowAuth(true); setMode('signup'); }}
               className="group px-12 py-4 rounded-full text-white font-medium text-[15px] transition-all duration-300 hover:scale-[1.03]"
               style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', boxShadow: '0 0 50px rgba(59,130,246,0.3)' }}>
@@ -710,7 +689,7 @@ export default function Home() {
               className="px-8 py-[14px] rounded-full text-sm font-medium border border-white/8 hover:border-white/15 text-white/40 hover:text-white/70 transition-all">
               Log In
             </button>
-          </motion.div>
+          </div>
         </AnimatedSection>
       </section>
 
