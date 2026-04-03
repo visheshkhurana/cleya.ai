@@ -370,6 +370,106 @@ select option {
   pointer-events: none;
 }
 
+.tilt-card-border {
+  background: linear-gradient(135deg, rgba(13,148,136,0.3), rgba(124,58,237,0.3), rgba(59,130,246,0.3));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+  border-radius: 1rem;
+}
+
+.section-3d {
+  transform-style: preserve-3d;
+  perspective: 1200px;
+}
+
+.scroll-3d-enter {
+  opacity: 0;
+  transform: perspective(1200px) rotateX(8deg) translateY(40px) translateZ(-60px);
+  transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.scroll-3d-enter.scroll-visible {
+  opacity: 1;
+  transform: perspective(1200px) rotateX(0deg) translateY(0) translateZ(0);
+}
+
+@keyframes flip-in {
+  0% {
+    transform: rotateX(90deg);
+    opacity: 0;
+  }
+  100% {
+    transform: rotateX(0deg);
+    opacity: 1;
+  }
+}
+.flip-digit {
+  display: inline-block;
+  animation: flip-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: bottom center;
+}
+
+.btn-3d {
+  transform: perspective(800px) translateZ(0);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.btn-3d:hover {
+  transform: perspective(800px) translateZ(8px);
+  box-shadow: 0 12px 40px rgba(59,130,246,0.35);
+}
+.btn-3d:active {
+  transform: perspective(800px) translateZ(-4px);
+  box-shadow: 0 4px 20px rgba(59,130,246,0.2);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.parallax-slow { will-change: transform; }
+.parallax-fast { will-change: transform; }
+
+@keyframes testimonial-rotate {
+  0% { transform: perspective(1200px) rotateY(-3deg) scale(0.98); }
+  50% { transform: perspective(1200px) rotateY(3deg) scale(1); }
+  100% { transform: perspective(1200px) rotateY(-3deg) scale(0.98); }
+}
+.testimonial-3d {
+  animation: testimonial-rotate 8s ease-in-out infinite;
+  transform-style: preserve-3d;
+}
+
+.carousel-3d {
+  perspective: 1200px;
+  transform-style: preserve-3d;
+}
+.carousel-card {
+  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+.btn-glow-follow {
+  position: relative;
+  overflow: hidden;
+}
+.btn-glow-follow::before {
+  content: '';
+  position: absolute;
+  top: var(--glow-y, 50%);
+  left: var(--glow-x, 50%);
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.15), transparent 70%);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.btn-glow-follow:hover::before {
+  opacity: 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .fade-up, .fade-up-d1, .fade-up-d2, .fade-up-d3, .fade-up-d4,
   .slide-in-r1, .slide-in-r2, .slide-in-r3, .hero-fade-in, .scroll-item {
@@ -386,8 +486,10 @@ select option {
     opacity: 0.6 !important;
   }
   .glow-pulse, .float-subtle, .pulse-ring, .testimonial-featured,
-  .urgency-text, .cta-glow, .dimension-tag-lit {
+  .urgency-text, .cta-glow, .dimension-tag-lit, .testimonial-3d,
+  .flip-digit, .scroll-3d-enter, .btn-3d, .carousel-card {
     animation: none !important;
+    transform: none !important;
   }
   .cta-shimmer::after {
     animation: none !important;

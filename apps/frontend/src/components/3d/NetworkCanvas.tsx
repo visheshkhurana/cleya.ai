@@ -19,26 +19,29 @@ function useScrollProgress() {
   return progress;
 }
 
-const NODE_COUNT = 100;
+function useMouse() {
+  const mouse = useRef({ x: 0, y: 0 });
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      mouse.current.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.current.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    };
+    window.addEventListener('mousemove', onMove, { passive: true });
+    return () => window.removeEventListener('mousemove', onMove);
+  }, []);
+  return mouse;
+}
 
-function NetworkNodes({ scrollProgress }: { scrollProgress: number }) {
+const NODE_COUNT = 60;
+
+function NetworkNodes({ mouse }: { mouse: React.MutableRefObject<{ x: number; y: number }> }) {
   const meshRef = useRef<THREE.InstancedMesh>(null!);
   const dummy = useMemo(() => new THREE.Object3D(), []);
-  const colorArray = useMemo(() => new Float32Array(NODE_COUNT * 3), []);
 
   const { positions, velocities, scales } = useMemo(() => {
     const pos = new Float32Array(NODE_COUNT * 3);
     const vel = new Float32Array(NODE_COUNT * 3);
     const sc = new Float32Array(NODE_COUNT);
-
-    const palette = [
-      new THREE.Color('#3B82F6'),
-      new THREE.Color('#8B5CF6'),
-      new THREE.Color('#06B6D4'),
-      new THREE.Color('#60A5FA'),
-      new THREE.Color('#A78BFA'),
-      new THREE.Color('#22D3EE'),
-    ];
 
     for (let i = 0; i < NODE_COUNT; i++) {
       const spread = 18;
@@ -50,15 +53,14 @@ function NetworkNodes({ scrollProgress }: { scrollProgress: number }) {
       vel[i * 3 + 1] = (Math.random() - 0.5) * 0.003;
       vel[i * 3 + 2] = (Math.random() - 0.5) * 0.003;
 
-      sc[i] = 0.03 + Math.random() * 0.06;
-
-      const c = palette[Math.floor(Math.random() * palette.length)];
-      colorArray[i * 3] = c.r;
-      colorArray[i * 3 + 1] = c.g;
-      colorArray[i * 3 + 2] = c.b;
+      sc[i] = 0.04 + Math.random() * 0.08;
     }
     return { positions: pos, velocities: vel, scales: sc };
   }, []);
+
+  const teal = useMemo(() => new THREE.Color('#0D9488'), []);
+  const purple = useMemo(() => new THREE.Color('#7C3AED'), []);
+  const tempColor = useMemo(() => new THREE.Color(), []);
 
   useFrame((state) => {
     if (!meshRef.current) return;
@@ -75,12 +77,17 @@ function NetworkNodes({ scrollProgress }: { scrollProgress: number }) {
         }
       }
 
-      const breathe = 1 + Math.sin(time * 0.5 + i * 0.3) * 0.15;
-      const nodeScale = scales[i] * breathe;
+      const pulse = Math.sin(time * 0.8 + i * 0.5) * 0.5 + 0.5;
+      tempColor.copy(teal).lerp(purple, pulse);
+      meshRef.current.setColorAt(i, tempColor);
+
+      const breathe = 1 + Math.sin(time * 0.5 + i * 0.3) * 0.2;
+      const glow = 1 + pulse * 0.3;
+      const nodeScale = scales[i] * breathe * glow;
 
       dummy.position.set(
-        positions[i * 3],
-        positions[i * 3 + 1],
+        positions[i * 3] + mouse.current.x * 0.5,
+        positions[i * 3 + 1] + mouse.current.y * 0.3,
         positions[i * 3 + 2]
       );
       dummy.scale.setScalar(nodeScale);
@@ -88,18 +95,22 @@ function NetworkNodes({ scrollProgress }: { scrollProgress: number }) {
       meshRef.current.setMatrixAt(i, dummy.matrix);
     }
     meshRef.current.instanceMatrix.needsUpdate = true;
+    if (meshRef.current.instanceColor) {
+      meshRef.current.instanceColor.needsUpdate = true;
+    }
   });
 
   return (
     <instancedMesh ref={meshRef} args={[undefined, undefined, NODE_COUNT]}>
-      <sphereGeometry args={[1, 12, 12]} />
-      <meshBasicMaterial color="#60A5FA" transparent opacity={0.85} />
+      <sphereGeometry args={[1, 16, 16]} />
+      <meshBasicMaterial toneMapped={false} transparent opacity={0.9} />
     </instancedMesh>
   );
 }
 
-function ConnectionLines({ scrollProgress }: { scrollProgress: number }) {
+function ConnectionLines({ scrollProgress, mouse }: { scrollProgress: number; mouse: React.MutableRefObject<{ x: number; y: number }> }) {
   const ref = useRef<THREE.LineSegments>(null!);
+  const matRef = useRef<THREE.LineBasicMaterial>(null!);
 
   const geometry = useMemo(() => {
     const vertices: number[] = [];
@@ -117,7 +128,7 @@ function ConnectionLines({ scrollProgress }: { scrollProgress: number }) {
     for (let i = 0; i < tempPositions.length; i++) {
       for (let j = i + 1; j < tempPositions.length; j++) {
         const dist = tempPositions[i].distanceTo(tempPositions[j]);
-        if (dist < 4) {
+        if (dist < 4.5) {
           vertices.push(
             tempPositions[i].x, tempPositions[i].y, tempPositions[i].z,
             tempPositions[j].x, tempPositions[j].y, tempPositions[j].z
@@ -133,19 +144,26 @@ function ConnectionLines({ scrollProgress }: { scrollProgress: number }) {
 
   useFrame((state) => {
     if (!ref.current) return;
-    ref.current.rotation.y = state.clock.elapsedTime * 0.01;
+    const time = state.clock.elapsedTime;
+    ref.current.rotation.y = time * 0.012 + mouse.current.x * 0.1;
+    ref.current.rotation.x = mouse.current.y * 0.05;
+    if (matRef.current) {
+      const pulse = Math.sin(time * 0.5) * 0.03;
+      matRef.current.opacity = 0.08 + scrollProgress * 0.08 + pulse;
+    }
   });
 
   return (
     <lineSegments ref={ref} geometry={geometry}>
-      <lineBasicMaterial color="#3B82F6" transparent opacity={0.06 + scrollProgress * 0.08} />
+      <lineBasicMaterial ref={matRef} color="#7C3AED" transparent opacity={0.08} />
     </lineSegments>
   );
 }
 
-function AICore({ scrollProgress }: { scrollProgress: number }) {
+function AICore({ scrollProgress, mouse }: { scrollProgress: number; mouse: React.MutableRefObject<{ x: number; y: number }> }) {
   const meshRef = useRef<THREE.Mesh>(null!);
   const glowRef = useRef<THREE.Mesh>(null!);
+  const ringRef = useRef<THREE.Mesh>(null!);
 
   useFrame((state) => {
     if (!meshRef.current) return;
@@ -153,13 +171,19 @@ function AICore({ scrollProgress }: { scrollProgress: number }) {
 
     const coreScale = 0.3 + scrollProgress * 0.5;
     meshRef.current.scale.setScalar(coreScale * (1 + Math.sin(time * 1.5) * 0.05));
-    meshRef.current.rotation.y = time * 0.2;
-    meshRef.current.rotation.x = Math.sin(time * 0.3) * 0.1;
+    meshRef.current.rotation.y = time * 0.2 + mouse.current.x * 0.3;
+    meshRef.current.rotation.x = Math.sin(time * 0.3) * 0.1 + mouse.current.y * 0.2;
 
     if (glowRef.current) {
       glowRef.current.scale.setScalar(coreScale * 2.5 * (1 + Math.sin(time * 0.8) * 0.1));
       (glowRef.current.material as THREE.MeshBasicMaterial).opacity =
-        0.03 + scrollProgress * 0.07 + Math.sin(time) * 0.02;
+        0.04 + scrollProgress * 0.08 + Math.sin(time) * 0.02;
+    }
+
+    if (ringRef.current) {
+      ringRef.current.rotation.x = Math.PI / 2 + Math.sin(time * 0.4) * 0.2;
+      ringRef.current.rotation.z = time * 0.15;
+      ringRef.current.scale.setScalar(coreScale * 1.8);
     }
   });
 
@@ -168,7 +192,7 @@ function AICore({ scrollProgress }: { scrollProgress: number }) {
       <mesh ref={meshRef}>
         <icosahedronGeometry args={[1, 2]} />
         <meshBasicMaterial
-          color="#8B5CF6"
+          color="#7C3AED"
           transparent
           opacity={0.5 + scrollProgress * 0.3}
           wireframe
@@ -177,16 +201,20 @@ function AICore({ scrollProgress }: { scrollProgress: number }) {
       <mesh ref={glowRef}>
         <sphereGeometry args={[1, 32, 32]} />
         <meshBasicMaterial
-          color="#8B5CF6"
+          color="#0D9488"
           transparent
           opacity={0.05}
         />
+      </mesh>
+      <mesh ref={ringRef}>
+        <torusGeometry args={[1, 0.02, 16, 64]} />
+        <meshBasicMaterial color="#0D9488" transparent opacity={0.15} />
       </mesh>
     </group>
   );
 }
 
-function DataPulses({ scrollProgress }: { scrollProgress: number }) {
+function DataPulses({ scrollProgress, mouse }: { scrollProgress: number; mouse: React.MutableRefObject<{ x: number; y: number }> }) {
   const count = 25;
   const meshRef = useRef<THREE.InstancedMesh>(null!);
   const dummy = useMemo(() => new THREE.Object3D(), []);
@@ -211,8 +239,8 @@ function DataPulses({ scrollProgress }: { scrollProgress: number }) {
       const p = pulseData[i];
       const t = time * p.speed + p.phase;
       dummy.position.set(
-        Math.cos(t + p.angle) * p.radius,
-        p.yOffset + Math.sin(t * 0.7) * 1.5,
+        Math.cos(t + p.angle) * p.radius + mouse.current.x * 0.3,
+        p.yOffset + Math.sin(t * 0.7) * 1.5 + mouse.current.y * 0.2,
         Math.sin(t + p.angle) * p.radius
       );
       const pulseScale = 0.02 + Math.sin(t * 3) * 0.01;
@@ -226,17 +254,19 @@ function DataPulses({ scrollProgress }: { scrollProgress: number }) {
   return (
     <instancedMesh ref={meshRef} args={[undefined, undefined, count]}>
       <sphereGeometry args={[1, 8, 8]} />
-      <meshBasicMaterial color="#22D3EE" transparent opacity={0.6} />
+      <meshBasicMaterial color="#0D9488" transparent opacity={0.6} />
     </instancedMesh>
   );
 }
 
-function CameraController({ scrollProgress }: { scrollProgress: number }) {
+function CameraController({ scrollProgress, mouse }: { scrollProgress: number; mouse: React.MutableRefObject<{ x: number; y: number }> }) {
   const { camera } = useThree();
   const targetPos = useRef(new THREE.Vector3(0, 2, 15));
 
   useFrame(() => {
     const p = scrollProgress;
+    const mx = mouse.current.x;
+    const my = mouse.current.y;
 
     let tx: number, ty: number, tz: number;
     if (p < 0.15) {
@@ -265,6 +295,9 @@ function CameraController({ scrollProgress }: { scrollProgress: number }) {
       tz = 16 + t * 10;
     }
 
+    tx += mx * 1.5;
+    ty += my * 0.8;
+
     targetPos.current.set(tx, ty, tz);
     camera.position.lerp(targetPos.current, 0.03);
     camera.lookAt(0, 0, 0);
@@ -273,17 +306,17 @@ function CameraController({ scrollProgress }: { scrollProgress: number }) {
   return null;
 }
 
-function Scene({ scrollProgress }: { scrollProgress: number }) {
+function Scene({ scrollProgress, mouse }: { scrollProgress: number; mouse: React.MutableRefObject<{ x: number; y: number }> }) {
   return (
     <>
       <color attach="background" args={['#050510']} />
       <fog attach="fog" args={['#050510', 15, 35]} />
 
-      <CameraController scrollProgress={scrollProgress} />
-      <NetworkNodes scrollProgress={scrollProgress} />
-      <ConnectionLines scrollProgress={scrollProgress} />
-      <AICore scrollProgress={scrollProgress} />
-      <DataPulses scrollProgress={scrollProgress} />
+      <CameraController scrollProgress={scrollProgress} mouse={mouse} />
+      <NetworkNodes mouse={mouse} />
+      <ConnectionLines scrollProgress={scrollProgress} mouse={mouse} />
+      <AICore scrollProgress={scrollProgress} mouse={mouse} />
+      <DataPulses scrollProgress={scrollProgress} mouse={mouse} />
     </>
   );
 }
@@ -291,6 +324,7 @@ function Scene({ scrollProgress }: { scrollProgress: number }) {
 export default function NetworkCanvas() {
   const [mounted, setMounted] = useState(false);
   const scrollProgress = useScrollProgress();
+  const mouse = useMouse();
 
   useEffect(() => {
     setMounted(true);
@@ -306,7 +340,7 @@ export default function NetworkCanvas() {
         gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
         style={{ pointerEvents: 'none' }}
       >
-        <Scene scrollProgress={scrollProgress} />
+        <Scene scrollProgress={scrollProgress} mouse={mouse} />
       </Canvas>
     </div>
   );

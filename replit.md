@@ -14,7 +14,7 @@ Monorepo with:
 - `packages/types` — Shared TypeScript types
 
 ## Stack
-- **Frontend:** Next.js 14, React 18, Tailwind CSS (dark premium theme — #050510 bg, blue/purple gradients), Framer Motion 10, Lenis (smooth scroll), AppShell component (ParticleNetwork + dot-grid overlay for all pages)
+- **Frontend:** Next.js 14, React 18, Tailwind CSS (dark premium theme — #050510 bg, blue/purple/teal gradients), Framer Motion 11, @react-three/fiber 8.15.12 + drei 9.92.7 + three 0.160.0 (3D hero constellation), AppShell component (ParticleNetwork + dot-grid overlay for all pages), TiltCard (3D perspective hover), 3D scroll animations, flip counters, 3D button press effects
 - **Mobile:** Expo SDK 52 (React Native 0.76), expo-router 4, React Query, SecureStore for auth tokens
 - **Backend:** Express, TypeScript, WebSocket
 - **Database:** PostgreSQL (Replit built-in), Prisma ORM, pgvector

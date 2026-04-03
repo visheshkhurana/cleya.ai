@@ -8,6 +8,7 @@ import { useI18n } from '@/lib/i18n';
 import { translations } from '@/lib/i18n/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import ThreeBackground from '@/components/3d/ThreeBackground';
+import TiltCard from '@/components/ui/TiltCard';
 
 function getPasswordStrength(pw: string): { label: string; color: string; width: string } {
   if (!pw) return { label: '', color: '', width: '0%' };
@@ -549,7 +550,7 @@ function UseCaseCard({ persona, setShowAuth, setMode, setSelectedPersona }: {
   const revealed = hovered || tapped;
 
   return (
-    <div className="scroll-item perspective-[1200px]">
+    <TiltCard className="scroll-item" glowColor={`${persona.accentColor}20`} floatIntensity={0.8}>
       <div
         role="button"
         tabIndex={0}
@@ -558,7 +559,6 @@ function UseCaseCard({ persona, setShowAuth, setMode, setSelectedPersona }: {
         style={{
           background: persona.gradient,
           border: `1px solid ${revealed ? `${persona.accentColor}30` : persona.borderColor}`,
-          transform: revealed ? 'translateY(-8px)' : 'translateY(0)',
           boxShadow: revealed ? `0 20px 60px ${persona.accentColor}12` : 'none',
         }}
         onMouseEnter={() => setHovered(true)}
@@ -629,7 +629,7 @@ function UseCaseCard({ persona, setShowAuth, setMode, setSelectedPersona }: {
         <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
           style={{ boxShadow: `0 0 40px ${persona.accentColor}15` }} />
       </div>
-    </div>
+    </TiltCard>
   );
 }
 
@@ -644,21 +644,35 @@ const ACTIVITY_FEED = [
   { text: 'Neha connected with Kartik', time: '25min ago', color: '#A78BFA' },
 ];
 
+function FlipDigit({ digit, delay, color }: { digit: string; delay: number; color: string }) {
+  return (
+    <span
+      className="flip-digit inline-block"
+      style={{ animationDelay: `${delay}ms`, color, perspective: '600px' }}
+    >
+      {digit}
+    </span>
+  );
+}
+
 function AnimatedCounter({ target, suffix = '', color, label }: { target: number; suffix?: string; color: string; label: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [count, setCount] = useState(target);
+  const [flipping, setFlipping] = useState(false);
   const startedRef = useRef(false);
 
   useEffect(() => {
     if (!ref.current) return;
     setCount(target);
     startedRef.current = false;
+    setFlipping(false);
     let rafId: number;
     const startFrom = Math.max(Math.floor(target * 0.7), 1);
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !startedRef.current) {
           startedRef.current = true;
+          setFlipping(true);
           setCount(startFrom);
           const duration = 1200;
           const startTime = performance.now();
@@ -679,18 +693,26 @@ function AnimatedCounter({ target, suffix = '', color, label }: { target: number
     return () => { observer.disconnect(); cancelAnimationFrame(rafId); };
   }, [target]);
 
+  const digits = `${count}${suffix}`.split('');
+
   return (
-    <div ref={ref} className="text-center p-6 rounded-2xl"
+    <div ref={ref} className="text-center p-6 rounded-2xl relative overflow-hidden group"
       style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
-      <div className="font-bold text-3xl sm:text-4xl mb-1 tabular-nums" style={{ color }}>
-        {count}{suffix}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+        style={{ background: `radial-gradient(circle at 50% 50%, ${color}08, transparent 70%)` }} />
+      <div className="font-bold text-3xl sm:text-4xl mb-1 tabular-nums relative" style={{ perspective: '600px' }}>
+        {flipping ? digits.map((d, i) => (
+          <FlipDigit key={`${i}-${d}`} digit={d} delay={i * 60} color={color} />
+        )) : (
+          <span style={{ color }}>{count}{suffix}</span>
+        )}
       </div>
       <div className="text-xs text-white/30 uppercase tracking-wider">{label}</div>
     </div>
   );
 }
 
-function AnimatedSection({ children, className = '', style = {} }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+function AnimatedSection({ children, className = '', style = {}, use3d = true }: { children: React.ReactNode; className?: string; style?: React.CSSProperties; use3d?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
@@ -707,10 +729,36 @@ function AnimatedSection({ children, className = '', style = {} }: { children: R
     observer.observe(ref.current);
     return () => observer.disconnect();
   }, []);
+  const baseClass = use3d ? 'scroll-3d-enter' : 'scroll-section';
+  const visibleClass = visible ? 'scroll-visible' : '';
   return (
-    <div ref={ref} className={`scroll-section ${visible ? 'scroll-visible' : ''} ${className}`} style={style}>
+    <div ref={ref} className={`${baseClass} ${visibleClass} ${className}`} style={style}>
       {children}
     </div>
+  );
+}
+
+function GlowButton({ children, onClick, className = '', style = {} }: { children: React.ReactNode; onClick?: () => void; className?: string; style?: React.CSSProperties }) {
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!btnRef.current) return;
+    const rect = btnRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    btnRef.current.style.setProperty('--glow-x', `${x}px`);
+    btnRef.current.style.setProperty('--glow-y', `${y}px`);
+  }, []);
+
+  return (
+    <button
+      ref={btnRef}
+      onClick={onClick}
+      onMouseMove={handleMouseMove}
+      className={`btn-3d btn-glow-follow ${className}`}
+      style={style}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -1039,12 +1087,12 @@ export default function Home() {
               className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 hero-fade-in"
               style={{ animationDelay: '0.9s' }}
             >
-              <button onClick={() => { setShowAuth(true); setMode('signup'); }}
-                className="group cta-glow px-10 py-4 rounded-full text-white font-medium text-[15px] transition-all duration-300 hover:scale-[1.03]"
+              <GlowButton onClick={() => { setShowAuth(true); setMode('signup'); }}
+                className="group cta-glow px-10 py-4 rounded-full text-white font-medium text-[15px]"
                 style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
                 Enter the Network
                 <span className="inline-block ml-2 transition-transform group-hover:translate-x-1">→</span>
-              </button>
+              </GlowButton>
               <button onClick={() => scrollToSection('how-it-works')}
                 className="group flex items-center gap-2 px-6 py-3 text-sm font-medium text-white/40 hover:text-white/70 transition-colors">
                 <span>Explore</span>
@@ -1139,28 +1187,50 @@ export default function Home() {
       </section>
 
       {/* ════════════════════════════════════════════
-          SCENE 5: SOCIAL PROOF — TESTIMONIALS
+          SCENE 5: SOCIAL PROOF — 3D TESTIMONIAL CAROUSEL
           ════════════════════════════════════════════ */}
       <section className="relative z-10 py-24" style={{ background: '#050510' }}>
-        <div className="overflow-hidden py-8">
-          <div className="flex animate-marquee whitespace-nowrap">
-            {[...testimonials, ...testimonials].map((t, i) => (
-              <div key={i} className="inline-flex items-center gap-4 mx-8 flex-shrink-0 group">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                  style={{ background: 'rgba(59,130,246,0.08)', color: '#60A5FA', border: '1px solid rgba(59,130,246,0.12)' }}>
-                  {t.initials}
-                </div>
-                <div>
-                  <p className="text-sm text-white/50 whitespace-normal max-w-[280px]">"{t.quote}"</p>
-                  <p className="text-xs font-medium text-white/25 mt-1">— {t.name}, {t.title}</p>
-                </div>
-              </div>
-            ))}
+        <AnimatedSection className="max-w-6xl mx-auto px-6 mb-16">
+          <div className="text-center mb-12">
+            <div className="text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#A78BFA' }}>
+              Real Results
+            </div>
+            <h2 className="font-sans font-bold text-white mb-4 tracking-tight" style={{ fontSize: 'clamp(28px, 3vw + 8px, 44px)' }}>
+              What our members say
+            </h2>
           </div>
-        </div>
 
-        <AnimatedSection className="max-w-4xl mx-auto px-6 mt-20">
-          <div className="scroll-item">
+          <div className="carousel-3d relative">
+            <div className="grid md:grid-cols-3 gap-6">
+              {testimonials.slice(0, 3).map((item, i) => {
+                const colors = ['#3B82F6', '#8B5CF6', '#06B6D4'];
+                return (
+                  <TiltCard key={i} className="carousel-card" glowColor={`${colors[i]}15`} floatIntensity={0.5}>
+                    <div className="rounded-2xl p-6 h-full relative overflow-hidden"
+                      style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(10px)' }}>
+                      <div className="absolute top-4 right-4 font-sans text-[60px] font-bold leading-none pointer-events-none select-none"
+                        style={{ color: `${colors[i]}08` }}>"</div>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold"
+                          style={{ background: `${colors[i]}12`, color: colors[i], border: `1px solid ${colors[i]}20` }}>
+                          {item.initials}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-white">{item.name}</p>
+                          <p className="text-[11px] text-white/30">{item.title}</p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-white/60 leading-relaxed">"{item.quote}"</p>
+                    </div>
+                  </TiltCard>
+                );
+              })}
+            </div>
+          </div>
+        </AnimatedSection>
+
+        <AnimatedSection className="max-w-4xl mx-auto px-6">
+          <TiltCard className="testimonial-3d" glowColor="rgba(139,92,246,0.1)" floatIntensity={0.3}>
             <div className="rounded-2xl p-8 sm:p-14 relative overflow-hidden testimonial-featured"
               style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(20px)' }}>
               <div className="absolute top-0 right-0 w-[400px] h-[400px] rounded-full pointer-events-none"
@@ -1180,8 +1250,25 @@ export default function Home() {
                 </div>
               </div>
             </div>
-          </div>
+          </TiltCard>
         </AnimatedSection>
+
+        <div className="overflow-hidden py-8 mt-12">
+          <div className="flex animate-marquee whitespace-nowrap">
+            {[...testimonials, ...testimonials].map((item, i) => (
+              <div key={i} className="inline-flex items-center gap-4 mx-8 flex-shrink-0 group">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                  style={{ background: 'rgba(59,130,246,0.08)', color: '#60A5FA', border: '1px solid rgba(59,130,246,0.12)' }}>
+                  {item.initials}
+                </div>
+                <div>
+                  <p className="text-sm text-white/50 whitespace-normal max-w-[280px]">"{item.quote}"</p>
+                  <p className="text-xs font-medium text-white/25 mt-1">— {item.name}, {item.title}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* ════════════════════════════════════════════
@@ -1241,14 +1328,14 @@ export default function Home() {
             Only 23 spots remaining this month
           </p>
           <div className="scroll-item flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button onClick={() => { setShowAuth(true); setMode('signup'); }}
-              className="group cta-shimmer px-12 py-4 rounded-full text-white font-medium text-[15px] transition-all duration-300 hover:scale-[1.03]"
+            <GlowButton onClick={() => { setShowAuth(true); setMode('signup'); }}
+              className="group cta-shimmer px-12 py-4 rounded-full text-white font-medium text-[15px]"
               style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', boxShadow: '0 0 50px rgba(59,130,246,0.3)' }}>
               Enter the Network
               <span className="inline-block ml-2 transition-transform group-hover:translate-x-1">→</span>
-            </button>
+            </GlowButton>
             <button onClick={() => { setShowAuth(true); setMode('login'); }}
-              className="px-8 py-[14px] rounded-full text-sm font-medium border border-white/8 hover:border-white/15 text-white/40 hover:text-white/70 transition-all">
+              className="btn-3d px-8 py-[14px] rounded-full text-sm font-medium border border-white/8 hover:border-white/15 text-white/40 hover:text-white/70 transition-all">
               Log In
             </button>
           </div>
