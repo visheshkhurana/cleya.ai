@@ -173,10 +173,79 @@ const DIMENSION_TAGS = [
   { label: 'Connection Intent', color: '#8B5CF6' },
 ];
 
+const MATCH_RESULTS = [
+  { name: 'Meera I.', role: 'VC Partner · Seed Stage', match: 94, color: '#3B82F6' },
+  { name: 'Vikram R.', role: 'Angel · Fintech Focus', match: 91, color: '#8B5CF6' },
+  { name: 'Siddharth A.', role: 'LP · Growth Capital', match: 88, color: '#06B6D4' },
+  { name: 'Priya S.', role: 'Founder · Payments', match: 86, color: '#A78BFA' },
+];
+
+function MatchResultCards({ active }: { active: boolean }) {
+  const [counters, setCounters] = useState<number[]>(MATCH_RESULTS.map(() => 0));
+  const [visibleCards, setVisibleCards] = useState(-1);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(() => {
+    if (!active) return;
+    setCounters(MATCH_RESULTS.map(() => 0));
+    setVisibleCards(-1);
+    timersRef.current.forEach(t => clearTimeout(t));
+    timersRef.current = [];
+    MATCH_RESULTS.forEach((_, i) => {
+      const t = setTimeout(() => setVisibleCards(i), 100 + i * 200);
+      timersRef.current.push(t);
+    });
+    return () => { timersRef.current.forEach(t => clearTimeout(t)); timersRef.current = []; };
+  }, [active]);
+
+  useEffect(() => {
+    if (!active || visibleCards < 0) return;
+    const allDone = counters.every((c, i) => i <= visibleCards ? c >= MATCH_RESULTS[i].match : true);
+    if (allDone && visibleCards >= MATCH_RESULTS.length - 1) return;
+    const t = setTimeout(() => {
+      setCounters(prev => prev.map((c, i) => i <= visibleCards ? Math.min(c + 2, MATCH_RESULTS[i].match) : 0));
+    }, 25);
+    return () => clearTimeout(t);
+  }, [active, counters, visibleCards]);
+
+  return (
+    <div className="grid grid-cols-2 gap-3 mt-6">
+      {MATCH_RESULTS.map((profile, i) => (
+        <div key={i} className="p-4 rounded-2xl transition-all duration-500"
+          style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            opacity: i <= visibleCards ? 1 : 0,
+            transform: i <= visibleCards ? 'translateY(0)' : 'translateY(12px)',
+          }}>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+              style={{ background: `${profile.color}20`, border: `1px solid ${profile.color}30` }}>
+              {profile.name.split(' ').map(n => n[0]).join('')}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-white truncate">{profile.name}</p>
+              <p className="text-[10px] text-white/35 truncate">{profile.role}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+              <div className="h-full rounded-full transition-all duration-300" style={{ width: `${counters[i]}%`, background: profile.color }} />
+            </div>
+            <span className="text-[11px] font-bold tabular-nums w-8 text-right" style={{ color: profile.color }}>{counters[i]}%</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function ProfileSection() {
   const ref = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(false);
   const [litTags, setLitTags] = useState(-1);
+  const [showMatches, setShowMatches] = useState(false);
+  const tagTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
     if (!ref.current) return;
@@ -188,18 +257,23 @@ function ProfileSection() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    return () => { tagTimersRef.current.forEach(t => clearTimeout(t)); };
+  }, []);
+
   const handleProfileComplete = useCallback(() => {
-    let idx = 0;
-    const tick = () => {
-      setLitTags(idx);
-      idx++;
-      if (idx < DIMENSION_TAGS.length) setTimeout(tick, 400);
-    };
-    setTimeout(tick, 300);
+    tagTimersRef.current.forEach(t => clearTimeout(t));
+    tagTimersRef.current = [];
+    DIMENSION_TAGS.forEach((_, i) => {
+      const t = setTimeout(() => setLitTags(i), 300 + i * 400);
+      tagTimersRef.current.push(t);
+    });
+    const finalT = setTimeout(() => setShowMatches(true), 300 + DIMENSION_TAGS.length * 400 + 500);
+    tagTimersRef.current.push(finalT);
   }, []);
 
   return (
-    <div ref={ref} className="grid lg:grid-cols-2 gap-16 items-center">
+    <div ref={ref} className="grid lg:grid-cols-2 gap-16 items-start">
       <div className={`scroll-section ${active ? 'scroll-visible' : ''}`}>
         <div className="scroll-item">
           <div className="text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#8B5CF6' }}>
@@ -210,7 +284,7 @@ function ProfileSection() {
             <span style={{ color: '#60A5FA' }}>structured intelligence</span>
           </h2>
           <p className="text-base leading-relaxed mb-8 max-w-lg" style={{ color: 'rgba(255,255,255,0.4)' }}>
-            Cleya transforms your professional identity into a rich data profile — sector, stage, check size, intent, geography — creating a multi-dimensional map of who you are and what you need.
+            Cleya transforms your professional identity into a rich data profile — then instantly finds your best matches across the network.
           </p>
           <div className="grid grid-cols-2 gap-3">
             {DIMENSION_TAGS.map((tag, i) => {
@@ -229,6 +303,16 @@ function ProfileSection() {
               );
             })}
           </div>
+
+          {showMatches && (
+            <div className="mt-8">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-1 h-1 rounded-full bg-green-400 animate-pulse" />
+                <span className="text-xs font-medium text-green-400/80 uppercase tracking-wider">Top Matches Found</span>
+              </div>
+              <MatchResultCards active={showMatches} />
+            </div>
+          )}
         </div>
       </div>
       <div className={`transition-all duration-700 ${active ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`} style={{ transitionDelay: '0.3s' }}>
