@@ -64,6 +64,7 @@ model User {
   participantMeetings    Meeting[]       @relation("MeetingParticipant")
 
   secretaryThreads       SecretaryMessage[]
+  googleCalendarToken    GoogleCalendarToken?
 
   zoomAccessToken        String?
   zoomRefreshToken       String?
@@ -782,6 +783,25 @@ model SecretaryMessage {
   @@index([userId])
   @@index([createdAt])
   @@map("secretary_messages")
+}
+
+// ─────────────────────────────────────────────
+// GOOGLE CALENDAR TOKENS
+// ─────────────────────────────────────────────
+
+model GoogleCalendarToken {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  email        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("google_calendar_tokens")
 }
 
 // ─────────────────────────────────────────────

@@ -24,6 +24,8 @@ export default function SettingsPage() {
   const [notifSaving, setNotifSaving] = useState(false);
   const [zoomStatus, setZoomStatus] = useState<{ configured: boolean; connected: boolean } | null>(null);
   const [zoomLoading, setZoomLoading] = useState(false);
+  const [calendarStatus, setCalendarStatus] = useState<{ configured: boolean; connected: boolean; email?: string } | null>(null);
+  const [calendarLoading, setCalendarLoading] = useState(false);
   const [waOptedIn, setWaOptedIn] = useState(false);
   const [waPhone, setWaPhone] = useState('');
   const [waPhoneInput, setWaPhoneInput] = useState('');
@@ -56,6 +58,10 @@ export default function SettingsPage() {
       if (data) setZoomStatus(data);
     }).catch(() => {});
 
+    api.calendarStatus().then(data => {
+      if (data) setCalendarStatus(data);
+    }).catch(() => {});
+
     api.whatsappStatus().then(data => {
       if (data) {
         setWaOptedIn(data.whatsappOptedIn || false);
@@ -67,6 +73,13 @@ export default function SettingsPage() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('zoom') === 'connected') {
       setZoomStatus({ configured: true, connected: true });
+      window.history.replaceState({}, '', '/settings');
+    }
+    if (params.get('calendar') === 'connected') {
+      setCalendarStatus({ configured: true, connected: true });
+      api.calendarStatus().then(data => {
+        if (data) setCalendarStatus(data);
+      }).catch(() => {});
       window.history.replaceState({}, '', '/settings');
     }
   }, [router]);
@@ -620,6 +633,69 @@ export default function SettingsPage() {
                     border: '1px solid rgba(59,130,246,0.2)', cursor: 'pointer',
                   }}>
                   {zoomLoading ? '...' : 'Connect Zoom'}
+                </button>
+              )
+            )}
+          </div>
+
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '16px', borderRadius: '12px', marginTop: '12px',
+            background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '40px', height: '40px', borderRadius: '10px',
+                background: 'linear-gradient(135deg, #4285F4, #34A853)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '18px', color: '#fff', fontWeight: 700,
+              }}>📅</div>
+              <div>
+                <p style={{ color: '#fff', fontSize: '14px', fontWeight: 500 }}>Google Calendar</p>
+                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
+                  {calendarStatus?.connected
+                    ? `Connected${calendarStatus.email ? ` — ${calendarStatus.email}` : ''}`
+                    : calendarStatus?.configured
+                      ? 'Available — connect to sync your schedule'
+                      : 'Not configured'}
+                </p>
+              </div>
+            </div>
+            {calendarStatus?.configured && (
+              calendarStatus.connected ? (
+                <button
+                  onClick={async () => {
+                    setCalendarLoading(true);
+                    try {
+                      await api.calendarDisconnect();
+                      setCalendarStatus({ configured: true, connected: false });
+                    } catch {} finally { setCalendarLoading(false); }
+                  }}
+                  disabled={calendarLoading}
+                  style={{
+                    padding: '8px 16px', borderRadius: '8px', fontSize: '13px',
+                    background: 'rgba(239,68,68,0.1)', color: '#ef4444',
+                    border: '1px solid rgba(239,68,68,0.2)', cursor: 'pointer',
+                  }}>
+                  {calendarLoading ? '...' : 'Disconnect'}
+                </button>
+              ) : (
+                <button
+                  onClick={async () => {
+                    setCalendarLoading(true);
+                    try {
+                      const data = await api.calendarConnect();
+                      if (data?.authUrl) {
+                        window.location.href = data.authUrl;
+                      }
+                    } catch {} finally { setCalendarLoading(false); }
+                  }}
+                  disabled={calendarLoading}
+                  style={{
+                    padding: '8px 16px', borderRadius: '8px', fontSize: '13px',
+                    background: 'rgba(66,133,244,0.1)', color: '#93bbfc',
+                    border: '1px solid rgba(66,133,244,0.2)', cursor: 'pointer',
+                  }}>
+                  {calendarLoading ? '...' : 'Connect Calendar'}
                 </button>
               )
             )}

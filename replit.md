@@ -25,7 +25,7 @@ Monorepo with:
 
 ## Environment Variables (see .env.example for full list)
 **Required:** `DATABASE_URL`, `JWT_SECRET` (min 32 chars; startup throws if missing)
-**Optional (graceful fallback):** `OPENAI_API_KEY` (AI chat → fallback responses), `TWILIO_*` (calls/SMS disabled), `GUPSHUP_API_KEY` + `GUPSHUP_APP_NAME` + `GUPSHUP_SOURCE_NUMBER` (Gupshup WhatsApp), `MESSAGING_PROVIDER` (`auto`|`gupshup`|`twilio`, default `auto` — prefers Gupshup), `SMTP_*` (emails logged only), `GOOGLE_CLIENT_*` (Google login hidden), `LINKEDIN_CLIENT_ID` + `LINKEDIN_CLIENT_SECRET` (LinkedIn login hidden), `SENTRY_DSN` (backend error tracking), `NEXT_PUBLIC_SENTRY_DSN` (frontend error tracking via CDN), `NEXT_PUBLIC_POSTHOG_KEY` (PostHog analytics), `NEXT_PUBLIC_GA_MEASUREMENT_ID` (Google Analytics 4)
+**Optional (graceful fallback):** `OPENAI_API_KEY` (AI chat → fallback responses), `TWILIO_*` (calls/SMS disabled), `GUPSHUP_API_KEY` + `GUPSHUP_APP_NAME` + `GUPSHUP_SOURCE_NUMBER` (Gupshup WhatsApp), `MESSAGING_PROVIDER` (`auto`|`gupshup`|`twilio`, default `auto` — prefers Gupshup), `SMTP_*` (emails logged only), `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` + `GOOGLE_REDIRECT_URI` (Google Calendar + Google login), `LINKEDIN_CLIENT_ID` + `LINKEDIN_CLIENT_SECRET` (LinkedIn login hidden), `SENTRY_DSN` (backend error tracking), `NEXT_PUBLIC_SENTRY_DSN` (frontend error tracking via CDN), `NEXT_PUBLIC_POSTHOG_KEY` (PostHog analytics), `NEXT_PUBLIC_GA_MEASUREMENT_ID` (Google Analytics 4)
 **Admin seed:** `ADMIN_EMAIL` + `ADMIN_PASSWORD` — both must be set to create admin; no defaults in code
 **CORS:** `CORS_ORIGIN` env var → defaults to `FRONTEND_URL`; locked to single origin (not wildcard)
 
@@ -87,7 +87,7 @@ All frontend pages use a server/client wrapper pattern for build compatibility:
 - `/matches` — Match listing with qualitative labels + expandable score breakdown (industry/stage/location/goals/skills/role), verification badges, Message button for accepted matches, feedback, search
 - `/chat` — AI onboarding conversation with progress indicator (Step X of 5)
 - `/secretary` — AI Secretary chat interface with OpenAI-powered assistant for scheduling meetings, sending follow-ups, daily digest, and Zoom integration; quick prompt suggestions on empty state; action buttons for suggested meeting/followup actions
-- `/settings` — Account settings with phone display (syncs from profile), password change, notification preferences (persisted to CommunicationPreference model), Zoom integration (connect/disconnect)
+- `/settings` — Account settings with phone display (syncs from profile), password change, notification preferences (persisted to CommunicationPreference model), Zoom integration (connect/disconnect), Google Calendar integration (connect/disconnect with email display)
 - `/introductions` — Introduction records with full status lifecycle (PENDING_APPROVAL → APPROVED → SENT → VIEWED → RESPONDED → COMPLETED)
 - `/admin` — Admin dashboard
 
@@ -116,6 +116,13 @@ All frontend pages use a server/client wrapper pattern for build compatibility:
 - `GET /api/zoom/connect` — Get Zoom OAuth authorization URL
 - `GET /api/zoom/callback` — Zoom OAuth callback (redirects to /settings)
 - `POST /api/zoom/disconnect` — Disconnect Zoom account
+- `GET /api/calendar/status` — Check Google Calendar configuration and connection status
+- `GET /api/calendar/connect` — Get Google OAuth authorization URL (calendar scopes)
+- `GET /api/calendar/callback` — Google OAuth callback (redirects to /settings?calendar=connected)
+- `GET /api/calendar/events` — Get upcoming calendar events (supports ?timeMin, ?timeMax)
+- `POST /api/calendar/events` — Create calendar event (summary, start, end, attendees)
+- `GET /api/calendar/availability?date=YYYY-MM-DD` — Check free/busy for a day
+- `DELETE /api/calendar/disconnect` — Disconnect Google Calendar
 - `GET /api/analytics/overview` — User-facing analytics: match stats, intro counts, profile completeness, recent matches
 - `GET /api/referrals` — Invite code summary (total/used/available) with referred user details
 
@@ -143,7 +150,7 @@ All frontend pages use a server/client wrapper pattern for build compatibility:
 `apps/frontend/next.config.js` has rewrites proxying `/api/*` → `http://localhost:3001/api/*` so the browser can reach the backend through the Next.js dev server.
 
 ## Database
-- Schema: 20+ models — User, Profile (with pgvector `profileEmbedding`, `linkedinVerified`, `verificationScore`), Conversation, Message, Match (with `scoreBreakdown` JsonB), MatchFeedback, IntroductionRecord (with introText, outcome, sentAt, followUpAt), DealTracking, Event, EventParticipant, Notification, Call, MessageRecord, UserEmbedding, CommunicationPreference, InviteCode, Activity, Waitlist, DirectMessage (P2P messaging), Meeting (scheduling with ICS support)
+- Schema: 20+ models — User, Profile (with pgvector `profileEmbedding`, `linkedinVerified`, `verificationScore`), Conversation, Message, Match (with `scoreBreakdown` JsonB), MatchFeedback, IntroductionRecord (with introText, outcome, sentAt, followUpAt), DealTracking, Event, EventParticipant, Notification, Call, MessageRecord, UserEmbedding, CommunicationPreference, InviteCode, Activity, Waitlist, DirectMessage (P2P messaging), Meeting (scheduling with ICS support), GoogleCalendarToken (OAuth tokens for Google Calendar per user)
 - pgvector extension enabled for semantic similarity search
 - Schema pushed via `prisma db push`
 - Seed: `npx ts-node packages/db/src/seed.ts` — idempotent, skips existing emails

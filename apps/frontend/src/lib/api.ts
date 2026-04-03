@@ -519,6 +519,37 @@ class ApiClient {
   async whatsappOptOut() {
     return this.fetch('/whatsapp/opt-out', { method: 'POST' });
   }
+
+  async calendarStatus() {
+    return this.fetch('/calendar/status');
+  }
+
+  async calendarConnect() {
+    return this.fetch('/calendar/connect');
+  }
+
+  async calendarDisconnect() {
+    return this.fetch('/calendar/disconnect', { method: 'DELETE' });
+  }
+
+  async calendarEvents(timeMin?: string, timeMax?: string) {
+    const params = new URLSearchParams();
+    if (timeMin) params.set('timeMin', timeMin);
+    if (timeMax) params.set('timeMax', timeMax);
+    const qs = params.toString();
+    return this.fetch(`/calendar/events${qs ? '?' + qs : ''}`);
+  }
+
+  async calendarCreateEvent(event: { summary: string; description?: string; start: string; end: string; attendees?: string[] }) {
+    return this.fetch('/calendar/events', {
+      method: 'POST',
+      body: JSON.stringify(event),
+    });
+  }
+
+  async calendarAvailability(date: string) {
+    return this.fetch(`/calendar/availability?date=${date}`);
+  }
 }
 
 export const api = new ApiClient();

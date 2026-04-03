@@ -3,6 +3,7 @@ import { prisma } from '@cleya/db';
 import { createZoomMeeting, isUserZoomConnected } from './zoomService';
 import { emailService } from './email';
 import { sendToUser } from '../websocket/server';
+import * as calendarService from './calendarService';
 
 const SECRETARY_SYSTEM_PROMPT = `You are Cleya Secretary, an AI assistant built into Cleya.ai — a professional networking platform for India's startup ecosystem.
 
@@ -29,6 +30,21 @@ IMPORTANT: When the user wants to schedule a meeting, output a JSON action block
 When the user wants to send a follow-up or meeting reminder:
 \`\`\`action
 {"type":"send_followup","to":"email","subject":"...","body":"..."}
+\`\`\`
+
+When the user asks about their schedule, calendar, upcoming meetings, or availability:
+\`\`\`action
+{"type":"get_calendar_events","timeMin":"ISO8601","timeMax":"ISO8601"}
+\`\`\`
+
+When the user wants to create a calendar event:
+\`\`\`action
+{"type":"create_calendar_event","summary":"...","description":"...","start":"ISO8601","end":"ISO8601","attendees":["email1","email2"]}
+\`\`\`
+
+When the user asks about availability for a specific date:
+\`\`\`action
+{"type":"check_availability","date":"YYYY-MM-DD"}
 \`\`\`
 
 Always confirm with the user before executing actions. Present options clearly.
@@ -109,7 +125,9 @@ async function buildUserContext(userId: string): Promise<string> {
     ctx += `Location: ${profile.location || 'Not set'}\n`;
     if (profile.headline) ctx += `Headline: ${profile.headline}\n`;
   }
+  const calendarConnected = await calendarService.isUserCalendarConnected(userId);
   ctx += `Zoom Connected: ${zoomConnected ? 'Yes' : 'No'}\n`;
+  ctx += `Google Calendar Connected: ${calendarConnected ? 'Yes' : 'No'}\n`;
   ctx += `Today: ${new Date().toISOString().split('T')[0]} (IST timezone)\n`;
 
   if (matches.length > 0) {
@@ -238,6 +256,12 @@ export async function executeSecretaryAction(
       return handleScheduleMeeting(userId, action);
     case 'send_followup':
       return handleSendFollowup(userId, action);
+    case 'get_calendar_events':
+      return handleGetCalendarEvents(userId, action);
+    case 'create_calendar_event':
+      return handleCreateCalendarEvent(userId, action);
+    case 'check_availability':
+      return handleCheckAvailability(userId, action);
     default:
       return { success: false, message: `Unknown action type: ${action.type}` };
   }
@@ -479,6 +503,96 @@ export async function onMatchAccepted(matchId: string, userAId: string, userBId:
   }
 }
 
+async function handleGetCalendarEvents(
+  userId: string,
+  action: { timeMin?: string; timeMax?: string }
+): Promise<{ success: boolean; message: string; data?: any }> {
+  try {
+    const events = await calendarService.getEvents(
+      userId,
+      action.timeMin ? new Date(action.timeMin) : undefined,
+      action.timeMax ? new Date(action.timeMax) : undefined,
+    );
+    if (events.length === 0) {
+      return { success: true, message: 'No upcoming events found in your calendar.' };
+    }
+    const formatted = events.map(e => {
+      const start = e.start?.dateTime || e.start?.date || '';
+      const summary = e.summary || 'Untitled';
+      const startDate = start ? new Date(start).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'TBD';
+      return `• ${summary} — ${startDate}`;
+    }).join('\n');
+    return {
+      success: true,
+      message: `Here are your upcoming events:\n${formatted}`,
+      data: events.map(e => ({ id: e.id, summary: e.summary, start: e.start?.dateTime || e.start?.date, end: e.end?.dateTime || e.end?.date })),
+    };
+  } catch (err: any) {
+    console.error('Calendar get events error:', err);
+    if (err.message?.includes('not connected')) {
+      return { success: false, message: 'Your Google Calendar is not connected. Please connect it from Settings first.' };
+    }
+    return { success: false, message: 'Failed to fetch calendar events.' };
+  }
+}
+
+async function handleCreateCalendarEvent(
+  userId: string,
+  action: { summary: string; description?: string; start: string; end: string; attendees?: string[] }
+): Promise<{ success: boolean; message: string; data?: any }> {
+  try {
+    const event = await calendarService.createEvent(userId, {
+      summary: action.summary,
+      description: action.description,
+      start: new Date(action.start),
+      end: new Date(action.end),
+      attendees: action.attendees,
+    });
+    const startStr = event.start?.dateTime
+      ? new Date(event.start.dateTime).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'long', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+      : '';
+    return {
+      success: true,
+      message: `Calendar event "${action.summary}" created for ${startStr}${event.htmlLink ? `. [View in Calendar](${event.htmlLink})` : ''}`,
+      data: { eventId: event.id, htmlLink: event.htmlLink },
+    };
+  } catch (err: any) {
+    console.error('Calendar create event error:', err);
+    if (err.message?.includes('not connected')) {
+      return { success: false, message: 'Your Google Calendar is not connected. Please connect it from Settings first.' };
+    }
+    return { success: false, message: 'Failed to create calendar event.' };
+  }
+}
+
+async function handleCheckAvailability(
+  userId: string,
+  action: { date: string }
+): Promise<{ success: boolean; message: string; data?: any }> {
+  try {
+    const result = await calendarService.checkAvailability(userId, new Date(action.date));
+    if (result.free) {
+      return { success: true, message: `You're free all day on ${action.date}!`, data: result };
+    }
+    const busySlots = result.busy.map(b => {
+      const start = new Date(b.start).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
+      const end = new Date(b.end).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
+      return `${start} – ${end}`;
+    }).join(', ');
+    return {
+      success: true,
+      message: `On ${action.date}, you have ${result.busy.length} busy slot(s): ${busySlots}`,
+      data: result,
+    };
+  } catch (err: any) {
+    console.error('Calendar availability error:', err);
+    if (err.message?.includes('not connected')) {
+      return { success: false, message: 'Your Google Calendar is not connected. Please connect it from Settings first.' };
+    }
+    return { success: false, message: 'Failed to check availability.' };
+  }
+}
+
 function getSecretaryFallback(message: string): string {
   const lower = message.toLowerCase();
   if (lower.includes('schedule') || lower.includes('meeting') || lower.includes('call')) {
@@ -486,6 +600,9 @@ function getSecretaryFallback(message: string): string {
   }
   if (lower.includes('digest') || lower.includes('update') || lower.includes('today')) {
     return "I'll prepare your daily digest with pending matches, upcoming meetings, and active introductions. Check your dashboard for the latest updates!";
+  }
+  if (lower.includes('calendar') || lower.includes('schedule') || lower.includes('availability') || lower.includes('free') || lower.includes('busy')) {
+    return "I can help with your calendar! If you've connected your Google Calendar in Settings, I can check your schedule, find free time slots, and create events. Just ask me about your availability or tell me what meeting to set up.";
   }
   if (lower.includes('zoom')) {
     return "To set up Zoom meetings automatically, connect your Zoom account from the Settings page. Once connected, I'll create Zoom links whenever you schedule a meeting.";
