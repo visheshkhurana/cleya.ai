@@ -49,15 +49,19 @@ async function getNotificationChannelId(): Promise<string> {
   const slack = await getUncachableSlackClient();
   const result = await slack.conversations.list({ types: 'public_channel', limit: 200 });
 
-  const channel = result.channels?.find(ch => ch.name === 'cleya-notifications')
+  const channel = result.channels?.find(ch => ch.name === 'all-cleya')
+    || result.channels?.find(ch => ch.name === 'new-signups')
     || result.channels?.find(ch => ch.name === 'general');
 
   if (channel?.id) {
     cachedChannelId = channel.id;
+    console.log(`[SlackService] Using channel #${channel.name} (${channel.id})`);
     return channel.id;
   }
 
-  throw new Error('No suitable Slack channel found. Create a #cleya-notifications channel.');
+  const available = result.channels?.map(ch => `#${ch.name}`).join(', ') || 'none found';
+  console.log(`[SlackService] Available channels: ${available}`);
+  throw new Error(`No suitable Slack channel found. Available: ${available}`);
 }
 
 class SlackService {
@@ -68,6 +72,12 @@ class SlackService {
     try {
       const slack = await getUncachableSlackClient();
       const channelId = await getNotificationChannelId();
+      try {
+        await slack.conversations.join({ channel: channelId });
+        console.log(`[SlackService] Joined channel ${channelId}`);
+      } catch (joinErr: any) {
+        console.log(`[SlackService] Could not auto-join channel: ${joinErr.message}`);
+      }
       await slack.chat.postMessage({ channel: channelId, text, blocks });
     } catch (err: any) {
       console.log(`[SlackService] Failed to send message: ${err.message}`);

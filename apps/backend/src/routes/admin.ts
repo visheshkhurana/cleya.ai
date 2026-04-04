@@ -3,6 +3,7 @@ import { prisma } from '@cleya/db';
 import { authenticate, requireAdmin } from '../middleware/auth';
 import { matchingService } from '../services/matchingService';
 import { matchScheduler } from '../services/matchScheduler';
+import { slackService } from '../services/slackService';
 import { messagingService } from '../services/messagingService';
 import { automationService } from '../services/automationService';
 import { emailService } from '../services/email';
@@ -638,6 +639,15 @@ adminRouter.post('/batch-matching', async (_req: Request, res: Response, next: N
   try {
     const result = await matchScheduler.runBatchMatching();
     res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/slack/daily-report', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    await slackService.sendDailyReport();
+    res.json({ success: true, message: 'Daily report sent to Slack' });
   } catch (error) {
     next(error);
   }
