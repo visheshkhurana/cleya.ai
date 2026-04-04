@@ -1,10 +1,10 @@
-import cron from 'node-cron';
+import cron, { ScheduledTask } from 'node-cron';
 import { prisma } from '@cleya/db';
 import { matchingService } from './matchingService';
 import { vectorMatchingService } from './vectorMatchingService';
 
 class MatchScheduler {
-  private tasks: cron.ScheduledTask[] = [];
+  private tasks: ScheduledTask[] = [];
   private running = false;
   private started = false;
 
