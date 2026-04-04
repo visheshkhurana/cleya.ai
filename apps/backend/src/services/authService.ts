@@ -58,6 +58,12 @@ export class AuthService {
       });
     }
 
+    import('./slackService').then(({ slackService }) => {
+      slackService.notifyUserRegistered({ id: user.id, email: user.email, name: user.name || undefined }).catch((e) =>
+        console.log('[Auth] Slack notification failed:', e.message)
+      );
+    });
+
     return {
       user: {
         id: user.id,

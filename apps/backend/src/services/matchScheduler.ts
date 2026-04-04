@@ -2,6 +2,7 @@ import cron, { ScheduledTask } from 'node-cron';
 import { prisma } from '@cleya/db';
 import { matchingService } from './matchingService';
 import { vectorMatchingService } from './vectorMatchingService';
+import { slackService } from './slackService';
 
 class MatchScheduler {
   private tasks: ScheduledTask[] = [];
@@ -20,9 +21,16 @@ class MatchScheduler {
       );
     }, { timezone: 'Asia/Kolkata' });
 
-    this.tasks.push(matchJob);
+    const dailyReportJob = cron.schedule('0 21 * * *', () => {
+      slackService.sendDailyReport().catch(err =>
+        console.error('[MatchScheduler] Daily report failed:', err)
+      );
+    }, { timezone: 'Asia/Kolkata' });
+
+    this.tasks.push(matchJob, dailyReportJob);
     this.started = true;
     console.log('[MatchScheduler] Scheduled batch matching at 8:00, 14:00, 20:00 IST');
+    console.log('[MatchScheduler] Scheduled daily Slack report at 21:00 IST');
   }
 
   stop() {
