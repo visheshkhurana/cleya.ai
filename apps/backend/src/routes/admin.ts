@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { prisma } from '@cleya/db';
 import { authenticate, requireAdmin } from '../middleware/auth';
 import { matchingService } from '../services/matchingService';
+import { matchScheduler } from '../services/matchScheduler';
 import { messagingService } from '../services/messagingService';
 import { automationService } from '../services/automationService';
 import { emailService } from '../services/email';
@@ -627,6 +628,15 @@ adminRouter.post('/whatsapp/register-templates', async (req: Request, res: Respo
 adminRouter.get('/whatsapp/gupshup-templates', async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await gupshupService.listTemplates();
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/batch-matching', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await matchScheduler.runBatchMatching();
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);

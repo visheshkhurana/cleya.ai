@@ -34,6 +34,7 @@ import { twilioRouter } from './routes/twilio';
 import { whatsappRouter } from './routes/whatsapp';
 import { gupshupRouter } from './routes/gupshup';
 import { calendarRouter } from './routes/calendar';
+import { matchScheduler } from './services/matchScheduler';
 
 if (env.SENTRY_DSN) {
   Sentry.init({
@@ -113,6 +114,7 @@ const PORT = env.PORT;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Cleya.ai backend running on port ${PORT}`);
   console.log(`   Environment: ${env.NODE_ENV}`);
+  matchScheduler.start();
 });
 
 export default app;
