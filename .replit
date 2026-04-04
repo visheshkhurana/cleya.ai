@@ -51,7 +51,7 @@ build = ["npm", "run", "build"]
 
 [agent]
 expertMode = true
-integrations = ["resend:1.0.0"]
+integrations = ["resend:1.0.0", "slack:1.0.0"]
 
 [workflows]
 runButton = "Project"
