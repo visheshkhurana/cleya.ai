@@ -39,6 +39,12 @@ Monorepo with:
 ## Match Scheduler
 Automatic batch matching runs 3 times daily at **8:00 AM, 2:00 PM, and 8:00 PM IST** via `node-cron` in `apps/backend/src/services/matchScheduler.ts`. Each run: (1) finds all complete profiles, (2) backfills any missing embeddings, (3) runs `findAndAutoPropose` for each user (up to 3 matches per user per run). Skips already-existing match pairs. Admin can trigger manually via `POST /api/admin/batch-matching`.
 
+## Slack Notifications
+`apps/backend/src/services/slackService.ts` uses `@slack/web-api@7.10.0` via Replit's Slack connector (OAuth token auto-managed). Posts to `#all-cleya` channel (fallback: `#new-signups`, `#general`). Bot name in Slack: `replit`.
+- **User registration**: Fires on every signup (async, non-blocking) — shows email, name, total user count.
+- **Daily report**: Scheduled at **9:00 PM IST** — shows total/new users, profile completion, match stats (total/new/accepted/pending), persona breakdown.
+- **Admin endpoints**: `POST /api/admin/slack/daily-report` to trigger manually.
+
 ## Running the App
 ```
 npm run dev
