@@ -114,7 +114,7 @@ export default function BlogPostPage() {
     <AppShell className="font-sans">
       <PublicNav />
 
-      <article className="max-w-3xl mx-auto px-6 py-12">
+      <article className="max-w-3xl mx-auto px-6 lg:px-8 py-12">
         <header className="mb-10">
           <div className="flex items-center gap-3 mb-4">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-white"

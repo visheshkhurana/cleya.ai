@@ -51,7 +51,7 @@ export default function FeaturesPage() {
     <AppShell>
       <PublicNav />
 
-      <main className="max-w-6xl mx-auto px-6 py-16">
+      <main className="max-w-6xl mx-auto px-6 lg:px-8 py-16">
         <div className="text-center mb-16">
           <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4">
             Everything you need to <span style={{ color: '#93C5FD' }}>grow your network</span>
@@ -83,7 +83,7 @@ export default function FeaturesPage() {
       </main>
 
       <footer className="border-t border-white/[0.06] mt-16">
-        <div className="max-w-6xl mx-auto px-6 py-8 text-center">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8 py-8 text-center">
           <p className="text-xs text-white/30">&copy; 2025 Cleya.ai. All rights reserved.</p>
         </div>
       </footer>

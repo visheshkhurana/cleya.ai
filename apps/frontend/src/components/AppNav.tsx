@@ -22,7 +22,7 @@ export default function AppNav({ rightContent }: AppNavProps) {
 
   return (
     <header className="glass-header">
-      <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div className="max-w-5xl mx-auto px-6 lg:px-8 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button onClick={() => router.push('/dashboard')} className="flex items-center gap-2.5 hover:opacity-90 transition">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-blue-500/20"

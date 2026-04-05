@@ -154,7 +154,7 @@ export default function MessagesPage() {
     <AppShell className="font-sans flex flex-col">
       <AppNav />
 
-      <div className="flex-1 flex max-w-5xl mx-auto w-full">
+      <div className="flex-1 flex max-w-5xl mx-auto px-6 lg:px-8 w-full">
         <div className={`w-full sm:w-80 border-r border-white/5 flex-shrink-0 ${selectedPartner ? 'hidden sm:block' : ''}`}>
           <div className="p-3 border-b border-white/5">
             <p className="text-xs font-medium uppercase tracking-wider text-white/30">Conversations</p>

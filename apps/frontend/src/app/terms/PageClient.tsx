@@ -7,7 +7,7 @@ export default function TermsPage() {
     <AppShell>
       <PublicNav />
 
-      <main className="max-w-4xl mx-auto px-6 py-16">
+      <main className="max-w-4xl mx-auto px-6 lg:px-8 py-16">
         <h1 className="font-display text-3xl sm:text-4xl font-bold text-white mb-2">Terms of Service</h1>
         <p className="text-sm mb-12" style={{ color: '#94A3B8' }}>Last updated: March 18, 2026</p>
 
@@ -100,7 +100,7 @@ export default function TermsPage() {
       </main>
 
       <footer className="border-t border-white/[0.04] py-8">
-        <div className="max-w-4xl mx-auto px-6 text-center">
+        <div className="max-w-4xl mx-auto px-6 lg:px-8 text-center">
           <p className="text-xs" style={{ color: 'rgba(255,255,255,0.2)' }}>&copy; {new Date().getFullYear()} Cleya.ai. All rights reserved.</p>
         </div>
       </footer>

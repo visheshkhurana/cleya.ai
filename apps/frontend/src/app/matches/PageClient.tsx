@@ -178,7 +178,7 @@ export default function MatchesPage() {
   if (loading) {
     return (
       <AppShell>
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-6 pb-12">
+        <div className="max-w-3xl mx-auto px-6 lg:px-8 pt-6 pb-12">
           <div className="h-8 w-40 rounded-lg animate-pulse mb-6" style={{ background: 'rgba(255,255,255,0.05)' }} />
           <div className="flex gap-2 mb-6">
             {[1,2].map(i => <div key={i} className="h-9 w-28 rounded-xl animate-pulse" style={{ background: 'rgba(255,255,255,0.05)' }} />)}
@@ -405,7 +405,7 @@ export default function MatchesPage() {
   return (
     <AppShell>
       <AppNav rightContent={<NotificationCenter />} />
-      <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div className="max-w-3xl mx-auto px-6 lg:px-8 py-3 flex items-center justify-between">
           <h1 className="font-semibold text-white text-sm">Your Matches</h1>
           <div className="flex items-center gap-2 sm:gap-3">
           <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: 'rgba(59,130,246,0.08)' }}>
@@ -430,7 +430,7 @@ export default function MatchesPage() {
           </div>
         </div>
 
-      <div className="max-w-3xl mx-auto px-4 py-6">
+      <div className="max-w-3xl mx-auto px-6 lg:px-8 py-6">
         <div className="mb-5">
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 text-sm">🔍</span>

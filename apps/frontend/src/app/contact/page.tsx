@@ -35,7 +35,7 @@ export default function ContactPage() {
     <AppShell>
       <PublicNav />
 
-      <main className="max-w-3xl mx-auto px-6 py-16" role="main">
+      <main className="max-w-3xl mx-auto px-6 lg:px-8 py-16" role="main">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-white mb-4">Get in Touch</h1>
           <p className="text-lg text-white/50">
@@ -146,7 +146,7 @@ export default function ContactPage() {
       </main>
 
       <footer className="border-t border-white/[0.06] mt-16" role="contentinfo">
-        <div className="max-w-6xl mx-auto px-6 py-8 text-center">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8 py-8 text-center">
           <p className="text-xs text-white/30">&copy; 2026 Cleya.ai. All rights reserved.</p>
         </div>
       </footer>

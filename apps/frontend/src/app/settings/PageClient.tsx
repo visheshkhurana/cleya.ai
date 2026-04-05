@@ -167,7 +167,7 @@ export default function SettingsPage() {
     <AppShell>
       <AppNav />
 
-      <div style={{ maxWidth: '640px', margin: '0 auto', padding: '24px 16px' }} className="sm:!p-10">
+      <div style={{ maxWidth: '640px', margin: '0 auto' }} className="px-6 lg:px-8 py-6 sm:py-10">
         <h1 className="text-xl sm:text-[28px] font-bold text-white mb-2">Settings</h1>
         <p className="text-sm text-white/40 mb-8 sm:mb-10">Manage your account and preferences</p>
 

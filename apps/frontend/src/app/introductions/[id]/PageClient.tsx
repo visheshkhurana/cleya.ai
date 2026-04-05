@@ -141,7 +141,7 @@ export default function IntroductionDetailPage() {
     <AppShell>
       <AppNav rightContent={<NotificationCenter />} />
 
-      <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-2xl mx-auto px-6 lg:px-8 py-6 space-y-6">
         <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(10,10,26,0.8)' }}>
           <div className="flex items-center gap-4 mb-4">
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl"

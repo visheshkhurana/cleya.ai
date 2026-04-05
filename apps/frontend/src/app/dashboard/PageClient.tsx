@@ -223,7 +223,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <AppShell>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-12">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8 pt-6 pb-12">
           <div className="h-8 w-48 rounded-lg animate-pulse mb-6" style={{ background: 'rgba(255,255,255,0.05)' }} />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             {[1,2,3].map(i => (
@@ -278,7 +278,7 @@ export default function DashboardPage() {
     <AppShell>
       <AppNav rightContent={<NotificationCenter />} />
 
-      <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+      <div className="max-w-5xl mx-auto px-6 lg:px-8 py-8 space-y-6">
         {user && !user.emailVerified && (
           <div className="rounded-xl border p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
             style={{ background: 'rgba(245,158,11,0.06)', borderColor: 'rgba(245,158,11,0.2)' }}>

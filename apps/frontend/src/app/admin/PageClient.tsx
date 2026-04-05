@@ -214,7 +214,7 @@ export default function AdminDashboard() {
 
   return (
     <AppShell>
-      <header className="glass-header px-4 sm:px-6 py-3 sm:py-4">
+      <header className="glass-header px-6 lg:px-8 py-3 sm:py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-bold flex items-center justify-center shadow-lg shadow-blue-500/20">
@@ -231,7 +231,7 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-4 sm:py-6">
         <div className="flex gap-1 mb-6 p-1 rounded-xl bg-blue-900/20 border border-blue-500/10 overflow-x-auto">
           {[
             { id: 'overview' as Tab, label: 'Overview', icon: '📊' },

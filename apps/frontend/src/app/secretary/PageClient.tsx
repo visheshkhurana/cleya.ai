@@ -159,7 +159,7 @@ export default function SecretaryPage() {
       <AppNav rightContent={<NotificationCenter />} />
 
       <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
-        <div className="px-4 py-3 flex items-center justify-between border-b border-white/[0.06]">
+        <div className="px-6 lg:px-8 py-3 flex items-center justify-between border-b border-white/[0.06]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#3B82F6] to-[#8B5CF6] flex items-center justify-center">
               <span className="text-lg">🤖</span>
@@ -186,7 +186,7 @@ export default function SecretaryPage() {
           </div>
         </div>
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6 space-y-4" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 lg:px-8 py-6 space-y-4" style={{ maxHeight: 'calc(100vh - 200px)' }}>
           {messages.length === 0 && historyLoaded && (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#3B82F6]/20 to-[#8B5CF6]/20 border border-[#3B82F6]/20 flex items-center justify-center mb-6">
@@ -253,7 +253,7 @@ export default function SecretaryPage() {
           )}
         </div>
 
-        <div className="border-t border-white/[0.06] px-4 py-3">
+        <div className="border-t border-white/[0.06] px-6 lg:px-8 py-3">
           <form onSubmit={(e) => { e.preventDefault(); sendMessage(); }} className="flex items-center gap-2">
             <input
               ref={inputRef}

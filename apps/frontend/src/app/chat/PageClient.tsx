@@ -278,7 +278,7 @@ export default function ChatPage() {
       </header>
 
       {!isOnboarded && currentNode && (
-        <div className="px-4 py-3 border-b border-white/5" style={{ background: 'rgba(5,5,16,0.9)' }}>
+        <div className="px-6 lg:px-8 py-3 border-b border-white/5" style={{ background: 'rgba(5,5,16,0.9)' }}>
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-medium text-white/60">
               Step {ONBOARDING_STEP_MAP[currentNode.id] || 1} of {ONBOARDING_TOTAL_STEPS}
@@ -297,7 +297,7 @@ export default function ChatPage() {
         </div>
       )}
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden chat-scroll px-4 py-6 space-y-1 w-full">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden chat-scroll px-6 lg:px-8 py-6 space-y-1 w-full">
         {messages.length === 0 && !typing && !loading && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-bold mb-4"
@@ -343,7 +343,7 @@ export default function ChatPage() {
       </div>
 
       {currentNode?.type === 'message' && currentNode.next && (
-        <div className="px-4 py-4 border-t border-white/5">
+        <div className="px-6 lg:px-8 py-4 border-t border-white/5">
           <button
             onClick={() => sendMessage({ textInput: 'Continue' })}
             className="btn-primary"
@@ -354,7 +354,7 @@ export default function ChatPage() {
       )}
 
       {(currentNode?.type === 'ai_response' || isOnboarded) && !redirecting && (
-        <form onSubmit={handleTextSubmit} className="px-4 py-4 border-t border-white/5">
+        <form onSubmit={handleTextSubmit} className="px-6 lg:px-8 py-4 border-t border-white/5">
           <div className="flex gap-2">
             <input
               type="text"

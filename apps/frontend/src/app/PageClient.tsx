@@ -977,7 +977,7 @@ export default function Home() {
           borderBottom: scrolled ? '1px solid rgba(255,255,255,0.04)' : '1px solid transparent',
         }}
       >
-        <div className={`max-w-7xl mx-auto px-8 lg:px-12 flex items-center justify-between transition-[padding] duration-300 ${scrolled ? 'py-3' : 'py-5'}`}>
+        <div className={`max-w-6xl mx-auto px-6 lg:px-8 flex items-center justify-between transition-[padding] duration-300 ${scrolled ? 'py-3' : 'py-5'}`}>
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
               <span className="text-white font-bold text-sm">C</span>
@@ -1056,7 +1056,7 @@ export default function Home() {
           SCENE 1: HERO — NETWORK BIRTH
           ════════════════════════════════════════════ */}
       <section className="relative z-10 min-h-screen flex items-center">
-        <div className="relative max-w-7xl mx-auto px-8 lg:px-12 w-full pt-28 pb-20">
+        <div className="relative max-w-6xl mx-auto px-6 lg:px-8 w-full pt-28 pb-20">
           <div className="max-w-3xl">
             <div
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-medium uppercase tracking-[0.2em] mb-8 hero-fade-in"
@@ -1119,7 +1119,7 @@ export default function Home() {
           SCENE 2: PROFILE LAYER — DATA VISUALIZATION
           ════════════════════════════════════════════ */}
       <section className="relative z-10 py-20 sm:py-28" style={{ background: '#050510' }}>
-        <div className="max-w-7xl mx-auto px-8 lg:px-12">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8">
           <ProfileSection />
         </div>
       </section>
@@ -1128,7 +1128,7 @@ export default function Home() {
           SCENE 3: AI MATCHING ENGINE — INTERACTIVE CHAT DEMO
           ════════════════════════════════════════════ */}
       <section id="how-it-works" className="relative z-10 py-20 sm:py-28" style={{ background: '#050510' }}>
-        <div className="max-w-7xl mx-auto px-8 lg:px-12">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8">
           <ChatDemo />
         </div>
       </section>
@@ -1137,7 +1137,7 @@ export default function Home() {
           SCENE 4: USE CASES — INTERACTIVE HOVER CARDS
           ════════════════════════════════════════════ */}
       <section className="relative z-10 py-20 sm:py-28" style={{ background: '#050510' }}>
-        <div className="max-w-7xl mx-auto px-8 lg:px-12">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8">
           <AnimatedSection className="text-center mb-16">
             <div className="scroll-item text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#A78BFA' }}>
               Built for Every Role
@@ -1190,7 +1190,7 @@ export default function Home() {
           SCENE 5: SOCIAL PROOF — 3D TESTIMONIAL CAROUSEL
           ════════════════════════════════════════════ */}
       <section className="relative z-10 py-24" style={{ background: '#050510' }}>
-        <AnimatedSection className="max-w-7xl mx-auto px-8 lg:px-12 mb-16">
+        <AnimatedSection className="max-w-6xl mx-auto px-6 lg:px-8 mb-16">
           <div className="text-center mb-12">
             <div className="text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#A78BFA' }}>
               Real Results
@@ -1229,7 +1229,7 @@ export default function Home() {
           </div>
         </AnimatedSection>
 
-        <AnimatedSection className="max-w-5xl mx-auto px-8 lg:px-12">
+        <AnimatedSection className="max-w-5xl mx-auto px-6 lg:px-8">
           <TiltCard className="testimonial-3d" glowColor="rgba(139,92,246,0.1)" floatIntensity={0.3}>
             <div className="rounded-2xl p-8 sm:p-14 relative overflow-hidden testimonial-featured"
               style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(20px)' }}>
@@ -1275,7 +1275,7 @@ export default function Home() {
           SCENE 6: LIVE NETWORK — ANIMATED STATS
           ════════════════════════════════════════════ */}
       <section className="relative z-10 py-20 sm:py-28" style={{ background: '#050510' }}>
-        <div className="max-w-5xl mx-auto px-8 lg:px-12">
+        <div className="max-w-5xl mx-auto px-6 lg:px-8">
           <AnimatedSection className="text-center mb-16">
             <div className="scroll-item text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#06B6D4' }}>
               Live Network
@@ -1309,7 +1309,7 @@ export default function Home() {
           SCENE 7: FINAL CTA — INFINITE NETWORK
           ════════════════════════════════════════════ */}
       <section className="relative z-10 py-20 sm:py-28" style={{ background: '#050510' }}>
-        <AnimatedSection className="relative max-w-4xl mx-auto px-8 lg:px-12 text-center">
+        <AnimatedSection className="relative max-w-4xl mx-auto px-6 lg:px-8 text-center">
           <div className="scroll-item mb-8">
             <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-8 pulse-ring"
               style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', boxShadow: '0 0 60px rgba(59,130,246,0.3)' }}>
@@ -1344,7 +1344,7 @@ export default function Home() {
 
       {/* FOOTER */}
       <footer role="contentinfo" className="relative z-10 border-t border-white/[0.04] py-12" style={{ background: '#050510' }}>
-        <div className="max-w-7xl mx-auto px-8 lg:px-12">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2.5">
               <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>

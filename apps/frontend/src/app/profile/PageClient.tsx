@@ -210,7 +210,7 @@ export default function ProfilePage() {
         </div>
       } />
 
-      <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+      <div className="max-w-3xl mx-auto px-6 lg:px-8 py-8 space-y-6">
         <div className="rounded-2xl border border-white/5 p-6 flex items-center gap-4" style={{ background: 'rgba(10,10,26,0.8)' }}>
           {profile.avatarUrl ? (
             <img src={profile.avatarUrl} alt={profile.currentRole || 'Profile'} referrerPolicy="no-referrer"

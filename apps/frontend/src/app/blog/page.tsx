@@ -64,7 +64,7 @@ export default function BlogPage() {
       <PublicNav />
 
       <section className="pt-16 pb-10 text-center">
-        <div className="max-w-4xl mx-auto px-6">
+        <div className="max-w-4xl mx-auto px-6 lg:px-8">
           <h1 className="font-display text-4xl sm:text-5xl font-bold text-white tracking-tight mb-4">
             Startup Insights
           </h1>
@@ -75,7 +75,7 @@ export default function BlogPage() {
       </section>
 
       <section className="pb-20">
-        <div className="max-w-4xl mx-auto px-6">
+        <div className="max-w-4xl mx-auto px-6 lg:px-8">
           <div className="space-y-6">
             {posts.map((post) => (
               <Link key={post.slug} href={`/blog/${post.slug}`}
@@ -112,7 +112,7 @@ export default function BlogPage() {
       </section>
 
       <section className="border-t border-white/[0.04] py-16 text-center">
-        <div className="max-w-xl mx-auto px-6">
+        <div className="max-w-xl mx-auto px-6 lg:px-8">
           <h2 className="text-2xl font-bold text-white mb-3">Ready to put these insights into action?</h2>
           <p className="text-sm mb-6" style={{ color: '#94A3B8' }}>
             Join Cleya.ai and connect with the right investors for your startup.

@@ -23,7 +23,7 @@ export default function AboutPage() {
     <AppShell className="font-sans">
       <PublicNav />
 
-      <div className="max-w-3xl mx-auto px-6 py-16 space-y-16">
+      <div className="max-w-3xl mx-auto px-6 lg:px-8 py-16 space-y-16">
         <div className="text-center space-y-4">
           <h1 className="font-display text-4xl sm:text-5xl font-bold text-white tracking-tight">About Cleya.ai</h1>
           <p className="text-lg leading-relaxed max-w-xl mx-auto" style={{ color: '#94A3B8' }}>

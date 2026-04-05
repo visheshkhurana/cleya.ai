@@ -103,7 +103,7 @@ export default function CityPage() {
       <section className="py-20 text-center relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none"
           style={{ background: 'radial-gradient(ellipse at center top, rgba(59,130,246,0.15) 0%, transparent 60%)' }} />
-        <div className="relative max-w-4xl mx-auto px-6">
+        <div className="relative max-w-4xl mx-auto px-6 lg:px-8">
           <p className="text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#93C5FD' }}>
             Cleya.ai in {city.name}
           </p>
@@ -123,7 +123,7 @@ export default function CityPage() {
       </section>
 
       <section className="py-12 border-y border-white/[0.04]">
-        <div className="max-w-4xl mx-auto px-6">
+        <div className="max-w-4xl mx-auto px-6 lg:px-8">
           <div className="grid grid-cols-3 gap-8">
             {[
               { value: city.stats.startups, label: 'Startups' },
@@ -140,7 +140,7 @@ export default function CityPage() {
       </section>
 
       <section className="py-16">
-        <div className="max-w-4xl mx-auto px-6">
+        <div className="max-w-4xl mx-auto px-6 lg:px-8">
           <h2 className="text-2xl font-bold text-white text-center mb-10">Top Investors in {city.name}</h2>
           <div className="flex flex-wrap justify-center gap-4">
             {city.investors.map((investor) => (
@@ -154,7 +154,7 @@ export default function CityPage() {
       </section>
 
       <section className="py-16 border-t border-white/[0.04]">
-        <div className="max-w-4xl mx-auto px-6">
+        <div className="max-w-4xl mx-auto px-6 lg:px-8">
           <h2 className="text-2xl font-bold text-white text-center mb-10">Hot Sectors in {city.name}</h2>
           <div className="flex flex-wrap justify-center gap-3">
             {city.sectors.map((sector) => (
@@ -169,7 +169,7 @@ export default function CityPage() {
 
       {city.testimonials.length > 0 && (
         <section className="py-16 border-t border-white/[0.04]">
-          <div className="max-w-4xl mx-auto px-6">
+          <div className="max-w-4xl mx-auto px-6 lg:px-8">
             <h2 className="text-2xl font-bold text-white text-center mb-10">Success Stories from {city.name}</h2>
             <div className="grid sm:grid-cols-2 gap-6">
               {city.testimonials.map((t, i) => (
@@ -193,7 +193,7 @@ export default function CityPage() {
       )}
 
       <section className="py-20 text-center" style={{ background: 'rgba(59,130,246,0.06)' }}>
-        <div className="max-w-xl mx-auto px-6">
+        <div className="max-w-xl mx-auto px-6 lg:px-8">
           <h2 className="text-2xl font-bold text-white mb-3">
             Ready to join {city.name}&apos;s startup ecosystem?
           </h2>
@@ -209,7 +209,7 @@ export default function CityPage() {
       </section>
 
       <footer className="border-t border-white/[0.04] py-8 text-center">
-        <div className="max-w-4xl mx-auto px-6">
+        <div className="max-w-4xl mx-auto px-6 lg:px-8">
           <div className="flex flex-wrap justify-center gap-4 mb-4">
             {Object.entries(cityData).filter(([slug]) => slug !== citySlug).map(([slug, c]) => (
               <Link key={slug} href={`/cities/${slug}`}

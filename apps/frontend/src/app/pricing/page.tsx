@@ -98,7 +98,7 @@ export default function PricingPage() {
       <PublicNav />
 
       <section className="pt-16 pb-8 text-center">
-        <div className="max-w-4xl mx-auto px-6">
+        <div className="max-w-4xl mx-auto px-6 lg:px-8">
           <h1 className="font-display text-4xl sm:text-5xl font-bold text-white tracking-tight mb-4">
             Simple, transparent pricing
           </h1>
@@ -123,7 +123,7 @@ export default function PricingPage() {
       </section>
 
       <section className="pb-20">
-        <div className="max-w-6xl mx-auto px-6">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8">
           <div className="grid md:grid-cols-3 gap-6">
             {plans.map((plan) => {
               const displayPrice = plan.price === '0' ? '0' :
@@ -181,7 +181,7 @@ export default function PricingPage() {
       </section>
 
       <section className="border-t border-white/[0.04] py-16">
-        <div className="max-w-3xl mx-auto px-6">
+        <div className="max-w-3xl mx-auto px-6 lg:px-8">
           <h2 className="text-2xl font-bold text-white text-center mb-10">Frequently Asked Questions</h2>
           <div className="space-y-3">
             {faqs.map((faq, i) => (
@@ -207,7 +207,7 @@ export default function PricingPage() {
       </section>
 
       <section className="border-t border-white/[0.04] py-16 text-center">
-        <div className="max-w-xl mx-auto px-6">
+        <div className="max-w-xl mx-auto px-6 lg:px-8">
           <h2 className="text-2xl font-bold text-white mb-3">Ready to find your next big connection?</h2>
           <p className="text-sm mb-6" style={{ color: '#94A3B8' }}>Join thousands of founders and investors already on Cleya.ai.</p>
           <Link href="/"
