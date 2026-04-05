@@ -1,3 +1,5 @@
+import { redirect } from 'next/navigation';
 export const dynamic = 'force-dynamic';
-import AdminDashboard from './PageClient';
-export default AdminDashboard;
+export default function AdminRedirect() {
+  redirect('/');
+}

@@ -850,15 +850,11 @@ export default function Home() {
     api.getMe().then(async (user) => {
       if (!user) { setChecking(false); return; }
       api.setToken('authenticated');
-      if (user?.role === 'ADMIN') {
-        window.location.href = '/admin';
+      const profile = await api.getProfile().catch(() => null);
+      if (profile?.isComplete) {
+        window.location.href = '/dashboard';
       } else {
-        const profile = await api.getProfile().catch(() => null);
-        if (profile?.isComplete) {
-          window.location.href = '/dashboard';
-        } else {
-          window.location.href = '/chat';
-        }
+        window.location.href = '/chat';
       }
     }).catch(() => { setChecking(false); });
   }, []);
@@ -926,8 +922,7 @@ export default function Home() {
         identifyUser(data.user?.id || '', { email });
         analytics.login('email');
         const profile = await api.getProfile().catch(() => null);
-        if (data.user?.role === 'ADMIN') { window.location.href = '/admin'; }
-        else if (profile?.isComplete) { window.location.href = '/dashboard'; }
+        if (profile?.isComplete) { window.location.href = '/dashboard'; }
         else { window.location.href = '/chat'; }
       }
     } catch (err: any) {
