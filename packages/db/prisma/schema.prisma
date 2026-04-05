@@ -125,8 +125,33 @@ model Profile {
   investmentAmount String?
   accreditedInvestor Boolean?
 
+  // Founder traction fields
+  monthlyRevenue     String?
+  growthRate         String?
+  activeUsers        String?
+  burnRate           String?
+
+  // Investor portfolio fields
+  portfolioCompanies String[]     @default([])
+  dealsPerYear       Int?
+  leadsRounds        Boolean?
+
+  // Availability fields (all personas)
+  introPreference    IntroPreference?
+  openToMeeting      Boolean      @default(true)
+  maxIntrosPerWeek   Int?
+
   // Talent-specific fields
   targetRole       TalentTargetRole?
+  equityExpectation  String?
+  preferredStage     CompanyStage?
+  workStyle          WorkStyle?
+  functionalArea     String?
+
+  // Deal Partner enhanced fields
+  preferredStageRange String?
+  sectorFocus        String[]     @default([])
+  checkSizeRange     String?
 
   // Venture Partner / Deal Partner fields
   fundName         String?
@@ -212,6 +237,18 @@ enum CompanyStage {
   GROWTH
   PUBLIC
   BOOTSTRAPPED
+}
+
+enum IntroPreference {
+  WARM_ONLY
+  COLD_OK
+  OPEN_TO_BOTH
+}
+
+enum WorkStyle {
+  REMOTE
+  IN_OFFICE
+  HYBRID
 }
 
 // ─────────────────────────────────────────────

@@ -61,6 +61,19 @@ export const onboardingFlow: ConversationFlow = {
         { name: 'businessDescription', type: 'textarea', label: 'Describe your business', placeholder: 'What does your company do? Who are your customers?', validation: { max: 500 } },
         { name: 'keyTractionPoints', type: 'textarea', label: 'Key traction points', placeholder: 'e.g. $500K ARR, 10K users, YC W24', validation: { max: 300 } },
       ],
+      next: 'founder_traction',
+    },
+
+    founder_traction: {
+      id: 'founder_traction',
+      type: 'form',
+      content: "Help us understand your traction — this helps match you with the right investors and partners.",
+      formSchema: [
+        { name: 'monthlyRevenue', type: 'text', label: 'Monthly Revenue (MRR)', placeholder: 'e.g. $50K' },
+        { name: 'growthRate', type: 'text', label: 'Monthly Growth Rate', placeholder: 'e.g. 15% MoM' },
+        { name: 'activeUsers', type: 'text', label: 'Active Users', placeholder: 'e.g. 10,000 MAU' },
+        { name: 'burnRate', type: 'text', label: 'Monthly Burn Rate', placeholder: 'e.g. $80K/mo' },
+      ],
       next: 'founder_priority',
     },
 
@@ -112,13 +125,47 @@ export const onboardingFlow: ConversationFlow = {
       type: 'choices',
       content: "What type of role are you targeting?",
       choices: [
-        { label: '👩‍💻 Founding Engineer', value: 'FOUNDING_ENGINEER', next: 'common_details' },
-        { label: '📈 Founding GTM / Sales', value: 'FOUNDING_GTM', next: 'common_details' },
-        { label: '🎯 Chief of Staff', value: 'CHIEF_OF_STAFF', next: 'common_details' },
-        { label: '📢 Growth / Content', value: 'GROWTH_CONTENT', next: 'common_details' },
-        { label: '📝 Open Application', value: 'OPEN_APPLICATION', next: 'common_details' },
-        { label: '🤝 Co-Founder', value: 'COFOUNDER', next: 'common_details' },
+        { label: '👩‍💻 Founding Engineer', value: 'FOUNDING_ENGINEER', next: 'talent_preferences' },
+        { label: '📈 Founding GTM / Sales', value: 'FOUNDING_GTM', next: 'talent_preferences' },
+        { label: '🎯 Chief of Staff', value: 'CHIEF_OF_STAFF', next: 'talent_preferences' },
+        { label: '📢 Growth / Content', value: 'GROWTH_CONTENT', next: 'talent_preferences' },
+        { label: '📝 Open Application', value: 'OPEN_APPLICATION', next: 'talent_preferences' },
+        { label: '🤝 Co-Founder', value: 'COFOUNDER', next: 'talent_preferences' },
       ],
+    },
+
+    talent_preferences: {
+      id: 'talent_preferences',
+      type: 'form',
+      content: "A few more details to help find the best startup match for you.",
+      formSchema: [
+        { name: 'equityExpectation', type: 'text', label: 'Equity Expectation', placeholder: 'e.g. 0.5% - 2%' },
+        {
+          name: 'preferredStage',
+          type: 'select',
+          label: 'Preferred Company Stage',
+          options: [
+            { label: 'Pre-Seed / Idea', value: 'PRE_SEED' },
+            { label: 'Seed', value: 'SEED' },
+            { label: 'Series A', value: 'SERIES_A' },
+            { label: 'Series B', value: 'SERIES_B' },
+            { label: 'Series C+', value: 'SERIES_C_PLUS' },
+            { label: 'Growth', value: 'GROWTH' },
+          ],
+        },
+        {
+          name: 'workStyle',
+          type: 'select',
+          label: 'Work Style Preference',
+          options: [
+            { label: 'Remote', value: 'REMOTE' },
+            { label: 'In-Office', value: 'IN_OFFICE' },
+            { label: 'Hybrid', value: 'HYBRID' },
+          ],
+        },
+        { name: 'functionalArea', type: 'text', label: 'Functional Area', placeholder: 'e.g. Engineering, Product, Design' },
+      ],
+      next: 'common_details',
     },
 
     // ═══════════════════════════════════════════
@@ -161,6 +208,26 @@ export const onboardingFlow: ConversationFlow = {
           ],
         },
         { name: 'investmentAmount', type: 'text', label: 'Typical check size', placeholder: 'e.g. $100K - $500K' },
+      ],
+      next: 'investor_portfolio',
+    },
+
+    investor_portfolio: {
+      id: 'investor_portfolio',
+      type: 'form',
+      content: "Tell me about your portfolio — this helps avoid duplicate pitches and find the best founders for you.",
+      formSchema: [
+        { name: 'portfolioCompanies', type: 'textarea', label: 'Portfolio Companies', placeholder: 'List your portfolio companies (comma-separated)', validation: { max: 500 } },
+        { name: 'dealsPerYear', type: 'number', label: 'Deals Per Year', placeholder: 'e.g. 8', validation: { min: 0, max: 500 } },
+        {
+          name: 'leadsRounds',
+          type: 'select',
+          label: 'Do you lead rounds?',
+          options: [
+            { label: 'Yes, I lead rounds', value: 'true' },
+            { label: 'No, I co-invest', value: 'false' },
+          ],
+        },
       ],
       next: 'common_details',
     },
@@ -210,6 +277,18 @@ export const onboardingFlow: ConversationFlow = {
         { name: 'outreachMethod', type: 'text', label: 'How do you find founders?', placeholder: 'e.g. Twitter DMs, events, warm intros' },
         { name: 'trackedCompanies', type: 'textarea', label: 'Companies you are currently tracking', placeholder: 'List startups you have your eye on', validation: { max: 300 } },
         { name: 'founderAccessPitch', type: 'textarea', label: 'Why should founders work with you?', placeholder: 'Your value prop to founders', validation: { max: 300 } },
+      ],
+      next: 'deal_partner_preferences',
+    },
+
+    deal_partner_preferences: {
+      id: 'deal_partner_preferences',
+      type: 'form',
+      content: "Help us understand your deal preferences so we can surface the best companies for you.",
+      formSchema: [
+        { name: 'preferredStageRange', type: 'text', label: 'Preferred Company Stage Range', placeholder: 'e.g. Pre-Seed to Series A' },
+        { name: 'sectorFocus', type: 'text', label: 'Sector Focus', placeholder: 'e.g. AI/ML, Fintech, Healthcare (comma-separated)' },
+        { name: 'checkSizeRange', type: 'text', label: 'Check Size Range', placeholder: 'e.g. $50K - $500K' },
       ],
       next: 'common_details',
     },
@@ -262,6 +341,35 @@ export const onboardingFlow: ConversationFlow = {
         { name: 'phoneNumber', type: 'phone', label: 'Phone Number', placeholder: '98765 43210' },
         { name: 'linkedinUrl', type: 'url', label: 'LinkedIn URL', placeholder: 'https://linkedin.com/in/...' },
         { name: 'bio', type: 'textarea', label: 'Tell us more about yourself (optional)', placeholder: 'A brief bio helps us find better matches...', validation: { max: 500 } },
+      ],
+      next: 'availability_preferences',
+    },
+
+    availability_preferences: {
+      id: 'availability_preferences',
+      type: 'form',
+      content: "Last thing — let us know your availability and intro preferences.",
+      formSchema: [
+        {
+          name: 'introPreference',
+          type: 'select',
+          label: 'Intro Preference',
+          options: [
+            { label: 'Warm intros only', value: 'WARM_ONLY' },
+            { label: 'Cold outreach is OK', value: 'COLD_OK' },
+            { label: 'Open to both', value: 'OPEN_TO_BOTH' },
+          ],
+        },
+        {
+          name: 'openToMeeting',
+          type: 'select',
+          label: 'Open to meeting new people?',
+          options: [
+            { label: 'Yes', value: 'true' },
+            { label: 'Not right now', value: 'false' },
+          ],
+        },
+        { name: 'maxIntrosPerWeek', type: 'number', label: 'Max intros per week', placeholder: 'e.g. 3', validation: { min: 1, max: 20 } },
       ],
       next: 'attribution',
     },

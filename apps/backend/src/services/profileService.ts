@@ -116,16 +116,31 @@ export class ProfileService {
       profileData.amountRaisedToDate = normalizeMoneyValue(context.amountRaisedToDate) || context.amountRaisedToDate;
       profileData.roundCloseDate = context.roundCloseDate;
       profileData.lookingFor = founderPriority ? [founderPriority] : [];
+      profileData.monthlyRevenue = context.monthlyRevenue;
+      profileData.growthRate = context.growthRate;
+      profileData.activeUsers = context.activeUsers;
+      profileData.burnRate = context.burnRate;
     }
 
     if (persona === 'TALENT') {
       profileData.targetRole = talentRole;
       profileData.lookingFor = talentRole ? [talentRole] : [];
+      profileData.equityExpectation = context.equityExpectation;
+      profileData.preferredStage = context.preferredStage;
+      profileData.workStyle = context.workStyle;
+      profileData.functionalArea = context.functionalArea;
     }
 
     if (persona === 'INVESTOR') {
       profileData.investorType = context.investorType;
       profileData.investmentAmount = normalizeMoneyValue(context.investmentAmount) || context.investmentAmount;
+      profileData.portfolioCompanies = context.portfolioCompanies
+        ? (typeof context.portfolioCompanies === 'string'
+            ? context.portfolioCompanies.split(',').map((s: string) => s.trim()).filter(Boolean)
+            : context.portfolioCompanies)
+        : [];
+      profileData.dealsPerYear = context.dealsPerYear !== undefined && context.dealsPerYear !== null && context.dealsPerYear !== '' ? Number(context.dealsPerYear) : undefined;
+      profileData.leadsRounds = context.leadsRounds === 'true' ? true : context.leadsRounds === 'false' ? false : undefined;
     }
 
     if (persona === 'DEAL_PARTNER') {
@@ -134,6 +149,13 @@ export class ProfileService {
       profileData.outreachMethod = context.outreachMethod;
       profileData.trackedCompanies = context.trackedCompanies;
       profileData.founderAccessPitch = context.founderAccessPitch;
+      profileData.preferredStageRange = context.preferredStageRange;
+      profileData.sectorFocus = context.sectorFocus
+        ? (typeof context.sectorFocus === 'string'
+            ? context.sectorFocus.split(',').map((s: string) => s.trim()).filter(Boolean)
+            : context.sectorFocus)
+        : [];
+      profileData.checkSizeRange = context.checkSizeRange;
     }
 
     if (persona === 'EVENT_PARTICIPANT') {
@@ -142,6 +164,16 @@ export class ProfileService {
 
     if (channelSource) {
       profileData.channelSource = channelSource;
+    }
+
+    if (context.introPreference) {
+      profileData.introPreference = context.introPreference;
+    }
+    if (context.openToMeeting !== undefined) {
+      profileData.openToMeeting = context.openToMeeting === 'true' ? true : context.openToMeeting === 'false' ? false : context.openToMeeting;
+    }
+    if (context.maxIntrosPerWeek) {
+      profileData.maxIntrosPerWeek = Number(context.maxIntrosPerWeek);
     }
 
     Object.keys(profileData).forEach((key) => {
@@ -193,6 +225,11 @@ export class ProfileService {
       'fundName', 'fundSize', 'investmentRange', 'industryFocus', 'investmentThesis',
       'cityBased', 'exampleInvestment', 'outreachMethod', 'trackedCompanies', 'founderAccessPitch',
       'channelSource', 'channelType',
+      'monthlyRevenue', 'growthRate', 'activeUsers', 'burnRate',
+      'portfolioCompanies', 'dealsPerYear', 'leadsRounds',
+      'introPreference', 'openToMeeting', 'maxIntrosPerWeek',
+      'equityExpectation', 'preferredStage', 'workStyle', 'functionalArea',
+      'preferredStageRange', 'sectorFocus', 'checkSizeRange',
     ];
 
     const sanitized: Record<string, any> = {};
@@ -208,6 +245,9 @@ export class ProfileService {
       'amountRaisedToDate', 'fundName', 'fundSize', 'investmentRange',
       'industryFocus', 'investmentThesis', 'cityBased', 'exampleInvestment',
       'outreachMethod', 'founderAccessPitch', 'investmentAmount',
+      'monthlyRevenue', 'growthRate', 'activeUsers', 'burnRate',
+      'equityExpectation', 'functionalArea',
+      'preferredStageRange', 'checkSizeRange',
     ];
     for (const key of textFields) {
       if (typeof sanitized[key] === 'string') {
@@ -244,6 +284,12 @@ export class ProfileService {
     }
     if (Array.isArray(sanitized.industries)) {
       sanitized.industries = sanitized.industries.map((s: any) => typeof s === 'string' ? stripHtml(s).substring(0, 100) : s);
+    }
+    if (Array.isArray(sanitized.portfolioCompanies)) {
+      sanitized.portfolioCompanies = sanitized.portfolioCompanies.map((s: any) => typeof s === 'string' ? stripHtml(s).substring(0, 200) : s);
+    }
+    if (Array.isArray(sanitized.sectorFocus)) {
+      sanitized.sectorFocus = sanitized.sectorFocus.map((s: any) => typeof s === 'string' ? stripHtml(s).substring(0, 100) : s);
     }
 
     const extraKeys = Object.keys(data).filter((k) => !allowed.includes(k));

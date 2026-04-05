@@ -107,7 +107,7 @@ const personaEnum = z.enum([
 ]).optional();
 
 const companyStageEnum = z.enum([
-  'PRE_SEED', 'SEED', 'SERIES_A', 'SERIES_B', 'SERIES_C',
+  'PRE_SEED', 'SEED', 'SERIES_A', 'SERIES_B', 'SERIES_C_PLUS',
   'GROWTH', 'PUBLIC', 'BOOTSTRAPPED',
 ]).optional().nullable();
 
@@ -117,8 +117,16 @@ const priorityEnum = z.enum([
 ]).optional().nullable();
 
 const targetRoleEnum = z.enum([
-  'FOUNDING_ENGINEER', 'EXECUTIVE', 'PRODUCT', 'ENGINEERING',
-  'DESIGN', 'MARKETING', 'SALES', 'OPERATIONS', 'OTHER',
+  'FOUNDING_ENGINEER', 'FOUNDING_GTM', 'CHIEF_OF_STAFF',
+  'GROWTH_CONTENT', 'OPEN_APPLICATION', 'COFOUNDER',
+]).optional().nullable();
+
+const introPreferenceEnum = z.enum([
+  'WARM_ONLY', 'COLD_OK', 'OPEN_TO_BOTH',
+]).optional().nullable();
+
+const workStyleEnum = z.enum([
+  'REMOTE', 'IN_OFFICE', 'HYBRID',
 ]).optional().nullable();
 
 const nullableString = (maxLength: number) =>
@@ -172,6 +180,23 @@ export const profileUpdateSchema = z.object({
   founderAccessPitch: nullableString(500),
   channelSource: nullableString(50),
   channelType: nullableString(50),
+  monthlyRevenue: nullableString(50),
+  growthRate: nullableString(50),
+  activeUsers: nullableString(50),
+  burnRate: nullableString(50),
+  portfolioCompanies: nullableArraySchema(100, 200),
+  dealsPerYear: z.number().int().min(0).max(500).optional().nullable(),
+  leadsRounds: z.boolean().optional().nullable(),
+  introPreference: introPreferenceEnum,
+  openToMeeting: z.boolean().optional(),
+  maxIntrosPerWeek: z.number().int().min(1).max(20).optional().nullable(),
+  equityExpectation: nullableString(50),
+  preferredStage: companyStageEnum,
+  workStyle: workStyleEnum,
+  functionalArea: nullableString(100),
+  preferredStageRange: nullableString(100),
+  sectorFocus: nullableArraySchema(20, 100),
+  checkSizeRange: nullableString(50),
 }).passthrough();
 
 export const changePasswordSchema = z.object({

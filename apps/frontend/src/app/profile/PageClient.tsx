@@ -33,6 +33,23 @@ interface ProfileData {
   availability?: string;
   phoneNumber?: string;
   linkedinVerified?: boolean;
+  monthlyRevenue?: string;
+  growthRate?: string;
+  activeUsers?: string;
+  burnRate?: string;
+  portfolioCompanies?: string[];
+  dealsPerYear?: number;
+  leadsRounds?: boolean;
+  introPreference?: string;
+  openToMeeting?: boolean;
+  maxIntrosPerWeek?: number;
+  equityExpectation?: string;
+  preferredStage?: string;
+  workStyle?: string;
+  functionalArea?: string;
+  preferredStageRange?: string;
+  sectorFocus?: string[];
+  checkSizeRange?: string;
 }
 
 const personaLabel: Record<string, string> = {
@@ -196,6 +213,7 @@ export default function ProfilePage() {
   const isFounder = persona === 'FOUNDER';
   const isInvestor = persona === 'INVESTOR' || persona === 'VENTURE_PARTNER';
   const isTalent = persona === 'TALENT' || persona === 'JOB_SEEKER' || persona === 'FREELANCER';
+  const isDealPartner = persona === 'DEAL_PARTNER';
 
   return (
     <AppShell>
@@ -389,6 +407,29 @@ export default function ProfilePage() {
                 </select>
               </div>
             </div>
+            <h4 className="text-xs font-semibold text-white/50 uppercase tracking-wide pt-2">Traction Metrics</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Monthly Revenue (MRR)</label>
+                <input type="text" value={profile.monthlyRevenue || ''} onChange={(e) => updateField('monthlyRevenue', e.target.value)}
+                  placeholder="e.g. $50K" className="input-dark" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Growth Rate</label>
+                <input type="text" value={profile.growthRate || ''} onChange={(e) => updateField('growthRate', e.target.value)}
+                  placeholder="e.g. 15% MoM" className="input-dark" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Active Users</label>
+                <input type="text" value={profile.activeUsers || ''} onChange={(e) => updateField('activeUsers', e.target.value)}
+                  placeholder="e.g. 10,000 MAU" className="input-dark" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Burn Rate</label>
+                <input type="text" value={profile.burnRate || ''} onChange={(e) => updateField('burnRate', e.target.value)}
+                  placeholder="e.g. $80K/mo" className="input-dark" />
+              </div>
+            </div>
           </div>
         )}
 
@@ -402,10 +443,26 @@ export default function ProfilePage() {
                   placeholder="Fund name" className="input-dark" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Portfolio Size</label>
-                <input type="number" value={profile.portfolioSize || ''} onChange={(e) => updateField('portfolioSize', parseInt(e.target.value) || undefined)}
-                  placeholder="Number of investments" className="input-dark" />
+                <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Deals Per Year</label>
+                <input type="number" value={profile.dealsPerYear ?? ''} onChange={(e) => updateField('dealsPerYear', parseInt(e.target.value) || undefined)}
+                  placeholder="e.g. 8" className="input-dark" />
               </div>
+              <div>
+                <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Leads Rounds?</label>
+                <select value={profile.leadsRounds === true ? 'true' : profile.leadsRounds === false ? 'false' : ''} onChange={(e) => updateField('leadsRounds', e.target.value === 'true' ? true : e.target.value === 'false' ? false : undefined)}
+                  className="input-dark">
+                  <option value="">Select</option>
+                  <option value="true">Yes, I lead rounds</option>
+                  <option value="false">No, I co-invest</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Portfolio Companies</label>
+              <textarea value={(profile.portfolioCompanies || []).join(', ')}
+                onChange={(e) => updateField('portfolioCompanies', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                placeholder="List portfolio companies, comma-separated" rows={2}
+                className="input-dark resize-none" />
             </div>
           </div>
         )}
@@ -420,13 +477,95 @@ export default function ProfilePage() {
                   placeholder="Years" className="input-dark" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Preferred Role</label>
-                <input type="text" value={profile.preferredRole || ''} onChange={(e) => updateField('preferredRole', e.target.value)}
-                  placeholder="e.g. Senior Engineer" className="input-dark" />
+                <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Equity Expectation</label>
+                <input type="text" value={profile.equityExpectation || ''} onChange={(e) => updateField('equityExpectation', e.target.value)}
+                  placeholder="e.g. 0.5% - 2%" className="input-dark" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Preferred Company Stage</label>
+                <select value={profile.preferredStage || ''} onChange={(e) => updateField('preferredStage', e.target.value || undefined)}
+                  className="input-dark">
+                  <option value="">Select stage</option>
+                  <option value="PRE_SEED">Pre-Seed</option>
+                  <option value="SEED">Seed</option>
+                  <option value="SERIES_A">Series A</option>
+                  <option value="SERIES_B">Series B</option>
+                  <option value="SERIES_C_PLUS">Series C+</option>
+                  <option value="GROWTH">Growth</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Work Style</label>
+                <select value={profile.workStyle || ''} onChange={(e) => updateField('workStyle', e.target.value || undefined)}
+                  className="input-dark">
+                  <option value="">Select preference</option>
+                  <option value="REMOTE">Remote</option>
+                  <option value="IN_OFFICE">In-Office</option>
+                  <option value="HYBRID">Hybrid</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Functional Area</label>
+                <input type="text" value={profile.functionalArea || ''} onChange={(e) => updateField('functionalArea', e.target.value)}
+                  placeholder="e.g. Engineering, Product, Design" className="input-dark" />
               </div>
             </div>
           </div>
         )}
+
+        {isDealPartner && (
+          <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: 'rgba(10,10,26,0.8)' }}>
+            <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Deal Partner Preferences</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Preferred Stage Range</label>
+                <input type="text" value={profile.preferredStageRange || ''} onChange={(e) => updateField('preferredStageRange', e.target.value)}
+                  placeholder="e.g. Pre-Seed to Series A" className="input-dark" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Check Size Range</label>
+                <input type="text" value={profile.checkSizeRange || ''} onChange={(e) => updateField('checkSizeRange', e.target.value)}
+                  placeholder="e.g. $50K - $500K" className="input-dark" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Sector Focus</label>
+              <textarea value={(profile.sectorFocus || []).join(', ')}
+                onChange={(e) => updateField('sectorFocus', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                placeholder="e.g. AI/ML, Fintech, Healthcare (comma-separated)" rows={2}
+                className="input-dark resize-none" />
+            </div>
+          </div>
+        )}
+
+        <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: 'rgba(10,10,26,0.8)' }}>
+          <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Availability & Intro Preferences</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Intro Preference</label>
+              <select value={profile.introPreference || ''} onChange={(e) => updateField('introPreference', e.target.value || undefined)}
+                className="input-dark">
+                <option value="">Select preference</option>
+                <option value="WARM_ONLY">Warm intros only</option>
+                <option value="COLD_OK">Cold outreach is OK</option>
+                <option value="OPEN_TO_BOTH">Open to both</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Max Intros Per Week</label>
+              <input type="number" value={profile.maxIntrosPerWeek ?? ''} onChange={(e) => updateField('maxIntrosPerWeek', parseInt(e.target.value) || undefined)}
+                placeholder="e.g. 3" min={1} max={20} className="input-dark" />
+            </div>
+          </div>
+          <div className="flex items-center gap-3 pt-1">
+            <button
+              onClick={() => updateField('openToMeeting', !profile.openToMeeting)}
+              className={`relative w-11 h-6 rounded-full transition-colors ${profile.openToMeeting !== false ? 'bg-blue-500' : 'bg-white/10'}`}>
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${profile.openToMeeting !== false ? 'translate-x-5' : ''}`} />
+            </button>
+            <span className="text-sm text-white/60">Open to meeting new people</span>
+          </div>
+        </div>
 
         <div className="flex justify-end pt-4 pb-8">
           <button onClick={handleSave} disabled={saving}
