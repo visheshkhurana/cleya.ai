@@ -36,8 +36,22 @@ Monorepo with:
 - **Backend Sentry:** `@sentry/node` in `apps/backend/src/index.ts` + `errorHandler.ts`. Uses `SENTRY_DSN` env var.
 - **Cookie consent:** Banner in `BootstrapClient.tsx` (DOM-injected, not React-rendered). Stored as `cleo_cookie_consent` in localStorage. PostHog + GA4 only init after "Accept all"; Sentry loads regardless.
 
+## Matching Engine Intelligence
+The matching engine (`packages/matching/src/index.ts`) uses a three-layer hybrid approach: Rule-based (50%), Intent (20%), Semantic (30%). Enhanced with:
+- **Traction-stage alignment**: Investors see founders whose traction matches their stage focus (e.g., Series A investors see founders with MRR > ₹5L)
+- **Portfolio conflict detection**: Investors are deprioritized for founders in sectors where they already have a portfolio company
+- **Availability filtering**: Users not open to meeting or over their weekly intro cap are deprioritized (data from `extraData` JSON field)
+- **Talent preference matching**: Equity preference, work style, functional area alignment
+- **Feedback-driven re-ranking**: MatchFeedback ratings and IntroductionRecord outcomes (accept rates, positive outcome rates) are used as multipliers on hybrid scores (min 3 feedbacks to activate)
+- **Dynamic intent signal**: Recent accept/decline patterns infer current intent (e.g., founder declining investors → NOT_FUNDRAISING) and adjust scores
+- **Structured compatibility signals**: LLM match reasoning receives data (sector overlap %, stage fit, check size alignment, traction highlights) for specific introductions
+- **LinkedIn enrichment**: Background job (`linkedinEnrichmentService.ts`) extracts career history, domain expertise, notable companies, exits from profile data + LinkedIn URL via LLM, stores in `profile.extraData.enrichedData`. Runs daily at 3:00 AM IST and on new profile completion.
+- **Enhanced embeddings**: Embedding text now includes traction metrics, portfolio companies, equity/work preferences, and enriched LinkedIn data
+
+New profile fields stored in `extraData` JSON: `portfolioCompanies`, `openToMeeting`, `weeklyIntroCap`, `equityPreference`, `workStyle`, `functionalArea`, `tractionMetrics`, `enrichedData`
+
 ## Match Scheduler
-Automatic batch matching runs 3 times daily at **8:00 AM, 2:00 PM, and 8:00 PM IST** via `node-cron` in `apps/backend/src/services/matchScheduler.ts`. Each run: (1) finds all complete profiles, (2) backfills any missing embeddings, (3) runs `findAndAutoPropose` for each user (up to 3 matches per user per run). Skips already-existing match pairs. Admin can trigger manually via `POST /api/admin/batch-matching`.
+Automatic batch matching runs 3 times daily at **8:00 AM, 2:00 PM, and 8:00 PM IST** via `node-cron` in `apps/backend/src/services/matchScheduler.ts`. Each run: (1) finds all complete profiles, (2) backfills any missing embeddings, (3) runs `findAndAutoPropose` for each user (up to 3 matches per user per run). Skips already-existing match pairs. Admin can trigger manually via `POST /api/admin/batch-matching`. LinkedIn enrichment batch runs daily at **3:00 AM IST**.
 
 ## Slack Notifications
 `apps/backend/src/services/slackService.ts` uses `@slack/web-api@7.10.0` via Replit's Slack connector (OAuth token auto-managed). Posts to `#all-cleya` channel (fallback: `#new-signups`, `#general`). Bot name in Slack: `replit`.

@@ -1,5 +1,5 @@
 import { prisma } from '@cleya/db';
-import { matchingEngine, ProfileForMatching } from '@cleya/matching';
+import { matchingEngine, ProfileForMatching, CompatibilitySignals } from '@cleya/matching';
 import { createAIService } from '@cleya/ai';
 import { AppError } from '../middleware/errorHandler';
 import { sendToUser } from '../websocket/server';
@@ -482,6 +482,7 @@ export class MatchingService {
       const parts: string[] = [];
       parts.push(`Persona: ${p.persona}`);
       if (p.headline) parts.push(`Role: ${p.headline}`);
+      if (p.companyName) parts.push(`Company: ${p.companyName}`);
       if (p.fundName) parts.push(`Fund: ${p.fundName}`);
       if (p.industries.length) parts.push(`Industries: ${p.industries.join(', ')}`);
       if (p.skills?.length) parts.push(`Skills: ${p.skills.join(', ')}`);
@@ -493,18 +494,27 @@ export class MatchingService {
       if (p.raiseAmount) parts.push(`Raising: ${p.raiseAmount}`);
       if (p.investmentRange) parts.push(`Invests: ${p.investmentRange}`);
       if (p.location) parts.push(`Location: ${p.location}`);
+      if (p.keyTractionPoints) parts.push(`Traction: ${p.keyTractionPoints.slice(0, 150)}`);
+      if (p.enrichedData?.domainExpertise?.length) parts.push(`Domain expertise: ${p.enrichedData.domainExpertise.join(', ')}`);
+      if (p.enrichedData?.notableCompanies?.length) parts.push(`Notable companies: ${p.enrichedData.notableCompanies.join(', ')}`);
+      if (p.enrichedData?.exits?.length) parts.push(`Exits: ${p.enrichedData.exits.join(', ')}`);
       return parts.join('. ');
     };
+
+    const signals = matchingEngine.computeCompatibilitySignals(a, b);
+    const signalsSummary = this.formatCompatibilitySignals(signals);
 
     try {
       const response = await this.ai.chat([
         {
           role: 'system',
-          content: 'You are Cleya, an AI superconnector for India\'s startup ecosystem. Write exactly 2-3 sentences explaining why these two people should connect — like a trusted friend putting someone on your radar. Be specific: mention actual roles, companies, what they\'re building/investing in, traction, and timing. Use a warm, direct tone. Never be generic. Never say "complementary backgrounds" or "synergy."',
+          content: `You are Cleya, an AI superconnector for India's startup ecosystem. Write exactly 2-3 sentences explaining why these two people should connect — like a trusted friend putting someone on your radar. Be specific: mention actual roles, companies, what they're building/investing in, traction, and timing. Use a warm, direct tone. Never be generic. Never say "complementary backgrounds" or "synergy."
+
+You have structured compatibility data — use it to make your reasoning specific and data-backed. Reference actual numbers (sector overlap, check size fit, traction) when available.`,
         },
         {
           role: 'user',
-          content: `Person A: ${describeProfile(a)}\n\nPerson B: ${describeProfile(b)}\n\nWrite 2 specific sentences about why they should connect.`,
+          content: `Person A: ${describeProfile(a)}\n\nPerson B: ${describeProfile(b)}\n\n--- COMPATIBILITY SIGNALS ---\n${signalsSummary}\n\nWrite 2-3 specific, data-backed sentences about why they should connect.`,
         },
       ]);
       return response.content;
@@ -512,8 +522,8 @@ export class MatchingService {
       console.log(`[MatchingService] AI reasoning failed, using profile-based fallback:`, err);
       const aRole = a.headline || a.persona;
       const bRole = b.headline || b.persona;
-      const aCompany = a.fundName || (a as any).companyName || '';
-      const bCompany = b.fundName || (b as any).companyName || '';
+      const aCompany = a.fundName || a.companyName || '';
+      const bCompany = b.fundName || b.companyName || '';
       const aLoc = a.location || '';
       const bLoc = b.location || '';
       const shared = a.industries.filter(i => b.industries.includes(i));
@@ -524,18 +534,35 @@ export class MatchingService {
       if (a.persona === 'FOUNDER' && (b.persona === 'INVESTOR' || b.persona === 'VENTURE_PARTNER')) {
         const stage = a.companyStage ? ` (${a.companyStage.replace(/_/g, ' ')})` : '';
         const sector = shared.length > 0 ? ` in ${shared[0].replace(/_/g, ' ')}` : '';
-        return `${aLabel}${stage} is building${sector} and could benefit from ${bLabel}'s investment expertise. ${bLoc && aLoc ? `Both active in the ${aLoc.includes(bLoc) || bLoc.includes(aLoc) ? aLoc : 'Indian'} startup ecosystem.` : 'A strong cross-role match for deal flow.'}`;
+        const tractionNote = signals.tractionHighlights.length > 0 ? ` Key metrics: ${signals.tractionHighlights[0]}.` : '';
+        return `${aLabel}${stage} is building${sector} and could benefit from ${bLabel}'s investment expertise.${tractionNote} ${bLoc && aLoc ? `Both active in the ${aLoc.includes(bLoc) || bLoc.includes(aLoc) ? aLoc : 'Indian'} startup ecosystem.` : 'A strong cross-role match for deal flow.'}`;
       }
       if (b.persona === 'FOUNDER' && (a.persona === 'INVESTOR' || a.persona === 'VENTURE_PARTNER')) {
         const stage = b.companyStage ? ` (${b.companyStage.replace(/_/g, ' ')})` : '';
         const sector = shared.length > 0 ? ` in ${shared[0].replace(/_/g, ' ')}` : '';
-        return `${bLabel}${stage} is building${sector} and could benefit from ${aLabel}'s investment expertise. ${aLoc && bLoc ? `Both active in the ${aLoc.includes(bLoc) || bLoc.includes(aLoc) ? bLoc : 'Indian'} startup ecosystem.` : 'A strong cross-role match for deal flow.'}`;
+        const tractionNote = signals.tractionHighlights.length > 0 ? ` Key metrics: ${signals.tractionHighlights[0]}.` : '';
+        return `${bLabel}${stage} is building${sector} and could benefit from ${aLabel}'s investment expertise.${tractionNote} ${aLoc && bLoc ? `Both active in the ${aLoc.includes(bLoc) || bLoc.includes(aLoc) ? bLoc : 'Indian'} startup ecosystem.` : 'A strong cross-role match for deal flow.'}`;
       }
       if (shared.length > 0) {
         return `${aLabel} and ${bLabel} are both active in ${shared.slice(0, 2).join(' and ').replace(/_/g, ' ')}, creating strong potential for collaboration. ${a.lookingFor.length > 0 ? `${aRole} is looking for ${a.lookingFor[0].replace(/_/g, ' ')}.` : ''}`;
       }
       return `${aLabel} and ${bLabel} bring different perspectives from ${(a.industries[0] || 'their sector').replace(/_/g, ' ')} and ${(b.industries[0] || 'their sector').replace(/_/g, ' ')}, opening up cross-sector collaboration opportunities.`;
     }
+  }
+
+  private formatCompatibilitySignals(signals: CompatibilitySignals): string {
+    const lines: string[] = [];
+    lines.push(`Sector overlap: ${signals.sectorOverlapPct}%`);
+    lines.push(`Stage fit: ${signals.stageFit ? 'yes' : 'no'}`);
+    lines.push(`Check size fits raise amount: ${signals.checkSizeAligned ? 'yes' : 'no/unknown'}`);
+    lines.push(`Skill complementarity: ${Math.round(signals.skillComplementarity * 100)}%`);
+    if (signals.tractionHighlights.length > 0) {
+      lines.push(`Traction highlights: ${signals.tractionHighlights.join('; ')}`);
+    }
+    if (signals.conflictFlags.length > 0) {
+      lines.push(`Conflict flags: ${signals.conflictFlags.join('; ')}`);
+    }
+    return lines.join('\n');
   }
 
 }

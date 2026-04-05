@@ -2,6 +2,7 @@ import { prisma } from '@cleya/db';
 import { createAIService } from '@cleya/ai';
 import { generateAndStoreEmbedding } from '@cleya/api';
 import { AppError } from '../middleware/errorHandler';
+import { linkedinEnrichmentService } from './linkedinEnrichmentService';
 
 function stripHtml(str: string): string {
   return str.replace(/<[^>]*>/g, '').replace(/&[a-z]+;/gi, ' ').trim();
@@ -81,6 +82,10 @@ export class ProfileService {
 
     if (data.headline || data.bio || data.skills || data.interests) {
       await this.generateEmbedding(userId, profile);
+    }
+
+    if (data.linkedinUrl && (profile as any).isComplete) {
+      linkedinEnrichmentService.onNewUserSignup(userId);
     }
 
     return profile;

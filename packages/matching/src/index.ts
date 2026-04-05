@@ -28,6 +28,57 @@ export interface ProfileForMatching {
   fundName?: string;
   businessDescription?: string;
   investmentRange?: string;
+  portfolioCompanies?: PortfolioCompany[];
+  openToMeeting?: boolean;
+  weeklyIntroCap?: number;
+  weeklyIntrosUsed?: number;
+  equityPreference?: string;
+  workStyle?: string;
+  functionalArea?: string;
+  tractionMetrics?: TractionMetrics;
+  enrichedData?: EnrichedProfileData;
+  keyTractionPoints?: string;
+  companyName?: string;
+}
+
+export interface PortfolioCompany {
+  name: string;
+  sector: string;
+  stage?: string;
+}
+
+export interface TractionMetrics {
+  revenue?: number;
+  mrr?: number;
+  userCount?: number;
+  growthRate?: number;
+  runway?: number;
+}
+
+export interface EnrichedProfileData {
+  careerHistory?: string[];
+  domainExpertise?: string[];
+  notableCompanies?: string[];
+  exits?: string[];
+  enrichedAt?: string;
+}
+
+export interface FeedbackSignal {
+  userId: string;
+  avgRating: number;
+  totalFeedbacks: number;
+  acceptRate: number;
+  declineRate: number;
+  positiveOutcomeRate: number;
+}
+
+export interface CompatibilitySignals {
+  sectorOverlapPct: number;
+  stageFit: boolean;
+  checkSizeAligned: boolean;
+  skillComplementarity: number;
+  tractionHighlights: string[];
+  conflictFlags: string[];
 }
 
 const SECTOR_FAMILIES: Record<string, string[]> = {
@@ -367,15 +418,20 @@ export class MatchingEngine {
     const locationMatch = this.scoreLocation(profileA.location, profileB.location);
     const skillMatch = this.scoreSkillRelevance(profileA, profileB);
     const founderContextBoost = this.scoreFounderContextMatch(profileA, profileB);
+    const tractionFit = this.scoreTractionStageAlignment(profileA, profileB);
+    const talentPrefMatch = this.scoreTalentPreferences(profileA, profileB);
+    const portfolioConflict = this.detectPortfolioConflict(profileA, profileB);
 
     const ruleScore =
-      roleMatch * 0.15 +
-      stageMatch * 0.10 +
-      industryMatch * 0.28 +
-      interestMatch * 0.08 +
-      locationMatch * 0.12 +
-      skillMatch * 0.12 +
-      founderContextBoost * 0.15;
+      roleMatch * 0.12 +
+      stageMatch * 0.08 +
+      industryMatch * 0.24 +
+      interestMatch * 0.06 +
+      locationMatch * 0.10 +
+      skillMatch * 0.10 +
+      founderContextBoost * 0.12 +
+      tractionFit * 0.10 +
+      talentPrefMatch * 0.08;
 
     const intentScore = this.scoreIntentAlignment(profileA, profileB);
 
@@ -392,6 +448,36 @@ export class MatchingEngine {
     let sectorPenalty = 1.0;
     if (industryMatch <= 0.10) sectorPenalty = 0.75;
     else if (industryMatch <= 0.20) sectorPenalty = 0.85;
+
+    const zeroResult = (_reason: string, conflict: number) => ({
+      total: 0,
+      ruleScore: 0,
+      semanticScore: 0,
+      breakdown: {
+        roleMatch: 0, stageMatch: 0, industryMatch: 0, interestMatch: 0,
+        locationMatch: 0, skillMatch: 0, founderContextMatch: 0, intentScore: 0,
+        semanticSimilarity: 0, tractionFit: 0, talentPrefMatch: 0,
+        portfolioConflict: Math.round(conflict * 100) / 100,
+        availabilityPenalty: 0,
+      },
+    });
+
+    if (portfolioConflict > 0) {
+      return zeroResult('portfolio_conflict', portfolioConflict);
+    }
+
+    if (profileA.openToMeeting === false || profileB.openToMeeting === false) {
+      return zeroResult('not_open_to_meeting', 0);
+    }
+
+    const aCapReached = profileA.weeklyIntroCap !== undefined &&
+      (profileA.weeklyIntrosUsed ?? 0) >= profileA.weeklyIntroCap;
+    const bCapReached = profileB.weeklyIntroCap !== undefined &&
+      (profileB.weeklyIntrosUsed ?? 0) >= profileB.weeklyIntroCap;
+    if (aCapReached || bCapReached) {
+      return zeroResult('intro_cap_reached', 0);
+    }
+
     const adjustedTotal = total * sectorPenalty;
 
     return {
@@ -408,7 +494,55 @@ export class MatchingEngine {
         founderContextMatch: Math.round(founderContextBoost * 100) / 100,
         intentScore: Math.round(intentScore * 100) / 100,
         semanticSimilarity: Math.round(semanticSimilarity * 100) / 100,
+        tractionFit: Math.round(tractionFit * 100) / 100,
+        talentPrefMatch: Math.round(talentPrefMatch * 100) / 100,
+        portfolioConflict: Math.round(portfolioConflict * 100) / 100,
+        availabilityPenalty: 1,
       },
+    };
+  }
+
+  computeCompatibilitySignals(profileA: ProfileForMatching, profileB: ProfileForMatching): CompatibilitySignals {
+    const industryMatch = this.scoreSectorSimilarity(profileA.industries, profileB.industries);
+    const stageCompatible = this.scoreStageMatch(profileA, profileB) > 0.5;
+
+    let checkSizeAligned = false;
+    if (profileA.investmentAmount && profileB.raiseAmount) {
+      const investNum = this.parseMoneyValue(profileA.investmentAmount);
+      const raiseNum = this.parseMoneyValue(profileB.raiseAmount);
+      checkSizeAligned = investNum > 0 && raiseNum > 0 && investNum <= raiseNum;
+    } else if (profileB.investmentAmount && profileA.raiseAmount) {
+      const investNum = this.parseMoneyValue(profileB.investmentAmount);
+      const raiseNum = this.parseMoneyValue(profileA.raiseAmount);
+      checkSizeAligned = investNum > 0 && raiseNum > 0 && investNum <= raiseNum;
+    }
+
+    const skillComplementarity = this.scoreSkillRelevance(profileA, profileB);
+
+    const tractionHighlights: string[] = [];
+    const addTraction = (p: ProfileForMatching) => {
+      if (p.tractionMetrics?.revenue) tractionHighlights.push(`Revenue: ₹${(p.tractionMetrics.revenue / 100000).toFixed(1)}L`);
+      if (p.tractionMetrics?.mrr) tractionHighlights.push(`MRR: ₹${(p.tractionMetrics.mrr / 100000).toFixed(1)}L`);
+      if (p.tractionMetrics?.userCount) tractionHighlights.push(`Users: ${p.tractionMetrics.userCount.toLocaleString()}`);
+      if (p.tractionMetrics?.growthRate) tractionHighlights.push(`Growth: ${p.tractionMetrics.growthRate}% MoM`);
+      if (p.keyTractionPoints) tractionHighlights.push(p.keyTractionPoints);
+    };
+    addTraction(profileA);
+    addTraction(profileB);
+
+    const conflictFlags: string[] = [];
+    const conflict = this.detectPortfolioConflict(profileA, profileB);
+    if (conflict > 0) conflictFlags.push('Portfolio sector conflict detected');
+    if (profileA.openToMeeting === false) conflictFlags.push(`${profileA.persona} not open to meeting`);
+    if (profileB.openToMeeting === false) conflictFlags.push(`${profileB.persona} not open to meeting`);
+
+    return {
+      sectorOverlapPct: Math.round(industryMatch * 100),
+      stageFit: stageCompatible,
+      checkSizeAligned,
+      skillComplementarity: Math.round(skillComplementarity * 100) / 100,
+      tractionHighlights,
+      conflictFlags,
     };
   }
 
@@ -746,6 +880,121 @@ export class MatchingEngine {
     const compScore = complementaryChecks > 0 ? complementaryScore / complementaryChecks : 0;
 
     return directOverlap * 0.4 + compScore * 0.6;
+  }
+
+  private scoreTractionStageAlignment(a: ProfileForMatching, b: ProfileForMatching): number {
+    const scoreOneDir = (investor: ProfileForMatching, founder: ProfileForMatching): number => {
+      if (!['INVESTOR', 'VENTURE_PARTNER', 'DEAL_PARTNER'].includes(investor.persona)) return 0.5;
+      if (founder.persona !== 'FOUNDER') return 0.5;
+
+      let score = 0.3;
+      const traction = founder.tractionMetrics;
+      if (!traction) return 0.5;
+
+      const stage = investor.companyStage || '';
+      if (stage === 'PRE_SEED' || stage === 'SEED') {
+        if (traction.mrr && traction.mrr > 0) score += 0.3;
+        if (traction.userCount && traction.userCount > 100) score += 0.2;
+      } else if (stage === 'SERIES_A') {
+        if (traction.mrr && traction.mrr >= 500000) score += 0.3;
+        else if (traction.revenue && traction.revenue >= 5000000) score += 0.3;
+        if (traction.growthRate && traction.growthRate >= 15) score += 0.2;
+      } else if (stage === 'SERIES_B' || stage === 'SERIES_C_PLUS') {
+        if (traction.revenue && traction.revenue >= 50000000) score += 0.3;
+        if (traction.growthRate && traction.growthRate >= 20) score += 0.2;
+      }
+
+      if (traction.runway && traction.runway <= 6) score += 0.1;
+
+      return Math.min(score, 1.0);
+    };
+
+    const ab = scoreOneDir(a, b);
+    const ba = scoreOneDir(b, a);
+    return Math.max(ab, ba);
+  }
+
+  detectPortfolioConflict(a: ProfileForMatching, b: ProfileForMatching): number {
+    const checkConflict = (investor: ProfileForMatching, founder: ProfileForMatching): number => {
+      if (!['INVESTOR', 'VENTURE_PARTNER'].includes(investor.persona)) return 0;
+      if (founder.persona !== 'FOUNDER') return 0;
+      if (!investor.portfolioCompanies?.length || !founder.industries.length) return 0;
+
+      const founderSectors = new Set(founder.industries.map(s => s.toLowerCase().trim()));
+      const founderFamilies = new Set<string>();
+      for (const s of founderSectors) {
+        const fam = this.getSectorFamily(s);
+        if (fam) founderFamilies.add(fam);
+      }
+
+      let directMatches = 0;
+      let familyMatches = 0;
+
+      for (const pc of investor.portfolioCompanies) {
+        const pcSector = pc.sector.toLowerCase().trim();
+        if (founderSectors.has(pcSector)) {
+          directMatches++;
+        } else {
+          const pcFamily = this.getSectorFamily(pcSector);
+          if (pcFamily && founderFamilies.has(pcFamily)) {
+            familyMatches++;
+          }
+        }
+      }
+
+      if (directMatches === 0 && familyMatches === 0) return 0;
+
+      const directOverlap = founderSectors.size > 0
+        ? directMatches / founderSectors.size
+        : 0;
+      const familyOverlap = founderSectors.size > 0
+        ? familyMatches / founderSectors.size
+        : 0;
+
+      return Math.min(1.0, directOverlap + familyOverlap * 0.5);
+    };
+
+    return Math.max(checkConflict(a, b), checkConflict(b, a));
+  }
+
+  private scoreTalentPreferences(a: ProfileForMatching, b: ProfileForMatching): number {
+    const scoreOneDir = (talent: ProfileForMatching, employer: ProfileForMatching): number => {
+      if (!['TALENT', 'JOB_SEEKER'].includes(talent.persona)) return 0.5;
+      if (!['FOUNDER', 'OPERATOR'].includes(employer.persona)) return 0.5;
+
+      let score = 0.5;
+      let checks = 0;
+
+      if (talent.workStyle && employer.workStyle) {
+        checks++;
+        if (talent.workStyle.toLowerCase() === employer.workStyle.toLowerCase()) score += 0.2;
+        else score -= 0.1;
+      }
+
+      if (talent.functionalArea && employer.industries.length > 0) {
+        checks++;
+        const area = talent.functionalArea.toLowerCase();
+        const desc = (employer.businessDescription || '').toLowerCase();
+        if (desc.includes(area) || employer.industries.some(i => i.toLowerCase().includes(area))) {
+          score += 0.15;
+        }
+      }
+
+      if (talent.equityPreference) {
+        checks++;
+        const pref = talent.equityPreference.toLowerCase();
+        const stage = employer.companyStage || '';
+        if (pref === 'equity_heavy' && ['PRE_SEED', 'SEED'].includes(stage)) score += 0.15;
+        else if (pref === 'cash_heavy' && ['SERIES_B', 'SERIES_C_PLUS', 'GROWTH'].includes(stage)) score += 0.15;
+        else if (pref === 'balanced') score += 0.1;
+      }
+
+      return checks > 0 ? Math.min(score, 1.0) : 0.5;
+    };
+
+    const ab = scoreOneDir(a, b);
+    const ba = scoreOneDir(b, a);
+    return Math.max(ab, ba);
   }
 
   private scoreStageMatch(a: ProfileForMatching, b: ProfileForMatching): number {

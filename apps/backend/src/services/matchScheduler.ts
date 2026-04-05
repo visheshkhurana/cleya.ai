@@ -3,6 +3,7 @@ import { prisma } from '@cleya/db';
 import { matchingService } from './matchingService';
 import { vectorMatchingService } from './vectorMatchingService';
 import { slackService } from './slackService';
+import { linkedinEnrichmentService } from './linkedinEnrichmentService';
 
 class MatchScheduler {
   private tasks: ScheduledTask[] = [];
@@ -27,10 +28,17 @@ class MatchScheduler {
       );
     }, { timezone: 'Asia/Kolkata' });
 
-    this.tasks.push(matchJob, dailyReportJob);
+    const enrichmentJob = cron.schedule('0 3 * * *', () => {
+      this.runLinkedinEnrichment().catch(err =>
+        console.error('[MatchScheduler] LinkedIn enrichment failed:', err)
+      );
+    }, { timezone: 'Asia/Kolkata' });
+
+    this.tasks.push(matchJob, dailyReportJob, enrichmentJob);
     this.started = true;
     console.log('[MatchScheduler] Scheduled batch matching at 8:00, 14:00, 20:00 IST');
     console.log('[MatchScheduler] Scheduled daily Slack report at 21:00 IST');
+    console.log('[MatchScheduler] Scheduled LinkedIn enrichment at 3:00 IST');
   }
 
   stop() {
@@ -102,6 +110,24 @@ class MatchScheduler {
       return { usersProcessed, totalProposed, errors: errors.length, duration: `${duration}s` };
     } finally {
       this.running = false;
+    }
+  }
+
+  async runLinkedinEnrichment() {
+    console.log('[MatchScheduler] Starting LinkedIn enrichment batch...');
+    const startTime = Date.now();
+
+    try {
+      const result = await linkedinEnrichmentService.enrichBatch(15);
+      const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.log(
+        `[MatchScheduler] LinkedIn enrichment complete in ${duration}s: ` +
+        `${result.enriched} enriched, ${result.skipped} skipped, ${result.errors} errors`
+      );
+      return result;
+    } catch (err) {
+      console.error('[MatchScheduler] LinkedIn enrichment batch failed:', err);
+      throw err;
     }
   }
 }

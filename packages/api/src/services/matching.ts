@@ -26,6 +26,14 @@ export interface ProfileData {
   raiseAmount?: string;
   fundName?: string;
   fundSize?: string;
+  extraData?: Record<string, any>;
+  portfolioCompanies?: Array<{ name: string; sector: string; stage?: string }>;
+  openToMeeting?: boolean;
+  weeklyIntroCap?: number;
+  equityPreference?: string;
+  workStyle?: string;
+  functionalArea?: string;
+  tractionMetrics?: { revenue?: number; mrr?: number; userCount?: number; growthRate?: number; runway?: number };
 }
 
 export interface EmbeddingResult {
@@ -70,7 +78,40 @@ export function profileDataToText(data: ProfileData): string {
     data.targetRole && `Target Role: ${data.targetRole}`,
     data.priority && `Priority: ${data.priority}`,
     data.raiseAmount && `Raise Amount: ${data.raiseAmount}`,
+    data.tractionMetrics?.revenue && `Revenue: ${data.tractionMetrics.revenue}`,
+    data.tractionMetrics?.mrr && `MRR: ${data.tractionMetrics.mrr}`,
+    data.tractionMetrics?.userCount && `Users: ${data.tractionMetrics.userCount}`,
+    data.tractionMetrics?.growthRate && `Growth Rate: ${data.tractionMetrics.growthRate}% MoM`,
+    data.portfolioCompanies?.length && `Portfolio: ${data.portfolioCompanies.map(p => `${p.name} (${p.sector})`).join(', ')}`,
+    data.equityPreference && `Equity Preference: ${data.equityPreference}`,
+    data.workStyle && `Work Style: ${data.workStyle}`,
+    data.functionalArea && `Functional Area: ${data.functionalArea}`,
   ];
+
+  const extra = data.extraData;
+  if (extra) {
+    const enriched = extra.enrichedData;
+    if (enriched) {
+      if (enriched.domainExpertise?.length) parts.push(`Domain Expertise: ${enriched.domainExpertise.join(', ')}`);
+      if (enriched.notableCompanies?.length) parts.push(`Notable Companies: ${enriched.notableCompanies.join(', ')}`);
+      if (enriched.exits?.length) parts.push(`Exits: ${enriched.exits.join(', ')}`);
+      if (enriched.careerHistory?.length) parts.push(`Career: ${enriched.careerHistory.join(', ')}`);
+    }
+    if (extra.portfolioCompanies?.length && !data.portfolioCompanies?.length) {
+      parts.push(`Portfolio: ${extra.portfolioCompanies.map((p: any) => `${p.name} (${p.sector})`).join(', ')}`);
+    }
+    if (extra.tractionMetrics && !data.tractionMetrics) {
+      const tm = extra.tractionMetrics;
+      if (tm.revenue) parts.push(`Revenue: ${tm.revenue}`);
+      if (tm.mrr) parts.push(`MRR: ${tm.mrr}`);
+      if (tm.userCount) parts.push(`Users: ${tm.userCount}`);
+      if (tm.growthRate) parts.push(`Growth Rate: ${tm.growthRate}% MoM`);
+    }
+    if (extra.equityPreference && !data.equityPreference) parts.push(`Equity Preference: ${extra.equityPreference}`);
+    if (extra.workStyle && !data.workStyle) parts.push(`Work Style: ${extra.workStyle}`);
+    if (extra.functionalArea && !data.functionalArea) parts.push(`Functional Area: ${extra.functionalArea}`);
+  }
+
   return parts.filter(Boolean).join('. ');
 }
 
@@ -195,10 +236,36 @@ export async function getProfileForMatching(userId: string): Promise<ProfileForM
     }
   } catch {}
 
+  const extraData = (profile as any).extraData as Record<string, any> | null;
+  const p = profile as any;
+
+  let weeklyIntrosUsed = 0;
+  try {
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const introCount = await prisma.introductionRecord.count({
+      where: {
+        OR: [{ userAId: userId }, { userBId: userId }],
+        createdAt: { gte: weekAgo },
+      },
+    });
+    weeklyIntrosUsed = introCount;
+  } catch {}
+
+  const portfolioStrings: string[] = p.portfolioCompanies || [];
+  const portfolioCompanies = portfolioStrings.length > 0
+    ? portfolioStrings.map((s: string) => {
+        const match = s.match(/^(.+?)\s*\((.+?)\)$/);
+        if (match) return { name: match[1].trim(), sector: match[2].trim() };
+        return { name: s, sector: s };
+      })
+    : (extraData?.portfolioCompanies || undefined);
+
+  const tractionMetrics = buildTractionMetrics(p, extraData);
+
   return {
     userId,
-    persona: (profile as any).persona || 'OTHER',
-    companyStage: (profile as any).companyStage || undefined,
+    persona: p.persona || 'OTHER',
+    companyStage: p.companyStage || undefined,
     industries: profile.industries,
     interests: profile.interests,
     lookingFor: profile.lookingFor,
@@ -207,15 +274,58 @@ export async function getProfileForMatching(userId: string): Promise<ProfileForM
     headline: profile.headline || undefined,
     bio: profile.bio || undefined,
     embedding,
-    priority: (profile as any).priority || undefined,
-    targetRole: (profile as any).targetRole || undefined,
-    investorType: (profile as any).investorType || undefined,
-    investmentAmount: (profile as any).investmentAmount || undefined,
-    raiseAmount: (profile as any).raiseAmount || undefined,
-    trackedCompanies: (profile as any).trackedCompanies || undefined,
-    industryFocus: (profile as any).industryFocus || [],
-    investmentThesis: (profile as any).investmentThesis || undefined,
-    fundName: (profile as any).fundName || undefined,
+    priority: p.priority || undefined,
+    targetRole: p.targetRole || undefined,
+    investorType: p.investorType || undefined,
+    investmentAmount: p.investmentAmount || undefined,
+    raiseAmount: p.raiseAmount || undefined,
+    trackedCompanies: p.trackedCompanies || undefined,
+    industryFocus: p.industryFocus || [],
+    investmentThesis: p.investmentThesis || undefined,
+    fundName: p.fundName || undefined,
+    keyTractionPoints: p.keyTractionPoints || undefined,
+    companyName: p.companyName || undefined,
+    businessDescription: p.businessDescription || undefined,
+    portfolioCompanies,
+    openToMeeting: p.openToMeeting ?? true,
+    weeklyIntroCap: p.maxIntrosPerWeek || undefined,
+    weeklyIntrosUsed,
+    equityPreference: p.equityExpectation || extraData?.equityPreference || undefined,
+    workStyle: p.workStyle || extraData?.workStyle || undefined,
+    functionalArea: p.functionalArea || extraData?.functionalArea || undefined,
+    tractionMetrics,
+    enrichedData: extraData?.enrichedData || undefined,
+  };
+}
+
+function buildTractionMetrics(p: any, extraData: Record<string, any> | null) {
+  const monthlyRevStr = p.monthlyRevenue as string | null;
+  const growthRateStr = p.growthRate as string | null;
+  const activeUsersStr = p.activeUsers as string | null;
+  const burnRateStr = p.burnRate as string | null;
+
+  if (!monthlyRevStr && !growthRateStr && !activeUsersStr && !burnRateStr) {
+    return extraData?.tractionMetrics || undefined;
+  }
+
+  const parseNum = (s: string | null): number | undefined => {
+    if (!s) return undefined;
+    const num = parseFloat(s.replace(/[^0-9.]/g, ''));
+    return isNaN(num) ? undefined : num;
+  };
+
+  const fallback = (extraData?.tractionMetrics as any) || {};
+  const mrr = parseNum(monthlyRevStr);
+  const growth = parseNum(growthRateStr);
+  const users = parseNum(activeUsersStr);
+  const runway = parseNum(burnRateStr);
+
+  return {
+    ...fallback,
+    ...(mrr !== undefined ? { mrr } : {}),
+    ...(growth !== undefined ? { growthRate: growth } : {}),
+    ...(users !== undefined ? { userCount: users } : {}),
+    ...(runway !== undefined ? { runway } : {}),
   };
 }
 
@@ -317,15 +427,51 @@ export async function hybridMatch(
   const allowedPersonas = getMatchablePersonas(userProfile.persona);
   const crossPersonaCandidates = validCandidates.filter(c => allowedPersonas.includes(c.persona));
 
+  const [pastOutcomes, dynamicIntent] = await Promise.all([
+    getUserPastMatchOutcomes(userId),
+    computeDynamicIntent(userId),
+  ]);
+
   const scored: HybridMatchResult[] = crossPersonaCandidates.map((candidate) => {
     const matchScore = matchingEngine.score(userProfile, candidate);
+
+    let adjustedScore = matchScore.total;
+
+    const feedbackMult = computeFeedbackMultiplier(pastOutcomes, candidate);
+    if (feedbackMult !== 1.0) {
+      adjustedScore *= feedbackMult;
+    }
+
+    if (dynamicIntent && dynamicIntent.inferredIntent) {
+      const candidatePersona = candidate.persona;
+      let shouldApply = false;
+
+      if (dynamicIntent.inferredIntent === 'NOT_FUNDRAISING' &&
+          ['INVESTOR', 'VENTURE_PARTNER', 'DEAL_PARTNER'].includes(candidatePersona)) {
+        shouldApply = true;
+      } else if (dynamicIntent.inferredIntent === 'NOT_HIRING' &&
+                 ['TALENT', 'JOB_SEEKER', 'RECRUITER'].includes(candidatePersona)) {
+        shouldApply = true;
+      } else if (dynamicIntent.inferredIntent === 'HIGHLY_ENGAGED' ||
+                 dynamicIntent.inferredIntent === 'DISENGAGED') {
+        shouldApply = true;
+      }
+
+      if (shouldApply) {
+        adjustedScore *= dynamicIntent.multiplier;
+      }
+    }
 
     return {
       userId: candidate.userId,
       vectorSimilarity: matchScore.breakdown.semanticSimilarity || 0,
       ruleScore: matchScore.ruleScore,
-      hybridScore: matchScore.total,
-      breakdown: matchScore.breakdown,
+      hybridScore: Math.round(adjustedScore * 100) / 100,
+      breakdown: {
+        ...matchScore.breakdown,
+        feedbackAdjustment: Math.round(feedbackMult * 100) / 100,
+        dynamicIntentMultiplier: dynamicIntent?.multiplier ?? 1,
+      },
       profile: candidate,
     };
   });
@@ -334,6 +480,208 @@ export async function hybridMatch(
     .filter((r) => r.hybridScore >= minScore)
     .sort((a, b) => b.hybridScore - a.hybridScore)
     .slice(0, limit);
+}
+
+interface PastMatchOutcome {
+  otherPersona: string;
+  otherIndustries: string[];
+  otherStage: string | null;
+  rating: number | null;
+  response: string | null;
+  introOutcome: string | null;
+}
+
+async function getUserPastMatchOutcomes(userId: string): Promise<PastMatchOutcome[]> {
+  try {
+    const matches = await prisma.match.findMany({
+      where: {
+        OR: [{ userAId: userId }, { userBId: userId }],
+      },
+      include: {
+        userA: { include: { profile: { select: { persona: true, industries: true, companyStage: true } } } },
+        userB: { include: { profile: { select: { persona: true, industries: true, companyStage: true } } } },
+        feedbacks: { where: { userId }, select: { rating: true } },
+        introduction: { select: { outcome: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+
+    return matches.map(m => {
+      const isA = m.userAId === userId;
+      const other = isA ? m.userB : m.userA;
+      const response = isA ? m.userAResponse : m.userBResponse;
+      return {
+        otherPersona: other?.profile?.persona || 'OTHER',
+        otherIndustries: other?.profile?.industries || [],
+        otherStage: other?.profile?.companyStage || null,
+        rating: m.feedbacks?.[0]?.rating || null,
+        response: response || null,
+        introOutcome: m.introduction?.outcome || null,
+      };
+    });
+  } catch (err) {
+    console.error('[Matching] Failed to fetch past match outcomes:', err);
+    return [];
+  }
+}
+
+function computeFeedbackMultiplier(
+  pastOutcomes: PastMatchOutcome[],
+  candidate: ProfileForMatching
+): number {
+  if (pastOutcomes.length === 0) return 1.0;
+
+  const candidatePersona = candidate.persona;
+  const candidateIndustries = new Set(candidate.industries.map(i => i.toLowerCase()));
+
+  let similarMatchScores: number[] = [];
+
+  for (const outcome of pastOutcomes) {
+    let similarity = 0;
+
+    if (outcome.otherPersona === candidatePersona) similarity += 0.5;
+
+    const otherInds = new Set(outcome.otherIndustries.map(i => i.toLowerCase()));
+    const overlap = [...candidateIndustries].filter(i => otherInds.has(i)).length;
+    if (overlap > 0) similarity += 0.3 * Math.min(overlap / Math.max(candidateIndustries.size, 1), 1);
+
+    if (outcome.otherStage === candidate.companyStage && candidate.companyStage) similarity += 0.2;
+
+    if (similarity < 0.3) continue;
+
+    let outcomeScore = 0;
+    if (outcome.rating !== null) {
+      outcomeScore = (outcome.rating - 3) / 2;
+    }
+    if (outcome.introOutcome === 'GREAT_MEETING') outcomeScore = Math.max(outcomeScore, 1.0);
+    else if (outcome.introOutcome === 'GOOD_CHAT') outcomeScore = Math.max(outcomeScore, 0.5);
+    else if (outcome.introOutcome === 'NOT_A_FIT') outcomeScore = Math.min(outcomeScore, -0.5);
+    else if (outcome.introOutcome === 'DIDNT_MEET') outcomeScore = Math.min(outcomeScore, -0.3);
+
+    if (outcome.response === 'ACCEPTED' && outcomeScore === 0) outcomeScore = 0.2;
+    else if (outcome.response === 'REJECTED' && outcomeScore === 0) outcomeScore = -0.2;
+
+    similarMatchScores.push(outcomeScore * similarity);
+  }
+
+  if (similarMatchScores.length < 3) return 1.0;
+
+  const avgScore = similarMatchScores.reduce((a, b) => a + b, 0) / similarMatchScores.length;
+
+  return Math.max(0.5, Math.min(1.3, 1.0 + avgScore * 0.3));
+}
+
+interface DynamicIntentResult {
+  multiplier: number;
+  inferredIntent: string | null;
+}
+
+async function computeDynamicIntent(userId: string): Promise<DynamicIntentResult | null> {
+  try {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    const [recentMatches, profileViewActivities] = await Promise.all([
+      prisma.match.findMany({
+        where: {
+          OR: [{ userAId: userId }, { userBId: userId }],
+          createdAt: { gte: thirtyDaysAgo },
+        },
+        select: {
+          userAId: true,
+          userBId: true,
+          userAResponse: true,
+          userBResponse: true,
+          userB: { select: { profile: { select: { persona: true } } } },
+          userA: { select: { profile: { select: { persona: true } } } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      }),
+      prisma.activity.findMany({
+        where: {
+          userId,
+          type: { in: ['PROFILE_VIEW', 'MATCH_PROFILE_VIEW', 'VIEW_PROFILE'] },
+          createdAt: { gte: thirtyDaysAgo },
+        },
+        select: { metadata: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      }),
+    ]);
+
+    if (recentMatches.length < 3 && profileViewActivities.length < 3) return null;
+
+    const personaAccepts: Record<string, number> = {};
+    const personaDeclines: Record<string, number> = {};
+
+    for (const m of recentMatches) {
+      const isA = m.userAId === userId;
+      const response = isA ? m.userAResponse : m.userBResponse;
+      const otherPersona = isA
+        ? m.userB?.profile?.persona
+        : m.userA?.profile?.persona;
+
+      if (!otherPersona || !response) continue;
+
+      if (response === 'ACCEPTED') {
+        personaAccepts[otherPersona] = (personaAccepts[otherPersona] || 0) + 1;
+      } else if (response === 'REJECTED') {
+        personaDeclines[otherPersona] = (personaDeclines[otherPersona] || 0) + 1;
+      }
+    }
+
+    const viewedPersonas: Record<string, number> = {};
+    for (const activity of profileViewActivities) {
+      const meta = activity.metadata as Record<string, any> | null;
+      if (meta?.viewedPersona) {
+        const persona = meta.viewedPersona as string;
+        viewedPersonas[persona] = (viewedPersonas[persona] || 0) + 1;
+      }
+    }
+
+    let inferredIntent: string | null = null;
+    let multiplier = 1.0;
+
+    const investorDeclines = (personaDeclines['INVESTOR'] || 0) + (personaDeclines['VENTURE_PARTNER'] || 0);
+    const investorAccepts = (personaAccepts['INVESTOR'] || 0) + (personaAccepts['VENTURE_PARTNER'] || 0);
+    const investorViews = (viewedPersonas['INVESTOR'] || 0) + (viewedPersonas['VENTURE_PARTNER'] || 0);
+
+    if (investorDeclines >= 3 && investorDeclines > investorAccepts * 2 && investorViews < 3) {
+      inferredIntent = 'NOT_FUNDRAISING';
+      multiplier = 0.85;
+    }
+
+    const talentDeclines = (personaDeclines['TALENT'] || 0) + (personaDeclines['JOB_SEEKER'] || 0);
+    const talentAccepts = (personaAccepts['TALENT'] || 0) + (personaAccepts['JOB_SEEKER'] || 0);
+    const talentViews = (viewedPersonas['TALENT'] || 0) + (viewedPersonas['JOB_SEEKER'] || 0);
+
+    if (talentDeclines >= 3 && talentDeclines > talentAccepts * 2 && talentViews < 3) {
+      inferredIntent = 'NOT_HIRING';
+      multiplier = 0.85;
+    }
+
+    const totalAccepts = Object.values(personaAccepts).reduce((a, b) => a + b, 0);
+    const totalDeclines = Object.values(personaDeclines).reduce((a, b) => a + b, 0);
+    const totalResponses = totalAccepts + totalDeclines;
+    const totalViews = Object.values(viewedPersonas).reduce((a, b) => a + b, 0);
+
+    if (totalResponses >= 5 && totalAccepts / totalResponses >= 0.8) {
+      multiplier = 1.1;
+      inferredIntent = 'HIGHLY_ENGAGED';
+    } else if (totalViews >= 10 && totalResponses >= 3 && totalAccepts / totalResponses >= 0.7) {
+      multiplier = 1.1;
+      inferredIntent = 'HIGHLY_ENGAGED';
+    } else if (totalResponses >= 5 && totalAccepts / totalResponses <= 0.2 && totalViews <= 2) {
+      multiplier = 0.7;
+      inferredIntent = 'DISENGAGED';
+    }
+
+    return { multiplier, inferredIntent };
+  } catch (err) {
+    console.error('[Matching] Failed to compute dynamic intent:', err);
+    return null;
+  }
 }
 
 export async function backfillEmbeddings(
@@ -426,6 +774,17 @@ async function getAllCompletedProfiles(
 }
 
 function mapProfileToMatching(p: any): ProfileForMatching {
+  const extraData = p.extraData as Record<string, any> | null;
+
+  const portfolioStrings: string[] = p.portfolioCompanies || [];
+  const portfolioCompanies = portfolioStrings.length > 0
+    ? portfolioStrings.map((s: string) => {
+        const match = s.match(/^(.+?)\s*\((.+?)\)$/);
+        if (match) return { name: match[1].trim(), sector: match[2].trim() };
+        return { name: s, sector: s };
+      })
+    : (extraData?.portfolioCompanies || undefined);
+
   return {
     userId: p.userId,
     persona: p.persona || 'OTHER',
@@ -448,5 +807,15 @@ function mapProfileToMatching(p: any): ProfileForMatching {
     fundName: p.fundName || undefined,
     businessDescription: p.businessDescription || undefined,
     investmentRange: p.investmentRange || undefined,
+    keyTractionPoints: p.keyTractionPoints || undefined,
+    companyName: p.companyName || undefined,
+    portfolioCompanies,
+    openToMeeting: p.openToMeeting ?? true,
+    weeklyIntroCap: p.maxIntrosPerWeek || undefined,
+    equityPreference: p.equityExpectation || extraData?.equityPreference || undefined,
+    workStyle: p.workStyle || extraData?.workStyle || undefined,
+    functionalArea: p.functionalArea || extraData?.functionalArea || undefined,
+    tractionMetrics: buildTractionMetrics(p, extraData),
+    enrichedData: extraData?.enrichedData || undefined,
   };
 }
