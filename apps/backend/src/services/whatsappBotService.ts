@@ -157,31 +157,13 @@ export class WhatsAppBotService {
           const field = fieldsToCollect[fieldIdx];
           const formData: Record<string, any> = {};
 
-          if (field.type === 'select' && field.options) {
-            const num = parseInt(text);
-            if (num >= 1 && num <= field.options.length) {
-              formData[field.name] = field.options[num - 1].value || field.options[num - 1];
-            } else {
-              const lowerText = text.toLowerCase();
-              const matched = field.options.find((o: any) => {
-                const label = (o.label || o).toString().toLowerCase();
-                const value = (o.value || o).toString().toLowerCase();
-                return label.includes(lowerText) || value === lowerText;
-              });
-              if (matched) {
-                formData[field.name] = matched.value || matched;
-              } else {
-                let hint = `Please choose one (reply with a number):`;
-                field.options.forEach((o: any, i: number) => {
-                  hint += `\n${i + 1}. ${o.label || o}`;
-                });
-                await this.sendReply(phone, hint);
-                return;
-              }
-            }
-          } else {
-            formData[field.name] = text;
+          const parsedValue = this.parseFormFieldValue(field, text);
+          if (parsedValue === null) {
+            const hint = this.buildFieldPrompt(field);
+            await this.sendReply(phone, hint);
+            return;
           }
+          formData[field.name] = parsedValue;
 
           const nextIdx = fieldIdx + 1;
 
@@ -194,24 +176,15 @@ export class WhatsAppBotService {
 
           if (nextIdx < fieldsToCollect.length) {
             const nextField = fieldsToCollect[nextIdx];
-            let prompt = nextField.label;
-            if (nextField.type === 'select' && nextField.options) {
-              prompt += '\n\nReply with a number:';
-              nextField.options.forEach((o: any, i: number) => {
-                prompt += `\n${i + 1}. ${o.label || o}`;
-              });
-            } else if (nextField.placeholder) {
-              prompt += `\n(e.g. ${nextField.placeholder})`;
-            }
-            await this.sendReply(phone, prompt);
+            await this.sendReply(phone, this.buildFieldPrompt(nextField));
             return;
           }
 
+          const updatedContext = (await prisma.conversation.findUnique({ where: { id: conversationId } }))?.context as Record<string, any> || {};
           const allFormData: Record<string, any> = {};
           for (const f of fieldsToCollect) {
-            if (context[f.name]) allFormData[f.name] = context[f.name];
+            if (updatedContext[f.name] !== undefined) allFormData[f.name] = updatedContext[f.name];
           }
-          allFormData[field.name] = text;
 
           const cleanedContext = { ...context };
           for (const f of allFields) {
@@ -255,15 +228,7 @@ export class WhatsAppBotService {
         const fields = fieldsToAsk.length > 0 ? fieldsToAsk : responseNode.formSchema.slice(0, 4);
         if (fields.length > 0) {
           const firstField = fields[0];
-          message += `\n\n${firstField.label}`;
-          if (firstField.type === 'select' && firstField.options) {
-            message += '\n\nReply with a number:';
-            firstField.options.forEach((o: any, i: number) => {
-              message += `\n${i + 1}. ${o.label || o}`;
-            });
-          } else if (firstField.placeholder) {
-            message += `\n(e.g. ${firstField.placeholder})`;
-          }
+          message += `\n\n${this.buildFieldPrompt(firstField)}`;
 
           await prisma.conversation.update({
             where: { id: conversationId },
@@ -351,8 +316,8 @@ export class WhatsAppBotService {
       const history = recentMessages
         .reverse()
         .map((m) => ({
-          role: m.recipientPhone ? ('assistant' as const) : ('user' as const),
-          content: m.content,
+          role: m.content.startsWith('[INBOUND]') ? ('user' as const) : ('assistant' as const),
+          content: m.content.replace(/^\[INBOUND\]\s*/, ''),
         }));
 
       const result = await chatWithCleo(userId, text, history);
@@ -363,6 +328,63 @@ export class WhatsAppBotService {
       console.error(`[WhatsApp Bot] AI chat error for ${userId}:`, error.message);
       await this.sendReply(phone, `I'm having trouble processing that right now. You can also chat at https://cleya.ai/chat`);
     }
+  }
+
+  private parseFormFieldValue(field: { type?: string; options?: any[]; name: string }, text: string): any {
+    const optionValue = (o: any) => o.value || o;
+    const optionLabel = (o: any) => (o.label || o).toString();
+
+    if ((field.type === 'select') && field.options) {
+      const num = parseInt(text);
+      if (num >= 1 && num <= field.options.length) {
+        return optionValue(field.options[num - 1]);
+      }
+      const lowerText = text.toLowerCase();
+      const matched = field.options.find((o: any) =>
+        optionLabel(o).toLowerCase().includes(lowerText) ||
+        optionValue(o).toString().toLowerCase() === lowerText
+      );
+      return matched ? optionValue(matched) : null;
+    }
+
+    if (field.type === 'multiselect' && field.options) {
+      const parts = text.split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
+      const selected: string[] = [];
+      for (const part of parts) {
+        const num = parseInt(part);
+        if (num >= 1 && num <= field.options.length) {
+          selected.push(optionValue(field.options[num - 1]));
+        } else {
+          const lowerPart = part.toLowerCase();
+          const matched = field.options.find((o: any) =>
+            optionLabel(o).toLowerCase().includes(lowerPart) ||
+            optionValue(o).toString().toLowerCase() === lowerPart
+          );
+          if (matched) selected.push(optionValue(matched));
+        }
+      }
+      return selected.length > 0 ? selected : null;
+    }
+
+    return text;
+  }
+
+  private buildFieldPrompt(field: { type?: string; options?: any[]; label?: string; placeholder?: string }): string {
+    let prompt = field.label || '';
+    if ((field.type === 'select') && field.options) {
+      prompt += '\n\nReply with a number:';
+      field.options.forEach((o: any, i: number) => {
+        prompt += `\n${i + 1}. ${o.label || o}`;
+      });
+    } else if (field.type === 'multiselect' && field.options) {
+      prompt += '\n\nReply with numbers separated by commas (e.g. 1,3,5):';
+      field.options.forEach((o: any, i: number) => {
+        prompt += `\n${i + 1}. ${o.label || o}`;
+      });
+    } else if (field.placeholder) {
+      prompt += `\n(e.g. ${field.placeholder})`;
+    }
+    return prompt;
   }
 
   private async sendReply(phone: string, message: string): Promise<void> {
