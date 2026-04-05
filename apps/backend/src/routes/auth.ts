@@ -10,7 +10,6 @@ import { env } from '../config/env';
 export const authRouter = Router();
 
 const ALLOWED_HOSTS = [
-  'boardy-ai-platform.replit.app',
   env.FRONTEND_URL ? new URL(env.FRONTEND_URL).host : '',
   process.env.REPLIT_DEV_DOMAIN || '',
 ].filter(Boolean);

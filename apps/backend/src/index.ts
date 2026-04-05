@@ -51,7 +51,6 @@ const allowedOrigins = new Set(
   [
     env.FRONTEND_URL,
     env.CORS_ORIGIN,
-    'https://boardy-ai-platform.replit.app',
   ].filter(Boolean) as string[]
 );
 
