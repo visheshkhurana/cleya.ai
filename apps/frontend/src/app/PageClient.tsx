@@ -1057,7 +1057,7 @@ export default function Home() {
           ════════════════════════════════════════════ */}
       <section className="relative z-10 min-h-screen flex items-center">
         <div className="relative max-w-[1400px] mx-auto px-6 sm:px-10 lg:px-16 w-full pt-28 pb-20">
-          <div className="max-w-3xl">
+          <div className="max-w-4xl lg:max-w-5xl">
             <div
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-medium uppercase tracking-[0.2em] mb-8 hero-fade-in"
               style={{ background: 'rgba(59,130,246,0.08)', color: '#60A5FA', border: '1px solid rgba(59,130,246,0.15)', animationDelay: '0.3s' }}
@@ -1068,7 +1068,7 @@ export default function Home() {
 
             <h1
               className="font-sans font-bold text-white leading-[1.05] mb-8 tracking-tight hero-fade-in"
-              style={{ fontSize: 'clamp(40px, 5vw + 16px, 76px)', animationDelay: '0.5s' }}
+              style={{ fontSize: 'clamp(40px, 5.5vw + 16px, 84px)', animationDelay: '0.5s' }}
             >
               The AI Network That<br />
               <span className="gradient-text">Connects You to</span><br />
@@ -1076,8 +1076,8 @@ export default function Home() {
             </h1>
 
             <div
-              className="leading-relaxed mb-12 max-w-[520px] hero-fade-in"
-              style={{ color: 'rgba(255,255,255,0.6)', fontSize: 'clamp(16px, 1vw + 12px, 20px)', animationDelay: '0.7s' }}
+              className="leading-relaxed mb-12 max-w-xl lg:max-w-2xl hero-fade-in"
+              style={{ color: 'rgba(255,255,255,0.6)', fontSize: 'clamp(16px, 1.2vw + 12px, 22px)', animationDelay: '0.7s' }}
             >
               Whether you want to <RotatingTypewriter /><br />
               Cleya's AI finds the right people — so every connection is intentional.
@@ -1229,7 +1229,7 @@ export default function Home() {
           </div>
         </AnimatedSection>
 
-        <AnimatedSection className="max-w-[1200px] mx-auto px-6 sm:px-10 lg:px-16">
+        <AnimatedSection className="max-w-[1400px] mx-auto px-6 sm:px-10 lg:px-16">
           <TiltCard className="testimonial-3d" glowColor="rgba(139,92,246,0.1)" floatIntensity={0.3}>
             <div className="rounded-2xl p-8 sm:p-14 relative overflow-hidden testimonial-featured"
               style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(20px)' }}>
@@ -1275,7 +1275,7 @@ export default function Home() {
           SCENE 6: LIVE NETWORK — ANIMATED STATS
           ════════════════════════════════════════════ */}
       <section className="relative z-10 py-20 sm:py-28" style={{ background: '#050510' }}>
-        <div className="max-w-[1200px] mx-auto px-6 sm:px-10 lg:px-16">
+        <div className="max-w-[1400px] mx-auto px-6 sm:px-10 lg:px-16">
           <AnimatedSection className="text-center mb-16">
             <div className="scroll-item text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#06B6D4' }}>
               Live Network
@@ -1285,7 +1285,7 @@ export default function Home() {
             </h2>
           </AnimatedSection>
 
-          <div className="grid grid-cols-3 gap-6 max-w-2xl mx-auto mb-16">
+          <div className="grid grid-cols-3 gap-6 sm:gap-10 max-w-3xl mx-auto mb-16">
             <AnimatedCounter target={49} suffix="+" color="#3B82F6" label="Cities" />
             <AnimatedCounter target={31} suffix="+" color="#8B5CF6" label="Industries" />
             <AnimatedCounter target={1} suffix=" Lakh+" color="#06B6D4" label="Connections" />
@@ -1309,7 +1309,7 @@ export default function Home() {
           SCENE 7: FINAL CTA — INFINITE NETWORK
           ════════════════════════════════════════════ */}
       <section className="relative z-10 py-20 sm:py-28" style={{ background: '#050510' }}>
-        <AnimatedSection className="relative max-w-[1100px] mx-auto px-6 sm:px-10 lg:px-16 text-center">
+        <AnimatedSection className="relative max-w-[1400px] mx-auto px-6 sm:px-10 lg:px-16 text-center">
           <div className="scroll-item mb-8">
             <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-8 pulse-ring"
               style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', boxShadow: '0 0 60px rgba(59,130,246,0.3)' }}>
