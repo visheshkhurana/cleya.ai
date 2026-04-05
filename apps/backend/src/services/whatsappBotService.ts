@@ -153,7 +153,16 @@ export class WhatsAppBotService {
   private async startOnboardingViaWhatsApp(userId: string, phone: string): Promise<void> {
     try {
       const result = await conversationService.startConversation(userId, 'onboarding_v1');
-      const node = result.node as FlowNode;
+      let node = result.node as FlowNode;
+      let conversationId = result.conversationId;
+
+      if (node.type === 'message' && node.content) {
+        await this.sendReply(phone, node.content);
+        const advanced = await conversationService.processInput(conversationId, { textInput: '_auto_advance_' });
+        if (!('errors' in advanced)) {
+          node = advanced.node as FlowNode;
+        }
+      }
 
       let message = node.content || '';
 
@@ -164,7 +173,9 @@ export class WhatsAppBotService {
         });
       }
 
-      await this.sendReply(phone, message);
+      if (message.trim()) {
+        await this.sendReply(phone, message);
+      }
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);
       console.error(`[WhatsApp Bot] Failed to start onboarding for ${userId}:`, errMsg);
