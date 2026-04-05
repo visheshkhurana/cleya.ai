@@ -673,32 +673,7 @@ adminRouter.get('/whatsapp/activity', async (req: Request, res: Response, next: 
 
 adminRouter.get('/whatsapp/users', async (_req: Request, res: Response, next: NextFunction) => {
   try {
-    const users = await prisma.user.findMany({
-      where: { whatsappOptedIn: true },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        phone: true,
-        whatsappPhone: true,
-        whatsappOptedIn: true,
-        createdAt: true,
-        profile: {
-          select: {
-            persona: true,
-            currentRole: true,
-            companyName: true,
-            isComplete: true,
-          },
-        },
-        _count: {
-          select: {
-            messageRecords: { where: { channel: 'WHATSAPP' } },
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    const users = await whatsappBotService.getWhatsAppUsers();
 
     res.json({ success: true, data: users });
   } catch (error) {

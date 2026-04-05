@@ -70,6 +70,8 @@ export default function AdminDashboard() {
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [digestLoading, setDigestLoading] = useState(false);
   const [whatsappData, setWhatsappData] = useState<any>(null);
+  const [whatsappUsers, setWhatsappUsers] = useState<any[] | null>(null);
+  const [waSubTab, setWaSubTab] = useState<'activity' | 'users'>('activity');
   // Agent state
   const [agentList] = useState<AgentInfo[]>([
     { id: 'cleya-marketing', name: 'Mira', emoji: '🎯', role: 'Marketing', description: 'Content, SEO, social media, viral campaigns', color: 'indigo' },
@@ -170,9 +172,14 @@ export default function AdminDashboard() {
 
   const loadWhatsApp = async () => {
     try {
-      const res = await fetch('/api/admin/whatsapp/activity', { credentials: 'include' });
-      const json = await res.json();
-      if (json.success) setWhatsappData(json.data);
+      const [actRes, usersRes] = await Promise.all([
+        fetch('/api/admin/whatsapp/activity', { credentials: 'include' }),
+        fetch('/api/admin/whatsapp/users', { credentials: 'include' }),
+      ]);
+      const actJson = await actRes.json();
+      const usersJson = await usersRes.json();
+      if (actJson.success) setWhatsappData(actJson.data);
+      if (usersJson.success) setWhatsappUsers(usersJson.data);
     } catch (err: any) {
       console.error('Failed to load WhatsApp data:', err);
     }
@@ -1169,60 +1176,110 @@ export default function AdminDashboard() {
               </div>
 
               <div className="flex gap-3">
-                <button
-                  onClick={loadWhatsApp}
-                  className="px-4 py-2 rounded-xl text-sm font-medium bg-green-600/20 text-green-300 border border-green-500/20 hover:bg-green-600/30 transition"
-                >
+                <button onClick={loadWhatsApp} className="px-4 py-2 rounded-xl text-sm font-medium bg-green-600/20 text-green-300 border border-green-500/20 hover:bg-green-600/30 transition">
                   Refresh
+                </button>
+                <button onClick={() => setWaSubTab('activity')} className={`px-4 py-2 rounded-xl text-sm font-medium transition ${waSubTab === 'activity' ? 'bg-green-600 text-white' : 'text-slate-400 border border-blue-500/20 hover:text-green-200'}`}>
+                  Activity
+                </button>
+                <button onClick={() => setWaSubTab('users')} className={`px-4 py-2 rounded-xl text-sm font-medium transition ${waSubTab === 'users' ? 'bg-green-600 text-white' : 'text-slate-400 border border-blue-500/20 hover:text-green-200'}`}>
+                  Users
                 </button>
               </div>
 
-              <div className="bg-[rgba(10,10,26,0.8)]/60 backdrop-blur-sm rounded-xl border border-blue-500/10 overflow-hidden">
-                <div className="px-5 py-4 border-b border-blue-500/10">
-                  <h3 className="text-sm font-semibold text-white">Recent WhatsApp Messages</h3>
-                </div>
-                <div className="divide-y divide-blue-500/5 max-h-[600px] overflow-y-auto">
-                  {whatsappData.messages?.length > 0 ? whatsappData.messages.map((msg: any) => (
-                    <div key={msg.id} className="px-5 py-3 flex items-start gap-3 hover:bg-blue-900/10 transition">
-                      <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
-                        msg.content?.startsWith('[INBOUND]') ? 'bg-blue-400' : 
-                        msg.status === 'DELIVERED' || msg.status === 'READ' ? 'bg-green-400' : 
-                        msg.status === 'FAILED' ? 'bg-red-400' : 'bg-yellow-400'
-                      }`} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-xs font-medium text-slate-300">
-                            {msg.user?.name || msg.user?.email || msg.recipientPhone}
-                          </span>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                            msg.content?.startsWith('[INBOUND]') ? 'bg-blue-500/20 text-blue-300' : 'bg-green-500/20 text-green-300'
-                          }`}>
-                            {msg.content?.startsWith('[INBOUND]') ? 'IN' : 'OUT'}
-                          </span>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                            msg.status === 'DELIVERED' || msg.status === 'READ' ? 'bg-green-500/20 text-green-300' :
-                            msg.status === 'FAILED' ? 'bg-red-500/20 text-red-300' :
-                            msg.status === 'SENT' ? 'bg-yellow-500/20 text-yellow-300' :
-                            'bg-slate-500/20 text-slate-300'
-                          }`}>
-                            {msg.status}
-                          </span>
+              {waSubTab === 'activity' && (
+                <div className="bg-[rgba(10,10,26,0.8)]/60 backdrop-blur-sm rounded-xl border border-blue-500/10 overflow-hidden">
+                  <div className="px-5 py-4 border-b border-blue-500/10">
+                    <h3 className="text-sm font-semibold text-white">Recent WhatsApp Messages</h3>
+                  </div>
+                  <div className="divide-y divide-blue-500/5 max-h-[600px] overflow-y-auto">
+                    {whatsappData.messages?.length > 0 ? whatsappData.messages.map((msg: any) => (
+                      <div key={msg.id} className="px-5 py-3 flex items-start gap-3 hover:bg-blue-900/10 transition">
+                        <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
+                          msg.content?.startsWith('[INBOUND]') ? 'bg-blue-400' :
+                          msg.status === 'DELIVERED' || msg.status === 'READ' ? 'bg-green-400' :
+                          msg.status === 'FAILED' ? 'bg-red-400' : 'bg-yellow-400'
+                        }`} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="text-xs font-medium text-slate-300">
+                              {msg.user?.name || msg.user?.email || msg.recipientPhone}
+                            </span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                              msg.content?.startsWith('[INBOUND]') ? 'bg-blue-500/20 text-blue-300' : 'bg-green-500/20 text-green-300'
+                            }`}>
+                              {msg.content?.startsWith('[INBOUND]') ? 'IN' : 'OUT'}
+                            </span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                              msg.status === 'DELIVERED' || msg.status === 'READ' ? 'bg-green-500/20 text-green-300' :
+                              msg.status === 'FAILED' ? 'bg-red-500/20 text-red-300' :
+                              msg.status === 'SENT' ? 'bg-yellow-500/20 text-yellow-300' :
+                              'bg-slate-500/20 text-slate-300'
+                            }`}>
+                              {msg.status}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-400 truncate">
+                            {msg.content?.replace('[INBOUND] ', '').substring(0, 120)}
+                          </p>
+                          <p className="text-[10px] text-slate-500 mt-0.5">
+                            {new Date(msg.createdAt).toLocaleString()} &middot; {msg.recipientPhone}
+                          </p>
                         </div>
-                        <p className="text-xs text-slate-400 truncate">
-                          {msg.content?.replace('[INBOUND] ', '').substring(0, 120)}
-                        </p>
-                        <p className="text-[10px] text-slate-500 mt-0.5">
-                          {new Date(msg.createdAt).toLocaleString()} &middot; {msg.recipientPhone}
-                        </p>
                       </div>
-                    </div>
-                  )) : (
-                    <div className="px-5 py-10 text-center text-sm text-slate-500">
-                      No WhatsApp messages yet
-                    </div>
-                  )}
+                    )) : (
+                      <div className="px-5 py-10 text-center text-sm text-slate-500">
+                        No WhatsApp messages yet
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {waSubTab === 'users' && (
+                <div className="bg-[rgba(10,10,26,0.8)]/60 backdrop-blur-sm rounded-xl border border-blue-500/10 overflow-hidden">
+                  <div className="px-5 py-4 border-b border-blue-500/10">
+                    <h3 className="text-sm font-semibold text-white">WhatsApp Users ({whatsappUsers?.length || 0})</h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-blue-500/10">
+                          <th className="px-4 py-3 text-left font-medium text-slate-400 uppercase tracking-wider">User</th>
+                          <th className="px-4 py-3 text-left font-medium text-slate-400 uppercase tracking-wider">Phone</th>
+                          <th className="px-4 py-3 text-left font-medium text-slate-400 uppercase tracking-wider">Messages</th>
+                          <th className="px-4 py-3 text-left font-medium text-slate-400 uppercase tracking-wider">Last Activity</th>
+                          <th className="px-4 py-3 text-left font-medium text-slate-400 uppercase tracking-wider">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-blue-500/5">
+                        {whatsappUsers && whatsappUsers.length > 0 ? whatsappUsers.map((u: any) => (
+                          <tr key={u.id} className="hover:bg-blue-900/10 transition">
+                            <td className="px-4 py-3">
+                              <div className="text-slate-200 font-medium">{u.name || 'N/A'}</div>
+                              <div className="text-slate-500">{u.email}</div>
+                            </td>
+                            <td className="px-4 py-3 text-slate-300 font-mono">{u.whatsappPhone || u.phone || '-'}</td>
+                            <td className="px-4 py-3 text-slate-300">{u.messageCount || 0}</td>
+                            <td className="px-4 py-3 text-slate-400">
+                              {u.messageRecords?.[0]?.createdAt ? new Date(u.messageRecords[0].createdAt).toLocaleDateString() : 'Never'}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-500/20 text-green-300">
+                                Opted In
+                              </span>
+                            </td>
+                          </tr>
+                        )) : (
+                          <tr>
+                            <td colSpan={5} className="px-4 py-10 text-center text-slate-500">No WhatsApp users yet</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <div className="flex items-center justify-center py-20">
