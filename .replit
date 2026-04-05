@@ -110,9 +110,11 @@ GOOGLE_REDIRECT_URI = "https://boardy-ai-platform.replit.app/api/calendar/callba
 
 [userenv.development]
 BACKEND_URL = "https://boardy-ai-platform.replit.dev:3001"
+FRONTEND_URL = "https://cleya.ai"
 
 [userenv.production]
 BACKEND_URL = "https://boardy-ai-platform.replit.app"
+FRONTEND_URL = "https://cleya.ai"
 
 [postMerge]
 path = "scripts/post-merge.sh"
