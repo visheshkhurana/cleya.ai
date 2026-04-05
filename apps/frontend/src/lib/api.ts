@@ -550,6 +550,18 @@ class ApiClient {
   async calendarAvailability(date: string) {
     return this.fetch(`/calendar/availability?date=${date}`);
   }
+
+  // Agent chat endpoints
+  async getAgentList() {
+    return this.fetch('/agents/list');
+  }
+
+  async sendAgentMessage(agentId: string, message: string, history: { role: string; content: string }[] = []) {
+    return this.fetch('/agents/chat', {
+      method: 'POST',
+      body: JSON.stringify({ agentId, message, history }),
+    });
+  }
 }
 
 export const api = new ApiClient();
