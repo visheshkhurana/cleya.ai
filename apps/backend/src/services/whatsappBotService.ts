@@ -1,6 +1,7 @@
 import { prisma } from '@cleya/db';
 import { gupshupService } from './gupshupService';
 import { conversationService } from './conversationService';
+import { matchingService } from './matchingService';
 import { chatWithCleo } from './ai';
 
 const recentlyProcessed = new Map<string, number>();
@@ -155,7 +156,32 @@ export class WhatsAppBotService {
         if (fieldIdx < fieldsToCollect.length) {
           const field = fieldsToCollect[fieldIdx];
           const formData: Record<string, any> = {};
-          formData[field.name] = text;
+
+          if (field.type === 'select' && field.options) {
+            const num = parseInt(text);
+            if (num >= 1 && num <= field.options.length) {
+              formData[field.name] = field.options[num - 1].value || field.options[num - 1];
+            } else {
+              const lowerText = text.toLowerCase();
+              const matched = field.options.find((o: any) => {
+                const label = (o.label || o).toString().toLowerCase();
+                const value = (o.value || o).toString().toLowerCase();
+                return label.includes(lowerText) || value === lowerText;
+              });
+              if (matched) {
+                formData[field.name] = matched.value || matched;
+              } else {
+                let hint = `Please choose one (reply with a number):`;
+                field.options.forEach((o: any, i: number) => {
+                  hint += `\n${i + 1}. ${o.label || o}`;
+                });
+                await this.sendReply(phone, hint);
+                return;
+              }
+            }
+          } else {
+            formData[field.name] = text;
+          }
 
           const nextIdx = fieldIdx + 1;
 
@@ -169,7 +195,14 @@ export class WhatsAppBotService {
           if (nextIdx < fieldsToCollect.length) {
             const nextField = fieldsToCollect[nextIdx];
             let prompt = nextField.label;
-            if (nextField.placeholder) prompt += `\n(e.g. ${nextField.placeholder})`;
+            if (nextField.type === 'select' && nextField.options) {
+              prompt += '\n\nReply with a number:';
+              nextField.options.forEach((o: any, i: number) => {
+                prompt += `\n${i + 1}. ${o.label || o}`;
+              });
+            } else if (nextField.placeholder) {
+              prompt += `\n(e.g. ${nextField.placeholder})`;
+            }
             await this.sendReply(phone, prompt);
             return;
           }
@@ -223,7 +256,14 @@ export class WhatsAppBotService {
         if (fields.length > 0) {
           const firstField = fields[0];
           message += `\n\n${firstField.label}`;
-          if (firstField.placeholder) message += `\n(e.g. ${firstField.placeholder})`;
+          if (firstField.type === 'select' && firstField.options) {
+            message += '\n\nReply with a number:';
+            firstField.options.forEach((o: any, i: number) => {
+              message += `\n${i + 1}. ${o.label || o}`;
+            });
+          } else if (firstField.placeholder) {
+            message += `\n(e.g. ${firstField.placeholder})`;
+          }
 
           await prisma.conversation.update({
             where: { id: conversationId },
@@ -254,8 +294,8 @@ export class WhatsAppBotService {
     return prisma.match.findFirst({
       where: {
         OR: [
-          { userAId: userId, userAResponse: null },
-          { userBId: userId, userBResponse: null },
+          { userAId: userId, userAResponse: 'PENDING' },
+          { userBId: userId, userBResponse: 'PENDING' },
         ],
         status: { in: ['PROPOSED', 'PENDING_A', 'PENDING_B'] },
       },
@@ -281,32 +321,11 @@ export class WhatsAppBotService {
       const isUserA = match.userAId === userId;
       const otherUser = isUserA ? match.userB : match.userA;
       const otherName = otherUser?.name || otherUser?.profile?.currentRole || 'your match';
-
-      const response = isAccept ? 'ACCEPTED' : 'REJECTED';
-
-      const updateData: any = {};
-      if (isUserA) {
-        updateData.userAResponse = response;
-        updateData.userARespondedAt = new Date();
-      } else {
-        updateData.userBResponse = response;
-        updateData.userBRespondedAt = new Date();
-      }
-
       const otherResponse = isUserA ? match.userBResponse : match.userAResponse;
 
-      if (isAccept && otherResponse === 'ACCEPTED') {
-        updateData.status = 'ACCEPTED';
-      } else if (isDecline) {
-        updateData.status = 'REJECTED';
-      } else if (isAccept) {
-        updateData.status = isUserA ? 'PENDING_B' : 'PENDING_A';
-      }
+      const response: 'ACCEPTED' | 'REJECTED' = isAccept ? 'ACCEPTED' : 'REJECTED';
 
-      await prisma.match.update({
-        where: { id: match.id },
-        data: updateData,
-      });
+      await matchingService.respondToMatch(match.id, userId, response);
 
       if (isAccept) {
         await this.sendReply(phone, `Great! I've noted your interest in connecting with *${otherName}*. ${otherResponse === 'ACCEPTED' ? "They're interested too! I'll make the intro." : "I'll let you know when they respond."}`);
@@ -363,9 +382,11 @@ export class WhatsAppBotService {
       },
     });
 
-    const userId = user?.id || 'system';
-
-    await gupshupService.sendWhatsApp(userId, phone, message);
+    if (user) {
+      await gupshupService.sendWhatsApp(user.id, phone, message);
+    } else {
+      await gupshupService.sendWhatsAppDirect(phone, message);
+    }
   }
 
   private async logInboundMessage(userId: string, phone: string, content: string): Promise<void> {

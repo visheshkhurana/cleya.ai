@@ -181,6 +181,47 @@ export class GupshupService {
     }
   }
 
+  async sendWhatsAppDirect(phoneNumber: string, message: string) {
+    if (!this.isConfigured()) {
+      console.warn('Gupshup not configured, WhatsApp direct skipped');
+      return;
+    }
+
+    try {
+      const destination = this.formatPhone(phoneNumber);
+      const source = this.formatPhone(this.sourceNumber!);
+
+      const body = new URLSearchParams({
+        channel: 'whatsapp',
+        source,
+        destination,
+        'src.name': this.appName!,
+        message: JSON.stringify({
+          type: 'text',
+          text: message,
+        }),
+      });
+
+      const response = await fetch(`${this.baseUrl}/msg`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'apikey': this.apiKey!,
+        },
+        body: body.toString(),
+      });
+
+      const result = (await response.json()) as GupshupResponse;
+      if (!response.ok || result.status !== 'submitted') {
+        console.error(`Gupshup direct send failed to ${phoneNumber}: ${result.message}`);
+      } else {
+        console.log(`Gupshup WhatsApp direct sent to ${phoneNumber} (${result.messageId})`);
+      }
+    } catch (error: any) {
+      console.error(`Gupshup WhatsApp direct failed to ${phoneNumber}:`, error.message);
+    }
+  }
+
   async sendTemplate(userId: string, phoneNumber: string, templateId: string, params: string[] = []) {
     const record = await prisma.messageRecord.create({
       data: {
