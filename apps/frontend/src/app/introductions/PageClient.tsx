@@ -164,7 +164,7 @@ export default function IntroductionsPage() {
   return (
     <AppShell>
       <AppNav rightContent={<NotificationCenter />} />
-      <div className="max-w-3xl mx-auto px-6 lg:px-8 pt-3 flex items-center gap-3">
+      <div className="max-w-5xl mx-auto px-6 lg:px-8 pt-3 flex items-center gap-3">
         <h2 className="font-semibold text-white text-sm">Introductions</h2>
         {pendingCount > 0 && (
           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(245,158,11,0.2)', color: '#fbbf24' }}>
@@ -173,7 +173,7 @@ export default function IntroductionsPage() {
         )}
       </div>
 
-      <div className="max-w-3xl mx-auto px-6 lg:px-8 py-6">
+      <div className="max-w-5xl mx-auto px-6 lg:px-8 py-6">
         {introductions.length === 0 ? (
           <div className="text-center py-16">
             <span className="text-5xl block mb-4">🤝</span>
