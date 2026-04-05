@@ -195,9 +195,10 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
     if (result.isNew) {
       emailService.sendWelcome(profile.email).catch(() => {});
       if (result.user.phone) {
-        gupshupService.optInUser(result.user.phone).then(() =>
-          prisma.user.update({ where: { id: result.user.id }, data: { whatsappOptedIn: true, whatsappPhone: result.user.phone } })
-        ).then(() =>
+        gupshupService.optInUser(result.user.phone).then((optInResult) => {
+          if (!optInResult?.success) return;
+          return prisma.user.update({ where: { id: result.user.id }, data: { whatsappOptedIn: true, whatsappPhone: result.user.phone } });
+        }).then(() =>
           whatsappTemplates.triggerWelcome(result.user.id)
         ).catch((e) => console.error('[Auth/Google] WhatsApp welcome failed:', e));
       }
@@ -344,9 +345,10 @@ authRouter.get('/linkedin/callback', async (req: Request, res: Response) => {
     if (result.isNew) {
       emailService.sendWelcome(profile.email).catch(() => {});
       if (result.user.phone) {
-        gupshupService.optInUser(result.user.phone).then(() =>
-          prisma.user.update({ where: { id: result.user.id }, data: { whatsappOptedIn: true, whatsappPhone: result.user.phone } })
-        ).then(() =>
+        gupshupService.optInUser(result.user.phone).then((optInResult) => {
+          if (!optInResult?.success) return;
+          return prisma.user.update({ where: { id: result.user.id }, data: { whatsappOptedIn: true, whatsappPhone: result.user.phone } });
+        }).then(() =>
           whatsappTemplates.triggerWelcome(result.user.id)
         ).catch((e) => console.error('[Auth/LinkedIn] WhatsApp welcome failed:', e));
       }

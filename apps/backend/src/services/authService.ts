@@ -52,14 +52,18 @@ export class AuthService {
 
     if (user.phone) {
       import('./gupshupService').then(({ gupshupService }) => {
-        gupshupService.optInUser(user.phone!).then(() => {
+        gupshupService.optInUser(user.phone!).then((optInResult) => {
+          if (!optInResult?.success) {
+            console.warn(`[Auth] WhatsApp opt-in failed for ${user.id}, skipping welcome`);
+            return;
+          }
           return prisma.user.update({
             where: { id: user.id },
             data: { whatsappOptedIn: true, whatsappPhone: user.phone },
-          });
-        }).then(() => {
-          return import('./whatsappTemplates').then(({ whatsappTemplates }) => {
-            whatsappTemplates.triggerWelcome(user.id);
+          }).then(() => {
+            return import('./whatsappTemplates').then(({ whatsappTemplates }) => {
+              whatsappTemplates.triggerWelcome(user.id);
+            });
           });
         }).catch((e) =>
           console.error('[Auth] Welcome WhatsApp failed:', e)

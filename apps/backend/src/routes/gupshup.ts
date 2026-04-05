@@ -7,10 +7,11 @@ export const gupshupRouter = Router();
 
 gupshupRouter.post('/webhook', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (env.GUPSHUP_API_KEY) {
-      const incomingKey = (req.query.apikey as string) || req.headers['x-gupshup-apikey'] as string;
-      if (incomingKey !== env.GUPSHUP_API_KEY) {
-        console.warn('[Gupshup Webhook] Rejected: invalid or missing API key');
+    const webhookSecret = process.env.GUPSHUP_WEBHOOK_SECRET;
+    if (webhookSecret) {
+      const incomingKey = (req.query.secret as string) || req.headers['x-gupshup-webhook-secret'] as string;
+      if (incomingKey !== webhookSecret) {
+        console.warn('[Gupshup Webhook] Rejected: invalid or missing webhook secret');
         res.sendStatus(403);
         return;
       }

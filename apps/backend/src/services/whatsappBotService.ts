@@ -483,23 +483,26 @@ export class WhatsAppBotService {
     return matched ? matched.value : null;
   }
 
-  private parseFormFieldValue(field: FormFieldDef, text: string): unknown {
-    const optionValue = (o: FormFieldDef['options'] extends Array<infer T> ? T : never): string =>
-      typeof o === 'string' ? o : (o as { value: string }).value;
-    const optionLabel = (o: FormFieldDef['options'] extends Array<infer T> ? T : never): string =>
-      typeof o === 'string' ? o : (o as { label: string }).label;
+  private getOptionValue(o: { label: string; value: string } | string): string {
+    return typeof o === 'string' ? o : o.value;
+  }
 
+  private getOptionLabel(o: { label: string; value: string } | string): string {
+    return typeof o === 'string' ? o : o.label;
+  }
+
+  private parseFormFieldValue(field: FormFieldDef, text: string): unknown {
     if (field.type === 'select' && field.options) {
       const num = parseInt(text);
       if (num >= 1 && num <= field.options.length) {
-        return optionValue(field.options[num - 1]);
+        return this.getOptionValue(field.options[num - 1]);
       }
       const lowerText = text.toLowerCase();
       const matched = field.options.find((o) =>
-        optionLabel(o).toLowerCase().includes(lowerText) ||
-        optionValue(o).toLowerCase() === lowerText
+        this.getOptionLabel(o).toLowerCase().includes(lowerText) ||
+        this.getOptionValue(o).toLowerCase() === lowerText
       );
-      return matched ? optionValue(matched) : null;
+      return matched ? this.getOptionValue(matched) : null;
     }
 
     if (field.type === 'multiselect' && field.options) {
@@ -508,14 +511,14 @@ export class WhatsAppBotService {
       for (const part of parts) {
         const num = parseInt(part);
         if (num >= 1 && num <= field.options.length) {
-          selected.push(optionValue(field.options[num - 1]));
+          selected.push(this.getOptionValue(field.options[num - 1]));
         } else {
           const lowerPart = part.toLowerCase();
           const matched = field.options.find((o) =>
-            optionLabel(o).toLowerCase().includes(lowerPart) ||
-            optionValue(o).toLowerCase() === lowerPart
+            this.getOptionLabel(o).toLowerCase().includes(lowerPart) ||
+            this.getOptionValue(o).toLowerCase() === lowerPart
           );
-          if (matched) selected.push(optionValue(matched));
+          if (matched) selected.push(this.getOptionValue(matched));
         }
       }
       return selected.length > 0 ? selected : null;
@@ -526,18 +529,16 @@ export class WhatsAppBotService {
 
   private buildFieldPrompt(field: FormFieldDef): string {
     let prompt = field.label || '';
-    const optionLabel = (o: FormFieldDef['options'] extends Array<infer T> ? T : never): string =>
-      typeof o === 'string' ? o : (o as { label: string }).label;
 
     if (field.type === 'select' && field.options) {
       prompt += '\n\nReply with a number:';
       field.options.forEach((o, i) => {
-        prompt += `\n${i + 1}. ${optionLabel(o)}`;
+        prompt += `\n${i + 1}. ${this.getOptionLabel(o)}`;
       });
     } else if (field.type === 'multiselect' && field.options) {
       prompt += '\n\nReply with numbers separated by commas (e.g. 1,3,5):';
       field.options.forEach((o, i) => {
-        prompt += `\n${i + 1}. ${optionLabel(o)}`;
+        prompt += `\n${i + 1}. ${this.getOptionLabel(o)}`;
       });
     } else if (field.placeholder) {
       prompt += `\n(e.g. ${field.placeholder})`;
