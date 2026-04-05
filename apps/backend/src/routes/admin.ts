@@ -375,10 +375,17 @@ adminRouter.post('/test-email', async (req: Request, res: Response, next: NextFu
         await emailService.sendPasswordReset(to, 'test-token-456');
         break;
       case 'match-proposed':
-        await emailService.sendMatchProposed(to, 'Test User', 'Founder · Fintech', 0.92);
+        await emailService.sendMatchProposed(to, 'You', 'Kartik Dixit', 'Founder', 0.92, {
+          companyName: 'Skand Industries',
+          raiseAmount: '$2M Seed',
+          sector: 'Defense Tech',
+          traction: 'Already has a Letter of Intent with India\'s BSF and an active pilot invitation from the Armenian Border Guard.',
+          linkedinUrl: 'https://www.linkedin.com/in/example',
+          matchReason: 'Feels aligned with your focus on backing repeat founders early.',
+        });
         break;
       case 'match-accepted':
-        await emailService.sendMatchAccepted(to, 'Test User', 'Investor · Seed Stage', 'test@example.com');
+        await emailService.sendMatchAccepted(to, 'You', 'Kartik Dixit', 'Founder · Defense Tech', 'kartik@example.com', 'https://www.linkedin.com/in/example');
         break;
       default:
         return res.status(400).json({ success: false, error: `Unknown email type: ${emailType}` });

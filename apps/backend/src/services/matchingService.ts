@@ -109,12 +109,36 @@ export class MatchingService {
       prisma.user.findUnique({ where: { id: userBId }, include: { profile: true } }),
     ]);
     if (userAData && userBData) {
-      const nameA = userAData.profile?.currentRole || userAData.email.split('@')[0];
-      const nameB = userBData.profile?.currentRole || userBData.email.split('@')[0];
+      const nameA = userAData.name || userAData.profile?.currentRole || userAData.email.split('@')[0];
+      const nameB = userBData.name || userBData.profile?.currentRole || userBData.email.split('@')[0];
       const personaA = userAData.profile?.persona || 'Professional';
       const personaB = userBData.profile?.persona || 'Professional';
-      emailService.sendMatchProposed(userAData.email, nameB, personaB, score.total).catch(() => {});
-      emailService.sendMatchProposed(userBData.email, nameA, personaA, score.total).catch(() => {});
+      const detailsB = {
+        companyName: userBData.profile?.companyName || undefined,
+        headline: userBData.profile?.headline || userBData.profile?.currentRole || undefined,
+        raiseAmount: userBData.profile?.raiseAmount || undefined,
+        sector: (userBData.profile?.industries as string[] | null)?.[0] || undefined,
+        stage: userBData.profile?.companyStage || undefined,
+        traction: userBData.profile?.keyTractionPoints || undefined,
+        linkedinUrl: userBData.profile?.linkedinUrl || undefined,
+        location: userBData.profile?.location || undefined,
+        bio: userBData.profile?.bio || undefined,
+        matchReason: reason,
+      };
+      const detailsA = {
+        companyName: userAData.profile?.companyName || undefined,
+        headline: userAData.profile?.headline || userAData.profile?.currentRole || undefined,
+        raiseAmount: userAData.profile?.raiseAmount || undefined,
+        sector: (userAData.profile?.industries as string[] | null)?.[0] || undefined,
+        stage: userAData.profile?.companyStage || undefined,
+        traction: userAData.profile?.keyTractionPoints || undefined,
+        linkedinUrl: userAData.profile?.linkedinUrl || undefined,
+        location: userAData.profile?.location || undefined,
+        bio: userAData.profile?.bio || undefined,
+        matchReason: reason,
+      };
+      emailService.sendMatchProposed(userAData.email, nameA, nameB, personaB, score.total, detailsB).catch(() => {});
+      emailService.sendMatchProposed(userBData.email, nameB, nameA, personaA, score.total, detailsA).catch(() => {});
       whatsappTemplates.triggerMatchFound(userAId, userBId, score.total).catch((e) =>
         console.log('[MatchingService] WhatsApp match found (A) failed:', e)
       );
@@ -219,16 +243,12 @@ export class MatchingService {
       },
     });
 
-    const nameA = userA.profile?.currentRole
-      ? `${userA.profile.currentRole}${userA.profile.companyName ? ` at ${userA.profile.companyName}` : ''}`
-      : userA.email.split('@')[0];
-    const nameB = userB.profile?.currentRole
-      ? `${userB.profile.currentRole}${userB.profile.companyName ? ` at ${userB.profile.companyName}` : ''}`
-      : userB.email.split('@')[0];
+    const nameA = userA.name || userA.profile?.currentRole || userA.email.split('@')[0];
+    const nameB = userB.name || userB.profile?.currentRole || userB.email.split('@')[0];
     const personaA = userA.profile?.persona || 'Professional';
     const personaB = userB.profile?.persona || 'Professional';
-    emailService.sendMatchAccepted(userA.email, nameB, personaB, userB.email).catch(() => {});
-    emailService.sendMatchAccepted(userB.email, nameA, personaA, userA.email).catch(() => {});
+    emailService.sendMatchAccepted(userA.email, nameA, nameB, personaB, userB.email, userB.profile?.linkedinUrl || undefined).catch(() => {});
+    emailService.sendMatchAccepted(userB.email, nameB, nameA, personaA, userA.email, userA.profile?.linkedinUrl || undefined).catch(() => {});
   }
 
   async getMatchesForUser(userId: string) {
@@ -480,7 +500,7 @@ export class MatchingService {
       const response = await this.ai.chat([
         {
           role: 'system',
-          content: 'You are Cleya, an AI networking assistant for India\'s startup ecosystem. Write exactly 2 sentences explaining why these two people should connect. Be specific — mention their actual roles, companies, industries, stages, and goals. Never be generic. Never say "complementary backgrounds."',
+          content: 'You are Cleya, an AI superconnector for India\'s startup ecosystem. Write exactly 2-3 sentences explaining why these two people should connect — like a trusted friend putting someone on your radar. Be specific: mention actual roles, companies, what they\'re building/investing in, traction, and timing. Use a warm, direct tone. Never be generic. Never say "complementary backgrounds" or "synergy."',
         },
         {
           role: 'user',
