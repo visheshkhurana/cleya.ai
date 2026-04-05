@@ -6,6 +6,9 @@ import { authenticate } from '../middleware/auth';
 import { signupLimiter, loginLimiter, passwordResetLimiter } from '../middleware/rateLimit';
 import { emailService } from '../services/email';
 import { env } from '../config/env';
+import { whatsappTemplates } from '../services/whatsappTemplates';
+import { gupshupService } from '../services/gupshupService';
+import { prisma } from '@cleya/db';
 
 export const authRouter = Router();
 
@@ -191,6 +194,13 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
     });
     if (result.isNew) {
       emailService.sendWelcome(profile.email).catch(() => {});
+      if (result.user.phone) {
+        gupshupService.optInUser(result.user.phone).then(() =>
+          prisma.user.update({ where: { id: result.user.id }, data: { whatsappOptedIn: true, whatsappPhone: result.user.phone } })
+        ).then(() =>
+          whatsappTemplates.triggerWelcome(result.user.id)
+        ).catch((e) => console.error('[Auth/Google] WhatsApp welcome failed:', e));
+      }
     }
     setAuthCookie(res, result.token);
     const profileComplete = result.user.profile?.isComplete;
@@ -333,6 +343,13 @@ authRouter.get('/linkedin/callback', async (req: Request, res: Response) => {
 
     if (result.isNew) {
       emailService.sendWelcome(profile.email).catch(() => {});
+      if (result.user.phone) {
+        gupshupService.optInUser(result.user.phone).then(() =>
+          prisma.user.update({ where: { id: result.user.id }, data: { whatsappOptedIn: true, whatsappPhone: result.user.phone } })
+        ).then(() =>
+          whatsappTemplates.triggerWelcome(result.user.id)
+        ).catch((e) => console.error('[Auth/LinkedIn] WhatsApp welcome failed:', e));
+      }
     }
 
     setAuthCookie(res, result.token);

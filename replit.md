@@ -180,6 +180,27 @@ All frontend pages use a server/client wrapper pattern for build compatibility:
 - Seed data: 1 admin + 20 Indian startup ecosystem profiles (6 Founders, 4 Investors, 3 Talent, 3 Deal Partners, 2 Venture Partners, 2 Event Participants)
 - To clean seed data: `npx tsx packages/db/src/clean-seed.ts`
 
+## WhatsApp Bot (Primary Communication Channel)
+`apps/backend/src/services/whatsappBotService.ts` — Inbound message router that makes WhatsApp the primary communication channel for all users.
+
+**Architecture:**
+- **Conversation router**: Receives inbound text from phone number, looks up user, determines context (onboarding, pending match response, free AI chat), dispatches to correct handler
+- **Onboarding via WhatsApp**: Drives `conversation-engine` state machine — choice nodes map number replies (1-N), form nodes collect required fields one at a time using `_wa_form_field_idx_` context key
+- **Match responses**: Keyword matching (yes/accept/sure → accept; no/decline/pass → decline) for pending match proposals
+- **Free chat**: Falls through to `chatWithCleo` AI service with conversation history
+- **Deduplication**: `processedMessageIds` LRU Set prevents duplicate processing
+- **Unknown numbers**: Replies with invite link to sign up
+
+**Webhook**: `apps/backend/src/routes/gupshup.ts` — Handles both Meta Cloud API format (`payload.entry`) and legacy Gupshup format (`payload.type === 'message'`). Webhook verifies API key via query param or `x-gupshup-apikey` header.
+
+**Auto-welcome**: All signup methods (email, Google OAuth, LinkedIn OAuth) trigger WhatsApp opt-in + welcome message when phone is present (`authService.ts`, `auth.ts`).
+
+**Admin endpoints**:
+- `GET /api/admin/whatsapp/activity` — Stats (opted-in users, inbound/outbound counts, delivery stats, recent messages)
+- `GET /api/admin/whatsapp/users` — Per-user WhatsApp status
+
+**Control Tower UI**: "WhatsApp" tab in `/controltower` shows stats cards + scrollable recent message feed with direction/status badges.
+
 ## Phase 1: Multi-Persona Onboarding
 Six persona types with tailored onboarding flows:
 1. **Founder / Business Owner** — company details, priority (fundraising/cofounder/hiring/marketing/sales/VP hire), fundraising fields

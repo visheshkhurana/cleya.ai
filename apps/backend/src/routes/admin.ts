@@ -9,6 +9,7 @@ import { automationService } from '../services/automationService';
 import { emailService } from '../services/email';
 import { whatsappTemplates } from '../services/whatsappTemplates';
 import { gupshupService } from '../services/gupshupService';
+import { whatsappBotService } from '../services/whatsappBotService';
 
 export const adminRouter = Router();
 
@@ -655,6 +656,51 @@ adminRouter.post('/slack/daily-report', async (_req: Request, res: Response, nex
   try {
     await slackService.sendDailyReport();
     res.json({ success: true, message: 'Daily report sent to Slack' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/whatsapp/activity', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 50;
+    const data = await whatsappBotService.getWhatsAppActivity(limit);
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/whatsapp/users', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const users = await prisma.user.findMany({
+      where: { whatsappOptedIn: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        phone: true,
+        whatsappPhone: true,
+        whatsappOptedIn: true,
+        createdAt: true,
+        profile: {
+          select: {
+            persona: true,
+            currentRole: true,
+            companyName: true,
+            isComplete: true,
+          },
+        },
+        _count: {
+          select: {
+            messageRecords: { where: { channel: 'WHATSAPP' } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({ success: true, data: users });
   } catch (error) {
     next(error);
   }

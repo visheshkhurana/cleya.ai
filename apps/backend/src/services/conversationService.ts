@@ -17,6 +17,10 @@ export class ConversationService {
     this.ai = createAIService();
   }
 
+  getFlow(flowId: string) {
+    return this.engine.getFlow(flowId);
+  }
+
   async startConversation(userId: string, flowId: string = 'onboarding_v1') {
     // Check if user already has an active conversation for this flow
     const existing = await prisma.conversation.findFirst({

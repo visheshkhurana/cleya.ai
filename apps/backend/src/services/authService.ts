@@ -51,8 +51,17 @@ export class AuthService {
     const token = this.generateToken(user);
 
     if (user.phone) {
-      import('./whatsappTemplates').then(({ whatsappTemplates }) => {
-        whatsappTemplates.triggerWelcome(user.id).catch((e) =>
+      import('./gupshupService').then(({ gupshupService }) => {
+        gupshupService.optInUser(user.phone!).then(() => {
+          return prisma.user.update({
+            where: { id: user.id },
+            data: { whatsappOptedIn: true, whatsappPhone: user.phone },
+          });
+        }).then(() => {
+          return import('./whatsappTemplates').then(({ whatsappTemplates }) => {
+            whatsappTemplates.triggerWelcome(user.id);
+          });
+        }).catch((e) =>
           console.error('[Auth] Welcome WhatsApp failed:', e)
         );
       });

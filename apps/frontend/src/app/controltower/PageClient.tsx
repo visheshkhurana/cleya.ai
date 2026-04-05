@@ -27,7 +27,7 @@ interface CommData {
   messageStats: { totalSMS: number; totalWhatsApp: number; delivered: number; failed: number; total: number };
 }
 
-type Tab = 'overview' | 'communications' | 'deals' | 'events' | 'analytics' | 'agents';
+type Tab = 'overview' | 'communications' | 'deals' | 'events' | 'analytics' | 'agents' | 'whatsapp';
 
 interface AgentInfo {
   id: string;
@@ -69,6 +69,7 @@ export default function AdminDashboard() {
   const [newEvent, setNewEvent] = useState({ name: '', description: '', date: '', location: '', isVirtual: false, maxCapacity: '' });
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [digestLoading, setDigestLoading] = useState(false);
+  const [whatsappData, setWhatsappData] = useState<any>(null);
   // Agent state
   const [agentList] = useState<AgentInfo[]>([
     { id: 'cleya-marketing', name: 'Mira', emoji: '🎯', role: 'Marketing', description: 'Content, SEO, social media, viral campaigns', color: 'indigo' },
@@ -167,6 +168,16 @@ export default function AdminDashboard() {
     }
   };
 
+  const loadWhatsApp = async () => {
+    try {
+      const res = await fetch('/api/admin/whatsapp/activity', { credentials: 'include' });
+      const json = await res.json();
+      if (json.success) setWhatsappData(json.data);
+    } catch (err: any) {
+      console.error('Failed to load WhatsApp data:', err);
+    }
+  };
+
   const handleSendDigest = async () => {
     setDigestLoading(true);
     try {
@@ -220,6 +231,7 @@ export default function AdminDashboard() {
     if (activeTab === 'deals' && !dealData) loadDeals();
     if (activeTab === 'events' && !eventData) loadEvents();
     if (activeTab === 'analytics' && !analyticsData) loadAnalytics();
+    if (activeTab === 'whatsapp' && !whatsappData) loadWhatsApp();
   }, [activeTab]);
 
   const handleTrigger = async () => {
@@ -385,6 +397,7 @@ export default function AdminDashboard() {
             { id: 'deals' as Tab, label: 'Deals', icon: '🤝' },
             { id: 'events' as Tab, label: 'Events', icon: '📅' },
             { id: 'analytics' as Tab, label: 'Analytics', icon: '📈' },
+            { id: 'whatsapp' as Tab, label: 'WhatsApp', icon: '💬' },
             { id: 'agents' as Tab, label: 'Agents', icon: '🤖' },
           ].map((tab) => (
             <button
@@ -1127,6 +1140,94 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'whatsapp' && (
+        <div className="space-y-6">
+          {whatsappData ? (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { label: 'Opted-In Users', value: whatsappData.stats?.optedInUsers || 0, icon: '✅' },
+                  { label: 'Total Messages', value: whatsappData.stats?.totalMessages || 0, icon: '💬' },
+                  { label: 'Inbound', value: whatsappData.stats?.inboundCount || 0, icon: '📥' },
+                  { label: 'Outbound', value: whatsappData.stats?.outboundCount || 0, icon: '📤' },
+                  { label: 'Delivered', value: whatsappData.stats?.deliveredCount || 0, icon: '📬' },
+                  { label: 'Failed', value: whatsappData.stats?.failedCount || 0, icon: '❌' },
+                  { label: 'Active (24h)', value: whatsappData.stats?.activeConversations || 0, icon: '🟢' },
+                ].map((stat) => (
+                  <div key={stat.label} className="bg-[rgba(10,10,26,0.8)]/60 backdrop-blur-sm rounded-xl border border-green-500/10 p-5 hover:border-green-500/20 transition">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-lg">{stat.icon}</span>
+                      <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">{stat.label}</p>
+                    </div>
+                    <p className="text-3xl font-bold text-white">{stat.value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={loadWhatsApp}
+                  className="px-4 py-2 rounded-xl text-sm font-medium bg-green-600/20 text-green-300 border border-green-500/20 hover:bg-green-600/30 transition"
+                >
+                  Refresh
+                </button>
+              </div>
+
+              <div className="bg-[rgba(10,10,26,0.8)]/60 backdrop-blur-sm rounded-xl border border-blue-500/10 overflow-hidden">
+                <div className="px-5 py-4 border-b border-blue-500/10">
+                  <h3 className="text-sm font-semibold text-white">Recent WhatsApp Messages</h3>
+                </div>
+                <div className="divide-y divide-blue-500/5 max-h-[600px] overflow-y-auto">
+                  {whatsappData.messages?.length > 0 ? whatsappData.messages.map((msg: any) => (
+                    <div key={msg.id} className="px-5 py-3 flex items-start gap-3 hover:bg-blue-900/10 transition">
+                      <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
+                        msg.content?.startsWith('[INBOUND]') ? 'bg-blue-400' : 
+                        msg.status === 'DELIVERED' || msg.status === 'READ' ? 'bg-green-400' : 
+                        msg.status === 'FAILED' ? 'bg-red-400' : 'bg-yellow-400'
+                      }`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="text-xs font-medium text-slate-300">
+                            {msg.user?.name || msg.user?.email || msg.recipientPhone}
+                          </span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                            msg.content?.startsWith('[INBOUND]') ? 'bg-blue-500/20 text-blue-300' : 'bg-green-500/20 text-green-300'
+                          }`}>
+                            {msg.content?.startsWith('[INBOUND]') ? 'IN' : 'OUT'}
+                          </span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                            msg.status === 'DELIVERED' || msg.status === 'READ' ? 'bg-green-500/20 text-green-300' :
+                            msg.status === 'FAILED' ? 'bg-red-500/20 text-red-300' :
+                            msg.status === 'SENT' ? 'bg-yellow-500/20 text-yellow-300' :
+                            'bg-slate-500/20 text-slate-300'
+                          }`}>
+                            {msg.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400 truncate">
+                          {msg.content?.replace('[INBOUND] ', '').substring(0, 120)}
+                        </p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">
+                          {new Date(msg.createdAt).toLocaleString()} &middot; {msg.recipientPhone}
+                        </p>
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="px-5 py-10 text-center text-sm text-slate-500">
+                      No WhatsApp messages yet
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-center py-20">
+              <div className="w-5 h-5 border-2 border-green-400 border-t-transparent rounded-full animate-spin" />
+            </div>
           )}
         </div>
       )}
