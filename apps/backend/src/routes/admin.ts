@@ -12,16 +12,6 @@ import { gupshupService } from '../services/gupshupService';
 
 export const adminRouter = Router();
 
-adminRouter.post('/verify-token', (req: Request, res: Response) => {
-  const { token } = req.body;
-  const adminToken = process.env.ADMIN_SECRET_TOKEN;
-  if (!adminToken || token !== adminToken) {
-    res.status(403).json({ error: 'Invalid token' });
-    return;
-  }
-  res.json({ success: true });
-});
-
 adminRouter.use(authenticate, requireAdmin);
 
 adminRouter.get('/stats', async (_req: Request, res: Response, next: NextFunction) => {
