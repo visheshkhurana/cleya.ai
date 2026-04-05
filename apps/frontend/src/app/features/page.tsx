@@ -84,7 +84,7 @@ export default function FeaturesPage() {
 
       <footer className="border-t border-white/[0.06] mt-16">
         <div className="max-w-6xl mx-auto px-6 lg:px-8 py-8 text-center">
-          <p className="text-xs text-white/30">&copy; 2025 Cleya.ai. All rights reserved.</p>
+          <p className="text-xs text-white/30">&copy; {new Date().getFullYear()} Cleya.ai. All rights reserved.</p>
         </div>
       </footer>
     </AppShell>
