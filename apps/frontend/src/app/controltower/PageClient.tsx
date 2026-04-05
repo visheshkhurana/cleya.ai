@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import PhoneInput from '@/components/PhoneInput';
-import AppShell from '@/components/AppShell';
 
 interface Stats {
   totalUsers: number;
@@ -31,6 +30,13 @@ interface CommData {
 type Tab = 'overview' | 'communications' | 'deals' | 'events' | 'analytics';
 
 export default function AdminDashboard() {
+  const [authenticated, setAuthenticated] = useState(false);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
   const [stats, setStats] = useState<Stats | null>(null);
   const [funnel, setFunnel] = useState<FunnelStep[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -53,11 +59,34 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     api.getMe().then((user) => {
-      if (!user) { router.push('/'); return; }
-      api.setToken('authenticated');
-      loadDashboard();
-    }).catch(() => { router.push('/'); });
+      if (user?.role === 'ADMIN') {
+        api.setToken('authenticated');
+        setAuthenticated(true);
+        loadDashboard();
+      }
+    }).catch(() => {}).finally(() => setCheckingAuth(false));
   }, []);
+
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError('');
+    setLoginLoading(true);
+    try {
+      const data = await api.login(loginEmail, loginPassword);
+      if (data.user?.role !== 'ADMIN') {
+        setLoginError('Access denied. Admin credentials required.');
+        api.logout();
+        return;
+      }
+      api.setToken('authenticated');
+      setAuthenticated(true);
+      loadDashboard();
+    } catch (err: any) {
+      setLoginError(err.message || 'Invalid credentials');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
 
   const loadDashboard = async () => {
     try {
@@ -164,9 +193,73 @@ export default function AdminDashboard() {
     }
   };
 
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0a1a' }}>
+        <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!authenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0a1a' }}>
+        <div className="w-full max-w-sm mx-auto px-6">
+          <div className="text-center mb-8">
+            <div className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center mb-4"
+              style={{ background: 'linear-gradient(135deg, #3B82F6, #6366F1)' }}>
+              <span className="text-white font-bold text-xl">C</span>
+            </div>
+            <h1 className="text-xl font-bold text-white mb-1">Control Tower</h1>
+            <p className="text-sm text-white/40">Cleya.ai Administration</p>
+          </div>
+          <form onSubmit={handleAdminLogin} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wider mb-1.5">Email</label>
+              <input
+                type="email"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                required
+                className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-white/30 outline-none focus:ring-2 focus:ring-blue-500/50 transition"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
+                placeholder="admin@cleya.ai"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wider mb-1.5">Password</label>
+              <input
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                required
+                className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-white/30 outline-none focus:ring-2 focus:ring-blue-500/50 transition"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
+                placeholder="Password"
+              />
+            </div>
+            {loginError && (
+              <div className="text-sm text-red-400 text-center py-2 rounded-lg" style={{ background: 'rgba(239,68,68,0.08)' }}>
+                {loginError}
+              </div>
+            )}
+            <button
+              type="submit"
+              disabled={loginLoading}
+              className="w-full py-3 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50"
+              style={{ background: 'linear-gradient(135deg, #3B82F6, #6366F1)' }}
+            >
+              {loginLoading ? 'Signing in...' : 'Sign In'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0a1a' }}>
         <div className="flex items-center gap-3">
           <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
           <p className="text-blue-300">Loading dashboard...</p>
@@ -177,11 +270,11 @@ export default function AdminDashboard() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0a1a' }}>
         <div className="text-center space-y-4">
           <p className="text-red-400">{error}</p>
           <button
-            onClick={() => router.push('/')}
+            onClick={() => { setAuthenticated(false); setError(null); setLoading(true); }}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition"
           >
             Back to Login
@@ -213,18 +306,22 @@ export default function AdminDashboard() {
   };
 
   return (
-    <AppShell>
-      <header className="glass-header px-6 lg:px-8 py-3 sm:py-4">
+    <div className="min-h-screen" style={{ background: '#0a0a1a', color: '#e2e8f0' }}>
+      <header className="sticky top-0 z-50 px-6 lg:px-8 py-3 sm:py-4" style={{ background: 'rgba(10,10,26,0.9)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-bold flex items-center justify-center shadow-lg shadow-blue-500/20">
-              C
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg"
+              style={{ background: 'linear-gradient(135deg, #3B82F6, #6366F1)', boxShadow: '0 4px 14px rgba(59,130,246,0.25)' }}>
+              <span className="text-white text-sm font-bold">C</span>
             </div>
-            <h1 className="text-base sm:text-lg font-bold text-white">Cleya.ai Admin</h1>
+            <div>
+              <h1 className="text-base sm:text-lg font-bold text-white leading-tight">Control Tower</h1>
+              <p className="text-[10px] text-white/30 uppercase tracking-wider">Cleya.ai Admin</p>
+            </div>
           </div>
           <button
-            onClick={() => { api.logout().then(() => router.push('/')); }}
-            className="text-xs sm:text-sm text-slate-400 hover:text-blue-200 transition"
+            onClick={() => { api.logout().then(() => { setAuthenticated(false); setLoading(true); }); }}
+            className="text-xs sm:text-sm text-slate-400 hover:text-red-300 transition"
           >
             Sign out
           </button>
@@ -1053,6 +1150,6 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
-    </AppShell>
+    </div>
   );
 }
