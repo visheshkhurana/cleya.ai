@@ -45,16 +45,24 @@ if (env.SENTRY_DSN) {
 }
 
 const app = express();
+app.set('trust proxy', 1);
 
-const allowedOrigins = [
-  env.FRONTEND_URL,
-  env.CORS_ORIGIN,
-  'https://boardy-ai-platform.replit.app',
-].filter(Boolean) as string[];
+const allowedOrigins = new Set(
+  [
+    env.FRONTEND_URL,
+    env.CORS_ORIGIN,
+    'https://boardy-ai-platform.replit.app',
+  ].filter(Boolean) as string[]
+);
+
+const REPLIT_DEV_DOMAIN = process.env.REPLIT_DEV_DOMAIN;
+if (REPLIT_DEV_DOMAIN) {
+  allowedOrigins.add(`https://${REPLIT_DEV_DOMAIN}`);
+}
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.some(o => origin.startsWith(o))) {
+    if (!origin || allowedOrigins.has(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));

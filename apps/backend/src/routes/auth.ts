@@ -9,7 +9,23 @@ import { env } from '../config/env';
 
 export const authRouter = Router();
 
-const oauthStates = new Map<string, { createdAt: number }>();
+const ALLOWED_HOSTS = [
+  'boardy-ai-platform.replit.app',
+  env.FRONTEND_URL ? new URL(env.FRONTEND_URL).host : '',
+  process.env.REPLIT_DEV_DOMAIN || '',
+].filter(Boolean);
+
+function getBaseUrl(req: Request): string {
+  const proto = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
+  const host = (req.headers['x-forwarded-host'] as string) || req.headers['host'] || '';
+  const hostOnly = host.split(':')[0];
+  if (ALLOWED_HOSTS.includes(hostOnly)) {
+    return `${proto}://${host}`;
+  }
+  return env.FRONTEND_URL;
+}
+
+const oauthStates = new Map<string, { createdAt: number; baseUrl: string }>();
 setInterval(() => {
   const now = Date.now();
   for (const [key, val] of oauthStates) {
@@ -112,9 +128,10 @@ authRouter.get('/google', (req: Request, res: Response) => {
     res.status(501).json({ success: false, error: { message: 'Google OAuth not configured' } });
     return;
   }
+  const baseUrl = getBaseUrl(req);
   const state = crypto.randomBytes(32).toString('hex');
-  oauthStates.set(state, { createdAt: Date.now() });
-  const redirectUri = `${env.FRONTEND_URL}/api/auth/google/callback`;
+  oauthStates.set(state, { createdAt: Date.now(), baseUrl });
+  const redirectUri = `${baseUrl}/api/auth/google/callback`;
   const params = new URLSearchParams({
     client_id: env.GOOGLE_CLIENT_ID,
     redirect_uri: redirectUri,
@@ -135,12 +152,14 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
     }
     const code = typeof req.query.code === 'string' ? req.query.code : '';
     const state = typeof req.query.state === 'string' ? req.query.state : '';
-    if (!code || !state || !oauthStates.has(state) || !env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+    const stateData = oauthStates.get(state);
+    if (!code || !state || !stateData || !env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
       res.redirect(`${env.FRONTEND_URL}/?error=google_auth_failed`);
       return;
     }
+    const baseUrl = stateData.baseUrl;
     oauthStates.delete(state);
-    const redirectUri = `${env.FRONTEND_URL}/api/auth/google/callback`;
+    const redirectUri = `${baseUrl}/api/auth/google/callback`;
     const tokenBody = new URLSearchParams({
       code,
       client_id: env.GOOGLE_CLIENT_ID,
@@ -155,7 +174,7 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
     });
     const tokenData: any = await tokenRes.json();
     if (!tokenData.access_token) {
-      res.redirect(`${env.FRONTEND_URL}/?error=google_token_failed`);
+      res.redirect(`${baseUrl}/?error=google_token_failed`);
       return;
     }
     const profileRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
@@ -163,7 +182,7 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
     });
     const profile: any = await profileRes.json();
     if (!profile.email || !profile.verified_email) {
-      res.redirect(`${env.FRONTEND_URL}/?error=google_no_verified_email`);
+      res.redirect(`${baseUrl}/?error=google_no_verified_email`);
       return;
     }
     const result = await authService.findOrCreateGoogleUser({
@@ -177,7 +196,7 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
     setAuthCookie(res, result.token);
     const profileComplete = result.user.profile?.isComplete;
     const dest = (result.user.role as string).toLowerCase() === 'admin' ? '/admin' : profileComplete ? '/dashboard' : '/chat';
-    res.redirect(`${env.FRONTEND_URL}${dest}`);
+    res.redirect(`${baseUrl}${dest}`);
   } catch (err) {
     console.error('Google OAuth error:', err);
     res.redirect(`${env.FRONTEND_URL}/?error=google_auth_error`);
@@ -196,9 +215,10 @@ authRouter.get('/linkedin', (req: Request, res: Response) => {
     res.status(501).json({ success: false, error: { message: 'LinkedIn OAuth not configured' } });
     return;
   }
+  const baseUrl = getBaseUrl(req);
   const state = crypto.randomBytes(32).toString('hex');
-  oauthStates.set(state, { createdAt: Date.now() });
-  const redirectUri = `${env.FRONTEND_URL}/api/auth/linkedin/callback`;
+  oauthStates.set(state, { createdAt: Date.now(), baseUrl });
+  const redirectUri = `${baseUrl}/api/auth/linkedin/callback`;
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: env.LINKEDIN_CLIENT_ID,
@@ -217,12 +237,14 @@ authRouter.get('/linkedin/callback', async (req: Request, res: Response) => {
     }
     const code = typeof req.query.code === 'string' ? req.query.code : '';
     const state = typeof req.query.state === 'string' ? req.query.state : '';
-    if (!code || !state || !oauthStates.has(state) || !env.LINKEDIN_CLIENT_ID || !env.LINKEDIN_CLIENT_SECRET) {
+    const stateData = oauthStates.get(state);
+    if (!code || !state || !stateData || !env.LINKEDIN_CLIENT_ID || !env.LINKEDIN_CLIENT_SECRET) {
       res.redirect(`${env.FRONTEND_URL}/?error=linkedin_auth_failed`);
       return;
     }
+    const baseUrl = stateData.baseUrl;
     oauthStates.delete(state);
-    const redirectUri = `${env.FRONTEND_URL}/api/auth/linkedin/callback`;
+    const redirectUri = `${baseUrl}/api/auth/linkedin/callback`;
     const tokenRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -236,13 +258,13 @@ authRouter.get('/linkedin/callback', async (req: Request, res: Response) => {
     });
     if (!tokenRes.ok) {
       console.error('LinkedIn token exchange HTTP error:', tokenRes.status);
-      res.redirect(`${env.FRONTEND_URL}/?error=linkedin_token_failed`);
+      res.redirect(`${baseUrl}/?error=linkedin_token_failed`);
       return;
     }
     const tokenData: any = await tokenRes.json();
     if (!tokenData.access_token) {
       console.error('LinkedIn token exchange failed:', tokenData);
-      res.redirect(`${env.FRONTEND_URL}/?error=linkedin_token_failed`);
+      res.redirect(`${baseUrl}/?error=linkedin_token_failed`);
       return;
     }
 
@@ -251,13 +273,13 @@ authRouter.get('/linkedin/callback', async (req: Request, res: Response) => {
     });
     if (!profileRes.ok) {
       console.error('LinkedIn userinfo HTTP error:', profileRes.status);
-      res.redirect(`${env.FRONTEND_URL}/?error=linkedin_no_email`);
+      res.redirect(`${baseUrl}/?error=linkedin_no_email`);
       return;
     }
     const profile: any = await profileRes.json();
 
     if (!profile.email || !profile.sub) {
-      res.redirect(`${env.FRONTEND_URL}/?error=linkedin_no_email`);
+      res.redirect(`${baseUrl}/?error=linkedin_no_email`);
       return;
     }
 
@@ -317,7 +339,7 @@ authRouter.get('/linkedin/callback', async (req: Request, res: Response) => {
     setAuthCookie(res, result.token);
     const profileComplete = result.user.profile?.isComplete;
     const dest = (result.user.role as string).toLowerCase() === 'admin' ? '/admin' : profileComplete ? '/dashboard' : '/chat';
-    res.redirect(`${env.FRONTEND_URL}${dest}`);
+    res.redirect(`${baseUrl}${dest}`);
   } catch (err) {
     console.error('LinkedIn OAuth error:', err);
     res.redirect(`${env.FRONTEND_URL}/?error=linkedin_auth_error`);
