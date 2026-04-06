@@ -3,15 +3,17 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { api } from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
+
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-  { href: '/matches', label: 'Matches', icon: '🤝' },
-  { href: '/messages', label: 'Messages', icon: '💬' },
-  { href: '/introductions', label: 'Introductions', icon: '📨' },
-  { href: '/secretary', label: 'AI Secretary', icon: '🤖' },
-  { href: '/chat', label: 'Onboarding Chat', icon: '💭' },
-  { href: '/profile', label: 'Profile', icon: '👤' },
-  { href: '/settings', label: 'Settings', icon: '⚙️' },
+  { href: '/dashboard', labelKey: 'nav.dashboard', icon: '📊' },
+  { href: '/matches', labelKey: 'nav.matches', icon: '🤝' },
+  { href: '/messages', labelKey: 'nav.messages', icon: '💬' },
+  { href: '/introductions', labelKey: 'nav.introductions', icon: '📨' },
+  { href: '/secretary', labelKey: 'nav.secretary', icon: '🤖' },
+  { href: '/chat', labelKey: 'nav.onboardingChat', icon: '💭' },
+  { href: '/profile', labelKey: 'nav.profile', icon: '👤' },
+  { href: '/settings', labelKey: 'nav.settings', icon: '⚙️' },
 ];
 
 export default function MobileNav() {
@@ -21,6 +23,7 @@ export default function MobileNav() {
   const closeRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
   const pathname = usePathname();
+  const { t } = useTranslation();
 
   useEffect(() => {
     setOpen(false);
@@ -141,7 +144,7 @@ export default function MobileNav() {
                     aria-current={isActive ? 'page' : undefined}
                   >
                     <span className="text-base" aria-hidden="true">{item.icon}</span>
-                    {item.label}
+                    {t(item.labelKey)}
                   </button>
                 );
               })}
@@ -153,7 +156,7 @@ export default function MobileNav() {
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400/60 hover:text-red-400 hover:bg-red-500/5 transition"
               >
                 <span className="text-base" aria-hidden="true">🚪</span>
-                Sign Out
+                {t('nav.signOut')}
               </button>
             </div>
           </div>

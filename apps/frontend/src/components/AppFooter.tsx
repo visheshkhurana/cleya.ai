@@ -1,12 +1,14 @@
 'use client';
 import Link from 'next/link';
+import { useTranslation } from '@/lib/i18n';
 
 export default function AppFooter() {
+  const { t } = useTranslation();
+
   return (
     <footer className="border-t border-white/[0.04] py-10 mt-auto" style={{ background: '#050510' }}>
       <div className="max-w-6xl mx-auto px-6">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-8">
-          {/* Brand */}
           <div className="col-span-2 sm:col-span-1">
             <Link href="/" className="flex items-center gap-2.5 mb-3">
               <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
@@ -15,19 +17,18 @@ export default function AppFooter() {
               <span className="text-white/60 font-medium text-xs">Cleya.ai</span>
             </Link>
             <p className="text-[11px] leading-relaxed" style={{ color: '#475569' }}>
-              AI-powered networking for India&apos;s startup ecosystem.
+              {t('footer.tagline')}
             </p>
           </div>
 
-          {/* Product */}
           <div>
-            <h4 className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3">Product</h4>
+            <h4 className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3">{t('footer.navigate')}</h4>
             <div className="space-y-2">
               {[
-                { label: 'Features', href: '/features' },
-                { label: 'Pricing', href: '/pricing' },
-                { label: 'About', href: '/about' },
-                { label: 'Blog', href: '/blog' },
+                { label: t('nav.dashboard'), href: '/dashboard' },
+                { label: t('nav.matches'), href: '/matches' },
+                { label: t('nav.profile'), href: '/profile' },
+                { label: t('nav.introductions'), href: '/introductions' },
               ].map((link) => (
                 <Link key={link.href} href={link.href} className="block text-[11px] transition-colors hover:text-white/60" style={{ color: '#64748B' }}>
                   {link.label}
@@ -36,17 +37,14 @@ export default function AppFooter() {
             </div>
           </div>
 
-          {/* Cities */}
           <div>
-            <h4 className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3">Cities</h4>
+            <h4 className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3">{t('footer.product')}</h4>
             <div className="space-y-2">
               {[
-                { label: 'Bangalore', href: '/cities/bangalore' },
-                { label: 'Mumbai', href: '/cities/mumbai' },
-                { label: 'Delhi NCR', href: '/cities/delhi' },
-                { label: 'Hyderabad', href: '/cities/hyderabad' },
-                { label: 'Pune', href: '/cities/pune' },
-                { label: 'Chennai', href: '/cities/chennai' },
+                { label: t('nav.features'), href: '/features' },
+                { label: t('nav.pricing'), href: '/pricing' },
+                { label: t('nav.about'), href: '/about' },
+                { label: t('nav.blog'), href: '/blog' },
               ].map((link) => (
                 <Link key={link.href} href={link.href} className="block text-[11px] transition-colors hover:text-white/60" style={{ color: '#64748B' }}>
                   {link.label}
@@ -55,14 +53,13 @@ export default function AppFooter() {
             </div>
           </div>
 
-          {/* Legal & Contact */}
           <div>
-            <h4 className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3">Company</h4>
+            <h4 className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-3">{t('footer.company')}</h4>
             <div className="space-y-2">
               {[
-                { label: 'Contact', href: '/contact' },
-                { label: 'Privacy Policy', href: '/privacy' },
-                { label: 'Terms of Service', href: '/terms' },
+                { label: t('nav.contact'), href: '/contact' },
+                { label: t('footer.privacyPolicy'), href: '/privacy' },
+                { label: t('footer.termsOfService'), href: '/terms' },
               ].map((link) => (
                 <Link key={link.href} href={link.href} className="block text-[11px] transition-colors hover:text-white/60" style={{ color: '#64748B' }}>
                   {link.label}
@@ -77,10 +74,10 @@ export default function AppFooter() {
 
         <div className="border-t border-white/[0.04] pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-[11px]" style={{ color: '#475569' }}>
-            &copy; {new Date().getFullYear()} Cleya.ai. All rights reserved.
+            {t('footer.copyright')}
           </p>
           <p className="text-[11px]" style={{ color: '#475569' }}>
-            Bangalore, India
+            {t('footer.location')}
           </p>
         </div>
       </div>

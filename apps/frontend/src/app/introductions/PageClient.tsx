@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import AppNav from '@/components/AppNav';
+import AppFooter from '@/components/AppFooter';
 import NotificationCenter from '@/components/NotificationCenter';
+import { useTranslation } from '@/lib/i18n';
 
 interface IntroData {
   id: string;
@@ -30,22 +32,22 @@ const personaIcon: Record<string, string> = {
   OPERATOR: '⚙️', JOB_SEEKER: '💼', RECRUITER: '👔', FREELANCER: '✨', OTHER: '💬',
 };
 
-const statusConfig: Record<string, { bg: string; text: string; label: string; icon: string }> = {
-  PENDING_APPROVAL: { bg: 'rgba(245,158,11,0.15)', text: '#fbbf24', label: 'Review Required', icon: '⏳' },
-  APPROVED: { bg: 'rgba(59,130,246,0.15)', text: '#93c5fd', label: 'Approved', icon: '✅' },
-  SENT: { bg: 'rgba(59,130,246,0.15)', text: '#93C5FD', label: 'Sent', icon: '📤' },
-  VIEWED: { bg: 'rgba(59,130,246,0.15)', text: '#93c5fd', label: 'Viewed', icon: '👀' },
-  RESPONDED: { bg: 'rgba(16,185,129,0.15)', text: '#6ee7b7', label: 'Responded', icon: '💬' },
-  FOLLOWED_UP: { bg: 'rgba(245,158,11,0.15)', text: '#fbbf24', label: 'Follow-up Sent', icon: '🔔' },
-  COMPLETED: { bg: 'rgba(16,185,129,0.2)', text: '#10B981', label: 'Completed', icon: '🎉' },
-  CANCELLED: { bg: 'rgba(239,68,68,0.15)', text: '#f87171', label: 'Cancelled', icon: '✖' },
+const statusStyles: Record<string, { bg: string; text: string; labelKey: string; icon: string }> = {
+  PENDING_APPROVAL: { bg: 'rgba(245,158,11,0.15)', text: '#fbbf24', labelKey: 'intro.statusReview', icon: '⏳' },
+  APPROVED: { bg: 'rgba(59,130,246,0.15)', text: '#93c5fd', labelKey: 'intro.statusApproved', icon: '✅' },
+  SENT: { bg: 'rgba(59,130,246,0.15)', text: '#93C5FD', labelKey: 'intro.statusSent', icon: '📤' },
+  VIEWED: { bg: 'rgba(59,130,246,0.15)', text: '#93c5fd', labelKey: 'intro.statusViewed', icon: '👀' },
+  RESPONDED: { bg: 'rgba(16,185,129,0.15)', text: '#6ee7b7', labelKey: 'intro.statusResponded', icon: '💬' },
+  FOLLOWED_UP: { bg: 'rgba(245,158,11,0.15)', text: '#fbbf24', labelKey: 'intro.statusFollowedUp', icon: '🔔' },
+  COMPLETED: { bg: 'rgba(16,185,129,0.2)', text: '#10B981', labelKey: 'intro.statusCompleted', icon: '🎉' },
+  CANCELLED: { bg: 'rgba(239,68,68,0.15)', text: '#f87171', labelKey: 'intro.statusCancelled', icon: '✖' },
 };
 
-const outcomeLabels: Record<string, { label: string; icon: string; color: string }> = {
-  GREAT_MEETING: { label: 'Great meeting', icon: '🎉', color: '#10B981' },
-  GOOD_CHAT: { label: 'Good chat', icon: '👍', color: '#3B82F6' },
-  DIDNT_MEET: { label: "Didn't meet", icon: '😕', color: '#f59e0b' },
-  NOT_A_FIT: { label: 'Not a fit', icon: '🤷', color: '#ef4444' },
+const outcomeKeys: Record<string, { labelKey: string; icon: string; color: string }> = {
+  GREAT_MEETING: { labelKey: 'intro.greatMeeting', icon: '🎉', color: '#10B981' },
+  GOOD_CHAT: { labelKey: 'intro.goodChat', icon: '👍', color: '#3B82F6' },
+  DIDNT_MEET: { labelKey: 'intro.didntMeet', icon: '😕', color: '#f59e0b' },
+  NOT_A_FIT: { labelKey: 'intro.notAFit', icon: '🤷', color: '#ef4444' },
 };
 
 export default function IntroductionsPage() {
@@ -58,6 +60,7 @@ export default function IntroductionsPage() {
   const [actionLoading, setActionLoading] = useState('');
   const [showOutcomeModal, setShowOutcomeModal] = useState(false);
   const router = useRouter();
+  const { t } = useTranslation();
 
   useEffect(() => {
     api.getMe().then((user) => {
@@ -94,7 +97,7 @@ export default function IntroductionsPage() {
       await loadData();
       setSelectedIntro(null);
     } catch (e: any) {
-      alert(e.message || 'Failed to approve');
+      alert(e.message || t('common.error'));
     } finally {
       setActionLoading('');
     }
@@ -102,7 +105,7 @@ export default function IntroductionsPage() {
 
   const handleSaveEdit = async (intro: IntroData) => {
     if (!editText.trim() || editText.trim().length < 10) {
-      alert('Introduction text must be at least 10 characters');
+      alert(t('intro.editMinLength'));
       return;
     }
     setActionLoading('edit');
@@ -113,21 +116,21 @@ export default function IntroductionsPage() {
       const updated = introductions.find(i => i.id === intro.id);
       if (updated) setSelectedIntro({ ...updated, introText: editText.trim() });
     } catch (e: any) {
-      alert(e.message || 'Failed to save edit');
+      alert(e.message || t('common.error'));
     } finally {
       setActionLoading('');
     }
   };
 
   const handleCancel = async (intro: IntroData) => {
-    if (!confirm('Are you sure you want to cancel this introduction?')) return;
+    if (!confirm(t('intro.confirmCancel'))) return;
     setActionLoading('cancel');
     try {
       await api.cancelIntroduction(intro.id);
       await loadData();
       setSelectedIntro(null);
     } catch (e: any) {
-      alert(e.message || 'Failed to cancel');
+      alert(e.message || t('common.error'));
     } finally {
       setActionLoading('');
     }
@@ -141,7 +144,7 @@ export default function IntroductionsPage() {
       await loadData();
       setSelectedIntro(null);
     } catch (e: any) {
-      alert(e.message || 'Failed to record outcome');
+      alert(e.message || t('common.error'));
     } finally {
       setActionLoading('');
     }
@@ -155,7 +158,7 @@ export default function IntroductionsPage() {
       <AppShell>
         <div className="flex items-center gap-3">
           <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-          <p className="text-white/40 text-sm">Loading introductions...</p>
+          <p className="text-white/40 text-sm">{t('common.loading')}</p>
         </div>
       </AppShell>
     );
@@ -165,10 +168,10 @@ export default function IntroductionsPage() {
     <AppShell>
       <AppNav rightContent={<NotificationCenter />} />
       <div className="max-w-5xl mx-auto px-6 lg:px-8 pt-3 flex items-center gap-3">
-        <h2 className="font-semibold text-white text-sm">Introductions</h2>
+        <h2 className="font-semibold text-white text-sm">{t('intro.title')}</h2>
         {pendingCount > 0 && (
           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(245,158,11,0.2)', color: '#fbbf24' }}>
-            {pendingCount} to review
+            {pendingCount} {t('intro.toReview')}
           </span>
         )}
       </div>
@@ -177,13 +180,13 @@ export default function IntroductionsPage() {
         {introductions.length === 0 ? (
           <div className="text-center py-16">
             <span className="text-5xl block mb-4">🤝</span>
-            <h3 className="text-white font-semibold mb-2">No introductions yet</h3>
-            <p className="text-white/40 text-sm mb-2">When both sides accept a match, Cleya drafts a warm introduction.</p>
-            <p className="text-white/30 text-xs mb-6">You'll be able to preview and approve it before it's sent.</p>
+            <h3 className="text-white font-semibold mb-2">{t('intro.noIntros')}</h3>
+            <p className="text-white/40 text-sm mb-2">{t('intro.noIntrosDesc')}</p>
+            <p className="text-white/30 text-xs mb-6">{t('intro.noIntrosHint')}</p>
             <button onClick={() => router.push('/matches')}
               className="px-5 py-2.5 rounded-xl text-sm font-medium text-white transition"
               style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
-              View Matches
+              {t('intro.viewMatches')}
             </button>
           </div>
         ) : (
@@ -191,8 +194,7 @@ export default function IntroductionsPage() {
             {pendingCount > 0 && (
               <div className="rounded-xl border p-4 mb-6" style={{ background: 'rgba(245,158,11,0.05)', borderColor: 'rgba(245,158,11,0.15)' }}>
                 <p className="text-sm text-amber-300/80">
-                  ⏳ You have <strong>{pendingCount}</strong> introduction{pendingCount !== 1 ? 's' : ''} waiting for your review. 
-                  Introductions auto-send after 48 hours if not reviewed.
+                  ⏳ {t('intro.pendingNoticeText').replace('{count}', String(pendingCount))}
                 </p>
               </div>
             )}
@@ -200,20 +202,19 @@ export default function IntroductionsPage() {
             {activeCount > 0 && (
               <div className="rounded-xl border p-4 mb-6" style={{ background: 'rgba(59,130,246,0.05)', borderColor: 'rgba(59,130,246,0.15)' }}>
                 <p className="text-sm text-blue-300/80">
-                  📤 You have <strong>{activeCount}</strong> active introduction{activeCount !== 1 ? 's' : ''} out there. 
-                  Share how they went when you're ready!
+                  📤 {t('intro.activeNoticeText').replace('{count}', String(activeCount))}
                 </p>
               </div>
             )}
 
             <div className="space-y-3">
               <p className="text-xs font-medium uppercase tracking-wider text-white/30 mb-3">
-                {introductions.length} introduction{introductions.length !== 1 ? 's' : ''}
+                {t('intro.introCount').replace('{count}', String(introductions.length))}
               </p>
               {introductions.map((intro) => {
                 const other = getOtherUser(intro);
                 const profile = other.profile;
-                const sc = statusConfig[intro.status] || statusConfig.SENT;
+                const sc = statusStyles[intro.status] || statusStyles.SENT;
                 const otherName = other.name || profile?.currentRole || other.email.split('@')[0];
 
                 return (
@@ -230,12 +231,12 @@ export default function IntroductionsPage() {
                           <h3 className="font-semibold text-white text-sm truncate">{otherName}</h3>
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1"
                             style={{ background: sc.bg, color: sc.text }}>
-                            <span>{sc.icon}</span> {sc.label}
+                            <span>{sc.icon}</span> {t(sc.labelKey)}
                           </span>
                           {intro.outcome && (
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold"
-                              style={{ background: `${outcomeLabels[intro.outcome]?.color}15`, color: outcomeLabels[intro.outcome]?.color }}>
-                              {outcomeLabels[intro.outcome]?.icon} {outcomeLabels[intro.outcome]?.label}
+                              style={{ background: `${outcomeKeys[intro.outcome]?.color}15`, color: outcomeKeys[intro.outcome]?.color }}>
+                              {outcomeKeys[intro.outcome]?.icon} {t(outcomeKeys[intro.outcome]?.labelKey)}
                             </span>
                           )}
                         </div>
@@ -245,8 +246,8 @@ export default function IntroductionsPage() {
                         )}
                         <p className="text-[10px] text-white/20 mt-2">
                           {intro.sentAt
-                            ? `Sent ${new Date(intro.sentAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-                            : `Created ${new Date(intro.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                            ? `${t('intro.sent')} ${new Date(intro.sentAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                            : `${t('intro.created')} ${new Date(intro.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
                           }
                         </p>
                       </div>
@@ -280,6 +281,7 @@ export default function IntroductionsPage() {
           onRecordOutcome={(outcome) => handleOutcome(selectedIntro, outcome)}
         />
       )}
+      <AppFooter />
     </AppShell>
   );
 }
@@ -296,10 +298,11 @@ function IntroDetailModal({
   onCancel: () => void; onShowOutcome: () => void; onHideOutcome: () => void;
   onRecordOutcome: (o: string) => void;
 }) {
+  const { t } = useTranslation();
   const other = me ? (intro.userA.id === me.id ? intro.userB : intro.userA) : intro.userB;
   const profile = other.profile;
   const otherName = other.name || profile?.currentRole || other.email.split('@')[0];
-  const sc = statusConfig[intro.status] || statusConfig.SENT;
+  const sc = statusStyles[intro.status] || statusStyles.SENT;
   const isPending = intro.status === 'PENDING_APPROVAL';
   const canFeedback = ['SENT', 'VIEWED', 'FOLLOWED_UP'].includes(intro.status);
   const autoApproveDate = new Date(new Date(intro.createdAt).getTime() + 48 * 60 * 60 * 1000);
@@ -326,12 +329,12 @@ function IntroDetailModal({
           <div className="flex items-center gap-2 mt-3">
             <span className="px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1"
               style={{ background: sc.bg, color: sc.text }}>
-              {sc.icon} {sc.label}
+              {sc.icon} {t(sc.labelKey)}
             </span>
             {intro.outcome && (
               <span className="px-2.5 py-1 rounded-full text-[11px] font-bold"
-                style={{ background: `${outcomeLabels[intro.outcome]?.color}15`, color: outcomeLabels[intro.outcome]?.color }}>
-                {outcomeLabels[intro.outcome]?.icon} {outcomeLabels[intro.outcome]?.label}
+                style={{ background: `${outcomeKeys[intro.outcome]?.color}15`, color: outcomeKeys[intro.outcome]?.color }}>
+                {outcomeKeys[intro.outcome]?.icon} {t(outcomeKeys[intro.outcome]?.labelKey)}
               </span>
             )}
           </div>
@@ -341,14 +344,14 @@ function IntroDetailModal({
           {isPending && hoursUntilAuto > 0 && (
             <div className="rounded-xl border p-3" style={{ background: 'rgba(245,158,11,0.05)', borderColor: 'rgba(245,158,11,0.15)' }}>
               <p className="text-xs text-amber-300/70">
-                ⏰ This introduction will auto-send in ~{hoursUntilAuto} hours if not reviewed.
+                ⏰ {t('intro.autoSendHours').replace('{hours}', String(hoursUntilAuto))}
               </p>
             </div>
           )}
 
           {intro.introText && (
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-white/30 mb-2 font-medium">Introduction Preview</p>
+              <p className="text-[10px] uppercase tracking-wider text-white/30 mb-2 font-medium">{t('intro.preview')}</p>
               <div className="rounded-xl border p-4" style={{ background: 'rgba(59,130,246,0.03)', borderColor: 'rgba(59,130,246,0.1)' }}>
                 {editMode ? (
                   <textarea
@@ -366,7 +369,7 @@ function IntroDetailModal({
 
           {intro.talkingPoints && intro.talkingPoints.length > 0 && !editMode && (
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-white/30 mb-2 font-medium">Talking Points</p>
+              <p className="text-[10px] uppercase tracking-wider text-white/30 mb-2 font-medium">{t('intro.talkingPoints')}</p>
               <div className="space-y-2">
                 {intro.talkingPoints.map((tp, i) => (
                   <div key={i} className="flex gap-2 text-sm">
@@ -380,7 +383,7 @@ function IntroDetailModal({
 
           {other.email && intro.status !== 'PENDING_APPROVAL' && intro.status !== 'CANCELLED' && (
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-white/30 mb-2 font-medium">Contact</p>
+              <p className="text-[10px] uppercase tracking-wider text-white/30 mb-2 font-medium">{t('intro.contact')}</p>
               <div className="space-y-1">
                 <p className="text-sm text-white/50">📧 {other.email}</p>
                 {profile?.linkedinUrl && <p className="text-sm text-white/50">🔗 {profile.linkedinUrl}</p>}
@@ -390,8 +393,8 @@ function IntroDetailModal({
           )}
 
           <div className="text-[10px] text-white/20 space-y-1">
-            <p>Created: {new Date(intro.createdAt).toLocaleString()}</p>
-            {intro.sentAt && <p>Sent: {new Date(intro.sentAt).toLocaleString()}</p>}
+            <p>{t('intro.created')}: {new Date(intro.createdAt).toLocaleString()}</p>
+            {intro.sentAt && <p>{t('intro.sent')}: {new Date(intro.sentAt).toLocaleString()}</p>}
           </div>
         </div>
 
@@ -401,11 +404,11 @@ function IntroDetailModal({
               <button onClick={onApprove} disabled={actionLoading === 'approve'}
                 className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
-                {actionLoading === 'approve' ? 'Sending...' : '✓ Approve & Send'}
+                {actionLoading === 'approve' ? t('intro.sending') : `✓ ${t('intro.approve')}`}
               </button>
               <button onClick={onStartEdit}
                 className="px-4 py-2.5 rounded-xl text-sm font-medium text-white/60 hover:text-white/80 transition border border-white/10 hover:border-white/20">
-                ✏️ Edit
+                ✏️ {t('intro.edit')}
               </button>
             </div>
           )}
@@ -415,11 +418,11 @@ function IntroDetailModal({
               <button onClick={onSaveEdit} disabled={actionLoading === 'edit'}
                 className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
-                {actionLoading === 'edit' ? 'Saving...' : 'Save Changes'}
+                {actionLoading === 'edit' ? t('intro.saving') : t('intro.saveChanges')}
               </button>
               <button onClick={onCancelEdit}
                 className="px-4 py-2.5 rounded-xl text-sm font-medium text-white/40 hover:text-white/60 transition">
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           )}
@@ -428,26 +431,26 @@ function IntroDetailModal({
             <button onClick={onShowOutcome}
               className="w-full py-2.5 rounded-xl text-sm font-semibold text-white transition"
               style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
-              How did it go? Share feedback
+              {t('intro.howDidItGo')}
             </button>
           )}
 
           {showOutcomeModal && (
             <div className="space-y-2">
-              <p className="text-xs text-white/40 text-center mb-3">How did your conversation go?</p>
+              <p className="text-xs text-white/40 text-center mb-3">{t('intro.howWasConversation')}</p>
               <div className="grid grid-cols-2 gap-2">
-                {Object.entries(outcomeLabels).map(([key, val]) => (
+                {Object.entries(outcomeKeys).map(([key, val]) => (
                   <button key={key} onClick={() => onRecordOutcome(key)}
                     disabled={actionLoading === 'outcome'}
                     className="py-3 rounded-xl text-sm font-medium text-white/70 hover:text-white transition border border-white/10 hover:border-white/20 disabled:opacity-50"
                     style={{ background: 'rgba(10,10,26,0.85)' }}>
                     <span className="block text-lg mb-1">{val.icon}</span>
-                    {val.label}
+                    {t(val.labelKey)}
                   </button>
                 ))}
               </div>
               <button onClick={onHideOutcome} className="w-full text-center text-xs text-white/30 hover:text-white/50 mt-2 py-1">
-                Not now
+                {t('intro.notNow')}
               </button>
             </div>
           )}
@@ -455,13 +458,13 @@ function IntroDetailModal({
           {isPending && !editMode && (
             <button onClick={onCancel} disabled={actionLoading === 'cancel'}
               className="w-full py-2 rounded-xl text-xs text-red-400/50 hover:text-red-400/80 transition disabled:opacity-50">
-              {actionLoading === 'cancel' ? 'Cancelling...' : 'Cancel Introduction'}
+              {actionLoading === 'cancel' ? t('intro.cancelling') : t('intro.cancel')}
             </button>
           )}
 
           {intro.status === 'COMPLETED' && intro.outcome && (
             <div className="text-center py-2">
-              <p className="text-xs text-white/30">Thanks for your feedback! This helps Cleya make better matches.</p>
+              <p className="text-xs text-white/30">{t('intro.thanksFeedback')}</p>
             </div>
           )}
         </div>

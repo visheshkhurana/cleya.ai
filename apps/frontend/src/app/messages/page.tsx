@@ -3,7 +3,9 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import AppNav from '@/components/AppNav';
+import AppFooter from '@/components/AppFooter';
 import AppShell from '@/components/AppShell';
+import { useTranslation } from '@/lib/i18n';
 
 interface Partner {
   id: string;
@@ -48,6 +50,7 @@ export default function MessagesPage() {
   const wsRef = useRef<WebSocket | null>(null);
   const [typing, setTyping] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const { t } = useTranslation();
 
   useEffect(() => {
     api.getMe().then((user) => {
@@ -157,18 +160,18 @@ export default function MessagesPage() {
       <div className="flex-1 flex max-w-5xl mx-auto px-6 lg:px-8 w-full">
         <div className={`w-full sm:w-80 border-r border-white/5 flex-shrink-0 ${selectedPartner ? 'hidden sm:block' : ''}`}>
           <div className="p-3 border-b border-white/5">
-            <p className="text-xs font-medium uppercase tracking-wider text-white/30">Conversations</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-white/30">{t('messages.title')}</p>
           </div>
           {conversations.length === 0 ? (
             <div className="p-6 text-center">
               <p className="text-5xl mb-4">💬</p>
-              <p className="text-sm text-white/40">No messages yet</p>
+              <p className="text-sm text-white/40">{t('messages.noConversations')}</p>
               <p className="text-xs mt-2" style={{ color: '#94A3B8' }}>
-                Accept a match to start messaging
+                {t('messages.noConversationsDesc')}
               </p>
               <button onClick={() => router.push('/matches')}
                 className="mt-4 px-4 py-2 rounded-lg text-xs font-medium text-blue-300 border border-blue-500/20 hover:bg-blue-500/5 transition">
-                View Matches
+                {t('intro.viewMatches')}
               </button>
             </div>
           ) : (
@@ -208,7 +211,7 @@ export default function MessagesPage() {
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
                 <p className="text-5xl mb-4">💬</p>
-                <p className="text-sm text-white/40">Select a conversation to start messaging</p>
+                <p className="text-sm text-white/40">{t('messages.selectConversation')}</p>
               </div>
             </div>
           ) : (
@@ -225,7 +228,7 @@ export default function MessagesPage() {
                   <p className="text-sm font-medium text-white">
                     {selectedConvo ? getPartnerDisplay(selectedConvo.partner) : ''}
                   </p>
-                  {typing && <p className="text-[10px]" style={{ color: '#93C5FD' }}>typing...</p>}
+                  {typing && <p className="text-[10px]" style={{ color: '#93C5FD' }}>{t('messages.typing')}</p>}
                 </div>
               </div>
 
@@ -258,7 +261,7 @@ export default function MessagesPage() {
                     value={newMessage}
                     onChange={(e) => { setNewMessage(e.target.value); handleTyping(); }}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                    placeholder="Type a message..."
+                    placeholder={t('messages.typePlaceholder')}
                     className="flex-1 px-4 py-2.5 rounded-xl text-sm text-white placeholder:text-white/20 border border-white/5 focus:border-blue-500/30 focus:outline-none transition"
                     style={{ background: 'rgba(10,10,26,0.8)' }}
                   />
@@ -267,7 +270,7 @@ export default function MessagesPage() {
                     disabled={!newMessage.trim() || sending}
                     className="px-4 py-2.5 rounded-xl text-sm font-medium text-white transition disabled:opacity-30"
                     style={{ background: '#3B82F6' }}>
-                    {sending ? '...' : 'Send'}
+                    {sending ? '...' : t('messages.send')}
                   </button>
                 </div>
               </div>
@@ -275,6 +278,7 @@ export default function MessagesPage() {
           )}
         </div>
       </div>
+      <AppFooter />
     </AppShell>
   );
 }

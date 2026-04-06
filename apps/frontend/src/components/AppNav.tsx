@@ -2,14 +2,16 @@
 
 import { useRouter, usePathname } from 'next/navigation';
 import MobileNav from './MobileNav';
+import LanguageSwitcher from './LanguageSwitcher';
+import { useTranslation } from '@/lib/i18n';
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard' },
-  { href: '/matches', label: 'Matches' },
-  { href: '/introductions', label: 'Intros' },
-  { href: '/secretary', label: 'AI Secretary' },
-  { href: '/profile', label: 'Profile' },
-  { href: '/settings', label: 'Settings' },
+  { href: '/dashboard', labelKey: 'nav.dashboard' },
+  { href: '/matches', labelKey: 'nav.matches' },
+  { href: '/introductions', labelKey: 'nav.introductions' },
+  { href: '/chat', labelKey: 'nav.chat' },
+  { href: '/profile', labelKey: 'nav.profile' },
+  { href: '/settings', labelKey: 'nav.settings' },
 ];
 
 interface AppNavProps {
@@ -19,6 +21,7 @@ interface AppNavProps {
 export default function AppNav({ rightContent }: AppNavProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const { t } = useTranslation();
 
   return (
     <header className="glass-header">
@@ -46,12 +49,13 @@ export default function AppNav({ rightContent }: AppNavProps) {
                 }`}
                 style={isActive ? { background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)' } : {}}
               >
-                {item.label}
+                {t(item.labelKey)}
               </button>
             );
           })}
         </div>
         <div className="flex items-center gap-2">
+          <LanguageSwitcher />
           {rightContent}
           <div className="md:hidden"><MobileNav /></div>
         </div>

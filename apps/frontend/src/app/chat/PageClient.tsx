@@ -7,6 +7,10 @@ import { ChoiceButtons } from '@/components/chat/ChoiceButtons';
 import { DynamicForm } from '@/components/forms/DynamicForm';
 import { TypingIndicator } from '@/components/chat/TypingIndicator';
 import AppShell from '@/components/AppShell';
+import AppNav from '@/components/AppNav';
+import AppFooter from '@/components/AppFooter';
+import NotificationCenter from '@/components/NotificationCenter';
+import { useTranslation } from '@/lib/i18n';
 
 interface Message {
   sender: 'AI' | 'USER';
@@ -85,15 +89,7 @@ const ONBOARDING_STEP_MAP: Record<string, number> = {
   completion: 6,
 };
 const ONBOARDING_TOTAL_STEPS = 6;
-const ONBOARDING_STEP_LABELS = ['Welcome', 'About You', 'Details', 'Preferences', 'Source', 'Done'];
-
-function getEstimatedTime(currentStep: number): string {
-  const remaining = ONBOARDING_TOTAL_STEPS - currentStep;
-  if (remaining <= 0) return 'Almost done!';
-  if (remaining <= 1) return '~30 seconds left';
-  if (remaining <= 2) return '~1 minute left';
-  return `~${remaining} minutes left`;
-}
+const ONBOARDING_STEP_LABEL_KEYS = ['chat.step.welcome', 'chat.step.aboutYou', 'chat.step.details', 'chat.step.preferences', 'chat.step.source', 'chat.step.done'];
 
 function saveChatState(conversationId: string, messages: Message[]) {
   try {
@@ -128,6 +124,7 @@ export default function ChatPage() {
   const [redirecting, setRedirecting] = useState(false);
   const [showCompletion, setShowCompletion] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -136,14 +133,14 @@ export default function ChatPage() {
   useEffect(() => {
     api.getMe().then((user) => {
       if (!user) {
-        sessionStorage.setItem('cleo_login_toast', 'Please log in to access the chat');
+        sessionStorage.setItem('cleo_login_toast', t('chat.loginRequired'));
         window.location.href = '/?action=login';
         return;
       }
       api.setToken('authenticated');
       startChat();
     }).catch(() => {
-      sessionStorage.setItem('cleo_login_toast', 'Please log in to access the chat');
+      sessionStorage.setItem('cleo_login_toast', t('chat.loginRequired'));
       window.location.href = '/?action=login';
     });
   }, []);
@@ -166,7 +163,7 @@ export default function ChatPage() {
         setMessages([
           {
             sender: 'AI',
-            content: `Welcome back! I'm Cleya, your AI networking assistant. Ask me anything — I can help you find connections, improve your profile, suggest networking strategies, or answer questions about India's startup ecosystem.`,
+            content: t('chat.welcomeBack'),
             createdAt: new Date(),
           },
           ...historicalMessages,
@@ -174,14 +171,14 @@ export default function ChatPage() {
       } else {
         setMessages([{
           sender: 'AI',
-          content: `Welcome back! I'm Cleya, your AI networking assistant. Ask me anything — I can help you find connections, improve your profile, suggest networking strategies, or answer questions about India's startup ecosystem.`,
+          content: t('chat.welcomeBack'),
           createdAt: new Date(),
         }]);
       }
     } catch {
       setMessages([{
         sender: 'AI',
-        content: `Welcome back! I'm Cleya, your AI networking assistant. Ask me anything — I can help you find connections, improve your profile, suggest networking strategies, or answer questions about India's startup ecosystem.`,
+        content: t('chat.welcomeBack'),
         createdAt: new Date(),
       }]);
     }
@@ -294,7 +291,7 @@ export default function ChatPage() {
       const result = await api.sendAIChat(msg, []);
       setMessages(prev => [...prev, { sender: 'AI', content: result.content, createdAt: new Date() }]);
     } catch {
-      setMessages(prev => [...prev, { sender: 'AI', content: "Sorry, I couldn't process that right now. Please try again!", createdAt: new Date() }]);
+      setMessages(prev => [...prev, { sender: 'AI', content: t('chat.errorMessage'), createdAt: new Date() }]);
     } finally {
       setAiLoading(false);
       setTyping(false);
@@ -314,7 +311,7 @@ export default function ChatPage() {
             style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
             <span className="text-white text-2xl font-bold">C</span>
           </div>
-          <p className="text-sm text-white/40">Starting conversation...</p>
+          <p className="text-sm text-white/40">{t('chat.startConversation')}</p>
         </div>
       </AppShell>
     );
@@ -328,25 +325,25 @@ export default function ChatPage() {
             style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', boxShadow: '0 8px 32px rgba(59,130,246,0.4)' }}>
             <span className="text-4xl">🎉</span>
           </div>
-          <h2 className="text-2xl font-bold text-white mb-3">You're all set!</h2>
+          <h2 className="text-2xl font-bold text-white mb-3">{t('chat.completionTitle')}</h2>
           <p className="text-sm text-white/50 mb-2 leading-relaxed">
-            Your profile has been created and Cleya is already looking for great connections for you.
+            {t('chat.completionDesc')}
           </p>
           <p className="text-sm text-white/40 mb-8 leading-relaxed">
-            We'll notify you as soon as we find people worth connecting with. In the meantime, check out your dashboard.
+            {t('chat.completionNotify')}
           </p>
           <button
             onClick={handleViewMatches}
             className="px-8 py-4 rounded-2xl font-semibold text-white text-sm transition-all duration-200 hover:scale-105 hover:shadow-lg"
             style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', boxShadow: '0 4px 20px rgba(59,130,246,0.3)' }}
           >
-            View your matches →
+            {t('chat.viewMatches')}
           </button>
           <button
             onClick={() => { setShowCompletion(false); setIsOnboarded(true); loadAIChatHistory(); setCurrentNode({ id: 'ai_chat', type: 'ai_response' }); }}
             className="block mx-auto mt-4 text-xs text-white/30 hover:text-white/50 transition"
           >
-            or chat with Cleya
+            {t('chat.orChatWithCleya')}
           </button>
         </div>
       </AppShell>
@@ -357,42 +354,16 @@ export default function ChatPage() {
 
   return (
     <AppShell className="flex flex-col overflow-x-hidden">
-      <header className="glass-header">
-        <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-          style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
-          C
-        </div>
-        <div className="flex-1">
-          <h1 className="font-semibold text-white text-sm">Cleya.ai</h1>
-          <div className="flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
-            <p className="text-xs text-white/40">Active now</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => { window.location.href = '/dashboard'; }}
-            className="text-xs text-white/30 hover:text-white/60 transition-colors px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20"
-          >
-            Dashboard
-          </button>
-          <button
-            onClick={() => { api.logout().then(() => { localStorage.removeItem(CHAT_STORAGE_KEY); window.location.href = '/'; }); }}
-            className="text-xs text-white/30 hover:text-white/60 transition-colors px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20"
-          >
-            Sign out
-          </button>
-        </div>
-      </header>
+      <AppNav rightContent={<NotificationCenter />} />
 
       {!isOnboarded && currentNode && (
         <div className="px-6 lg:px-8 py-3 border-b border-white/5" style={{ background: 'rgba(5,5,16,0.9)' }}>
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-medium text-white/60">
-              Step {currentStep} of {ONBOARDING_TOTAL_STEPS}
+              {t('chat.stepOf').replace('{step}', String(currentStep)).replace('{total}', String(ONBOARDING_TOTAL_STEPS))}
             </span>
             <span className="text-xs text-white/40">
-              {getEstimatedTime(currentStep)}
+              {t(ONBOARDING_STEP_LABEL_KEYS[currentStep - 1])}
             </span>
           </div>
           <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
@@ -403,9 +374,9 @@ export default function ChatPage() {
               }} />
           </div>
           <div className="flex justify-between mt-1.5">
-            {ONBOARDING_STEP_LABELS.map((label, i) => (
-              <span key={label} className={`text-[9px] ${i + 1 <= currentStep ? 'text-blue-400/60' : 'text-white/15'}`}>
-                {label}
+            {ONBOARDING_STEP_LABEL_KEYS.map((key, i) => (
+              <span key={key} className={`text-[9px] ${i + 1 <= currentStep ? 'text-blue-400/60' : 'text-white/15'}`}>
+                {t(key)}
               </span>
             ))}
           </div>
@@ -419,17 +390,21 @@ export default function ChatPage() {
               style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', boxShadow: '0 4px 20px rgba(59,130,246,0.3)' }}>
               C
             </div>
-            <h3 className="text-lg font-semibold text-white mb-2">Hey! I'm Cleya.</h3>
-            <p className="text-sm text-white/40 max-w-xs mb-6">Let's get you connected with the right people in India's startup ecosystem.</p>
+            <h3 className="text-lg font-semibold text-white mb-2">{t('chat.greeting')}</h3>
+            <p className="text-sm text-white/40 max-w-xs mb-6">{t('chat.greetingSub')}</p>
             <div className="flex flex-wrap gap-2 justify-center max-w-sm">
-              {['I\u2019m a founder raising funds', 'I\u2019m looking to invest', 'I\u2019m exploring new roles'].map((prompt) => (
+              {[
+                { key: 'chat.promptFounder', value: 'I\u2019m a founder raising funds' },
+                { key: 'chat.promptInvestor', value: 'I\u2019m looking to invest' },
+                { key: 'chat.promptTalent', value: 'I\u2019m exploring new roles' },
+              ].map((prompt) => (
                 <button
-                  key={prompt}
-                  onClick={() => { sendMessage({ textInput: prompt }); }}
+                  key={prompt.key}
+                  onClick={() => { sendMessage({ textInput: prompt.value }); }}
                   className="px-3 py-2 rounded-xl text-xs text-white/60 border border-white/10 hover:border-blue-500/30 hover:text-white/80 transition"
                   style={{ background: 'rgba(59,130,246,0.06)' }}
                 >
-                  {prompt}
+                  {t(prompt.key)}
                 </button>
               ))}
             </div>
@@ -463,7 +438,7 @@ export default function ChatPage() {
             onClick={() => sendMessage({ textInput: 'Continue' })}
             className="btn-primary"
           >
-            Continue →
+            {t('common.continue')} →
           </button>
         </div>
       )}
@@ -475,7 +450,7 @@ export default function ChatPage() {
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value.slice(0, 500))}
-              placeholder="Message Cleya..."
+              placeholder={t('chat.messagePlaceholder')}
               className="input-dark flex-1"
               disabled={aiLoading}
               maxLength={500}
@@ -496,6 +471,7 @@ export default function ChatPage() {
           )}
         </form>
       )}
+      <AppFooter />
     </AppShell>
   );
 }

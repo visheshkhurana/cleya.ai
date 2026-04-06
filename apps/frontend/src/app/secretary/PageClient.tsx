@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { api } from '../../lib/api';
 import NotificationCenter from '../../components/NotificationCenter';
 import AppNav from '@/components/AppNav';
+import AppFooter from '@/components/AppFooter';
+import { useTranslation } from '@/lib/i18n';
 
 interface ChatMessage {
   id?: string;
@@ -26,6 +28,7 @@ export default function SecretaryPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [user, setUser] = useState<any>(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     api.getMe().then(data => {
@@ -74,7 +77,7 @@ export default function SecretaryPage() {
     } catch {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: "Sorry, I couldn't process that. Please try again.",
+        content: t('secretary.errorProcess'),
       }]);
     } finally {
       setLoading(false);
@@ -90,14 +93,14 @@ export default function SecretaryPage() {
         setMessages(prev => [...prev, {
           role: 'assistant',
           content: data.success
-            ? `Done! ${data.message}`
-            : `Could not complete: ${data.message}`,
+            ? `${t('secretary.doneAction')} ${data.message}`
+            : `${t('secretary.failedAction')} ${data.message}`,
         }]);
       }
     } catch {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: "Failed to execute that action. Please try again.",
+        content: t('secretary.errorAction'),
       }]);
     } finally {
       setActionLoading(null);
@@ -117,7 +120,7 @@ export default function SecretaryPage() {
     } catch {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: "Couldn't generate your digest right now.",
+        content: t('secretary.errorDigest'),
       }]);
     } finally {
       setDigestLoading(false);
@@ -138,12 +141,12 @@ export default function SecretaryPage() {
   };
 
   const quickPrompts = [
-    { label: "What's my schedule today?", icon: '📅' },
-    { label: 'Show me my daily digest', icon: '☀️' },
-    { label: 'Help me schedule a meeting', icon: '🤝' },
-    { label: 'Draft a follow-up email', icon: '✉️' },
-    { label: 'Prepare me for my next call', icon: '📞' },
-    { label: 'Who should I connect with?', icon: '🎯' },
+    { label: t('secretary.schedule'), icon: '📅' },
+    { label: t('secretary.showDigest'), icon: '☀️' },
+    { label: t('secretary.scheduleMeeting'), icon: '🤝' },
+    { label: t('secretary.draftEmail'), icon: '✉️' },
+    { label: t('secretary.prepareCall'), icon: '📞' },
+    { label: t('secretary.whoConnect'), icon: '🎯' },
   ];
 
   if (!user) {
@@ -165,22 +168,22 @@ export default function SecretaryPage() {
               <span className="text-lg">🤖</span>
             </div>
             <div>
-              <p className="text-white font-medium text-sm">Cleya Secretary</p>
+              <p className="text-white font-medium text-sm">{t('secretary.title')}</p>
               <p className="text-[#5eead4] text-xs flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#5eead4] inline-block" />
-                AI Assistant
+                {t('secretary.aiAssistant')}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={getDigest} disabled={digestLoading}
               className="px-3 py-1.5 rounded-lg bg-white/5 text-white/60 text-xs hover:bg-white/10 hover:text-white transition-all disabled:opacity-40"
-              title="Get daily digest">
-              {digestLoading ? '...' : '☀️ Digest'}
+              title={t('secretary.showDigest')}>
+              {digestLoading ? '...' : `☀️ ${t('secretary.digest')}`}
             </button>
             <button onClick={clearHistory}
               className="px-3 py-1.5 rounded-lg bg-white/5 text-white/40 text-xs hover:bg-white/10 hover:text-white/60 transition-all"
-              title="Clear chat history">
+              title={t('secretary.clearHistory')}>
               🗑
             </button>
           </div>
@@ -193,10 +196,10 @@ export default function SecretaryPage() {
                 <span className="text-4xl">🤖</span>
               </div>
               <h2 className="text-white text-xl font-semibold mb-2">
-                Hi{user?.name ? `, ${user.name.split(' ')[0]}` : ''}! I'm your AI Secretary
+                {user?.name ? `${user.name.split(' ')[0]}, ` : ''}{t('secretary.title')}
               </h2>
               <p className="text-white/40 text-sm max-w-md mb-8">
-                I help you schedule meetings, send follow-ups, prepare for calls, and manage your networking on Cleya.ai. What can I help with?
+                {t('secretary.greeting')}
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-w-lg">
                 {quickPrompts.map((p, i) => (
@@ -220,12 +223,12 @@ export default function SecretaryPage() {
                   dangerouslySetInnerHTML={{ __html: formatContent(msg.content) }} />
                 {msg.actions && msg.actions.length > 0 && (
                   <div className="mt-3 space-y-2 border-t border-white/10 pt-3">
-                    <p className="text-xs text-white/40 font-medium">Suggested Actions:</p>
+                    <p className="text-xs text-white/40 font-medium">{t('secretary.suggestedActions')}:</p>
                     {msg.actions.map((action: any, j: number) => (
                       <button key={j} onClick={() => executeAction(action, i * 100 + j)}
                         disabled={actionLoading === `${i * 100 + j}`}
                         className="w-full text-left px-3 py-2 rounded-lg bg-[#3B82F6]/10 border border-[#3B82F6]/20 text-[#5eead4] text-xs hover:bg-[#3B82F6]/20 transition-all disabled:opacity-40">
-                        {actionLoading === `${i * 100 + j}` ? 'Executing...' : (
+                        {actionLoading === `${i * 100 + j}` ? t('secretary.executing') : (
                           <>
                             {action.type === 'schedule_meeting' && `📅 Schedule: ${action.title}`}
                             {action.type === 'send_followup' && `✉️ Send follow-up to ${action.to}`}
@@ -259,7 +262,7 @@ export default function SecretaryPage() {
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask your secretary anything..."
+              placeholder={t('secretary.placeholder')}
               className="flex-1 px-4 py-3 rounded-xl bg-[rgba(10,10,26,0.8)] border border-white/[0.08] text-white placeholder-white/30 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/50 focus:border-transparent"
               disabled={loading}
             />
@@ -272,6 +275,7 @@ export default function SecretaryPage() {
           </form>
         </div>
       </div>
+      <AppFooter />
     </AppShell>
   );
 }

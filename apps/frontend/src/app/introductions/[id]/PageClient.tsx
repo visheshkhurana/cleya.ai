@@ -3,8 +3,11 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useRouter, useParams } from 'next/navigation';
 import AppNav from '@/components/AppNav';
+import AppFooter from '@/components/AppFooter';
+import Breadcrumb from '@/components/Breadcrumb';
 import NotificationCenter from '@/components/NotificationCenter';
 import AppShell from '@/components/AppShell';
+import { useTranslation } from '@/lib/i18n';
 
 const personaIcon: Record<string, string> = {
   FOUNDER: '🚀', INVESTOR: '💰', TALENT: '🎯', DEAL_PARTNER: '🤝',
@@ -12,22 +15,22 @@ const personaIcon: Record<string, string> = {
   OPERATOR: '⚙️', JOB_SEEKER: '💼', RECRUITER: '👔', FREELANCER: '✨', OTHER: '💬',
 };
 
-const statusConfig: Record<string, { bg: string; text: string; label: string; icon: string }> = {
-  PENDING_APPROVAL: { bg: 'rgba(245,158,11,0.15)', text: '#fbbf24', label: 'Review Required', icon: '⏳' },
-  APPROVED: { bg: 'rgba(59,130,246,0.15)', text: '#93c5fd', label: 'Approved', icon: '✅' },
-  SENT: { bg: 'rgba(59,130,246,0.15)', text: '#93C5FD', label: 'Sent', icon: '📤' },
-  VIEWED: { bg: 'rgba(59,130,246,0.15)', text: '#93c5fd', label: 'Viewed', icon: '👀' },
-  RESPONDED: { bg: 'rgba(16,185,129,0.15)', text: '#6ee7b7', label: 'Responded', icon: '💬' },
-  FOLLOWED_UP: { bg: 'rgba(245,158,11,0.15)', text: '#fbbf24', label: 'Follow-up Sent', icon: '🔔' },
-  COMPLETED: { bg: 'rgba(16,185,129,0.2)', text: '#10B981', label: 'Completed', icon: '🎉' },
-  CANCELLED: { bg: 'rgba(239,68,68,0.15)', text: '#f87171', label: 'Cancelled', icon: '✖' },
+const statusStyles: Record<string, { bg: string; text: string; labelKey: string; icon: string }> = {
+  PENDING_APPROVAL: { bg: 'rgba(245,158,11,0.15)', text: '#fbbf24', labelKey: 'intro.statusReview', icon: '⏳' },
+  APPROVED: { bg: 'rgba(59,130,246,0.15)', text: '#93c5fd', labelKey: 'intro.statusApproved', icon: '✅' },
+  SENT: { bg: 'rgba(59,130,246,0.15)', text: '#93C5FD', labelKey: 'intro.statusSent', icon: '📤' },
+  VIEWED: { bg: 'rgba(59,130,246,0.15)', text: '#93c5fd', labelKey: 'intro.statusViewed', icon: '👀' },
+  RESPONDED: { bg: 'rgba(16,185,129,0.15)', text: '#6ee7b7', labelKey: 'intro.statusResponded', icon: '💬' },
+  FOLLOWED_UP: { bg: 'rgba(245,158,11,0.15)', text: '#fbbf24', labelKey: 'intro.statusFollowedUp', icon: '🔔' },
+  COMPLETED: { bg: 'rgba(16,185,129,0.2)', text: '#10B981', labelKey: 'intro.statusCompleted', icon: '🎉' },
+  CANCELLED: { bg: 'rgba(239,68,68,0.15)', text: '#f87171', labelKey: 'intro.statusCancelled', icon: '✖' },
 };
 
-const outcomeLabels: Record<string, { label: string; icon: string; color: string }> = {
-  GREAT_MEETING: { label: 'Great meeting', icon: '🎉', color: '#10B981' },
-  GOOD_CHAT: { label: 'Good chat', icon: '👍', color: '#3B82F6' },
-  DIDNT_MEET: { label: "Didn't meet", icon: '😕', color: '#f59e0b' },
-  NOT_A_FIT: { label: 'Not a fit', icon: '🤷', color: '#ef4444' },
+const outcomeKeys: Record<string, { labelKey: string; icon: string; color: string }> = {
+  GREAT_MEETING: { labelKey: 'intro.greatMeeting', icon: '🎉', color: '#10B981' },
+  GOOD_CHAT: { labelKey: 'intro.goodChat', icon: '👍', color: '#3B82F6' },
+  DIDNT_MEET: { labelKey: 'intro.didntMeet', icon: '😕', color: '#f59e0b' },
+  NOT_A_FIT: { labelKey: 'intro.notAFit', icon: '🤷', color: '#ef4444' },
 };
 
 export default function IntroductionDetailPage() {
@@ -38,6 +41,7 @@ export default function IntroductionDetailPage() {
   const [editText, setEditText] = useState('');
   const [actionLoading, setActionLoading] = useState('');
   const [showOutcome, setShowOutcome] = useState(false);
+  const { t } = useTranslation();
   const router = useRouter();
   const params = useParams();
 
@@ -75,7 +79,7 @@ export default function IntroductionDetailPage() {
   const other = me ? (intro.userA.id === me.id ? intro.userB : intro.userA) : intro.userB;
   const profile = other.profile;
   const otherName = other.name || profile?.currentRole || other.email.split('@')[0];
-  const sc = statusConfig[intro.status] || statusConfig.SENT;
+  const sc = statusStyles[intro.status] || statusStyles.SENT;
   const isPending = intro.status === 'PENDING_APPROVAL';
   const canFeedback = ['SENT', 'VIEWED', 'FOLLOWED_UP'].includes(intro.status);
 
@@ -85,7 +89,7 @@ export default function IntroductionDetailPage() {
       await api.approveIntroduction(intro.id);
       await loadData();
     } catch (e: any) {
-      alert(e.message || 'Failed to approve');
+      alert(e.message || t('common.error'));
     } finally {
       setActionLoading('');
     }
@@ -93,7 +97,7 @@ export default function IntroductionDetailPage() {
 
   const handleSaveEdit = async () => {
     if (!editText.trim() || editText.trim().length < 10) {
-      alert('Introduction text must be at least 10 characters');
+      alert(t('intro.editMinLength'));
       return;
     }
     setActionLoading('edit');
@@ -102,20 +106,20 @@ export default function IntroductionDetailPage() {
       setEditMode(false);
       await loadData();
     } catch (e: any) {
-      alert(e.message || 'Failed to save');
+      alert(e.message || t('common.error'));
     } finally {
       setActionLoading('');
     }
   };
 
   const handleCancel = async () => {
-    if (!confirm('Cancel this introduction?')) return;
+    if (!confirm(t('intro.confirmCancel'))) return;
     setActionLoading('cancel');
     try {
       await api.cancelIntroduction(intro.id);
       router.push('/introductions');
     } catch (e: any) {
-      alert(e.message || 'Failed to cancel');
+      alert(e.message || t('common.error'));
     } finally {
       setActionLoading('');
     }
@@ -128,7 +132,7 @@ export default function IntroductionDetailPage() {
       setShowOutcome(false);
       await loadData();
     } catch (e: any) {
-      alert(e.message || 'Failed to record');
+      alert(e.message || t('common.error'));
     } finally {
       setActionLoading('');
     }
@@ -140,6 +144,14 @@ export default function IntroductionDetailPage() {
   return (
     <AppShell>
       <AppNav rightContent={<NotificationCenter />} />
+
+      <div className="max-w-2xl mx-auto px-6 lg:px-8 pt-4 pb-2">
+        <Breadcrumb items={[
+          { label: t('nav.dashboard'), href: '/dashboard' },
+          { label: t('intro.title'), href: '/introductions' },
+          { label: otherName },
+        ]} />
+      </div>
 
       <div className="max-w-2xl mx-auto px-6 lg:px-8 py-6 space-y-6">
         <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(10,10,26,0.8)' }}>
@@ -158,12 +170,12 @@ export default function IntroductionDetailPage() {
           <div className="flex items-center gap-2 mb-4">
             <span className="px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1"
               style={{ background: sc.bg, color: sc.text }}>
-              {sc.icon} {sc.label}
+              {sc.icon} {t(sc.labelKey)}
             </span>
             {intro.outcome && (
               <span className="px-2.5 py-1 rounded-full text-[11px] font-bold"
-                style={{ background: `${outcomeLabels[intro.outcome]?.color}15`, color: outcomeLabels[intro.outcome]?.color }}>
-                {outcomeLabels[intro.outcome]?.icon} {outcomeLabels[intro.outcome]?.label}
+                style={{ background: `${outcomeKeys[intro.outcome]?.color}15`, color: outcomeKeys[intro.outcome]?.color }}>
+                {outcomeKeys[intro.outcome]?.icon} {t(outcomeKeys[intro.outcome]?.labelKey)}
               </span>
             )}
           </div>
@@ -171,7 +183,7 @@ export default function IntroductionDetailPage() {
           {isPending && hoursUntilAuto > 0 && (
             <div className="rounded-xl border p-3" style={{ background: 'rgba(245,158,11,0.05)', borderColor: 'rgba(245,158,11,0.15)' }}>
               <p className="text-xs text-amber-300/70">
-                ⏰ Auto-sends in ~{hoursUntilAuto}h. Review or edit before then.
+                ⏰ {t('intro.autoSendHours').replace('{hours}', String(hoursUntilAuto))}
               </p>
             </div>
           )}
@@ -180,7 +192,7 @@ export default function IntroductionDetailPage() {
         {intro.introText && (
           <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(10,10,26,0.8)' }}>
             <p className="text-[10px] uppercase tracking-wider text-white/30 mb-3 font-medium">
-              {isPending ? 'Introduction Preview — Review before sending' : 'Introduction Text'}
+              {t('intro.preview')}
             </p>
             {editMode ? (
               <div className="space-y-3">
@@ -192,11 +204,11 @@ export default function IntroductionDetailPage() {
                   <button onClick={handleSaveEdit} disabled={actionLoading === 'edit'}
                     className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50"
                     style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
-                    {actionLoading === 'edit' ? 'Saving...' : 'Save Changes'}
+                    {actionLoading === 'edit' ? t('intro.saving') : t('intro.saveChanges')}
                   </button>
                   <button onClick={() => setEditMode(false)}
                     className="px-4 py-2.5 rounded-xl text-sm text-white/40 hover:text-white/60 transition">
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                 </div>
               </div>
@@ -210,7 +222,7 @@ export default function IntroductionDetailPage() {
 
         {intro.talkingPoints?.length > 0 && !editMode && (
           <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(10,10,26,0.8)' }}>
-            <p className="text-[10px] uppercase tracking-wider text-white/30 mb-3 font-medium">Conversation Starters</p>
+            <p className="text-[10px] uppercase tracking-wider text-white/30 mb-3 font-medium">{t('intro.talkingPoints')}</p>
             <div className="space-y-3">
               {intro.talkingPoints.map((tp: string, i: number) => (
                 <div key={i} className="flex gap-3 items-start">
@@ -224,7 +236,7 @@ export default function IntroductionDetailPage() {
 
         {intro.status !== 'PENDING_APPROVAL' && intro.status !== 'CANCELLED' && (
           <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(10,10,26,0.8)' }}>
-            <p className="text-[10px] uppercase tracking-wider text-white/30 mb-3 font-medium">Contact Information</p>
+            <p className="text-[10px] uppercase tracking-wider text-white/30 mb-3 font-medium">{t('intro.contact')}</p>
             <div className="space-y-2">
               <p className="text-sm text-white/60">📧 {other.email}</p>
               {profile?.linkedinUrl && (
@@ -245,16 +257,16 @@ export default function IntroductionDetailPage() {
                 <button onClick={handleApprove} disabled={actionLoading === 'approve'}
                   className="flex-1 py-3 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50"
                   style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
-                  {actionLoading === 'approve' ? 'Sending...' : '✓ Approve & Send'}
+                  {actionLoading === 'approve' ? t('intro.sending') : `✓ ${t('intro.approve')}`}
                 </button>
                 <button onClick={() => { setEditText(intro.introText || ''); setEditMode(true); }}
                   className="px-5 py-3 rounded-xl text-sm font-medium text-white/60 hover:text-white/80 transition border border-white/10 hover:border-white/20">
-                  ✏️ Edit
+                  ✏️ {t('intro.edit')}
                 </button>
               </div>
               <button onClick={handleCancel} disabled={actionLoading === 'cancel'}
                 className="w-full py-2 rounded-xl text-xs text-red-400/50 hover:text-red-400/80 transition disabled:opacity-50">
-                Cancel Introduction
+                {actionLoading === 'cancel' ? t('intro.cancelling') : t('intro.cancel')}
               </button>
             </>
           )}
@@ -263,43 +275,44 @@ export default function IntroductionDetailPage() {
             <button onClick={() => setShowOutcome(true)}
               className="w-full py-3 rounded-xl text-sm font-semibold text-white transition"
               style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
-              How did it go? Share feedback
+              {t('intro.howDidItGo')}
             </button>
           )}
 
           {showOutcome && (
             <div className="space-y-3">
-              <p className="text-sm text-white/40 text-center">How did your conversation go?</p>
+              <p className="text-sm text-white/40 text-center">{t('intro.howWasConversation')}</p>
               <div className="grid grid-cols-2 gap-2">
-                {Object.entries(outcomeLabels).map(([key, val]) => (
+                {Object.entries(outcomeKeys).map(([key, val]) => (
                   <button key={key} onClick={() => handleOutcome(key)}
                     disabled={actionLoading === 'outcome'}
                     className="py-4 rounded-xl text-sm font-medium text-white/70 hover:text-white transition border border-white/10 hover:border-white/20 disabled:opacity-50"
                     style={{ background: 'rgba(10,10,26,0.85)' }}>
                     <span className="block text-xl mb-1">{val.icon}</span>
-                    {val.label}
+                    {t(val.labelKey)}
                   </button>
                 ))}
               </div>
               <button onClick={() => setShowOutcome(false)} className="w-full text-center text-xs text-white/30 hover:text-white/50 py-1">
-                Not now
+                {t('intro.notNow')}
               </button>
             </div>
           )}
 
           {intro.status === 'COMPLETED' && (
             <div className="text-center py-2">
-              <p className="text-xs text-white/30">Thanks for sharing! Your feedback helps Cleya make better matches.</p>
+              <p className="text-xs text-white/30">{t('intro.thanksFeedback')}</p>
             </div>
           )}
         </div>
 
         <div className="text-[10px] text-white/15 space-y-1 px-1">
-          <p>Created: {new Date(intro.createdAt).toLocaleString()}</p>
-          {intro.sentAt && <p>Sent: {new Date(intro.sentAt).toLocaleString()}</p>}
-          {intro.followUpAt && <p>Follow-up scheduled: {new Date(intro.followUpAt).toLocaleString()}</p>}
+          <p>{t('intro.created')}: {new Date(intro.createdAt).toLocaleString()}</p>
+          {intro.sentAt && <p>{t('intro.sent')}: {new Date(intro.sentAt).toLocaleString()}</p>}
+          {intro.followUpAt && <p>{t('intro.statusFollowedUp')}: {new Date(intro.followUpAt).toLocaleString()}</p>}
         </div>
       </div>
+      <AppFooter />
     </AppShell>
   );
 }
