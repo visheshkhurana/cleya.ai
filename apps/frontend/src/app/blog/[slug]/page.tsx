@@ -37,6 +37,34 @@ const blogMeta: Record<string, { title: string; description: string; author: str
     date: '2026-02-28',
     category: 'Fundraising',
   },
+  'india-startup-funding-guide-2026': {
+    title: 'India Startup Funding in 2026: Complete Ecosystem Guide',
+    description: "India's startups raised $11B in 2025 and $2.5B in Jan-Feb 2026 alone. Here's the complete guide to the funding landscape, top investors, hot sectors, and how to position your startup for capital in 2026.",
+    author: 'Cleya Research Team',
+    date: '2026-04-01',
+    category: 'Ecosystem',
+  },
+  'how-to-find-cofounder-india': {
+    title: 'How to Find a Co-Founder in India: The 2026 Playbook',
+    description: "Finding the right co-founder is the single most important decision you'll make as a founder. Here's the complete 2026 playbook for finding, vetting, and partnering with the right co-founder in India's startup ecosystem.",
+    author: 'Arjun Mehta',
+    date: '2026-04-02',
+    category: 'Founders',
+  },
+  'linkedin-vs-cleya-startup-networking': {
+    title: 'LinkedIn vs Cleya.ai: Which Is Better for Startup Networking in India?',
+    description: 'LinkedIn has 900M+ users but 2% response rates for founders. Here\'s an honest comparison of LinkedIn vs Cleya.ai for startup networking, fundraising, and deal flow in India.',
+    author: 'Cleya Team',
+    date: '2026-04-03',
+    category: 'Product',
+  },
+  'vc-fund-thesis-india-2026': {
+    title: 'How to Read a VC Fund Thesis (And Use It to Get Funded)',
+    description: 'Every VC has a thesis — a set of beliefs about what sectors, stages, and models will generate returns. Learning to read and align with a VC\'s thesis is the fastest path to a funded round in India.',
+    author: 'Priya Patel',
+    date: '2026-04-04',
+    category: 'Fundraising',
+  },
 };
 
 type PageProps = {

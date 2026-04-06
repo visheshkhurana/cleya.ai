@@ -32,7 +32,7 @@ function useMouse() {
   return mouse;
 }
 
-const NODE_COUNT = 60;
+const NODE_COUNT = 30;
 
 function NetworkNodes({ mouse }: { mouse: React.MutableRefObject<{ x: number; y: number }> }) {
   const meshRef = useRef<THREE.InstancedMesh>(null!);
