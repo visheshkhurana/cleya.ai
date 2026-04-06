@@ -97,10 +97,15 @@ export class ProfileService {
     const talentRole = context['talent_target_role_choice'];
     const channelSource = context['attribution_choice'];
 
+    const companyStage = context.companyStage || context['founder_stage_choice'] || context['event_stage_choice'] || context['investor_stage_choice'];
+    const investorType = context.investorType || context['investor_type_choice'];
+    const preferredStage = context.preferredStage || context['talent_stage_pref_choice'];
+    const workStyle = context.workStyle || context['talent_work_style_choice'];
+
     const profileData: Record<string, any> = {
       persona,
       companyName: context.companyName,
-      companyStage: context.companyStage,
+      companyStage,
       currentRole: context.currentRole,
       headline: context.headline,
       bio: context.bio,
@@ -131,13 +136,13 @@ export class ProfileService {
       profileData.targetRole = talentRole;
       profileData.lookingFor = talentRole ? [talentRole] : [];
       profileData.equityExpectation = context.equityExpectation;
-      profileData.preferredStage = context.preferredStage;
-      profileData.workStyle = context.workStyle;
+      profileData.preferredStage = preferredStage;
+      profileData.workStyle = workStyle;
       profileData.functionalArea = context.functionalArea;
     }
 
     if (persona === 'INVESTOR') {
-      profileData.investorType = context.investorType;
+      profileData.investorType = investorType;
       profileData.investmentAmount = normalizeMoneyValue(context.investmentAmount) || context.investmentAmount;
       profileData.portfolioCompanies = context.portfolioCompanies
         ? (typeof context.portfolioCompanies === 'string'

@@ -3,63 +3,94 @@ import { ConversationFlow } from '@cleya/types';
 export const onboardingFlow: ConversationFlow = {
   id: 'onboarding_v1',
   name: 'Cleya.ai Onboarding',
-  description: 'Multi-persona onboarding flow — 6 persona types with tailored forms',
+  description: 'Conversational onboarding — warm, one-question-at-a-time flow with persona-specific paths',
   startNode: 'welcome',
   nodes: {
-    // ─── Welcome ───
     welcome: {
       id: 'welcome',
       type: 'message',
       content:
-        "Hey! I'm Cleya, an AI Superconnector! I match founders, investors, talent, and dealmakers with the right people.\n\nLet me learn a bit about you so I can find your best matches.",
+        "hey! i'm cleya 👋\n\nthink of me as that friend who somehow knows everyone worth knowing — founders, investors, operators, the whole crew.\n\ni'd love to learn a bit about you so i can start making some really good intros. takes about 3 minutes, and it's just a casual chat — no pressure.",
       next: 'persona_select',
     },
 
-    // ─── Persona Selection (6 buttons) ───
     persona_select: {
       id: 'persona_select',
       type: 'choices',
-      content: "Which best describes you?",
+      content: "so first things first — what brings you here?",
       choices: [
-        { label: "🚀 I'm a Founder / Business Owner", value: 'FOUNDER', next: 'founder_details' },
-        { label: "🎯 I want to join a Startup", value: 'TALENT', next: 'talent_details' },
-        { label: "💰 I'm an Investor", value: 'INVESTOR', next: 'investor_details' },
-        { label: "🏆 Interested in The Pitch by Deel", value: 'EVENT_PARTICIPANT', next: 'event_details' },
-        { label: "🤝 I want to be a Deal Partner", value: 'DEAL_PARTNER', next: 'deal_partner_details' },
-        { label: "💬 Other", value: 'OTHER', next: 'other_details' },
+        { label: "🚀 I'm building something", value: 'FOUNDER', next: 'founder_open' },
+        { label: "💰 I invest in startups", value: 'INVESTOR', next: 'investor_open' },
+        { label: "🎯 I'm exploring new roles", value: 'TALENT', next: 'talent_open' },
+        { label: "🏆 Here for The Pitch by Deel", value: 'EVENT_PARTICIPANT', next: 'event_name' },
+        { label: "🤝 I want to source deals", value: 'DEAL_PARTNER', next: 'deal_partner_role' },
+        { label: "💬 Something else", value: 'OTHER', next: 'other_role' },
       ],
-      next: 'founder_details',
+      next: 'founder_open',
     },
 
     // ═══════════════════════════════════════════
-    // (A) FOUNDER FLOW
+    // FOUNDER FLOW — one question at a time
     // ═══════════════════════════════════════════
 
-    founder_details: {
-      id: 'founder_details',
+    founder_open: {
+      id: 'founder_open',
+      type: 'message',
+      content: "love that! building something is the hardest and most exciting thing you can do.\n\nlet me learn about what you're working on — one thing at a time.",
+      next: 'founder_company_name',
+    },
+
+    founder_company_name: {
+      id: 'founder_company_name',
       type: 'form',
-      content: "Great! Let's get your founder profile set up.",
+      content: "what's your company called?",
       formSchema: [
-        { name: 'companyName', type: 'text', label: 'Company Name', required: true, placeholder: 'e.g. Acme Inc.' },
-        {
-          name: 'companyStage',
-          type: 'select',
-          label: 'Company Stage',
-          required: true,
-          options: [
-            { label: 'Pre-Seed / Idea', value: 'PRE_SEED' },
-            { label: 'Seed', value: 'SEED' },
-            { label: 'Series A', value: 'SERIES_A' },
-            { label: 'Series B', value: 'SERIES_B' },
-            { label: 'Series C+', value: 'SERIES_C_PLUS' },
-            { label: 'Growth', value: 'GROWTH' },
-            { label: 'Bootstrapped', value: 'BOOTSTRAPPED' },
-          ],
-        },
-        { name: 'currentRole', type: 'text', label: 'Your Title', required: true, placeholder: 'e.g. CEO & Co-Founder' },
-        { name: 'headline', type: 'text', label: 'One-liner about your company', required: true, placeholder: 'e.g. AI-powered logistics for last-mile delivery' },
-        { name: 'businessDescription', type: 'textarea', label: 'Describe your business', placeholder: 'What does your company do? Who are your customers?', validation: { max: 500 } },
-        { name: 'keyTractionPoints', type: 'textarea', label: 'Key traction points', placeholder: 'e.g. $500K ARR, 10K users, YC W24', validation: { max: 300 } },
+        { name: 'companyName', type: 'text', label: 'Company name', required: true, placeholder: 'e.g. Acme Inc.' },
+      ],
+      next: 'founder_headline',
+    },
+
+    founder_headline: {
+      id: 'founder_headline',
+      type: 'form',
+      content: "nice! and in one line — what does it do?",
+      formSchema: [
+        { name: 'headline', type: 'text', label: 'One-liner', required: true, placeholder: 'e.g. AI-powered logistics for last-mile delivery' },
+      ],
+      next: 'founder_role',
+    },
+
+    founder_role: {
+      id: 'founder_role',
+      type: 'form',
+      content: "what's your title?",
+      formSchema: [
+        { name: 'currentRole', type: 'text', label: 'Your title', required: true, placeholder: 'e.g. CEO & Co-Founder' },
+      ],
+      next: 'founder_stage',
+    },
+
+    founder_stage: {
+      id: 'founder_stage',
+      type: 'choices',
+      content: "where are you at stage-wise?",
+      choices: [
+        { label: 'Pre-Seed / Idea stage', value: 'PRE_SEED', next: 'founder_deep_dive' },
+        { label: 'Seed', value: 'SEED', next: 'founder_deep_dive' },
+        { label: 'Series A', value: 'SERIES_A', next: 'founder_deep_dive' },
+        { label: 'Series B', value: 'SERIES_B', next: 'founder_deep_dive' },
+        { label: 'Series C+', value: 'SERIES_C_PLUS', next: 'founder_deep_dive' },
+        { label: 'Growth', value: 'GROWTH', next: 'founder_deep_dive' },
+        { label: 'Bootstrapped & profitable', value: 'BOOTSTRAPPED', next: 'founder_deep_dive' },
+      ],
+    },
+
+    founder_deep_dive: {
+      id: 'founder_deep_dive',
+      type: 'form',
+      content: "tell me more — the more specific you are, the better intros i can make.",
+      formSchema: [
+        { name: 'businessDescription', type: 'textarea', label: 'What problem do you solve? Who are your customers?', placeholder: 'The more detail, the better matches you\'ll get...', validation: { max: 500 } },
       ],
       next: 'founder_traction',
     },
@@ -67,12 +98,9 @@ export const onboardingFlow: ConversationFlow = {
     founder_traction: {
       id: 'founder_traction',
       type: 'form',
-      content: "Help us understand your traction — this helps match you with the right investors and partners.",
+      content: "any traction to share? this helps me match you with the right people.",
       formSchema: [
-        { name: 'monthlyRevenue', type: 'text', label: 'Monthly Revenue (MRR)', placeholder: 'e.g. $50K' },
-        { name: 'growthRate', type: 'text', label: 'Monthly Growth Rate', placeholder: 'e.g. 15% MoM' },
-        { name: 'activeUsers', type: 'text', label: 'Active Users', placeholder: 'e.g. 10,000 MAU' },
-        { name: 'burnRate', type: 'text', label: 'Monthly Burn Rate', placeholder: 'e.g. $80K/mo' },
+        { name: 'keyTractionPoints', type: 'textarea', label: 'Revenue, users, notable milestones — anything you\'re proud of', placeholder: 'e.g. $500K ARR, 10K users, YC W24', validation: { max: 300 } },
       ],
       next: 'founder_priority',
     },
@@ -80,248 +108,55 @@ export const onboardingFlow: ConversationFlow = {
     founder_priority: {
       id: 'founder_priority',
       type: 'choices',
-      content: "What's your #1 priority right now?",
+      content: "okay i'm getting a picture here. what's the #1 thing you need right now? this helps me prioritize who to connect you with.",
       choices: [
-        { label: '💰 Fundraising', value: 'FUNDRAISING', next: 'founder_fundraising' },
-        { label: '🤝 Finding a Co-Founder', value: 'COFOUNDER', next: 'common_details' },
-        { label: '👥 Hiring', value: 'HIRING', next: 'common_details' },
-        { label: '📢 Marketing / Growth', value: 'MARKETING', next: 'common_details' },
-        { label: '🤝 Sales / BD', value: 'SALES_BD', next: 'common_details' },
-        { label: '💼 Hiring a Venture Partner', value: 'VENTURE_PARTNER_HIRE', next: 'common_details' },
+        { label: '💰 Raising a round', value: 'FUNDRAISING', next: 'founder_raise_amount' },
+        { label: '🤝 Finding a co-founder', value: 'COFOUNDER', next: 'founder_industries' },
+        { label: '👥 Hiring key people', value: 'HIRING', next: 'founder_industries' },
+        { label: '📢 Growth / marketing help', value: 'MARKETING', next: 'founder_industries' },
+        { label: '🤝 Sales & partnerships', value: 'SALES_BD', next: 'founder_industries' },
       ],
     },
 
-    founder_fundraising: {
-      id: 'founder_fundraising',
+    founder_raise_amount: {
+      id: 'founder_raise_amount',
       type: 'form',
-      content: "Tell me about your fundraising goals so I can match you with the right investors.",
+      content: "got it — fundraising mode. how much are you raising?",
       formSchema: [
-        { name: 'raiseAmount', type: 'text', label: 'How much are you raising?', required: true, placeholder: 'e.g. $2M' },
-        { name: 'amountRaisedToDate', type: 'text', label: 'Amount raised to date', placeholder: 'e.g. $500K pre-seed' },
-        { name: 'roundCloseDate', type: 'text', label: 'When do you want to close?', placeholder: 'e.g. Q2 2026' },
+        { name: 'raiseAmount', type: 'text', label: 'Target raise', required: true, placeholder: 'e.g. $2M' },
       ],
-      next: 'common_details',
+      next: 'founder_raised_so_far',
     },
 
-    // ═══════════════════════════════════════════
-    // (B) TALENT / JOIN A STARTUP
-    // ═══════════════════════════════════════════
-
-    talent_details: {
-      id: 'talent_details',
+    founder_raised_so_far: {
+      id: 'founder_raised_so_far',
       type: 'form',
-      content: "Awesome, let's get you matched with the right startup!",
+      content: "how much have you raised so far?",
       formSchema: [
-        { name: 'currentRole', type: 'text', label: 'Current / Most Recent Role', required: true, placeholder: 'e.g. Senior Engineer at Google' },
-        { name: 'headline', type: 'text', label: 'What are you looking for?', required: true, placeholder: 'e.g. Founding engineer role at an AI startup' },
-        { name: 'yearsExperience', type: 'number', label: 'Years of experience', validation: { min: 0, max: 50 } },
-        { name: 'linkedinUrl', type: 'url', label: 'LinkedIn URL', placeholder: 'https://linkedin.com/in/...' },
+        { name: 'amountRaisedToDate', type: 'text', label: 'Raised to date', placeholder: 'e.g. $500K pre-seed' },
       ],
-      next: 'talent_target_role',
+      next: 'founder_close_date',
     },
 
-    talent_target_role: {
-      id: 'talent_target_role',
-      type: 'choices',
-      content: "What type of role are you targeting?",
-      choices: [
-        { label: '👩‍💻 Founding Engineer', value: 'FOUNDING_ENGINEER', next: 'talent_preferences' },
-        { label: '📈 Founding GTM / Sales', value: 'FOUNDING_GTM', next: 'talent_preferences' },
-        { label: '🎯 Chief of Staff', value: 'CHIEF_OF_STAFF', next: 'talent_preferences' },
-        { label: '📢 Growth / Content', value: 'GROWTH_CONTENT', next: 'talent_preferences' },
-        { label: '📝 Open Application', value: 'OPEN_APPLICATION', next: 'talent_preferences' },
-        { label: '🤝 Co-Founder', value: 'COFOUNDER', next: 'talent_preferences' },
-      ],
-    },
-
-    talent_preferences: {
-      id: 'talent_preferences',
+    founder_close_date: {
+      id: 'founder_close_date',
       type: 'form',
-      content: "A few more details to help find the best startup match for you.",
+      content: "when are you looking to close?",
       formSchema: [
-        { name: 'equityExpectation', type: 'text', label: 'Equity Expectation', placeholder: 'e.g. 0.5% - 2%' },
-        {
-          name: 'preferredStage',
-          type: 'select',
-          label: 'Preferred Company Stage',
-          options: [
-            { label: 'Pre-Seed / Idea', value: 'PRE_SEED' },
-            { label: 'Seed', value: 'SEED' },
-            { label: 'Series A', value: 'SERIES_A' },
-            { label: 'Series B', value: 'SERIES_B' },
-            { label: 'Series C+', value: 'SERIES_C_PLUS' },
-            { label: 'Growth', value: 'GROWTH' },
-          ],
-        },
-        {
-          name: 'workStyle',
-          type: 'select',
-          label: 'Work Style Preference',
-          options: [
-            { label: 'Remote', value: 'REMOTE' },
-            { label: 'In-Office', value: 'IN_OFFICE' },
-            { label: 'Hybrid', value: 'HYBRID' },
-          ],
-        },
-        { name: 'functionalArea', type: 'text', label: 'Functional Area', placeholder: 'e.g. Engineering, Product, Design' },
+        { name: 'roundCloseDate', type: 'text', label: 'Target timeline', placeholder: 'e.g. Q2 2026' },
       ],
-      next: 'common_details',
+      next: 'founder_industries',
     },
 
-    // ═══════════════════════════════════════════
-    // (C) INVESTOR
-    // ═══════════════════════════════════════════
-
-    investor_details: {
-      id: 'investor_details',
+    founder_industries: {
+      id: 'founder_industries',
       type: 'form',
-      content: "Welcome! Let's set up your investor profile.",
-      formSchema: [
-        { name: 'companyName', type: 'text', label: 'Fund / Firm Name', required: true, placeholder: 'e.g. Sequoia Capital' },
-        { name: 'currentRole', type: 'text', label: 'Your Title', required: true, placeholder: 'e.g. Partner' },
-        { name: 'headline', type: 'text', label: 'Investment focus', required: true, placeholder: 'e.g. Early-stage B2B SaaS' },
-        {
-          name: 'investorType',
-          type: 'select',
-          label: 'Investor Type',
-          required: true,
-          options: [
-            { label: 'Angel Investor', value: 'angel' },
-            { label: 'VC Fund', value: 'vc' },
-            { label: 'Family Office', value: 'family_office' },
-            { label: 'Corporate VC', value: 'corporate_vc' },
-            { label: 'Syndicate Lead', value: 'syndicate' },
-            { label: 'Other', value: 'other' },
-          ],
-        },
-        {
-          name: 'companyStage',
-          type: 'select',
-          label: 'Stages you invest in',
-          required: true,
-          options: [
-            { label: 'Pre-Seed', value: 'PRE_SEED' },
-            { label: 'Seed', value: 'SEED' },
-            { label: 'Series A', value: 'SERIES_A' },
-            { label: 'Series B', value: 'SERIES_B' },
-            { label: 'Growth / Late', value: 'SERIES_C_PLUS' },
-          ],
-        },
-        { name: 'investmentAmount', type: 'text', label: 'Typical check size', placeholder: 'e.g. $100K - $500K' },
-      ],
-      next: 'investor_portfolio',
-    },
-
-    investor_portfolio: {
-      id: 'investor_portfolio',
-      type: 'form',
-      content: "Tell me about your portfolio — this helps avoid duplicate pitches and find the best founders for you.",
-      formSchema: [
-        { name: 'portfolioCompanies', type: 'textarea', label: 'Portfolio Companies', placeholder: 'List your portfolio companies (comma-separated)', validation: { max: 500 } },
-        { name: 'dealsPerYear', type: 'number', label: 'Deals Per Year', placeholder: 'e.g. 8', validation: { min: 0, max: 500 } },
-        {
-          name: 'leadsRounds',
-          type: 'select',
-          label: 'Do you lead rounds?',
-          options: [
-            { label: 'Yes, I lead rounds', value: 'true' },
-            { label: 'No, I co-invest', value: 'false' },
-          ],
-        },
-      ],
-      next: 'common_details',
-    },
-
-    // ═══════════════════════════════════════════
-    // (D) THE PITCH BY DEEL (EVENT PARTICIPANT)
-    // ═══════════════════════════════════════════
-
-    event_details: {
-      id: 'event_details',
-      type: 'form',
-      content: "The Pitch by Deel — exciting! Let's get you set up.",
-      formSchema: [
-        { name: 'companyName', type: 'text', label: 'Company Name', required: true, placeholder: 'e.g. Acme Inc.' },
-        { name: 'currentRole', type: 'text', label: 'Your Role', required: true, placeholder: 'e.g. CEO & Founder' },
-        { name: 'headline', type: 'text', label: 'One-liner about your company', required: true, placeholder: 'e.g. AI-powered hiring platform' },
-        {
-          name: 'companyStage',
-          type: 'select',
-          label: 'Company Stage',
-          required: true,
-          options: [
-            { label: 'Pre-Seed', value: 'PRE_SEED' },
-            { label: 'Seed', value: 'SEED' },
-            { label: 'Series A', value: 'SERIES_A' },
-            { label: 'Series B+', value: 'SERIES_B' },
-          ],
-        },
-        { name: 'businessDescription', type: 'textarea', label: 'Describe your business (for pitch prep)', required: true, placeholder: 'What problem do you solve? What makes you unique?', validation: { max: 500 } },
-      ],
-      next: 'common_details',
-    },
-
-    // ═══════════════════════════════════════════
-    // (E) DEAL PARTNER / SCOUT
-    // ═══════════════════════════════════════════
-
-    deal_partner_details: {
-      id: 'deal_partner_details',
-      type: 'form',
-      content: "Great — let's get your deal partner profile set up.",
-      formSchema: [
-        { name: 'currentRole', type: 'text', label: 'Your Current Role', required: true, placeholder: 'e.g. BD Lead at TechStars' },
-        { name: 'headline', type: 'text', label: 'What kind of deals do you source?', required: true, placeholder: 'e.g. Pre-seed AI/ML startups in LATAM' },
-        { name: 'cityBased', type: 'text', label: 'City you are based in', required: true, placeholder: 'e.g. Miami, FL' },
-        { name: 'exampleInvestment', type: 'text', label: 'Example deal you sourced', placeholder: 'e.g. Led intro for $2M seed round at XYZ Co' },
-        { name: 'outreachMethod', type: 'text', label: 'How do you find founders?', placeholder: 'e.g. Twitter DMs, events, warm intros' },
-        { name: 'trackedCompanies', type: 'textarea', label: 'Companies you are currently tracking', placeholder: 'List startups you have your eye on', validation: { max: 300 } },
-        { name: 'founderAccessPitch', type: 'textarea', label: 'Why should founders work with you?', placeholder: 'Your value prop to founders', validation: { max: 300 } },
-      ],
-      next: 'deal_partner_preferences',
-    },
-
-    deal_partner_preferences: {
-      id: 'deal_partner_preferences',
-      type: 'form',
-      content: "Help us understand your deal preferences so we can surface the best companies for you.",
-      formSchema: [
-        { name: 'preferredStageRange', type: 'text', label: 'Preferred Company Stage Range', placeholder: 'e.g. Pre-Seed to Series A' },
-        { name: 'sectorFocus', type: 'text', label: 'Sector Focus', placeholder: 'e.g. AI/ML, Fintech, Healthcare (comma-separated)' },
-        { name: 'checkSizeRange', type: 'text', label: 'Check Size Range', placeholder: 'e.g. $50K - $500K' },
-      ],
-      next: 'common_details',
-    },
-
-    // ═══════════════════════════════════════════
-    // (F) OTHER
-    // ═══════════════════════════════════════════
-
-    other_details: {
-      id: 'other_details',
-      type: 'form',
-      content: "No problem! Tell me a bit about yourself.",
-      formSchema: [
-        { name: 'currentRole', type: 'text', label: 'Your Current Role', required: true, placeholder: 'e.g. VP Engineering at BigCorp' },
-        { name: 'headline', type: 'text', label: 'What brings you here?', required: true, placeholder: 'e.g. Looking to connect with founders in fintech' },
-        { name: 'companyName', type: 'text', label: 'Company (if any)', placeholder: 'e.g. Independent' },
-      ],
-      next: 'common_details',
-    },
-
-    // ═══════════════════════════════════════════
-    // COMMON DETAILS (all personas)
-    // ═══════════════════════════════════════════
-
-    common_details: {
-      id: 'common_details',
-      type: 'form',
-      content: "Almost there! A few more details to help with matching.",
+      content: "almost there — what space are you in?",
       formSchema: [
         {
           name: 'industries',
           type: 'multiselect',
-          label: 'Industries you work in',
+          label: 'Pick all that apply',
           required: true,
           options: [
             { label: 'AI / ML', value: 'ai_ml' },
@@ -337,111 +172,535 @@ export const onboardingFlow: ConversationFlow = {
             { label: 'Other', value: 'other' },
           ],
         },
-        { name: 'location', type: 'text', label: 'Where are you based?', required: true, placeholder: 'e.g. Bangalore, India' },
-        { name: 'phoneNumber', type: 'phone', label: 'Phone Number', placeholder: '98765 43210' },
-        { name: 'linkedinUrl', type: 'url', label: 'LinkedIn URL', placeholder: 'https://linkedin.com/in/...' },
-        { name: 'bio', type: 'textarea', label: 'Tell us more about yourself (optional)', placeholder: 'A brief bio helps us find better matches...', validation: { max: 500 } },
       ],
-      next: 'matching_preferences',
+      next: 'founder_location',
     },
 
-    matching_preferences: {
-      id: 'matching_preferences',
+    founder_location: {
+      id: 'founder_location',
       type: 'form',
-      content: "Quick matching preferences — this helps us find hyper-relevant matches for you.",
+      content: "where are you based?",
       formSchema: [
-        {
-          name: 'matchingGoal',
-          type: 'select',
-          label: 'What do you most want from Cleya right now?',
-          required: true,
-          options: [
-            { label: 'Find investors / fundraise', value: 'fundraising' },
-            { label: 'Hire key team members', value: 'hiring' },
-            { label: 'Find a co-founder', value: 'cofounder' },
-            { label: 'Get marketing / growth help', value: 'marketing' },
-            { label: 'Find sales / BD partners', value: 'SALES_BD' },
-            { label: 'Get expert advice / mentoring', value: 'advisors' },
-            { label: 'Discover deal flow', value: 'deal_flow' },
-            { label: 'Explore job opportunities', value: 'job_opportunities' },
-            { label: 'Build partnerships', value: 'partnerships' },
-          ],
-        },
-        {
-          name: 'matchingExpertiseNeeded',
-          type: 'multiselect',
-          label: 'What expertise are you looking for?',
-          options: [
-            { label: 'Marketing & Growth', value: 'marketing' },
-            { label: 'Fundraising & Investor Relations', value: 'fundraising' },
-            { label: 'Hiring & Talent', value: 'hiring' },
-            { label: 'Product Management', value: 'product' },
-            { label: 'Engineering & Tech', value: 'engineering' },
-            { label: 'Sales & Business Dev', value: 'sales' },
-            { label: 'Operations & Strategy', value: 'operations' },
-            { label: 'Finance & Accounting', value: 'finance' },
-            { label: 'Legal & Compliance', value: 'legal' },
-            { label: 'Data & AI/ML', value: 'data' },
-            { label: 'Design', value: 'design' },
-          ],
-        },
+        { name: 'location', type: 'text', label: 'City / region', required: true, placeholder: 'e.g. Bangalore, India' },
       ],
-      next: 'availability_preferences',
+      next: 'founder_linkedin',
     },
 
-    availability_preferences: {
-      id: 'availability_preferences',
+    founder_linkedin: {
+      id: 'founder_linkedin',
       type: 'form',
-      content: "Last thing — let us know your availability and intro preferences.",
+      content: "last thing before we wrap up your profile — got a linkedin? (helps me verify and find you better matches)",
       formSchema: [
-        {
-          name: 'introPreference',
-          type: 'select',
-          label: 'Intro Preference',
-          options: [
-            { label: 'Warm intros only', value: 'WARM_ONLY' },
-            { label: 'Cold outreach is OK', value: 'COLD_OK' },
-            { label: 'Open to both', value: 'OPEN_TO_BOTH' },
-          ],
-        },
-        {
-          name: 'openToMeeting',
-          type: 'select',
-          label: 'Open to meeting new people?',
-          options: [
-            { label: 'Yes', value: 'true' },
-            { label: 'Not right now', value: 'false' },
-          ],
-        },
-        { name: 'maxIntrosPerWeek', type: 'number', label: 'Max intros per week', placeholder: 'e.g. 3', validation: { min: 1, max: 20 } },
+        { name: 'linkedinUrl', type: 'url', label: 'LinkedIn URL (optional)', placeholder: 'https://linkedin.com/in/...' },
       ],
       next: 'attribution',
     },
 
-    // ─── Attribution / Channel Source ───
-    attribution: {
-      id: 'attribution',
+    // ═══════════════════════════════════════════
+    // INVESTOR / VC FLOW — one question at a time
+    // ═══════════════════════════════════════════
+
+    investor_open: {
+      id: 'investor_open',
+      type: 'message',
+      content: "great — always good to have more investors in the network.\n\ni'll match you with founders you'd actually want to meet, not just anyone with a pitch deck. let me learn your taste.",
+      next: 'investor_fund_name',
+    },
+
+    investor_fund_name: {
+      id: 'investor_fund_name',
+      type: 'form',
+      content: "what's your fund or firm called?",
+      formSchema: [
+        { name: 'companyName', type: 'text', label: 'Fund / firm name', required: true, placeholder: 'e.g. Sequoia Capital' },
+      ],
+      next: 'investor_role',
+    },
+
+    investor_role: {
+      id: 'investor_role',
+      type: 'form',
+      content: "and your title there?",
+      formSchema: [
+        { name: 'currentRole', type: 'text', label: 'Your title', required: true, placeholder: 'e.g. Partner' },
+      ],
+      next: 'investor_focus',
+    },
+
+    investor_focus: {
+      id: 'investor_focus',
+      type: 'form',
+      content: "in one line — what's your investment focus?",
+      formSchema: [
+        { name: 'headline', type: 'text', label: 'Investment focus', required: true, placeholder: 'e.g. Early-stage B2B SaaS in India' },
+      ],
+      next: 'investor_type',
+    },
+
+    investor_type: {
+      id: 'investor_type',
       type: 'choices',
-      content: "How did you hear about Cleya.ai?",
+      content: "what type of investor are you?",
       choices: [
-        { label: '💼 LinkedIn', value: 'linkedin', next: 'completion' },
-        { label: '🐦 Twitter / X', value: 'twitter', next: 'completion' },
-        { label: '💬 WhatsApp Group', value: 'whatsapp_group', next: 'completion' },
-        { label: '👥 Friend Referral', value: 'friend_referral', next: 'completion' },
-        { label: '🎤 Event (The Pitch)', value: 'event_the_pitch', next: 'completion' },
-        { label: '😇 Angel Network', value: 'angel_network', next: 'completion' },
-        { label: '📧 VC Newsletter', value: 'vc_newsletter', next: 'completion' },
-        { label: '🔍 Google Search', value: 'google_search', next: 'completion' },
-        { label: '🔗 Other', value: 'other', next: 'completion' },
+        { label: 'Angel Investor', value: 'angel', next: 'investor_stage' },
+        { label: 'VC Fund', value: 'vc', next: 'investor_stage' },
+        { label: 'Family Office', value: 'family_office', next: 'investor_stage' },
+        { label: 'Corporate VC', value: 'corporate_vc', next: 'investor_stage' },
+        { label: 'Syndicate Lead', value: 'syndicate', next: 'investor_stage' },
+        { label: 'Other', value: 'other', next: 'investor_stage' },
       ],
     },
 
-    // ─── Completion ───
+    investor_stage: {
+      id: 'investor_stage',
+      type: 'choices',
+      content: "what stages do you typically invest in?",
+      choices: [
+        { label: 'Pre-Seed', value: 'PRE_SEED', next: 'investor_check_size' },
+        { label: 'Seed', value: 'SEED', next: 'investor_check_size' },
+        { label: 'Series A', value: 'SERIES_A', next: 'investor_check_size' },
+        { label: 'Series B', value: 'SERIES_B', next: 'investor_check_size' },
+        { label: 'Growth / Late', value: 'SERIES_C_PLUS', next: 'investor_check_size' },
+      ],
+    },
+
+    investor_check_size: {
+      id: 'investor_check_size',
+      type: 'form',
+      content: "what's your typical check size?",
+      formSchema: [
+        { name: 'investmentAmount', type: 'text', label: 'Check size', placeholder: 'e.g. $100K - $500K' },
+      ],
+      next: 'investor_portfolio',
+    },
+
+    investor_portfolio: {
+      id: 'investor_portfolio',
+      type: 'form',
+      content: "any notable portfolio companies? (helps me avoid sending you duplicate pitches)",
+      formSchema: [
+        { name: 'portfolioCompanies', type: 'textarea', label: 'Portfolio companies', placeholder: 'List a few names, comma-separated', validation: { max: 500 } },
+      ],
+      next: 'investor_industries',
+    },
+
+    investor_industries: {
+      id: 'investor_industries',
+      type: 'form',
+      content: "which sectors are you most interested in?",
+      formSchema: [
+        {
+          name: 'industries',
+          type: 'multiselect',
+          label: 'Pick all that apply',
+          required: true,
+          options: [
+            { label: 'AI / ML', value: 'ai_ml' },
+            { label: 'SaaS', value: 'saas' },
+            { label: 'Fintech', value: 'fintech' },
+            { label: 'Healthcare', value: 'healthcare' },
+            { label: 'E-commerce', value: 'ecommerce' },
+            { label: 'Education', value: 'education' },
+            { label: 'Climate / Energy', value: 'climate' },
+            { label: 'Web3 / Crypto', value: 'web3' },
+            { label: 'Consumer', value: 'consumer' },
+            { label: 'Enterprise', value: 'enterprise' },
+            { label: 'Other', value: 'other' },
+          ],
+        },
+      ],
+      next: 'investor_location',
+    },
+
+    investor_location: {
+      id: 'investor_location',
+      type: 'form',
+      content: "where are you based?",
+      formSchema: [
+        { name: 'location', type: 'text', label: 'City / region', required: true, placeholder: 'e.g. Mumbai, India' },
+      ],
+      next: 'investor_linkedin',
+    },
+
+    investor_linkedin: {
+      id: 'investor_linkedin',
+      type: 'form',
+      content: "got a linkedin? (optional but helps)",
+      formSchema: [
+        { name: 'linkedinUrl', type: 'url', label: 'LinkedIn URL', placeholder: 'https://linkedin.com/in/...' },
+      ],
+      next: 'attribution',
+    },
+
+    // ═══════════════════════════════════════════
+    // TALENT / JOB SEEKER FLOW — one question at a time
+    // ═══════════════════════════════════════════
+
+    talent_open: {
+      id: 'talent_open',
+      type: 'message',
+      content: "exciting! there are some incredible startups looking for people right now.\n\nlet me learn about you so i can play matchmaker.",
+      next: 'talent_current_role',
+    },
+
+    talent_current_role: {
+      id: 'talent_current_role',
+      type: 'form',
+      content: "what's your current or most recent role?",
+      formSchema: [
+        { name: 'currentRole', type: 'text', label: 'Current / recent role', required: true, placeholder: 'e.g. Senior Engineer at Google' },
+      ],
+      next: 'talent_looking_for',
+    },
+
+    talent_looking_for: {
+      id: 'talent_looking_for',
+      type: 'form',
+      content: "and what kind of role are you looking for next?",
+      formSchema: [
+        { name: 'headline', type: 'text', label: 'What you\'re looking for', required: true, placeholder: 'e.g. Founding engineer role at an AI startup' },
+      ],
+      next: 'talent_experience',
+    },
+
+    talent_experience: {
+      id: 'talent_experience',
+      type: 'form',
+      content: "how many years of experience do you have?",
+      formSchema: [
+        { name: 'yearsExperience', type: 'number', label: 'Years of experience', validation: { min: 0, max: 50 } },
+      ],
+      next: 'talent_target_role',
+    },
+
+    talent_target_role: {
+      id: 'talent_target_role',
+      type: 'choices',
+      content: "what type of role gets you fired up?",
+      choices: [
+        { label: '👩‍💻 Founding Engineer', value: 'FOUNDING_ENGINEER', next: 'talent_stage_pref' },
+        { label: '📈 Founding GTM / Sales', value: 'FOUNDING_GTM', next: 'talent_stage_pref' },
+        { label: '🎯 Chief of Staff', value: 'CHIEF_OF_STAFF', next: 'talent_stage_pref' },
+        { label: '📢 Growth / Content', value: 'GROWTH_CONTENT', next: 'talent_stage_pref' },
+        { label: '📝 Open to anything exciting', value: 'OPEN_APPLICATION', next: 'talent_stage_pref' },
+        { label: '🤝 Co-Founder', value: 'COFOUNDER', next: 'talent_stage_pref' },
+      ],
+    },
+
+    talent_stage_pref: {
+      id: 'talent_stage_pref',
+      type: 'choices',
+      content: "great taste. what company stage do you prefer?",
+      choices: [
+        { label: 'Pre-Seed / Idea', value: 'PRE_SEED', next: 'talent_work_style' },
+        { label: 'Seed', value: 'SEED', next: 'talent_work_style' },
+        { label: 'Series A', value: 'SERIES_A', next: 'talent_work_style' },
+        { label: 'Series B', value: 'SERIES_B', next: 'talent_work_style' },
+        { label: 'Series C+', value: 'SERIES_C_PLUS', next: 'talent_work_style' },
+        { label: 'Growth', value: 'GROWTH', next: 'talent_work_style' },
+      ],
+    },
+
+    talent_work_style: {
+      id: 'talent_work_style',
+      type: 'choices',
+      content: "how do you like to work?",
+      choices: [
+        { label: '🏠 Remote', value: 'REMOTE', next: 'talent_industries' },
+        { label: '🏢 In-Office', value: 'IN_OFFICE', next: 'talent_industries' },
+        { label: '🔄 Hybrid', value: 'HYBRID', next: 'talent_industries' },
+      ],
+    },
+
+    talent_industries: {
+      id: 'talent_industries',
+      type: 'form',
+      content: "which industries excite you most?",
+      formSchema: [
+        {
+          name: 'industries',
+          type: 'multiselect',
+          label: 'Pick all that apply',
+          required: true,
+          options: [
+            { label: 'AI / ML', value: 'ai_ml' },
+            { label: 'SaaS', value: 'saas' },
+            { label: 'Fintech', value: 'fintech' },
+            { label: 'Healthcare', value: 'healthcare' },
+            { label: 'E-commerce', value: 'ecommerce' },
+            { label: 'Education', value: 'education' },
+            { label: 'Climate / Energy', value: 'climate' },
+            { label: 'Web3 / Crypto', value: 'web3' },
+            { label: 'Consumer', value: 'consumer' },
+            { label: 'Enterprise', value: 'enterprise' },
+            { label: 'Other', value: 'other' },
+          ],
+        },
+      ],
+      next: 'talent_location',
+    },
+
+    talent_location: {
+      id: 'talent_location',
+      type: 'form',
+      content: "where are you based?",
+      formSchema: [
+        { name: 'location', type: 'text', label: 'City / region', required: true, placeholder: 'e.g. Bangalore, India' },
+      ],
+      next: 'talent_linkedin',
+    },
+
+    talent_linkedin: {
+      id: 'talent_linkedin',
+      type: 'form',
+      content: "linkedin? (optional — but founders love seeing it)",
+      formSchema: [
+        { name: 'linkedinUrl', type: 'url', label: 'LinkedIn URL', placeholder: 'https://linkedin.com/in/...' },
+      ],
+      next: 'attribution',
+    },
+
+    // ═══════════════════════════════════════════
+    // EVENT PARTICIPANT FLOW
+    // ═══════════════════════════════════════════
+
+    event_name: {
+      id: 'event_name',
+      type: 'form',
+      content: "the Pitch by Deel — exciting! what's your company called?",
+      formSchema: [
+        { name: 'companyName', type: 'text', label: 'Company name', required: true, placeholder: 'e.g. Acme Inc.' },
+      ],
+      next: 'event_role',
+    },
+
+    event_role: {
+      id: 'event_role',
+      type: 'form',
+      content: "and your role?",
+      formSchema: [
+        { name: 'currentRole', type: 'text', label: 'Your role', required: true, placeholder: 'e.g. CEO & Founder' },
+      ],
+      next: 'event_headline',
+    },
+
+    event_headline: {
+      id: 'event_headline',
+      type: 'form',
+      content: "one-liner about what your company does?",
+      formSchema: [
+        { name: 'headline', type: 'text', label: 'One-liner', required: true, placeholder: 'e.g. AI-powered hiring platform' },
+      ],
+      next: 'event_stage',
+    },
+
+    event_stage: {
+      id: 'event_stage',
+      type: 'choices',
+      content: "what stage are you at?",
+      choices: [
+        { label: 'Pre-Seed', value: 'PRE_SEED', next: 'event_description' },
+        { label: 'Seed', value: 'SEED', next: 'event_description' },
+        { label: 'Series A', value: 'SERIES_A', next: 'event_description' },
+        { label: 'Series B+', value: 'SERIES_B', next: 'event_description' },
+      ],
+    },
+
+    event_description: {
+      id: 'event_description',
+      type: 'form',
+      content: "tell me about your business for pitch prep — what makes you unique?",
+      formSchema: [
+        { name: 'businessDescription', type: 'textarea', label: 'Your business', required: true, placeholder: 'What problem do you solve? What makes you stand out?', validation: { max: 500 } },
+      ],
+      next: 'event_location',
+    },
+
+    event_location: {
+      id: 'event_location',
+      type: 'form',
+      content: "where are you based?",
+      formSchema: [
+        { name: 'location', type: 'text', label: 'City / region', required: true, placeholder: 'e.g. Delhi, India' },
+        {
+          name: 'industries',
+          type: 'multiselect',
+          label: 'Your space',
+          required: true,
+          options: [
+            { label: 'AI / ML', value: 'ai_ml' },
+            { label: 'SaaS', value: 'saas' },
+            { label: 'Fintech', value: 'fintech' },
+            { label: 'Healthcare', value: 'healthcare' },
+            { label: 'E-commerce', value: 'ecommerce' },
+            { label: 'Other', value: 'other' },
+          ],
+        },
+      ],
+      next: 'attribution',
+    },
+
+    // ═══════════════════════════════════════════
+    // DEAL PARTNER FLOW
+    // ═══════════════════════════════════════════
+
+    deal_partner_role: {
+      id: 'deal_partner_role',
+      type: 'form',
+      content: "deal partner — nice. what's your current role?",
+      formSchema: [
+        { name: 'currentRole', type: 'text', label: 'Your role', required: true, placeholder: 'e.g. BD Lead at TechStars' },
+      ],
+      next: 'deal_partner_focus',
+    },
+
+    deal_partner_focus: {
+      id: 'deal_partner_focus',
+      type: 'form',
+      content: "what kind of deals do you source?",
+      formSchema: [
+        { name: 'headline', type: 'text', label: 'Deal focus', required: true, placeholder: 'e.g. Pre-seed AI/ML startups in LATAM' },
+      ],
+      next: 'deal_partner_location',
+    },
+
+    deal_partner_location: {
+      id: 'deal_partner_location',
+      type: 'form',
+      content: "where are you based?",
+      formSchema: [
+        { name: 'location', type: 'text', label: 'City', required: true, placeholder: 'e.g. Miami, FL' },
+        { name: 'cityBased', type: 'text', label: 'City you operate in', required: true, placeholder: 'e.g. Miami, FL' },
+      ],
+      next: 'deal_partner_sectors',
+    },
+
+    deal_partner_sectors: {
+      id: 'deal_partner_sectors',
+      type: 'form',
+      content: "what sectors do you focus on?",
+      formSchema: [
+        {
+          name: 'industries',
+          type: 'multiselect',
+          label: 'Your sectors',
+          required: true,
+          options: [
+            { label: 'AI / ML', value: 'ai_ml' },
+            { label: 'SaaS', value: 'saas' },
+            { label: 'Fintech', value: 'fintech' },
+            { label: 'Healthcare', value: 'healthcare' },
+            { label: 'E-commerce', value: 'ecommerce' },
+            { label: 'Other', value: 'other' },
+          ],
+        },
+      ],
+      next: 'attribution',
+    },
+
+    // ═══════════════════════════════════════════
+    // OTHER FLOW
+    // ═══════════════════════════════════════════
+
+    other_role: {
+      id: 'other_role',
+      type: 'form',
+      content: "no problem! what do you do?",
+      formSchema: [
+        { name: 'currentRole', type: 'text', label: 'Your role', required: true, placeholder: 'e.g. VP Engineering at BigCorp' },
+      ],
+      next: 'other_headline',
+    },
+
+    other_headline: {
+      id: 'other_headline',
+      type: 'form',
+      content: "and what brings you to cleya?",
+      formSchema: [
+        { name: 'headline', type: 'text', label: 'What you\'re looking for', required: true, placeholder: 'e.g. Looking to connect with founders in fintech' },
+      ],
+      next: 'other_company',
+    },
+
+    other_company: {
+      id: 'other_company',
+      type: 'form',
+      content: "are you with a company?",
+      formSchema: [
+        { name: 'companyName', type: 'text', label: 'Company (if any)', placeholder: 'e.g. Independent' },
+      ],
+      next: 'other_industries',
+    },
+
+    other_industries: {
+      id: 'other_industries',
+      type: 'form',
+      content: "which industries are you interested in?",
+      formSchema: [
+        {
+          name: 'industries',
+          type: 'multiselect',
+          label: 'Pick all that apply',
+          required: true,
+          options: [
+            { label: 'AI / ML', value: 'ai_ml' },
+            { label: 'SaaS', value: 'saas' },
+            { label: 'Fintech', value: 'fintech' },
+            { label: 'Healthcare', value: 'healthcare' },
+            { label: 'E-commerce', value: 'ecommerce' },
+            { label: 'Other', value: 'other' },
+          ],
+        },
+      ],
+      next: 'other_location',
+    },
+
+    other_location: {
+      id: 'other_location',
+      type: 'form',
+      content: "where are you based?",
+      formSchema: [
+        { name: 'location', type: 'text', label: 'City / region', required: true, placeholder: 'e.g. Bangalore, India' },
+      ],
+      next: 'attribution',
+    },
+
+    // ═══════════════════════════════════════════
+    // ATTRIBUTION → PROFILE CONFIRMATION → COMPLETION
+    // ═══════════════════════════════════════════
+
+    attribution: {
+      id: 'attribution',
+      type: 'choices',
+      content: "one last thing — how did you hear about cleya?",
+      choices: [
+        { label: '💼 LinkedIn', value: 'linkedin', next: 'profile_confirmation' },
+        { label: '🐦 Twitter / X', value: 'twitter', next: 'profile_confirmation' },
+        { label: '💬 WhatsApp Group', value: 'whatsapp_group', next: 'profile_confirmation' },
+        { label: '👥 Friend Referral', value: 'friend_referral', next: 'profile_confirmation' },
+        { label: '🎤 Event (The Pitch)', value: 'event_the_pitch', next: 'profile_confirmation' },
+        { label: '😇 Angel Network', value: 'angel_network', next: 'profile_confirmation' },
+        { label: '📧 VC Newsletter', value: 'vc_newsletter', next: 'profile_confirmation' },
+        { label: '🔍 Google Search', value: 'google_search', next: 'profile_confirmation' },
+        { label: '🔗 Other', value: 'other', next: 'profile_confirmation' },
+      ],
+    },
+
+    profile_confirmation: {
+      id: 'profile_confirmation',
+      type: 'choices',
+      content: "placeholder — will be replaced with narrative profile summary",
+      choices: [
+        { label: '✅ Looks good — let\'s go!', value: 'confirm', next: 'completion' },
+        { label: '✏️ I\'ll tweak it later from my dashboard', value: 'edit_later', next: 'completion' },
+      ],
+    },
+
     completion: {
       id: 'completion',
       type: 'message',
       content:
-        "You're all set! ✅\n\nI'm now working on finding your best matches. I'll notify you as soon as I find people worth connecting with.\n\nYou can come back anytime to update your profile or check your matches. See you soon!",
+        "you're all set! 🎉\n\ni'm already working on finding your best matches. i'll notify you as soon as i find people worth connecting with.\n\nlet's go! 🚀",
       next: null,
       metadata: { action: 'complete_onboarding' },
     },

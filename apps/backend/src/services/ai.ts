@@ -91,10 +91,15 @@ export async function chatWithCleo(userId: string, message: string, conversation
     context += `\nNo matches yet.\n`;
   }
 
+  const historyMessages = conversationHistory.slice(-20).map(m => ({ ...m, role: m.role as 'user' | 'assistant' }));
+
+  const lastMsg = historyMessages[historyMessages.length - 1];
+  const isDuplicate = lastMsg && lastMsg.role === 'user' && lastMsg.content === message;
+
   const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
     { role: 'system', content: SYSTEM_PROMPT + context },
-    ...conversationHistory.slice(-10).map(m => ({ ...m, role: m.role as 'user' | 'assistant' })),
-    { role: 'user', content: message },
+    ...historyMessages,
+    ...(isDuplicate ? [] : [{ role: 'user' as const, content: message }]),
   ];
 
   try {

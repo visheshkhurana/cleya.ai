@@ -324,9 +324,12 @@ export default function MatchesPage() {
           {showBreakdown && <ScoreBreakdown breakdown={match.scoreBreakdown} overallScore={match.score} />}
 
           {match.reason && (
-            <div className="mt-3 p-3 rounded-xl" style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.08)' }}>
-              <p className="text-xs text-white/50 leading-relaxed">
-                <span className="text-blue-300/70 font-medium">Why connect: </span>
+            <div className="mt-3 p-3.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.06), rgba(139,92,246,0.04))', border: '1px solid rgba(59,130,246,0.1)' }}>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span className="text-xs">💡</span>
+                <span className="text-[10px] font-semibold text-blue-300/80 uppercase tracking-wide">Thought of someone for you</span>
+              </div>
+              <p className="text-xs text-white/60 leading-relaxed italic">
                 {match.reason}
               </p>
             </div>

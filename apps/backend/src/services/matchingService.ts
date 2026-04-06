@@ -540,9 +540,11 @@ export class MatchingService {
       const response = await this.ai.chat([
         {
           role: 'system',
-          content: `You are Cleya, an AI superconnector for India's startup ecosystem. Write exactly 2-3 sentences explaining why these two people should connect — like a trusted friend putting someone on your radar. Be specific: mention actual roles, companies, what they're building/investing in, traction, and timing. Use a warm, direct tone. Never be generic. Never say "complementary backgrounds" or "synergy."
+          content: `You are Cleya, an AI superconnector. Write a warm referral — like a mutual friend texting someone about a person they should meet. Start with a phrase like "thought of someone for you" or "okay so i know someone you'd want to meet" or "had to connect you two."
 
-You have structured compatibility data — use it to make your reasoning specific and data-backed. Reference actual numbers (sector overlap, check size fit, traction) when available.`,
+Write 2-3 sentences max. Be specific: mention actual roles, companies, what they're building/investing in, traction, and why it matters to THIS person specifically. Use casual, lowercase tone. Never be generic. Never say "complementary backgrounds" or "synergy." Make it feel personal, not algorithmic.
+
+You have structured compatibility data — weave in specific details (sector overlap, check size fit, traction numbers, shared geography) naturally.`,
         },
         {
           role: 'user',
@@ -566,19 +568,19 @@ You have structured compatibility data — use it to make your reasoning specifi
       if (a.persona === 'FOUNDER' && (b.persona === 'INVESTOR' || b.persona === 'VENTURE_PARTNER')) {
         const stage = a.companyStage ? ` (${a.companyStage.replace(/_/g, ' ')})` : '';
         const sector = shared.length > 0 ? ` in ${shared[0].replace(/_/g, ' ')}` : '';
-        const tractionNote = signals.tractionHighlights.length > 0 ? ` Key metrics: ${signals.tractionHighlights[0]}.` : '';
-        return `${aLabel}${stage} is building${sector} and could benefit from ${bLabel}'s investment expertise.${tractionNote} ${bLoc && aLoc ? `Both active in the ${aLoc.includes(bLoc) || bLoc.includes(aLoc) ? aLoc : 'Indian'} startup ecosystem.` : 'A strong cross-role match for deal flow.'}`;
+        const tractionNote = signals.tractionHighlights.length > 0 ? ` — ${signals.tractionHighlights[0]}` : '';
+        return `thought of someone for you — ${aLabel}${stage} is building${sector}${tractionNote}. ${bLoc && aLoc ? `they're based in ${aLoc} and could be a great fit for your portfolio.` : `worth a conversation for your deal flow.`}`;
       }
       if (b.persona === 'FOUNDER' && (a.persona === 'INVESTOR' || a.persona === 'VENTURE_PARTNER')) {
         const stage = b.companyStage ? ` (${b.companyStage.replace(/_/g, ' ')})` : '';
         const sector = shared.length > 0 ? ` in ${shared[0].replace(/_/g, ' ')}` : '';
-        const tractionNote = signals.tractionHighlights.length > 0 ? ` Key metrics: ${signals.tractionHighlights[0]}.` : '';
-        return `${bLabel}${stage} is building${sector} and could benefit from ${aLabel}'s investment expertise.${tractionNote} ${aLoc && bLoc ? `Both active in the ${aLoc.includes(bLoc) || bLoc.includes(aLoc) ? bLoc : 'Indian'} startup ecosystem.` : 'A strong cross-role match for deal flow.'}`;
+        const tractionNote = signals.tractionHighlights.length > 0 ? ` — ${signals.tractionHighlights[0]}` : '';
+        return `thought of someone for you — ${bLabel}${stage} is building${sector}${tractionNote}. ${aLoc && bLoc ? `they're based in ${bLoc}, right in your wheelhouse.` : `could be a strong fit for what you're looking for.`}`;
       }
       if (shared.length > 0) {
-        return `${aLabel} and ${bLabel} are both active in ${shared.slice(0, 2).join(' and ').replace(/_/g, ' ')}, creating strong potential for collaboration. ${a.lookingFor.length > 0 ? `${aRole} is looking for ${a.lookingFor[0].replace(/_/g, ' ')}.` : ''}`;
+        return `had to connect you two — ${aLabel} and ${bLabel} are both deep in ${shared.slice(0, 2).join(' and ').replace(/_/g, ' ')}. ${a.lookingFor.length > 0 ? `${aRole} is specifically looking for ${a.lookingFor[0].replace(/_/g, ' ')}.` : 'there\'s a lot to talk about here.'}`;
       }
-      return `${aLabel} and ${bLabel} bring different perspectives from ${(a.industries[0] || 'their sector').replace(/_/g, ' ')} and ${(b.industries[0] || 'their sector').replace(/_/g, ' ')}, opening up cross-sector collaboration opportunities.`;
+      return `okay so i know someone you'd want to meet — ${aLabel} from ${(a.industries[0] || 'tech').replace(/_/g, ' ')} and ${bLabel} from ${(b.industries[0] || 'tech').replace(/_/g, ' ')} could spark something interesting together.`;
     }
   }
 

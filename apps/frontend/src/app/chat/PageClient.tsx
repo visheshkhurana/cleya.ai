@@ -22,6 +22,7 @@ interface FlowNode {
   choices?: { label: string; value: string; next: string }[];
   formSchema?: any[];
   next?: string | null;
+  metadata?: Record<string, any>;
 }
 
 const CHAT_STORAGE_KEY = 'cleo_chat_state';
@@ -29,21 +30,70 @@ const CHAT_STORAGE_KEY = 'cleo_chat_state';
 const ONBOARDING_STEP_MAP: Record<string, number> = {
   welcome: 1,
   persona_select: 1,
-  founder_details: 2,
-  talent_details: 2,
-  investor_details: 2,
-  event_details: 2,
-  deal_partner_details: 2,
-  other_details: 2,
+  founder_open: 2,
+  founder_company_name: 2,
+  founder_headline: 2,
+  founder_role: 2,
+  founder_stage: 2,
+  talent_open: 2,
+  talent_current_role: 2,
+  talent_looking_for: 2,
+  talent_experience: 2,
+  investor_open: 2,
+  investor_fund_name: 2,
+  investor_role: 2,
+  investor_focus: 2,
+  event_name: 2,
+  event_role: 2,
+  event_headline: 2,
+  deal_partner_role: 2,
+  deal_partner_focus: 2,
+  other_role: 2,
+  other_headline: 2,
+  other_company: 2,
+  founder_deep_dive: 3,
+  founder_traction: 3,
   founder_priority: 3,
-  founder_fundraising: 3,
+  founder_raise_amount: 3,
+  founder_raised_so_far: 3,
+  founder_close_date: 3,
+  investor_type: 3,
+  investor_stage: 3,
+  investor_check_size: 3,
+  investor_portfolio: 3,
   talent_target_role: 3,
-  common_details: 4,
+  talent_stage_pref: 3,
+  talent_work_style: 3,
+  event_stage: 3,
+  event_description: 3,
+  founder_industries: 4,
+  founder_location: 4,
+  founder_linkedin: 4,
+  investor_industries: 4,
+  investor_location: 4,
+  investor_linkedin: 4,
+  talent_industries: 4,
+  talent_location: 4,
+  talent_linkedin: 4,
+  event_location: 4,
+  deal_partner_location: 4,
+  deal_partner_sectors: 4,
+  other_industries: 4,
+  other_location: 4,
   attribution: 5,
-  completion: 5,
+  profile_confirmation: 6,
+  completion: 6,
 };
-const ONBOARDING_TOTAL_STEPS = 5;
-const ONBOARDING_STEP_LABELS = ['Welcome', 'Profile', 'Goals', 'Details', 'Finish'];
+const ONBOARDING_TOTAL_STEPS = 6;
+const ONBOARDING_STEP_LABELS = ['Welcome', 'About You', 'Details', 'Preferences', 'Source', 'Done'];
+
+function getEstimatedTime(currentStep: number): string {
+  const remaining = ONBOARDING_TOTAL_STEPS - currentStep;
+  if (remaining <= 0) return 'Almost done!';
+  if (remaining <= 1) return '~30 seconds left';
+  if (remaining <= 2) return '~1 minute left';
+  return `~${remaining} minutes left`;
+}
 
 function saveChatState(conversationId: string, messages: Message[]) {
   try {
@@ -76,6 +126,7 @@ export default function ChatPage() {
   const [isOnboarded, setIsOnboarded] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
+  const [showCompletion, setShowCompletion] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -103,16 +154,45 @@ export default function ChatPage() {
     }
   }, [conversationId, messages]);
 
-  const startChat = async () => {
+  const loadAIChatHistory = async () => {
     try {
-      const existingProfile = await api.getProfile().catch(() => null);
-      if (existingProfile?.isComplete) {
-        setIsOnboarded(true);
+      const historyData = await api.getAIChatHistory();
+      if (historyData.messages && historyData.messages.length > 0) {
+        const historicalMessages: Message[] = historyData.messages.map((m: any) => ({
+          sender: m.sender as 'AI' | 'USER',
+          content: m.content,
+          createdAt: m.createdAt ? new Date(m.createdAt) : undefined,
+        }));
+        setMessages([
+          {
+            sender: 'AI',
+            content: `Welcome back! I'm Cleya, your AI networking assistant. Ask me anything — I can help you find connections, improve your profile, suggest networking strategies, or answer questions about India's startup ecosystem.`,
+            createdAt: new Date(),
+          },
+          ...historicalMessages,
+        ]);
+      } else {
         setMessages([{
           sender: 'AI',
           content: `Welcome back! I'm Cleya, your AI networking assistant. Ask me anything — I can help you find connections, improve your profile, suggest networking strategies, or answer questions about India's startup ecosystem.`,
           createdAt: new Date(),
         }]);
+      }
+    } catch {
+      setMessages([{
+        sender: 'AI',
+        content: `Welcome back! I'm Cleya, your AI networking assistant. Ask me anything — I can help you find connections, improve your profile, suggest networking strategies, or answer questions about India's startup ecosystem.`,
+        createdAt: new Date(),
+      }]);
+    }
+  };
+
+  const startChat = async () => {
+    try {
+      const existingProfile = await api.getProfile().catch(() => null);
+      if (existingProfile?.isComplete) {
+        setIsOnboarded(true);
+        await loadAIChatHistory();
         setCurrentNode({ id: 'ai_chat', type: 'ai_response' });
         setLoading(false);
         return;
@@ -165,7 +245,7 @@ export default function ChatPage() {
     textInput?: string;
   }) => {
     if (!conversationId) return;
-    const userContent = input.textInput || input.choiceValue || (input.formData ? 'Submitted form' : '');
+    const userContent = input.textInput || input.choiceValue || (input.formData ? 'Submitted details' : '');
     if (userContent) {
       setMessages((prev) => [...prev, { sender: 'USER', content: userContent, createdAt: new Date() }]);
     }
@@ -183,19 +263,8 @@ export default function ChatPage() {
         if (data.node.metadata?.action === 'complete_onboarding' || data.node.next === null) {
           localStorage.removeItem(CHAT_STORAGE_KEY);
           analytics.onboardingCompleted(data.node.metadata?.persona || 'unknown');
-          setRedirecting(true);
+          setShowCompletion(true);
           setCurrentNode(null);
-          setMessages((prev) => [
-            ...prev,
-            {
-              sender: 'AI',
-              content: "🎉 **You're all set!** Your profile has been created and Cleya is already looking for great connections for you.\n\nRedirecting you to your dashboard...",
-              createdAt: new Date(),
-            },
-          ]);
-          setTimeout(() => {
-            window.location.href = '/dashboard';
-          }, 3000);
         }
       }
     } catch (err) {
@@ -222,8 +291,7 @@ export default function ChatPage() {
     setAiLoading(true);
     setTyping(true);
     try {
-      const history = messages.map(m => ({ role: m.sender === 'AI' ? 'assistant' as const : 'user' as const, content: m.content }));
-      const result = await api.sendAIChat(msg, history);
+      const result = await api.sendAIChat(msg, []);
       setMessages(prev => [...prev, { sender: 'AI', content: result.content, createdAt: new Date() }]);
     } catch {
       setMessages(prev => [...prev, { sender: 'AI', content: "Sorry, I couldn't process that right now. Please try again!", createdAt: new Date() }]);
@@ -231,6 +299,11 @@ export default function ChatPage() {
       setAiLoading(false);
       setTyping(false);
     }
+  };
+
+  const handleViewMatches = () => {
+    setRedirecting(true);
+    window.location.href = '/dashboard';
   };
 
   if (loading) {
@@ -246,6 +319,41 @@ export default function ChatPage() {
       </AppShell>
     );
   }
+
+  if (showCompletion && !redirecting) {
+    return (
+      <AppShell className="flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-6">
+          <div className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6"
+            style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', boxShadow: '0 8px 32px rgba(59,130,246,0.4)' }}>
+            <span className="text-4xl">🎉</span>
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-3">You're all set!</h2>
+          <p className="text-sm text-white/50 mb-2 leading-relaxed">
+            Your profile has been created and Cleya is already looking for great connections for you.
+          </p>
+          <p className="text-sm text-white/40 mb-8 leading-relaxed">
+            We'll notify you as soon as we find people worth connecting with. In the meantime, check out your dashboard.
+          </p>
+          <button
+            onClick={handleViewMatches}
+            className="px-8 py-4 rounded-2xl font-semibold text-white text-sm transition-all duration-200 hover:scale-105 hover:shadow-lg"
+            style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', boxShadow: '0 4px 20px rgba(59,130,246,0.3)' }}
+          >
+            View your matches →
+          </button>
+          <button
+            onClick={() => { setShowCompletion(false); setIsOnboarded(true); loadAIChatHistory(); setCurrentNode({ id: 'ai_chat', type: 'ai_response' }); }}
+            className="block mx-auto mt-4 text-xs text-white/30 hover:text-white/50 transition"
+          >
+            or chat with Cleya
+          </button>
+        </div>
+      </AppShell>
+    );
+  }
+
+  const currentStep = currentNode ? (ONBOARDING_STEP_MAP[currentNode.id] || 1) : 1;
 
   return (
     <AppShell className="flex flex-col overflow-x-hidden">
@@ -281,18 +389,25 @@ export default function ChatPage() {
         <div className="px-6 lg:px-8 py-3 border-b border-white/5" style={{ background: 'rgba(5,5,16,0.9)' }}>
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-medium text-white/60">
-              Step {ONBOARDING_STEP_MAP[currentNode.id] || 1} of {ONBOARDING_TOTAL_STEPS}
+              Step {currentStep} of {ONBOARDING_TOTAL_STEPS}
             </span>
             <span className="text-xs text-white/40">
-              {ONBOARDING_STEP_LABELS[(ONBOARDING_STEP_MAP[currentNode.id] || 1) - 1]}
+              {getEstimatedTime(currentStep)}
             </span>
           </div>
           <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
             <div className="h-full rounded-full transition-all duration-500 ease-out"
               style={{
-                width: `${((ONBOARDING_STEP_MAP[currentNode.id] || 1) / ONBOARDING_TOTAL_STEPS) * 100}%`,
+                width: `${(currentStep / ONBOARDING_TOTAL_STEPS) * 100}%`,
                 background: 'linear-gradient(90deg, #3B82F6, #93C5FD)',
               }} />
+          </div>
+          <div className="flex justify-between mt-1.5">
+            {ONBOARDING_STEP_LABELS.map((label, i) => (
+              <span key={label} className={`text-[9px] ${i + 1 <= currentStep ? 'text-blue-400/60' : 'text-white/15'}`}>
+                {label}
+              </span>
+            ))}
           </div>
         </div>
       )}

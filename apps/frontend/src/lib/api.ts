@@ -356,6 +356,10 @@ class ApiClient {
     });
   }
 
+  async getAIChatHistory() {
+    return this.fetch('/ai-chat/history');
+  }
+
   async getIntroductions() {
     return this.fetch('/introductions');
   }

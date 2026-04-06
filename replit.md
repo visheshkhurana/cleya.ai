@@ -203,13 +203,15 @@ All frontend pages use a server/client wrapper pattern for build compatibility:
 **Control Tower UI**: "WhatsApp" tab in `/controltower` shows stats cards + scrollable recent message feed with direction/status badges.
 
 ## Phase 1: Multi-Persona Onboarding
-Six persona types with tailored onboarding flows:
-1. **Founder / Business Owner** — company details, priority (fundraising/cofounder/hiring/marketing/sales/VP hire), fundraising fields
-2. **Talent (Join a Startup)** — experience, target role (founding engineer/GTM/CoS/growth/open/cofounder)
-3. **Investor** — fund details, investor type, check size, stage preferences
-4. **The Pitch by Deel (Event)** — company pitch details for event participation
-5. **Deal Partner / Scout** — deal sourcing, city, tracked companies, founder access pitch
-6. **Other** — general profile
+Six persona types with tailored conversational onboarding flows (warm, one-question-at-a-time, casual tone):
+1. **Founder / Business Owner** — warm opening → company basics → deep dive (business + traction) → priority → fundraising details (if raising) → preferences + location → attribution → profile confirmation with narrative summary → CTA
+2. **Talent (Join a Startup)** — warm opening → experience + goals → target role choice → preferences (stage/work style/industries/location) → attribution → profile confirmation → CTA
+3. **Investor** — warm opening → fund basics → investment thesis (stage/check size/portfolio) → sector preferences + location → attribution → profile confirmation → CTA
+4. **The Pitch by Deel (Event)** — company + pitch details → attribution → profile confirmation → CTA
+5. **Deal Partner / Scout** — deal sourcing details → attribution → profile confirmation → CTA
+6. **Other** — general profile → attribution → profile confirmation → CTA
+
+Onboarding includes: 6-step progress bar with estimated time remaining, step labels, profile confirmation with narrative summary at end, dedicated completion screen with "View your matches" CTA button. Match cards use "warm referral" style — "thought of someone for you" format with personal, specific context.
 
 ### Schema additions (Phase 1)
 - New PersonaType enums: TALENT, DEAL_PARTNER, VENTURE_PARTNER, EVENT_PARTICIPANT
@@ -309,7 +311,7 @@ Full 8-stage lifecycle implemented:
 - **Landing Page** (`/`) — Premium animated design with Framer Motion + Canvas2D animations. Sections: frosted-glass nav, hero (serif headline + floating 3D chat mockup with staggered match cards), testimonial marquee (auto-scrolling), How It Works (3-step TiltCards), Built For Every Side (3 persona columns), featured testimonial blockquote, final CTA with AnimatedOrb, minimal footer. Components: `ParticleNetwork` (Canvas2D particle animation), `AnimatedOrb` (Canvas2D blob), `TiltCard` (3D mouse-tilt), `ScrollProgress` (fixed progress bar), `SmoothScroll` (Lenis smooth scrolling). Colors: #0F172A bg, #1E293B surface, #334155 border, #0D9488 teal primary, #2DD4BF teal accent. Animations respect prefers-reduced-motion. Auth modal has Escape/click-outside dismiss. Non-auth users see landing; auth users auto-redirect to dashboard/admin
 - **Dashboard** (`/dashboard`) — Profile summary, match stats, recent match cards with scores + persona + reason, quick actions (View Matches, Find Matches, Edit Profile, Chat)
 - **Profile** (`/profile`) — Edit all profile fields per persona type (Founder/Investor/Talent sections), save via PATCH /api/users/profile
-- **Chat** (`/chat`) — AI chat with typing indicator, timestamps, smooth scroll, chat history persistence (localStorage, survives refresh, 24h expiry)
+- **Chat** (`/chat`) — AI chat with typing indicator, timestamps, smooth scroll, chat history persistence (DB-backed via `ai_chat_freeform` conversation + localStorage fallback, last 50 messages loaded on open, last 20 sent as AI context)
 - **Matches** (`/matches`) — Card-based match review with accept/reject, contact reveal, post-response feedback prompt (1-5 star rating + optional text)
 - **Settings** (`/settings`) — Account info display, change password, logout, delete account (danger zone)
 - **Smart Login Routing**: Admin → `/admin`, completed profiles → `/dashboard`, new users → `/chat`

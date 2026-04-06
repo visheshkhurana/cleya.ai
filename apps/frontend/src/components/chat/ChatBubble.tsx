@@ -1,5 +1,6 @@
 'use client';
 import ReactMarkdown from 'react-markdown';
+import rehypeSanitize from 'rehype-sanitize';
 
 interface ChatBubbleProps {
   sender: 'AI' | 'USER' | 'SYSTEM';
@@ -28,6 +29,7 @@ export function ChatBubble({ sender, content, timestamp }: ChatBubbleProps) {
             ) : (
               <div className="text-sm leading-relaxed break-words prose-chat">
                 <ReactMarkdown
+                  rehypePlugins={[rehypeSanitize]}
                   components={{
                     p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
                     strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
@@ -39,6 +41,19 @@ export function ChatBubble({ sender, content, timestamp }: ChatBubbleProps) {
                       <a href={href} target="_blank" rel="noopener noreferrer" className="underline" style={{ color: '#93C5FD' }}>
                         {children}
                       </a>
+                    ),
+                    code: ({ children }) => (
+                      <code className="px-1.5 py-0.5 rounded text-xs font-mono" style={{ background: 'rgba(255,255,255,0.1)' }}>
+                        {children}
+                      </code>
+                    ),
+                    h1: ({ children }) => <h1 className="text-base font-bold mb-2">{children}</h1>,
+                    h2: ({ children }) => <h2 className="text-sm font-bold mb-2">{children}</h2>,
+                    h3: ({ children }) => <h3 className="text-sm font-semibold mb-1">{children}</h3>,
+                    blockquote: ({ children }) => (
+                      <blockquote className="border-l-2 border-blue-400/40 pl-3 my-2 text-white/60 italic">
+                        {children}
+                      </blockquote>
                     ),
                   }}
                 >

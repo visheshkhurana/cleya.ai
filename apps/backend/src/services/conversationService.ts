@@ -160,19 +160,23 @@ export class ConversationService {
       },
     });
 
-    // Save AI response
-    if (result.node.content) {
+    let nodeContent = result.node.content || '';
+
+    if (result.node.id === 'profile_confirmation') {
+      nodeContent = this.generateProfileSummary(updatedContext);
+    }
+
+    if (nodeContent) {
       await prisma.message.create({
         data: {
           conversationId,
           sender: 'AI',
-          content: result.node.content,
+          content: nodeContent,
           nodeId: result.node.id,
         },
       });
     }
 
-    // Handle special actions
     if (result.node.metadata?.action) {
       await this.handleAction(
         result.node.metadata.action,
@@ -181,16 +185,69 @@ export class ConversationService {
       );
     }
 
-    // Push via WebSocket
     sendToUser(conversation.userId, 'chat:response', {
       conversationId,
-      node: result.node,
+      node: { ...result.node, content: nodeContent },
     });
 
     return {
-      node: result.node,
+      node: { ...result.node, content: nodeContent },
       isComplete: result.state.isComplete,
     };
+  }
+
+  private generateProfileSummary(context: Record<string, any>): string {
+    const persona = context.persona_select_choice || context.persona_select || 'user';
+    const name = context.companyName || '';
+    const role = context.currentRole || '';
+    const headline = context.headline || '';
+    const location = context.location || '';
+    const industries = context.industries || [];
+    const companyStage = context.companyStage || context.founder_stage_choice || context.event_stage_choice || context.investor_stage_choice || '';
+    const investorType = context.investorType || context.investor_type_choice || '';
+    const workStyle = context.workStyle || context.talent_work_style_choice || '';
+    const targetRole = context.talent_target_role_choice || '';
+
+    const personaLabels: Record<string, string> = {
+      FOUNDER: 'Founder',
+      INVESTOR: 'Investor',
+      TALENT: 'Job Seeker',
+      DEAL_PARTNER: 'Deal Partner',
+      EVENT_PARTICIPANT: 'Event Participant',
+      OTHER: 'Professional',
+    };
+
+    const personaLabel = personaLabels[persona] || 'Professional';
+    let summary = `here's what i've got on you — let me know if anything's off:\n\n`;
+    summary += `📋 **Your Profile**\n\n`;
+    summary += `**Type:** ${personaLabel}\n`;
+    if (role) summary += `**Role:** ${role}\n`;
+    if (name) summary += `**Company/Fund:** ${name}\n`;
+    if (headline) summary += `**Focus:** ${headline}\n`;
+    if (companyStage) summary += `**Stage:** ${companyStage.replace(/_/g, ' ')}\n`;
+    if (location) summary += `**Location:** ${location}\n`;
+    if (industries.length > 0) {
+      const industryLabels = industries.map((i: string) => i.replace(/_/g, ' ').replace(/\b[a-z]/g, (c: string) => c.toUpperCase()));
+      summary += `**Industries:** ${industryLabels.join(', ')}\n`;
+    }
+
+    if (persona === 'FOUNDER') {
+      if (context.businessDescription) summary += `**About:** ${context.businessDescription}\n`;
+      if (context.raiseAmount) summary += `**Raising:** ${context.raiseAmount}\n`;
+      if (context.keyTractionPoints) summary += `**Traction:** ${context.keyTractionPoints}\n`;
+      const priority = context.founder_priority_choice;
+      if (priority) summary += `**Priority:** ${priority.replace(/_/g, ' ')}\n`;
+    } else if (persona === 'INVESTOR') {
+      if (investorType) summary += `**Investor type:** ${investorType}\n`;
+      if (context.investmentAmount) summary += `**Check size:** ${context.investmentAmount}\n`;
+      if (context.portfolioCompanies) summary += `**Portfolio:** ${context.portfolioCompanies}\n`;
+    } else if (persona === 'TALENT') {
+      if (targetRole) summary += `**Target role:** ${targetRole.replace(/_/g, ' ')}\n`;
+      if (workStyle) summary += `**Work style:** ${workStyle.replace(/_/g, ' ')}\n`;
+    }
+
+    summary += `\ndoes this capture you well? if it looks good, let's go find your matches! you can always tweak things later from your dashboard.`;
+    return summary;
   }
 
   private async handleAction(action: string, userId: string, context: Record<string, any>) {
