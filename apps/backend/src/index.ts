@@ -30,7 +30,6 @@ import { secretaryRouter } from './routes/secretary';
 import { zoomRouter } from './routes/zoom';
 import { dealRouter } from './routes/deal';
 import { aiChatRouter } from './routes/aiChat';
-import { agentChatRouter } from './routes/agent-chat';
 import { twilioRouter } from './routes/twilio';
 import { whatsappRouter } from './routes/whatsapp';
 import { gupshupRouter } from './routes/gupshup';
@@ -52,6 +51,7 @@ const allowedOrigins = new Set(
   [
     env.FRONTEND_URL,
     env.CORS_ORIGIN,
+    'https://boardy-ai-platform.replit.app',
   ].filter(Boolean) as string[]
 );
 
@@ -107,7 +107,6 @@ app.use('/api/secretary', secretaryRouter);
 app.use('/api/zoom', zoomRouter);
 app.use('/api/deals', dealRouter);
 app.use('/api/ai-chat', aiChatRouter);
-app.use('/api/agents', agentChatRouter);
 app.use('/api/twilio', twilioRouter);
 app.use('/api/whatsapp', whatsappRouter);
 app.use('/api/gupshup', gupshupRouter);
