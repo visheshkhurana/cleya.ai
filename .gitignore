@@ -11,3 +11,4 @@ backups/
 *.sql
 *.sql.gz
 *.tsbuildinfo
+attached_assets/
