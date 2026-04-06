@@ -190,7 +190,7 @@ export default function SettingsPage() {
 
         {/* Account Info */}
         <section style={{
-          background: 'rgba(10,10,26,0.8)',
+          background: 'rgba(15,22,41,0.8)',
           border: '1px solid rgba(255,255,255,0.05)',
           borderRadius: '16px',
           padding: '28px',
@@ -213,10 +213,10 @@ export default function SettingsPage() {
                 <label style={labelStyle}>Persona</label>
                 <div style={{
                   padding: '6px 12px',
-                  background: 'rgba(59,130,246,0.1)',
-                  border: '1px solid rgba(59,130,246,0.2)',
+                  background: 'rgba(108,99,255,0.1)',
+                  border: '1px solid rgba(108,99,255,0.2)',
                   borderRadius: '8px',
-                  color: '#93C5FD',
+                  color: '#9B95FF',
                   fontSize: '13px',
                   display: 'inline-block',
                 }}>
@@ -235,7 +235,7 @@ export default function SettingsPage() {
 
         {/* Change Password */}
         <section style={{
-          background: 'rgba(10,10,26,0.8)',
+          background: 'rgba(15,22,41,0.8)',
           border: '1px solid rgba(255,255,255,0.05)',
           borderRadius: '16px',
           padding: '28px',
@@ -292,7 +292,7 @@ export default function SettingsPage() {
               disabled={passwordLoading || !currentPassword || !newPassword}
               style={{
                 padding: '12px 24px',
-                background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)',
+                background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '12px',
@@ -310,7 +310,7 @@ export default function SettingsPage() {
 
         {/* Session */}
         <section style={{
-          background: 'rgba(10,10,26,0.8)',
+          background: 'rgba(15,22,41,0.8)',
           border: '1px solid rgba(255,255,255,0.05)',
           borderRadius: '16px',
           padding: '28px',
@@ -338,7 +338,7 @@ export default function SettingsPage() {
 
         {/* Export Data */}
         <section style={{
-          background: 'rgba(10,10,26,0.8)',
+          background: 'rgba(15,22,41,0.8)',
           border: '1px solid rgba(255,255,255,0.05)',
           borderRadius: '16px',
           padding: '28px',
@@ -356,7 +356,7 @@ export default function SettingsPage() {
               disabled={exportLoading}
               style={{
                 padding: '12px 24px',
-                background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)',
+                background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '12px',
@@ -390,7 +390,7 @@ export default function SettingsPage() {
 
         {/* Notification Preferences */}
         <section style={{
-          background: 'rgba(10,10,26,0.8)',
+          background: 'rgba(15,22,41,0.8)',
           border: '1px solid rgba(255,255,255,0.06)',
           borderRadius: '16px',
           padding: '28px',
@@ -421,7 +421,7 @@ export default function SettingsPage() {
                     } catch {}
                     setNotifSaving(false);
                   }}
-                  className="rounded border-white/20 bg-white/5 accent-blue-600"
+                  className="rounded border-white/20 bg-white/5 accent-brand-violet"
                 />
                 <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px' }}>{label}</span>
               </label>
@@ -447,7 +447,7 @@ export default function SettingsPage() {
                     } catch {}
                     setNotifSaving(false);
                   }}
-                  className="rounded border-white/20 bg-white/5 accent-blue-600"
+                  className="rounded border-white/20 bg-white/5 accent-brand-violet"
                 />
                 <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px' }}>{label}</span>
               </label>
@@ -460,7 +460,7 @@ export default function SettingsPage() {
 
         {/* WhatsApp Integration */}
         <section style={{
-          background: 'rgba(10,10,26,0.8)',
+          background: 'rgba(15,22,41,0.8)',
           border: '1px solid rgba(255,255,255,0.06)',
           borderRadius: '16px',
           padding: '28px',
@@ -583,7 +583,7 @@ export default function SettingsPage() {
 
         {/* Integrations */}
         <section style={{
-          background: 'rgba(10,10,26,0.8)',
+          background: 'rgba(15,22,41,0.8)',
           border: '1px solid rgba(255,255,255,0.06)',
           borderRadius: '16px',
           padding: '28px',
@@ -669,8 +669,8 @@ export default function SettingsPage() {
                   disabled={zoomLoading}
                   style={{
                     padding: '8px 16px', borderRadius: '8px', fontSize: '13px',
-                    background: 'rgba(59,130,246,0.1)', color: '#5eead4',
-                    border: '1px solid rgba(59,130,246,0.2)', cursor: 'pointer',
+                    background: 'rgba(108,99,255,0.1)', color: '#5eead4',
+                    border: '1px solid rgba(108,99,255,0.2)', cursor: 'pointer',
                   }}>
                   {zoomLoading ? '...' : 'Connect Zoom'}
                 </button>
@@ -744,7 +744,7 @@ export default function SettingsPage() {
 
         {/* Danger Zone */}
         <section style={{
-          background: 'rgba(10,10,26,0.8)',
+          background: 'rgba(15,22,41,0.8)',
           border: '1px solid rgba(239,68,68,0.15)',
           borderRadius: '16px',
           padding: '28px',

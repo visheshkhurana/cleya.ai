@@ -168,8 +168,8 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex items-center gap-3">
-          <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-          <p className="text-blue-300">Loading dashboard...</p>
+          <div className="w-5 h-5 border-2 border-brand-violet border-t-transparent rounded-full animate-spin" />
+          <p className="text-brand-violet-hover">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -182,7 +182,7 @@ export default function AdminDashboard() {
           <p className="text-red-400">{error}</p>
           <button
             onClick={() => router.push('/')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition"
+            className="px-4 py-2 bg-brand-violet text-white rounded-lg hover:bg-brand-violet transition"
           >
             Back to Login
           </button>
@@ -205,11 +205,11 @@ export default function AdminDashboard() {
       DELIVERED: 'text-green-400 bg-green-500/10 border-green-500/20',
       IN_PROGRESS: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20',
       QUEUED: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20',
-      SCHEDULED: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+      SCHEDULED: 'text-brand-violet bg-brand-violet/10 border-brand-violet/20',
       FAILED: 'text-red-400 bg-red-500/10 border-red-500/20',
       NO_ANSWER: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
     };
-    return map[status] || 'text-blue-300 bg-blue-500/10 border-blue-500/20';
+    return map[status] || 'text-brand-violet-hover bg-brand-violet/10 border-brand-violet/20';
   };
 
   return (
@@ -217,14 +217,14 @@ export default function AdminDashboard() {
       <header className="glass-header px-6 lg:px-8 py-3 sm:py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-bold flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-violet to-brand-violet text-white text-sm font-bold flex items-center justify-center shadow-lg shadow-brand-violet/20">
               C
             </div>
             <h1 className="text-base sm:text-lg font-bold text-white">Cleya.ai Admin</h1>
           </div>
           <button
             onClick={() => { api.logout().then(() => router.push('/')); }}
-            className="text-xs sm:text-sm text-slate-400 hover:text-blue-200 transition"
+            className="text-xs sm:text-sm text-slate-400 hover:text-white/60 transition"
           >
             Sign out
           </button>
@@ -232,7 +232,7 @@ export default function AdminDashboard() {
       </header>
 
       <div className="max-w-7xl mx-auto px-6 lg:px-8 py-4 sm:py-6">
-        <div className="flex gap-1 mb-6 p-1 rounded-xl bg-blue-900/20 border border-blue-500/10 overflow-x-auto">
+        <div className="flex gap-1 mb-6 p-1 rounded-xl bg-brand-violet-pressed/20 border border-brand-violet/10 overflow-x-auto">
           {[
             { id: 'overview' as Tab, label: 'Overview', icon: '📊' },
             { id: 'communications' as Tab, label: 'Comms', icon: '📞' },
@@ -245,8 +245,8 @@ export default function AdminDashboard() {
               onClick={() => setActiveTab(tab.id)}
               className={`px-3 sm:px-5 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                 activeTab === tab.id
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                  : 'text-slate-400 hover:text-blue-200'
+                  ? 'bg-brand-violet text-white shadow-lg shadow-brand-violet/20'
+                  : 'text-slate-400 hover:text-white/60'
               }`}
             >
               {tab.icon} {tab.label}
@@ -270,7 +270,7 @@ export default function AdminDashboard() {
                 ].map((stat) => (
                   <div
                     key={stat.label}
-                    className="bg-[rgba(10,10,26,0.8)]/60 backdrop-blur-sm rounded-xl border border-blue-500/10 p-5 hover:border-blue-500/20 transition"
+                    className="bg-[rgba(15,22,41,0.8)]/60 backdrop-blur-sm rounded-xl border border-brand-violet/10 p-5 hover:border-brand-violet/20 transition"
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-lg">{stat.icon}</span>
@@ -282,22 +282,22 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            <div className="bg-[rgba(10,10,26,0.8)]/60 backdrop-blur-sm rounded-xl border border-blue-500/10 p-6">
+            <div className="bg-[rgba(15,22,41,0.8)]/60 backdrop-blur-sm rounded-xl border border-brand-violet/10 p-6">
               <h2 className="text-sm font-semibold text-white mb-6">Conversion Funnel</h2>
               <div className="space-y-3">
                 {funnel.map((step, i) => (
                   <div key={step.stage} className="flex items-center gap-4">
-                    <div className="w-44 text-xs font-medium text-blue-300/70 text-right">{step.stage}</div>
-                    <div className="flex-1 bg-blue-900/20 rounded-full h-8 overflow-hidden">
+                    <div className="w-44 text-xs font-medium text-brand-violet-hover/70 text-right">{step.stage}</div>
+                    <div className="flex-1 bg-brand-violet-pressed/20 rounded-full h-8 overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-blue-600 to-blue-500 rounded-full flex items-center justify-end pr-3 transition-all duration-700"
+                        className="h-full bg-gradient-to-r from-brand-violet to-brand-violet rounded-full flex items-center justify-end pr-3 transition-all duration-700"
                         style={{ width: `${Math.max((step.count / maxFunnel) * 100, 8)}%` }}
                       >
                         <span className="text-xs font-bold text-white">{step.count}</span>
                       </div>
                     </div>
                     {i > 0 && funnel[i - 1].count > 0 && (
-                      <div className="w-16 text-xs text-blue-400/50">
+                      <div className="w-16 text-xs text-brand-violet/50">
                         {Math.round((step.count / funnel[i - 1].count) * 100)}%
                       </div>
                     )}
@@ -306,14 +306,14 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="bg-[rgba(10,10,26,0.8)]/60 backdrop-blur-sm rounded-xl border border-blue-500/10 overflow-hidden">
-              <div className="px-6 py-4 border-b border-blue-500/10 flex items-center justify-between">
+            <div className="bg-[rgba(15,22,41,0.8)]/60 backdrop-blur-sm rounded-xl border border-brand-violet/10 overflow-hidden">
+              <div className="px-6 py-4 border-b border-brand-violet/10 flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-white">Users ({users.length})</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-blue-900/10">
+                    <tr className="bg-brand-violet-pressed/10">
                       <th className="text-left px-3 sm:px-6 py-3 text-xs font-medium text-slate-400 uppercase">Email</th>
                       <th className="text-left px-3 sm:px-6 py-3 text-xs font-medium text-slate-400 uppercase">Persona</th>
                       <th className="text-left px-3 sm:px-6 py-3 text-xs font-medium text-slate-400 uppercase">Company</th>
@@ -321,29 +321,29 @@ export default function AdminDashboard() {
                       <th className="text-left px-3 sm:px-6 py-3 text-xs font-medium text-slate-400 uppercase">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-blue-500/5">
+                  <tbody className="divide-y divide-brand-violet/5">
                     {users.map((user) => (
-                      <tr key={user.id} className="hover:bg-blue-900/10 transition">
+                      <tr key={user.id} className="hover:bg-brand-violet-pressed/10 transition">
                         <td className="px-6 py-3 font-medium text-white">{user.email}</td>
                         <td className="px-6 py-3">
                           {user.profile?.persona ? (
-                            <span className="px-2.5 py-1 rounded-full text-xs bg-blue-500/15 text-blue-300 border border-blue-500/20">
+                            <span className="px-2.5 py-1 rounded-full text-xs bg-brand-violet/15 text-brand-violet-hover border border-brand-violet/20">
                               {user.profile.persona}
                             </span>
                           ) : (
-                            <span className="text-blue-400/30">-</span>
+                            <span className="text-brand-violet/30">-</span>
                           )}
                         </td>
-                        <td className="px-6 py-3 text-blue-200/70">{user.profile?.companyName || '-'}</td>
+                        <td className="px-6 py-3 text-white/50">{user.profile?.companyName || '-'}</td>
                         <td className="px-6 py-3">
                           <div className="flex items-center gap-2">
-                            <div className="w-20 bg-blue-900/20 rounded-full h-1.5">
+                            <div className="w-20 bg-brand-violet-pressed/20 rounded-full h-1.5">
                               <div
-                                className="bg-gradient-to-r from-blue-500 to-blue-400 rounded-full h-1.5 transition-all"
+                                className="bg-gradient-to-r from-brand-violet to-brand-violet rounded-full h-1.5 transition-all"
                                 style={{ width: `${(user.profile?.completenessScore || 0) * 100}%` }}
                               />
                             </div>
-                            <span className="text-xs text-blue-300/50">
+                            <span className="text-xs text-brand-violet-hover/50">
                               {Math.round((user.profile?.completenessScore || 0) * 100)}%
                             </span>
                           </div>
@@ -352,13 +352,13 @@ export default function AdminDashboard() {
                           <div className="flex gap-2">
                             <button
                               onClick={() => { setTriggerModal({ type: 'call', user }); setTriggerPhone(user.phone || ''); }}
-                              className="px-2 py-1 text-xs rounded-md bg-blue-600/20 text-blue-300 hover:bg-blue-600/40 transition border border-blue-500/20"
+                              className="px-2 py-1 text-xs rounded-md bg-brand-violet/20 text-brand-violet-hover hover:bg-brand-violet/40 transition border border-brand-violet/20"
                             >
                               Call
                             </button>
                             <button
                               onClick={() => { setTriggerModal({ type: 'message', user }); setTriggerPhone(user.phone || ''); setTriggerMessage(''); }}
-                              className="px-2 py-1 text-xs rounded-md bg-blue-600/20 text-blue-300 hover:bg-blue-600/40 transition border border-blue-500/20"
+                              className="px-2 py-1 text-xs rounded-md bg-brand-violet/20 text-brand-violet-hover hover:bg-brand-violet/40 transition border border-brand-violet/20"
                             >
                               Message
                             </button>
@@ -386,7 +386,7 @@ export default function AdminDashboard() {
                 ].map((stat) => (
                   <div
                     key={stat.label}
-                    className="bg-[rgba(10,10,26,0.8)]/60 backdrop-blur-sm rounded-xl border border-blue-500/10 p-5"
+                    className="bg-[rgba(15,22,41,0.8)]/60 backdrop-blur-sm rounded-xl border border-brand-violet/10 p-5"
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-lg">{stat.icon}</span>
@@ -398,14 +398,14 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            <div className="bg-[rgba(10,10,26,0.8)]/60 backdrop-blur-sm rounded-xl border border-blue-500/10 overflow-hidden">
-              <div className="px-6 py-4 border-b border-blue-500/10">
+            <div className="bg-[rgba(15,22,41,0.8)]/60 backdrop-blur-sm rounded-xl border border-brand-violet/10 overflow-hidden">
+              <div className="px-6 py-4 border-b border-brand-violet/10">
                 <h2 className="text-sm font-semibold text-white">Recent Calls</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-blue-900/10">
+                    <tr className="bg-brand-violet-pressed/10">
                       <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">User</th>
                       <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Phone</th>
                       <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Direction</th>
@@ -414,13 +414,13 @@ export default function AdminDashboard() {
                       <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Date</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-blue-500/5">
+                  <tbody className="divide-y divide-brand-violet/5">
                     {(commData?.calls || []).map((call: any) => (
-                      <tr key={call.id} className="hover:bg-blue-900/10 transition">
+                      <tr key={call.id} className="hover:bg-brand-violet-pressed/10 transition">
                         <td className="px-6 py-3 text-white">{call.user?.email || '-'}</td>
-                        <td className="px-6 py-3 text-blue-200/70">{call.phoneNumber}</td>
+                        <td className="px-6 py-3 text-white/50">{call.phoneNumber}</td>
                         <td className="px-6 py-3">
-                          <span className={`text-xs ${call.direction === 'INBOUND' ? 'text-blue-400' : 'text-blue-300'}`}>
+                          <span className={`text-xs ${call.direction === 'INBOUND' ? 'text-brand-violet' : 'text-brand-violet-hover'}`}>
                             {call.direction === 'INBOUND' ? '← In' : '→ Out'}
                           </span>
                         </td>
@@ -429,15 +429,15 @@ export default function AdminDashboard() {
                             {call.status}
                           </span>
                         </td>
-                        <td className="px-6 py-3 text-blue-200/70">
+                        <td className="px-6 py-3 text-white/50">
                           {call.duration ? `${Math.floor(call.duration / 60)}m ${call.duration % 60}s` : '-'}
                         </td>
-                        <td className="px-6 py-3 text-blue-300/40 text-xs">{formatDate(call.createdAt)}</td>
+                        <td className="px-6 py-3 text-brand-violet-hover/40 text-xs">{formatDate(call.createdAt)}</td>
                       </tr>
                     ))}
                     {(!commData?.calls || commData.calls.length === 0) && (
                       <tr>
-                        <td colSpan={6} className="px-6 py-8 text-center text-blue-400/40">No call records yet</td>
+                        <td colSpan={6} className="px-6 py-8 text-center text-brand-violet/40">No call records yet</td>
                       </tr>
                     )}
                   </tbody>
@@ -445,14 +445,14 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="bg-[rgba(10,10,26,0.8)]/60 backdrop-blur-sm rounded-xl border border-blue-500/10 overflow-hidden">
-              <div className="px-6 py-4 border-b border-blue-500/10">
+            <div className="bg-[rgba(15,22,41,0.8)]/60 backdrop-blur-sm rounded-xl border border-brand-violet/10 overflow-hidden">
+              <div className="px-6 py-4 border-b border-brand-violet/10">
                 <h2 className="text-sm font-semibold text-white">Recent Messages (WhatsApp + SMS)</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-blue-900/10">
+                    <tr className="bg-brand-violet-pressed/10">
                       <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">User</th>
                       <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Phone</th>
                       <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Channel</th>
@@ -461,32 +461,32 @@ export default function AdminDashboard() {
                       <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Date</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-blue-500/5">
+                  <tbody className="divide-y divide-brand-violet/5">
                     {(commData?.messages || []).map((msg: any) => (
-                      <tr key={msg.id} className="hover:bg-blue-900/10 transition">
+                      <tr key={msg.id} className="hover:bg-brand-violet-pressed/10 transition">
                         <td className="px-6 py-3 text-white">{msg.user?.email || '-'}</td>
-                        <td className="px-6 py-3 text-blue-200/70">{msg.recipientPhone}</td>
+                        <td className="px-6 py-3 text-white/50">{msg.recipientPhone}</td>
                         <td className="px-6 py-3">
                           <span className={`px-2 py-0.5 rounded-full text-xs border ${
                             msg.channel === 'WHATSAPP'
                               ? 'text-green-400 bg-green-500/10 border-green-500/20'
-                              : 'text-blue-400 bg-blue-500/10 border-blue-500/20'
+                              : 'text-brand-violet bg-brand-violet/10 border-brand-violet/20'
                           }`}>
                             {msg.channel}
                           </span>
                         </td>
-                        <td className="px-6 py-3 text-blue-200/70 max-w-xs truncate">{msg.content}</td>
+                        <td className="px-6 py-3 text-white/50 max-w-xs truncate">{msg.content}</td>
                         <td className="px-6 py-3">
                           <span className={`px-2 py-0.5 rounded-full text-xs border ${statusColor(msg.status)}`}>
                             {msg.status}
                           </span>
                         </td>
-                        <td className="px-6 py-3 text-blue-300/40 text-xs">{formatDate(msg.createdAt)}</td>
+                        <td className="px-6 py-3 text-brand-violet-hover/40 text-xs">{formatDate(msg.createdAt)}</td>
                       </tr>
                     ))}
                     {(!commData?.messages || commData.messages.length === 0) && (
                       <tr>
-                        <td colSpan={6} className="px-6 py-8 text-center text-blue-400/40">No message records yet</td>
+                        <td colSpan={6} className="px-6 py-8 text-center text-brand-violet/40">No message records yet</td>
                       </tr>
                     )}
                   </tbody>
@@ -506,7 +506,7 @@ export default function AdminDashboard() {
                   { label: 'Open', value: dealData.stats.byStatus?.OPEN || 0, icon: '🔍' },
                   { label: 'Closed Won', value: dealData.stats.byStatus?.CLOSED_WON || 0, icon: '🏆' },
                 ].map((stat) => (
-                  <div key={stat.label} className="bg-[rgba(10,10,26,0.8)]/60 backdrop-blur-sm rounded-xl border border-blue-500/10 p-5">
+                  <div key={stat.label} className="bg-[rgba(15,22,41,0.8)]/60 backdrop-blur-sm rounded-xl border border-brand-violet/10 p-5">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-lg">{stat.icon}</span>
                       <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">{stat.label}</p>
@@ -517,14 +517,14 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            <div className="bg-[rgba(10,10,26,0.8)]/60 backdrop-blur-sm rounded-xl border border-blue-500/10 overflow-hidden">
-              <div className="px-6 py-4 border-b border-blue-500/10">
+            <div className="bg-[rgba(15,22,41,0.8)]/60 backdrop-blur-sm rounded-xl border border-brand-violet/10 overflow-hidden">
+              <div className="px-6 py-4 border-b border-brand-violet/10">
                 <h2 className="text-sm font-semibold text-white">Deal Pipeline ({dealData?.deals?.length || 0})</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-blue-900/10">
+                    <tr className="bg-brand-violet-pressed/10">
                       <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Deal Partner</th>
                       <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Founder</th>
                       <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Industry</th>
@@ -536,18 +536,18 @@ export default function AdminDashboard() {
                       <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-blue-500/5">
+                  <tbody className="divide-y divide-brand-violet/5">
                     {(dealData?.deals || []).map((deal: any) => (
-                      <tr key={deal.id} className="hover:bg-blue-900/10 transition">
+                      <tr key={deal.id} className="hover:bg-brand-violet-pressed/10 transition">
                         <td className="px-6 py-3 text-white">{deal.dealPartner?.email || '-'}</td>
                         <td className="px-6 py-3">
                           <div>
                             <div className="text-white">{deal.founder?.email || '-'}</div>
-                            <div className="text-xs text-blue-300/50">{deal.founder?.profile?.companyName || ''}</div>
+                            <div className="text-xs text-brand-violet-hover/50">{deal.founder?.profile?.companyName || ''}</div>
                           </div>
                         </td>
-                        <td className="px-6 py-3 text-blue-200/70">{deal.industry || '-'}</td>
-                        <td className="px-6 py-3 text-blue-200/70">{deal.stage?.replace(/_/g, ' ') || '-'}</td>
+                        <td className="px-6 py-3 text-white/50">{deal.industry || '-'}</td>
+                        <td className="px-6 py-3 text-white/50">{deal.stage?.replace(/_/g, ' ') || '-'}</td>
                         <td className="px-6 py-3">
                           <select
                             value={deal.status}
@@ -557,7 +557,7 @@ export default function AdminDashboard() {
                                 loadDeals();
                               } catch (err) { console.error(err); }
                             }}
-                            className="bg-[#050510] border border-blue-500/20 rounded px-2 py-1 text-xs text-blue-200"
+                            className="bg-[#080D1A] border border-brand-violet/20 rounded px-2 py-1 text-xs text-white/60"
                           >
                             <option value="OPEN">Open</option>
                             <option value="INTRO_MADE">Intro Made</option>
@@ -565,20 +565,20 @@ export default function AdminDashboard() {
                             <option value="CLOSED_LOST">Closed Lost</option>
                           </select>
                         </td>
-                        <td className="px-6 py-3 text-blue-200/70">
+                        <td className="px-6 py-3 text-white/50">
                           {deal.dealValue ? `$${Number(deal.dealValue).toLocaleString()}` : '-'}
                         </td>
-                        <td className="px-6 py-3 text-blue-200/70">
+                        <td className="px-6 py-3 text-white/50">
                           {deal.carryPercentage ? `${deal.carryPercentage}%` : '-'}
                         </td>
                         <td className="px-6 py-3">
                           {deal.introSent ? (
                             <div>
                               <span className="text-green-400 text-xs">Sent</span>
-                              {deal.introDate && <div className="text-blue-300/40 text-xs">{formatDate(deal.introDate)}</div>}
+                              {deal.introDate && <div className="text-brand-violet-hover/40 text-xs">{formatDate(deal.introDate)}</div>}
                             </div>
                           ) : (
-                            <span className="text-blue-400/40 text-xs">-</span>
+                            <span className="text-brand-violet/40 text-xs">-</span>
                           )}
                         </td>
                         <td className="px-6 py-3">
@@ -596,7 +596,7 @@ export default function AdminDashboard() {
                                 } catch (err) { console.error(err); }
                               }
                             }}
-                            className="px-2 py-1 text-xs bg-blue-600/20 text-blue-300 rounded hover:bg-blue-600/40 transition"
+                            className="px-2 py-1 text-xs bg-brand-violet/20 text-brand-violet-hover rounded hover:bg-brand-violet/40 transition"
                           >
                             Set Value
                           </button>
@@ -605,7 +605,7 @@ export default function AdminDashboard() {
                     ))}
                     {(!dealData?.deals || dealData.deals.length === 0) && (
                       <tr>
-                        <td colSpan={9} className="px-6 py-8 text-center text-blue-400/40">No deals tracked yet</td>
+                        <td colSpan={9} className="px-6 py-8 text-center text-brand-violet/40">No deals tracked yet</td>
                       </tr>
                     )}
                   </tbody>
@@ -625,7 +625,7 @@ export default function AdminDashboard() {
                   { label: 'Active', value: eventData.stats.active, icon: '🟢' },
                   { label: 'Total Participants', value: eventData.stats.totalParticipants, icon: '👥' },
                 ].map((stat) => (
-                  <div key={stat.label} className="bg-[rgba(10,10,26,0.8)]/60 backdrop-blur-sm rounded-xl border border-blue-500/10 p-5">
+                  <div key={stat.label} className="bg-[rgba(15,22,41,0.8)]/60 backdrop-blur-sm rounded-xl border border-brand-violet/10 p-5">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-lg">{stat.icon}</span>
                       <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">{stat.label}</p>
@@ -636,12 +636,12 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            <div className="bg-[rgba(10,10,26,0.8)]/60 backdrop-blur-sm rounded-xl border border-blue-500/10 overflow-hidden">
-              <div className="px-6 py-4 border-b border-blue-500/10 flex items-center justify-between">
+            <div className="bg-[rgba(15,22,41,0.8)]/60 backdrop-blur-sm rounded-xl border border-brand-violet/10 overflow-hidden">
+              <div className="px-6 py-4 border-b border-brand-violet/10 flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-white">Events ({eventData?.events?.length || 0})</h2>
                 <button
                   onClick={() => setShowCreateEvent(true)}
-                  className="px-3 py-1.5 text-xs rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition shadow-lg shadow-blue-600/20"
+                  className="px-3 py-1.5 text-xs rounded-lg bg-brand-violet text-white hover:bg-brand-violet transition shadow-lg shadow-brand-violet/20"
                 >
                   + New Event
                 </button>
@@ -649,7 +649,7 @@ export default function AdminDashboard() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-blue-900/10">
+                    <tr className="bg-brand-violet-pressed/10">
                       <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Name</th>
                       <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Date</th>
                       <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Location</th>
@@ -658,40 +658,40 @@ export default function AdminDashboard() {
                       <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase">Capacity</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-blue-500/5">
+                  <tbody className="divide-y divide-brand-violet/5">
                     {(eventData?.events || []).map((event: any) => (
-                      <tr key={event.id} className="hover:bg-blue-900/10 transition">
+                      <tr key={event.id} className="hover:bg-brand-violet-pressed/10 transition">
                         <td className="px-6 py-3">
                           <div>
                             <div className="text-white font-medium">{event.name}</div>
-                            {event.description && <div className="text-xs text-blue-300/50 mt-0.5 max-w-xs truncate">{event.description}</div>}
+                            {event.description && <div className="text-xs text-brand-violet-hover/50 mt-0.5 max-w-xs truncate">{event.description}</div>}
                           </div>
                         </td>
-                        <td className="px-6 py-3 text-blue-200/70 text-xs">{formatDate(event.date)}</td>
-                        <td className="px-6 py-3 text-blue-200/70">
+                        <td className="px-6 py-3 text-white/50 text-xs">{formatDate(event.date)}</td>
+                        <td className="px-6 py-3 text-white/50">
                           {event.isVirtual ? (
-                            <span className="text-blue-400 text-xs">Virtual</span>
+                            <span className="text-brand-violet text-xs">Virtual</span>
                           ) : (
                             <span className="text-xs">{event.location || '-'}</span>
                           )}
                         </td>
                         <td className="px-6 py-3">
                           <span className={`px-2 py-0.5 rounded-full text-xs border ${
-                            event.status === 'UPCOMING' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' :
+                            event.status === 'UPCOMING' ? 'text-brand-violet bg-brand-violet/10 border-brand-violet/20' :
                             event.status === 'ACTIVE' ? 'text-green-400 bg-green-500/10 border-green-500/20' :
-                            event.status === 'COMPLETED' ? 'text-blue-300 bg-blue-500/10 border-blue-500/20' :
+                            event.status === 'COMPLETED' ? 'text-brand-violet-hover bg-brand-violet/10 border-brand-violet/20' :
                             'text-red-400 bg-red-500/10 border-red-500/20'
                           }`}>
                             {event.status}
                           </span>
                         </td>
                         <td className="px-6 py-3 text-white">{event._count?.participants || event.participants?.length || 0}</td>
-                        <td className="px-6 py-3 text-blue-200/70">{event.maxCapacity || 'Unlimited'}</td>
+                        <td className="px-6 py-3 text-white/50">{event.maxCapacity || 'Unlimited'}</td>
                       </tr>
                     ))}
                     {(!eventData?.events || eventData.events.length === 0) && (
                       <tr>
-                        <td colSpan={6} className="px-6 py-8 text-center text-blue-400/40">No events yet</td>
+                        <td colSpan={6} className="px-6 py-8 text-center text-brand-violet/40">No events yet</td>
                       </tr>
                     )}
                   </tbody>
@@ -704,7 +704,7 @@ export default function AdminDashboard() {
 
       {showCreateEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-[rgba(10,10,26,0.8)] border border-blue-500/20 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+          <div className="bg-[rgba(15,22,41,0.8)] border border-brand-violet/20 rounded-2xl p-6 w-full max-w-md shadow-2xl">
             <h3 className="text-white font-semibold mb-4">Create Event</h3>
             <div className="space-y-4">
               <div>
@@ -713,7 +713,7 @@ export default function AdminDashboard() {
                   value={newEvent.name}
                   onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })}
                   placeholder="Event name"
-                  className="w-full px-3 py-2.5 rounded-xl border border-blue-500/20 bg-blue-900/20 text-white placeholder-slate-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2.5 rounded-xl border border-brand-violet/20 bg-brand-violet-pressed/20 text-white placeholder-slate-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-brand-violet"
                 />
               </div>
               <div>
@@ -723,7 +723,7 @@ export default function AdminDashboard() {
                   onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
                   placeholder="Event description"
                   rows={2}
-                  className="w-full px-3 py-2.5 rounded-xl border border-blue-500/20 bg-blue-900/20 text-white placeholder-slate-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full px-3 py-2.5 rounded-xl border border-brand-violet/20 bg-brand-violet-pressed/20 text-white placeholder-slate-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-brand-violet resize-none"
                 />
               </div>
               <div>
@@ -732,7 +732,7 @@ export default function AdminDashboard() {
                   type="datetime-local"
                   value={newEvent.date}
                   onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl border border-blue-500/20 bg-blue-900/20 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2.5 rounded-xl border border-brand-violet/20 bg-brand-violet-pressed/20 text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-violet"
                 />
               </div>
               <div>
@@ -741,7 +741,7 @@ export default function AdminDashboard() {
                   value={newEvent.location}
                   onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
                   placeholder="Event location"
-                  className="w-full px-3 py-2.5 rounded-xl border border-blue-500/20 bg-blue-900/20 text-white placeholder-slate-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2.5 rounded-xl border border-brand-violet/20 bg-brand-violet-pressed/20 text-white placeholder-slate-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-brand-violet"
                 />
               </div>
               <div className="flex items-center gap-3">
@@ -750,9 +750,9 @@ export default function AdminDashboard() {
                     type="checkbox"
                     checked={newEvent.isVirtual}
                     onChange={(e) => setNewEvent({ ...newEvent, isVirtual: e.target.checked })}
-                    className="rounded border-blue-500/20 bg-blue-900/20 text-blue-600"
+                    className="rounded border-brand-violet/20 bg-brand-violet-pressed/20 text-brand-violet"
                   />
-                  <span className="text-sm text-blue-300">Virtual event</span>
+                  <span className="text-sm text-brand-violet-hover">Virtual event</span>
                 </label>
               </div>
               <div>
@@ -762,21 +762,21 @@ export default function AdminDashboard() {
                   value={newEvent.maxCapacity}
                   onChange={(e) => setNewEvent({ ...newEvent, maxCapacity: e.target.value })}
                   placeholder="No limit"
-                  className="w-full px-3 py-2.5 rounded-xl border border-blue-500/20 bg-blue-900/20 text-white placeholder-slate-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2.5 rounded-xl border border-brand-violet/20 bg-brand-violet-pressed/20 text-white placeholder-slate-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-brand-violet"
                 />
               </div>
             </div>
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => setShowCreateEvent(false)}
-                className="px-4 py-2 text-sm text-slate-400 hover:text-blue-200 transition"
+                className="px-4 py-2 text-sm text-slate-400 hover:text-white/60 transition"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateEvent}
                 disabled={!newEvent.name || !newEvent.date}
-                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20"
+                className="px-4 py-2 text-sm bg-brand-violet text-white rounded-xl hover:bg-brand-violet transition disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-brand-violet/20"
               >
                 Create Event
               </button>
@@ -788,32 +788,32 @@ export default function AdminDashboard() {
       {activeTab === 'analytics' && (
         <div className="space-y-6">
           {!analyticsData ? (
-            <div className="text-center py-12 text-blue-300/40">Loading analytics...</div>
+            <div className="text-center py-12 text-brand-violet-hover/40">Loading analytics...</div>
           ) : (
             <>
               <div className="flex items-center justify-between">
                 <h2 className="text-white text-lg font-semibold">Platform Analytics</h2>
                 <button onClick={handleSendDigest} disabled={digestLoading}
-                  className="px-4 py-2 rounded-xl text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 transition disabled:opacity-40">
+                  className="px-4 py-2 rounded-xl text-sm font-medium bg-brand-violet text-white hover:bg-brand-violet transition disabled:opacity-40">
                   {digestLoading ? 'Sending...' : '📧 Send Weekly Digest'}
                 </button>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  { label: 'Total Users', value: analyticsData.totalUsers, icon: '👥', color: '#93C5FD' },
+                  { label: 'Total Users', value: analyticsData.totalUsers, icon: '👥', color: '#9B95FF' },
                   { label: 'Complete Profiles', value: analyticsData.completedProfiles, icon: '✅', color: '#6ee7b7' },
                   { label: 'Onboarding Rate', value: `${analyticsData.onboardingRate}%`, icon: '📈', color: '#fbbf24' },
                   { label: 'Signups (7d)', value: analyticsData.recentSignups, icon: '🆕', color: '#60a5fa' },
-                  { label: 'Total Matches', value: analyticsData.totalMatches, icon: '🎯', color: '#93C5FD' },
+                  { label: 'Total Matches', value: analyticsData.totalMatches, icon: '🎯', color: '#9B95FF' },
                   { label: 'Accepted', value: analyticsData.acceptedMatches, icon: '✅', color: '#6ee7b7' },
                   { label: 'Accept Rate', value: `${analyticsData.matchAcceptRate}%`, icon: '📊', color: '#fbbf24' },
                   { label: 'Avg Score', value: `${analyticsData.avgMatchScore}%`, icon: '⭐', color: '#f472b6' },
                 ].map((s, i) => (
-                  <div key={i} className="rounded-xl border border-blue-500/10 p-4" style={{ background: 'rgba(10,10,26,0.8)' }}>
+                  <div key={i} className="rounded-xl border border-brand-violet/10 p-4" style={{ background: 'rgba(15,22,41,0.8)' }}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-lg">{s.icon}</span>
-                      <span className="text-xs text-blue-300/40 uppercase font-medium">{s.label}</span>
+                      <span className="text-xs text-brand-violet-hover/40 uppercase font-medium">{s.label}</span>
                     </div>
                     <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
                   </div>
@@ -821,7 +821,7 @@ export default function AdminDashboard() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="rounded-xl border border-blue-500/10 p-5" style={{ background: 'rgba(10,10,26,0.8)' }}>
+                <div className="rounded-xl border border-brand-violet/10 p-5" style={{ background: 'rgba(15,22,41,0.8)' }}>
                   <h3 className="text-white text-sm font-semibold mb-4">📊 Daily Signups (7 days)</h3>
                   <div className="flex items-end gap-2 h-32">
                     {analyticsData.dailySignups?.map((d: any, i: number) => {
@@ -829,20 +829,20 @@ export default function AdminDashboard() {
                       const height = (d.count / max) * 100;
                       return (
                         <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                          <span className="text-xs text-blue-300/40">{d.count}</span>
+                          <span className="text-xs text-brand-violet-hover/40">{d.count}</span>
                           <div className="w-full rounded-t-md" style={{
                             height: `${Math.max(height, 4)}%`,
-                            background: 'linear-gradient(180deg, #3B82F6, #8B5CF6)',
+                            background: 'linear-gradient(180deg, #6C63FF, #4ECDC4)',
                             minHeight: '4px',
                           }} />
-                          <span className="text-[10px] text-blue-300/30">{d.date.slice(5)}</span>
+                          <span className="text-[10px] text-brand-violet-hover/30">{d.date.slice(5)}</span>
                         </div>
                       );
                     })}
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-blue-500/10 p-5" style={{ background: 'rgba(10,10,26,0.8)' }}>
+                <div className="rounded-xl border border-brand-violet/10 p-5" style={{ background: 'rgba(15,22,41,0.8)' }}>
                   <h3 className="text-white text-sm font-semibold mb-4">🎭 Personas</h3>
                   <div className="space-y-2">
                     {analyticsData.personaBreakdown?.map((p: any, i: number) => {
@@ -851,26 +851,26 @@ export default function AdminDashboard() {
                       return (
                         <div key={i}>
                           <div className="flex justify-between text-xs mb-1">
-                            <span className="text-blue-200/60">{p.persona}</span>
-                            <span className="text-blue-300/40">{p.count} ({pct}%)</span>
+                            <span className="text-white/40">{p.persona}</span>
+                            <span className="text-brand-violet-hover/40">{p.count} ({pct}%)</span>
                           </div>
-                          <div className="h-2 rounded-full bg-blue-900/30">
+                          <div className="h-2 rounded-full bg-brand-violet-pressed/30">
                             <div className="h-full rounded-full" style={{
                               width: `${pct}%`,
-                              background: 'linear-gradient(90deg, #3B82F6, #93C5FD)',
+                              background: 'linear-gradient(90deg, #6C63FF, #9B95FF)',
                             }} />
                           </div>
                         </div>
                       );
                     })}
                     {(!analyticsData.personaBreakdown || analyticsData.personaBreakdown.length === 0) && (
-                      <p className="text-blue-300/30 text-xs">No persona data yet</p>
+                      <p className="text-brand-violet-hover/30 text-xs">No persona data yet</p>
                     )}
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-xl border border-blue-500/10 p-5" style={{ background: 'rgba(10,10,26,0.8)' }}>
+              <div className="rounded-xl border border-brand-violet/10 p-5" style={{ background: 'rgba(15,22,41,0.8)' }}>
                 <h3 className="text-white text-sm font-semibold mb-4">📣 Channel Attribution</h3>
                 <div className="space-y-2">
                   {analyticsData.attributionBreakdown?.map((a: any, i: number) => {
@@ -886,35 +886,35 @@ export default function AdminDashboard() {
                     return (
                       <div key={i}>
                         <div className="flex justify-between text-xs mb-1">
-                          <span className="text-blue-200/60">{sourceLabels[a.source] || a.source}</span>
-                          <span className="text-blue-300/40">{a.count} ({pct}%)</span>
+                          <span className="text-white/40">{sourceLabels[a.source] || a.source}</span>
+                          <span className="text-brand-violet-hover/40">{a.count} ({pct}%)</span>
                         </div>
-                        <div className="h-2 rounded-full bg-blue-900/30">
+                        <div className="h-2 rounded-full bg-brand-violet-pressed/30">
                           <div className="h-full rounded-full" style={{
                             width: `${pct}%`,
-                            background: 'linear-gradient(90deg, #14B8A6, #93C5FD)',
+                            background: 'linear-gradient(90deg, #14B8A6, #9B95FF)',
                           }} />
                         </div>
                       </div>
                     );
                   })}
                   {(!analyticsData.attributionBreakdown || analyticsData.attributionBreakdown.length === 0) && (
-                    <p className="text-blue-300/30 text-xs">No attribution data yet</p>
+                    <p className="text-brand-violet-hover/30 text-xs">No attribution data yet</p>
                   )}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="rounded-xl border border-blue-500/10 p-5" style={{ background: 'rgba(10,10,26,0.8)' }}>
+                <div className="rounded-xl border border-brand-violet/10 p-5" style={{ background: 'rgba(15,22,41,0.8)' }}>
                   <h3 className="text-white text-sm font-semibold mb-4">⭐ Feedback</h3>
                   <div className="flex items-center gap-4 mb-4">
                     <div className="text-center">
                       <p className="text-3xl font-bold text-yellow-400">{analyticsData.feedbackStats?.avgRating || 0}</p>
-                      <p className="text-xs text-blue-300/40">Avg Rating</p>
+                      <p className="text-xs text-brand-violet-hover/40">Avg Rating</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-3xl font-bold text-blue-400">{analyticsData.feedbackStats?.total || 0}</p>
-                      <p className="text-xs text-blue-300/40">Total Reviews</p>
+                      <p className="text-3xl font-bold text-brand-violet">{analyticsData.feedbackStats?.total || 0}</p>
+                      <p className="text-xs text-brand-violet-hover/40">Total Reviews</p>
                     </div>
                   </div>
                   <div className="space-y-1">
@@ -924,58 +924,58 @@ export default function AdminDashboard() {
                       return (
                         <div key={r} className="flex items-center gap-2">
                           <span className="text-xs text-yellow-400 w-6">{r}★</span>
-                          <div className="flex-1 h-2 rounded-full bg-blue-900/30">
+                          <div className="flex-1 h-2 rounded-full bg-brand-violet-pressed/30">
                             <div className="h-full rounded-full bg-yellow-400/60" style={{ width: `${(count / total) * 100}%` }} />
                           </div>
-                          <span className="text-xs text-blue-300/40 w-6 text-right">{count}</span>
+                          <span className="text-xs text-brand-violet-hover/40 w-6 text-right">{count}</span>
                         </div>
                       );
                     })}
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-blue-500/10 p-5" style={{ background: 'rgba(10,10,26,0.8)' }}>
+                <div className="rounded-xl border border-brand-violet/10 p-5" style={{ background: 'rgba(15,22,41,0.8)' }}>
                   <h3 className="text-white text-sm font-semibold mb-4">📞 Communications</h3>
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-lg border border-blue-500/10 p-3 text-center" style={{ background: 'rgba(59,130,246,0.05)' }}>
-                      <p className="text-xl font-bold text-blue-400">{analyticsData.totalCalls}</p>
-                      <p className="text-xs text-blue-300/40">Calls</p>
+                    <div className="rounded-lg border border-brand-violet/10 p-3 text-center" style={{ background: 'rgba(108,99,255,0.05)' }}>
+                      <p className="text-xl font-bold text-brand-violet">{analyticsData.totalCalls}</p>
+                      <p className="text-xs text-brand-violet-hover/40">Calls</p>
                     </div>
-                    <div className="rounded-lg border border-blue-500/10 p-3 text-center" style={{ background: 'rgba(59,130,246,0.05)' }}>
-                      <p className="text-xl font-bold text-blue-400">{analyticsData.totalMessages}</p>
-                      <p className="text-xs text-blue-300/40">Messages</p>
+                    <div className="rounded-lg border border-brand-violet/10 p-3 text-center" style={{ background: 'rgba(108,99,255,0.05)' }}>
+                      <p className="text-xl font-bold text-brand-violet">{analyticsData.totalMessages}</p>
+                      <p className="text-xs text-brand-violet-hover/40">Messages</p>
                     </div>
                   </div>
                   <div className="mt-3 space-y-1.5">
                     {analyticsData.channelBreakdown?.map((c: any, i: number) => (
                       <div key={i} className="flex justify-between text-xs">
-                        <span className="text-blue-200/60">{c.channel}</span>
-                        <span className="text-blue-300/40">{c.count}</span>
+                        <span className="text-white/40">{c.channel}</span>
+                        <span className="text-brand-violet-hover/40">{c.count}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-xl border border-blue-500/10 p-5" style={{ background: 'rgba(10,10,26,0.8)' }}>
+              <div className="rounded-xl border border-brand-violet/10 p-5" style={{ background: 'rgba(15,22,41,0.8)' }}>
                 <h3 className="text-white text-sm font-semibold mb-4">🔔 Recent Activity</h3>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {analyticsData.recentActivity?.map((a: any, i: number) => (
-                    <div key={i} className="flex items-center gap-3 px-3 py-2 rounded-lg" style={{ background: 'rgba(59,130,246,0.03)' }}>
+                    <div key={i} className="flex items-center gap-3 px-3 py-2 rounded-lg" style={{ background: 'rgba(108,99,255,0.03)' }}>
                       <span className="text-sm">
                         {a.type === 'MATCH_FOUND' ? '🎯' : a.type === 'INTRO_ACCEPTED' ? '✅' : a.type === 'INTRO_REQUEST' ? '🤝' : '🔔'}
                       </span>
                       <div className="flex-1 min-w-0">
                         <span className="text-xs text-white/70 truncate block">{a.title}</span>
-                        {a.email && <span className="text-[10px] text-blue-300/30">{a.email}</span>}
+                        {a.email && <span className="text-[10px] text-brand-violet-hover/30">{a.email}</span>}
                       </div>
-                      <span className="text-[10px] text-blue-300/20 flex-shrink-0">
+                      <span className="text-[10px] text-brand-violet-hover/20 flex-shrink-0">
                         {new Date(a.createdAt).toLocaleDateString()}
                       </span>
                     </div>
                   ))}
                   {(!analyticsData.recentActivity || analyticsData.recentActivity.length === 0) && (
-                    <p className="text-blue-300/30 text-xs text-center py-4">No recent activity</p>
+                    <p className="text-brand-violet-hover/30 text-xs text-center py-4">No recent activity</p>
                   )}
                 </div>
               </div>
@@ -986,7 +986,7 @@ export default function AdminDashboard() {
 
       {triggerModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-[rgba(10,10,26,0.8)] border border-blue-500/20 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+          <div className="bg-[rgba(15,22,41,0.8)] border border-brand-violet/20 rounded-2xl p-6 w-full max-w-md shadow-2xl">
             <h3 className="text-white font-semibold mb-4">
               {triggerModal.type === 'call' ? 'Trigger Call' : 'Send Message'} — {triggerModal.user.email}
             </h3>
@@ -1012,8 +1012,8 @@ export default function AdminDashboard() {
                           onClick={() => setTriggerChannel(ch)}
                           className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${
                             triggerChannel === ch
-                              ? 'bg-blue-600 text-white border-blue-500'
-                              : 'border-blue-500/20 text-slate-400 hover:text-blue-200'
+                              ? 'bg-brand-violet text-white border-brand-violet'
+                              : 'border-brand-violet/20 text-slate-400 hover:text-white/60'
                           }`}
                         >
                           {ch === 'WHATSAPP' ? '📱 WhatsApp' : '💬 SMS'}
@@ -1028,7 +1028,7 @@ export default function AdminDashboard() {
                       onChange={(e) => setTriggerMessage(e.target.value)}
                       placeholder="Type your message..."
                       rows={3}
-                      className="w-full px-3 py-2.5 rounded-xl border border-blue-500/20 bg-blue-900/20 text-white placeholder-slate-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      className="w-full px-3 py-2.5 rounded-xl border border-brand-violet/20 bg-brand-violet-pressed/20 text-white placeholder-slate-400/30 text-sm focus:outline-none focus:ring-2 focus:ring-brand-violet resize-none"
                     />
                   </div>
                 </>
@@ -1038,14 +1038,14 @@ export default function AdminDashboard() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setTriggerModal(null)}
-                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-400 border border-blue-500/20 hover:text-blue-200 transition"
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-400 border border-brand-violet/20 hover:text-white/60 transition"
               >
                 Cancel
               </button>
               <button
                 onClick={handleTrigger}
                 disabled={triggerLoading || !triggerPhone || (triggerModal.type === 'message' && !triggerMessage)}
-                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 transition disabled:opacity-40"
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium bg-brand-violet text-white hover:bg-brand-violet transition disabled:opacity-40"
               >
                 {triggerLoading ? 'Sending...' : triggerModal.type === 'call' ? 'Call Now' : 'Send'}
               </button>

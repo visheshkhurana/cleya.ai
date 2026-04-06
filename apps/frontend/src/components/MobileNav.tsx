@@ -91,9 +91,9 @@ export default function MobileNav() {
         aria-expanded={open}
         aria-controls="mobile-nav-drawer"
       >
-        <span className={`block w-5 h-0.5 bg-white/60 transition-all duration-200 ${open ? 'rotate-45 translate-y-2' : ''}`} />
-        <span className={`block w-5 h-0.5 bg-white/60 transition-all duration-200 ${open ? 'opacity-0' : ''}`} />
-        <span className={`block w-5 h-0.5 bg-white/60 transition-all duration-200 ${open ? '-rotate-45 -translate-y-2' : ''}`} />
+        <span className={`block w-5 h-0.5 bg-white/50 transition-all duration-200 ${open ? 'rotate-45 translate-y-2' : ''}`} />
+        <span className={`block w-5 h-0.5 bg-white/50 transition-all duration-200 ${open ? 'opacity-0' : ''}`} />
+        <span className={`block w-5 h-0.5 bg-white/50 transition-all duration-200 ${open ? '-rotate-45 -translate-y-2' : ''}`} />
       </button>
 
       {open && (
@@ -108,13 +108,13 @@ export default function MobileNav() {
             ref={drawerRef}
             id="mobile-nav-drawer"
             className="absolute top-0 right-0 w-72 h-full border-l border-white/5 overflow-y-auto"
-            style={{ background: '#050510' }}
+            style={{ background: '#080D1A' }}
           >
             <div className="flex items-center justify-between p-4 border-b border-white/5">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
-                  style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>C</div>
-                <span className="text-white font-semibold text-sm">Cleya.ai</span>
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold"
+                  style={{ background: '#6C63FF' }}>C</div>
+                <span className="text-white font-semibold text-[13px]">Cleya.ai</span>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -138,9 +138,9 @@ export default function MobileNav() {
                     key={item.href}
                     onClick={() => router.push(item.href)}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${
-                      isActive ? 'text-white' : 'text-white/50 hover:text-white/80'
+                      isActive ? 'text-white' : 'text-white/40 hover:text-white/70'
                     }`}
-                    style={isActive ? { background: 'rgba(59,130,246,0.12)', borderLeft: '2px solid #3B82F6' } : {}}
+                    style={isActive ? { background: 'rgba(108,99,255,0.1)', borderLeft: '2px solid #6C63FF' } : {}}
                     aria-current={isActive ? 'page' : undefined}
                   >
                     <span className="text-base" aria-hidden="true">{item.icon}</span>

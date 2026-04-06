@@ -13,7 +13,7 @@ export default function LoginRedirect() {
   return (
     <AppShell>
       <div className="flex items-center gap-3">
-        <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+        <div className="w-5 h-5 border-2 border-brand-violet border-t-transparent rounded-full animate-spin" />
         <p className="text-white/60 text-sm">Redirecting to login...</p>
       </div>
     </AppShell>

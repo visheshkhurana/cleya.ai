@@ -101,14 +101,14 @@ export default function BootstrapClient() {
       wrapper.setAttribute('aria-label', 'Cookie consent');
       wrapper.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:40;width:100%;max-width:480px;padding:0 16px;pointer-events:auto';
       wrapper.innerHTML = `
-        <div style="background:rgba(10,10,26,0.8);border:1px solid rgba(59,130,246,0.2);border-radius:16px;padding:20px 24px;box-shadow:0 20px 60px rgba(0,0,0,0.5)">
+        <div style="background:rgba(15,22,41,0.8);border:1px solid rgba(108,99,255,0.2);border-radius:16px;padding:20px 24px;box-shadow:0 20px 60px rgba(0,0,0,0.5)">
           <div style="display:flex;align-items:flex-start;gap:12px">
             <span style="font-size:20px;margin-top:2px" aria-hidden="true">\u{1F36A}</span>
             <div style="flex:1">
               <p style="color:#fff;font-size:14px;font-weight:600;margin:0 0 4px">We use cookies</p>
               <p style="color:rgba(255,255,255,0.45);font-size:12px;line-height:1.5;margin:0 0 16px">
                 We use essential cookies to make Cleya work. We\u2019d also like to use analytics cookies to understand how you use our platform and improve your experience.
-                <a href="/privacy" style="color:#3B82F6;text-decoration:underline">Privacy Policy</a>
+                <a href="/privacy" style="color:#6C63FF;text-decoration:underline">Privacy Policy</a>
               </p>
               <div style="display:flex;gap:8px" id="cookie-consent-buttons"></div>
             </div>
@@ -120,7 +120,7 @@ export default function BootstrapClient() {
       if (btnContainer) {
         const acceptBtn = document.createElement('button');
         acceptBtn.textContent = 'Accept all';
-        acceptBtn.style.cssText = 'padding:8px 20px;border-radius:10px;background:#3B82F6;color:#fff;font-size:13px;font-weight:600;border:none;cursor:pointer';
+        acceptBtn.style.cssText = 'padding:8px 20px;border-radius:10px;background:#6C63FF;color:#fff;font-size:13px;font-weight:600;border:none;cursor:pointer';
         acceptBtn.onclick = () => {
           localStorage.setItem('cleo_cookie_consent', 'accepted');
           wrapper.remove();

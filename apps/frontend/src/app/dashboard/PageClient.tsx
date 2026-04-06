@@ -312,10 +312,10 @@ export default function DashboardPage() {
         )}
 
         {!profile?.persona && matchStats.total === 0 && (
-          <div className="rounded-2xl border p-6" style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.08), rgba(139,92,246,0.04))', borderColor: 'rgba(59,130,246,0.2)' }}>
+          <div className="rounded-2xl border p-6" style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.08), rgba(78,205,196,0.04))', borderColor: 'rgba(108,99,255,0.2)' }}>
             <div className="flex items-start gap-4">
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', boxShadow: '0 4px 20px rgba(59,130,246,0.3)' }}>
+                style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)', boxShadow: '0 4px 20px rgba(108,99,255,0.3)' }}>
                 C
               </div>
               <div className="flex-1">
@@ -324,7 +324,7 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-3 flex-wrap">
                   <button onClick={() => router.push('/chat')}
                     className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition"
-                    style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
+                    style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}>
                     Set Up Your Profile
                   </button>
                   <span className="text-xs text-white/30">Takes ~2 minutes</span>
@@ -342,7 +342,7 @@ export default function DashboardPage() {
                 onError={() => setAvatarError(true)} />
             ) : (
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg, #3B82F620, #8B5CF620)', border: '1px solid rgba(59,130,246,0.15)' }}>
+                style={{ background: 'linear-gradient(135deg, #6C63FF20, #4ECDC420)', border: '1px solid rgba(108,99,255,0.15)' }}>
                 {personaIcon[profile?.persona || 'OTHER'] || '💬'}
               </div>
             )}
@@ -353,7 +353,7 @@ export default function DashboardPage() {
                 </h2>
                 {profile?.persona && (
                   <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium border"
-                    style={{ background: 'rgba(59,130,246,0.1)', borderColor: 'rgba(59,130,246,0.2)', color: '#93C5FD' }}>
+                    style={{ background: 'rgba(108,99,255,0.1)', borderColor: 'rgba(108,99,255,0.2)', color: '#9B95FF' }}>
                     {personaLabel[profile.persona] || profile.persona}
                   </span>
                 )}
@@ -363,9 +363,9 @@ export default function DashboardPage() {
 
               {profile?.completenessScore !== undefined && (
                 <div className="mt-3 flex items-center gap-3">
-                  <div className="flex-1 h-1.5 rounded-full max-w-xs" style={{ background: 'rgba(59,130,246,0.15)' }}>
+                  <div className="flex-1 h-1.5 rounded-full max-w-xs" style={{ background: 'rgba(108,99,255,0.15)' }}>
                     <div className="h-full rounded-full transition-all duration-700"
-                      style={{ width: `${(profile.completenessScore || 0) * 100}%`, background: 'linear-gradient(90deg, #3B82F6, #93C5FD)' }} />
+                      style={{ width: `${(profile.completenessScore || 0) * 100}%`, background: 'linear-gradient(90deg, #6C63FF, #9B95FF)' }} />
                   </div>
                   <span className="text-xs text-white/30">{Math.round((profile.completenessScore || 0) * 100)}% complete</span>
                 </div>
@@ -376,7 +376,7 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 fade-up">
           {[
-            { label: 'Total Matches', value: matchStats.total, icon: '🤝', color: '#3B82F6' },
+            { label: 'Total Matches', value: matchStats.total, icon: '🤝', color: '#6C63FF' },
             { label: 'Pending Review', value: matchStats.pending, icon: '⏳', color: '#f59e0b' },
             { label: 'Accepted Intros', value: matchStats.accepted, icon: '✅', color: '#10b981' },
           ].map((stat) => (
@@ -394,7 +394,7 @@ export default function DashboardPage() {
           <div ref={feedbackRef} className={`rounded-xl p-4 text-sm border transition-all animate-pulse-once ${
             matchFeedback.type === 'success' ? 'text-green-400 bg-green-500/10 border-green-500/20' :
             matchFeedback.type === 'error' ? 'text-red-400 bg-red-500/10 border-red-500/20' :
-            'text-blue-400 bg-blue-500/10 border-blue-500/20'
+            'text-brand-violet bg-brand-violet/10 border-brand-violet/20'
           }`}>
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
@@ -413,7 +413,7 @@ export default function DashboardPage() {
           <div>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold uppercase tracking-wider gradient-text">Your Matches</h3>
-              <button onClick={() => router.push('/matches')} className="text-xs text-blue-400 hover:text-blue-300 transition">
+              <button onClick={() => router.push('/matches')} className="text-xs text-brand-violet hover:text-brand-violet-hover transition">
                 View All →
               </button>
             </div>
@@ -429,7 +429,7 @@ export default function DashboardPage() {
                   <div key={match.id} className="glass-card-glow p-4">
                     <div className="flex items-start gap-3 mb-3">
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
-                        style={{ background: 'linear-gradient(135deg, #3B82F615, #8B5CF615)', border: '1px solid rgba(59,130,246,0.12)' }}>
+                        style={{ background: 'linear-gradient(135deg, #6C63FF15, #4ECDC415)', border: '1px solid rgba(108,99,255,0.12)' }}>
                         {personaIcon[otherProfile?.persona || 'OTHER'] || '💬'}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -439,14 +439,14 @@ export default function DashboardPage() {
                           </h4>
                           <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold"
                             style={{
-                              background: scorePercent >= 80 ? 'rgba(59,130,246,0.15)' : scorePercent >= 60 ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.12)',
-                              color: scorePercent >= 80 ? '#93C5FD' : scorePercent >= 60 ? '#93C5FD' : '#94A3B8'
+                              background: scorePercent >= 80 ? 'rgba(108,99,255,0.15)' : scorePercent >= 60 ? 'rgba(108,99,255,0.12)' : 'rgba(108,99,255,0.12)',
+                              color: scorePercent >= 80 ? '#9B95FF' : scorePercent >= 60 ? '#9B95FF' : '#94A3B8'
                             }}>
                             {scorePercent >= 80 ? 'Strong Match' : scorePercent >= 60 ? 'Good Fit' : 'Possible Fit'}
                           </div>
                         </div>
                         {otherProfile?.persona && (
-                          <span className="text-[10px] font-medium" style={{ color: '#93C5FD' }}>
+                          <span className="text-[10px] font-medium" style={{ color: '#9B95FF' }}>
                             {personaLabel[otherProfile.persona] || otherProfile.persona}
                           </span>
                         )}
@@ -459,7 +459,7 @@ export default function DashboardPage() {
                       {isPending ? (
                         <button onClick={() => router.push('/matches')}
                           className="flex-1 py-2 rounded-xl text-xs font-medium text-white transition"
-                          style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
+                          style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}>
                           Review
                         </button>
                       ) : (
@@ -490,7 +490,7 @@ export default function DashboardPage() {
               <h3 className="font-semibold text-white text-sm mb-1">View Matches</h3>
               <p className="text-xs text-white/40">Review proposals</p>
               {matchStats.pending > 0 && (
-                <p className="text-[11px] mt-1" style={{ color: '#93C5FD' }}>{matchStats.pending} pending</p>
+                <p className="text-[11px] mt-1" style={{ color: '#9B95FF' }}>{matchStats.pending} pending</p>
               )}
             </button>
 
@@ -501,7 +501,7 @@ export default function DashboardPage() {
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-2xl">🔍</span>
-                {findingMatches && <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />}
+                {findingMatches && <div className="w-4 h-4 border-2 border-brand-violet border-t-transparent rounded-full animate-spin" />}
               </div>
               <h3 className="font-semibold text-white text-sm mb-1">
                 {findingMatches ? 'Finding...' : 'Find Matches'}
@@ -550,7 +550,7 @@ export default function DashboardPage() {
                     <span className="text-xs font-mono text-white/70 flex-1">cleya.ai/join/{code.code}</span>
                     {!code.used && (
                       <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/join/${code.code}`); setCopiedCode(code.code); setTimeout(() => setCopiedCode(null), 2000); }}
-                        className="text-xs px-2 py-1 rounded-lg transition" style={{ color: copiedCode === code.code ? '#10B981' : '#93C5FD' }}>
+                        className="text-xs px-2 py-1 rounded-lg transition" style={{ color: copiedCode === code.code ? '#10B981' : '#9B95FF' }}>
                         {copiedCode === code.code ? 'Copied!' : 'Copy'}
                       </button>
                     )}
@@ -595,7 +595,7 @@ export default function DashboardPage() {
             <div className="flex flex-wrap gap-2">
               {profile.industries.map((ind) => (
                 <span key={ind} className="px-2.5 py-1 rounded-full text-xs border"
-                  style={{ background: 'rgba(59,130,246,0.08)', borderColor: 'rgba(59,130,246,0.15)', color: '#93C5FD' }}>
+                  style={{ background: 'rgba(108,99,255,0.08)', borderColor: 'rgba(108,99,255,0.15)', color: '#9B95FF' }}>
                   {ind.replace(/_/g, ' ').replace(/\b(ai|ml|saas|b2b|b2c|iot|ar|vr|hr|it|ui|ux|api|ev|nft|defi|d2c)\b/gi, (m) => m.toUpperCase()).replace(/\b[a-z]/g, (c) => c.toUpperCase())}
                 </span>
               ))}
@@ -620,8 +620,8 @@ export default function DashboardPage() {
       {!showAIChat && (
         <button
           onClick={() => setShowAIChat(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 rounded-full flex items-center justify-center text-white text-xl shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all z-40 glow-pulse"
-          style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}
+          className="fixed bottom-6 right-6 w-14 h-14 rounded-full flex items-center justify-center text-white text-xl shadow-lg shadow-brand-violet/30 hover:shadow-brand-violet/50 transition-all z-40 glow-pulse"
+          style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}
         >
           💬
         </button>
@@ -629,11 +629,11 @@ export default function DashboardPage() {
 
       {showAIChat && (
         <div className="fixed inset-0 sm:inset-auto sm:bottom-6 sm:right-6 sm:w-96 sm:h-[500px] z-50 flex flex-col rounded-none sm:rounded-2xl border-0 sm:border border-white/10 shadow-2xl"
-          style={{ background: '#050510' }}>
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/5" style={{ background: 'rgba(10,10,26,0.8)' }}>
+          style={{ background: '#080D1A' }}>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/5" style={{ background: 'rgba(15,22,41,0.8)' }}>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
-                style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>C</div>
+                style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}>C</div>
               <div>
                 <h3 className="text-sm font-semibold text-white">Chat with Cleya</h3>
                 <div className="flex items-center gap-1">
@@ -653,7 +653,7 @@ export default function DashboardPage() {
             {aiMessages.length === 0 && (
               <div className="text-center py-8">
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
-                  style={{ background: 'linear-gradient(135deg, #3B82F620, #8B5CF620)', border: '1px solid rgba(59,130,246,0.15)' }}>
+                  style={{ background: 'linear-gradient(135deg, #6C63FF20, #4ECDC420)', border: '1px solid rgba(108,99,255,0.15)' }}>
                   <span className="text-2xl">✨</span>
                 </div>
                 <p className="text-sm text-white/60 mb-1">Ask Cleya anything!</p>
@@ -661,8 +661,8 @@ export default function DashboardPage() {
                 <div className="mt-4 space-y-2">
                   {['Tell me about my matches', 'Give me networking tips', 'How can I improve my profile?'].map((q) => (
                     <button key={q} onClick={() => { setAiInput(q); }}
-                      className="block w-full text-left px-3 py-2 rounded-xl text-xs text-white/40 border border-white/5 hover:border-blue-500/20 hover:text-white/60 transition"
-                      style={{ background: 'rgba(10,10,26,0.8)' }}>
+                      className="block w-full text-left px-3 py-2 rounded-xl text-xs text-white/40 border border-white/5 hover:border-brand-violet/20 hover:text-white/60 transition"
+                      style={{ background: 'rgba(15,22,41,0.8)' }}>
                       {q}
                     </button>
                   ))}
@@ -676,7 +676,7 @@ export default function DashboardPage() {
                     ? 'rounded-tr-sm text-white'
                     : 'rounded-tl-sm bg-white/5 text-white/80 border border-white/5'
                 }`}
-                  style={msg.role === 'user' ? { background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' } : {}}>
+                  style={msg.role === 'user' ? { background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' } : {}}>
                   {msg.content}
                 </div>
               </div>
@@ -705,7 +705,7 @@ export default function DashboardPage() {
                 type="submit"
                 disabled={!aiInput.trim() || aiLoading}
                 className="px-4 py-2.5 rounded-2xl font-semibold text-sm text-white transition-all disabled:opacity-30"
-                style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}
+                style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}
               >
                 ↑
               </button>

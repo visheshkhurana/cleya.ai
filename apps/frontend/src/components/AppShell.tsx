@@ -12,9 +12,9 @@ interface AppShellProps {
 
 export default function AppShell({ children, className = '', particles = true }: AppShellProps) {
   return (
-    <div className={`min-h-screen relative ${className}`} style={{ background: '#050510' }}>
+    <div className={`min-h-screen relative ${className}`} style={{ background: '#080D1A' }}>
       {particles && <ParticleNetwork />}
-      <div className="dot-grid fixed inset-0 pointer-events-none" style={{ zIndex: 1, opacity: 0.4 }} />
+      <div className="dot-grid fixed inset-0 pointer-events-none" style={{ zIndex: 1, opacity: 0.3 }} />
       <div className="relative" style={{ zIndex: 2 }}>
         {children}
       </div>

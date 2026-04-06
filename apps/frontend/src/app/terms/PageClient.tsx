@@ -8,7 +8,7 @@ export default function TermsPage() {
       <PublicNav />
 
       <main className="max-w-4xl mx-auto px-6 lg:px-8 py-16">
-        <h1 className="font-display text-3xl sm:text-4xl font-bold text-white mb-2">Terms of Service</h1>
+        <h1 className="font-sans text-3xl sm:text-4xl font-bold text-white mb-2">Terms of Service</h1>
         <p className="text-sm mb-12" style={{ color: '#94A3B8' }}>Last updated: March 18, 2026</p>
 
         <div className="space-y-8 text-sm leading-relaxed" style={{ color: '#94A3B8' }}>

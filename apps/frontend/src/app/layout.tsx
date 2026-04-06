@@ -1,21 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Sans, Playfair_Display } from "next/font/google";
+import { Plus_Jakarta_Sans, DM_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import ClientProviders from "@/components/ClientProviders";
 
-const dmSans = DM_Sans({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-dm-sans",
+  variable: "--font-jakarta",
   display: "swap",
 });
 
-const playfairDisplay = Playfair_Display({
+const dmMono = DM_Mono({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  style: ["normal", "italic"],
-  variable: "--font-playfair",
+  weight: ["300", "400", "500"],
+  variable: "--font-dm-mono",
   display: "swap",
 });
 
@@ -71,7 +70,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#050510",
+  themeColor: "#080D1A",
 };
 
 export default function RootLayout({
@@ -82,7 +81,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${dmSans.variable} ${playfairDisplay.variable}`}
+      className={`${plusJakartaSans.variable} ${dmMono.variable}`}
       suppressHydrationWarning
     >
       <head>

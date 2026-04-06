@@ -6,7 +6,7 @@ export function TypingIndicator() {
       <div className="flex items-end gap-2.5">
         <div
           className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mb-1"
-          style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}
+          style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}
         >
           C
         </div>

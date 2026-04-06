@@ -248,7 +248,7 @@ export default function MatchesPage() {
     const radius = (size - strokeWidth) / 2;
     const circumference = 2 * Math.PI * radius;
     const offset = circumference - (value / 100) * circumference;
-    const color = value >= 80 ? '#3B82F6' : value >= 60 ? '#3B82F6' : '#64748B';
+    const color = value >= 80 ? '#4ECDC4' : value >= 60 ? '#6C63FF' : '#64748B';
     return (
       <svg width={size} height={size} className="transform -rotate-90">
         <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={strokeWidth} />
@@ -273,13 +273,13 @@ export default function MatchesPage() {
     if (validFactors.length === 0) return null;
     const scorePercent = overallScore !== undefined && overallScore !== null ? Math.round(overallScore * 100) : null;
     return (
-      <div className="mt-4 rounded-xl p-4" style={{ background: 'rgba(10,10,26,0.6)', border: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="mt-4 rounded-xl p-4" style={{ background: 'rgba(15,22,41,0.6)', border: '1px solid rgba(255,255,255,0.06)' }}>
         <div className="flex items-start gap-4">
           {scorePercent !== null && (
             <div className="flex-shrink-0 relative">
               <CircularProgress value={scorePercent} size={56} strokeWidth={4} />
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-sm font-bold" style={{ color: scorePercent >= 80 ? '#93C5FD' : scorePercent >= 60 ? '#93C5FD' : '#94A3B8' }}>
+                <span className="text-sm font-bold" style={{ color: scorePercent >= 80 ? '#4ECDC4' : scorePercent >= 60 ? '#9B95FF' : '#94A3B8' }}>
                   {scorePercent}%
                 </span>
               </div>
@@ -294,9 +294,9 @@ export default function MatchesPage() {
                   <span className="text-xs w-4">{f.icon}</span>
                   <span className="text-[10px] w-20 text-white/40">{f.label}</span>
                   <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                    <div className="h-full rounded-full" style={{ width: `${val}%`, background: val >= 70 ? '#3B82F6' : val >= 40 ? '#3B82F6' : '#64748B', transition: 'width 0.4s ease' }} />
+                    <div className="h-full rounded-full" style={{ width: `${val}%`, background: val >= 70 ? '#4ECDC4' : val >= 40 ? '#6C63FF' : '#64748B', transition: 'width 0.4s ease' }} />
                   </div>
-                  <span className="text-[10px] w-8 text-right" style={{ color: val >= 70 ? '#93C5FD' : '#94A3B8' }}>{val}%</span>
+                  <span className="text-[10px] w-8 text-right font-mono" style={{ color: val >= 70 ? '#4ECDC4' : '#94A3B8' }}>{val}%</span>
                 </div>
               );
             })}
@@ -340,11 +340,11 @@ export default function MatchesPage() {
         <div className="flex items-center gap-1.5 mt-2">
           {declinedSteps.map((step, i) => (
             <div key={step.label} className="flex items-center gap-1">
-              {i > 0 && <div className="w-3 h-px" style={{ background: step.declined ? 'rgba(239,68,68,0.3)' : 'rgba(59,130,246,0.4)' }} />}
+              {i > 0 && <div className="w-3 h-px" style={{ background: step.declined ? 'rgba(239,68,68,0.3)' : 'rgba(108,99,255,0.4)' }} />}
               <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full"
                 style={{
-                  background: step.declined ? 'rgba(239,68,68,0.12)' : step.done ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.04)',
-                  color: step.declined ? '#F87171' : step.done ? '#93C5FD' : 'rgba(255,255,255,0.25)',
+                  background: step.declined ? 'rgba(239,68,68,0.12)' : step.done ? 'rgba(108,99,255,0.12)' : 'rgba(255,255,255,0.04)',
+                  color: step.declined ? '#F87171' : step.done ? '#9B95FF' : 'rgba(255,255,255,0.25)',
                 }}>
                 {step.label}
               </span>
@@ -364,11 +364,11 @@ export default function MatchesPage() {
         <div className="flex items-center gap-1.5 mt-2">
           {steps.map((step, i) => (
             <div key={step.label} className="flex items-center gap-1">
-              {i > 0 && <div className="w-3 h-px" style={{ background: step.done ? 'rgba(59,130,246,0.4)' : 'rgba(255,255,255,0.08)' }} />}
+              {i > 0 && <div className="w-3 h-px" style={{ background: step.done ? 'rgba(108,99,255,0.4)' : 'rgba(255,255,255,0.08)' }} />}
               <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full"
                 style={{
-                  background: step.done ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.04)',
-                  color: step.done ? '#93C5FD' : 'rgba(255,255,255,0.25)',
+                  background: step.done ? 'rgba(108,99,255,0.12)' : 'rgba(255,255,255,0.04)',
+                  color: step.done ? '#9B95FF' : 'rgba(255,255,255,0.25)',
                 }}>
                 {step.label}
               </span>
@@ -387,11 +387,11 @@ export default function MatchesPage() {
       <div className="flex items-center gap-1.5 mt-2">
         {pendingSteps.map((step, i) => (
           <div key={step.label} className="flex items-center gap-1">
-            {i > 0 && <div className="w-3 h-px" style={{ background: step.done ? 'rgba(59,130,246,0.4)' : 'rgba(255,255,255,0.08)' }} />}
+            {i > 0 && <div className="w-3 h-px" style={{ background: step.done ? 'rgba(108,99,255,0.4)' : 'rgba(255,255,255,0.08)' }} />}
             <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full"
               style={{
-                background: step.done ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.04)',
-                color: step.done ? '#93C5FD' : 'rgba(255,255,255,0.25)',
+                background: step.done ? 'rgba(108,99,255,0.12)' : 'rgba(255,255,255,0.04)',
+                color: step.done ? '#9B95FF' : 'rgba(255,255,255,0.25)',
               }}>
               {step.label}
             </span>
@@ -410,7 +410,7 @@ export default function MatchesPage() {
       <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}
         onClick={onClose}>
         <div className="w-full max-w-lg mx-4 max-h-[85vh] overflow-y-auto rounded-2xl border border-white/10 fade-up"
-          style={{ background: 'rgba(10,10,26,0.95)' }}
+          style={{ background: 'rgba(15,22,41,0.95)' }}
           onClick={(e) => e.stopPropagation()}>
           <div className="p-6">
             <div className="flex items-center justify-between mb-5">
@@ -424,7 +424,7 @@ export default function MatchesPage() {
                   className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 border border-white/10" />
               ) : (
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
-                  style={{ background: 'linear-gradient(135deg, #3B82F615, #8B5CF615)', border: '1px solid rgba(59,130,246,0.12)' }}>
+                  style={{ background: 'linear-gradient(135deg, #6C63FF15, #4ECDC415)', border: '1px solid rgba(108,99,255,0.12)' }}>
                   {personaIcon[profile?.persona || 'OTHER'] || '💬'}
                 </div>
               )}
@@ -445,7 +445,7 @@ export default function MatchesPage() {
                 <div className="relative">
                   <CircularProgress value={scorePercent} size={52} strokeWidth={4} />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xs font-bold" style={{ color: '#93C5FD' }}>{scorePercent}%</span>
+                    <span className="text-xs font-bold" style={{ color: '#9B95FF' }}>{scorePercent}%</span>
                   </div>
                 </div>
               </div>
@@ -454,7 +454,7 @@ export default function MatchesPage() {
             {profile?.persona && (
               <div className="mb-4">
                 <span className="inline-block px-2.5 py-1 rounded-full text-xs font-medium border"
-                  style={{ background: 'rgba(59,130,246,0.08)', borderColor: 'rgba(59,130,246,0.15)', color: '#93C5FD' }}>
+                  style={{ background: 'rgba(108,99,255,0.08)', borderColor: 'rgba(108,99,255,0.15)', color: '#9B95FF' }}>
                   {personaLabel[profile.persona] || profile.persona}
                 </span>
                 {profile.verificationScore !== undefined && profile.verificationScore > 0 && (
@@ -524,7 +524,7 @@ export default function MatchesPage() {
                 <div className="flex flex-wrap gap-1.5">
                   {profile.skills.map((skill) => (
                     <span key={skill} className="px-2 py-0.5 rounded-full text-[10px] border"
-                      style={{ background: 'rgba(139,92,246,0.06)', borderColor: 'rgba(139,92,246,0.12)', color: 'rgba(196,181,253,0.7)' }}>
+                      style={{ background: 'rgba(78,205,196,0.06)', borderColor: 'rgba(78,205,196,0.12)', color: 'rgba(155,149,255,0.7)' }}>
                       {skill.replace(/_/g, ' ').replace(/\b[a-z]/g, c => c.toUpperCase())}
                     </span>
                   ))}
@@ -547,9 +547,9 @@ export default function MatchesPage() {
             )}
 
             {match.reason && (
-              <div className="p-3 rounded-xl" style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.08)' }}>
+              <div className="p-3 rounded-xl" style={{ background: 'rgba(108,99,255,0.06)', border: '1px solid rgba(108,99,255,0.08)' }}>
                 <p className="text-xs text-white/50 leading-relaxed">
-                  <span className="text-blue-300/70 font-medium">Why connect: </span>
+                  <span className="text-brand-violet-hover/70 font-medium">Why connect: </span>
                   {match.reason}
                 </p>
               </div>
@@ -578,8 +578,8 @@ export default function MatchesPage() {
     }, [match.id, showActions]);
 
     return (
-      <div className="rounded-2xl border border-white/5 overflow-hidden transition hover:border-blue-500/15"
-        style={{ background: 'rgba(10,10,26,0.8)' }}>
+      <div className="rounded-2xl border border-white/5 overflow-hidden transition hover:border-brand-violet/15"
+        style={{ background: '#1A2035' }}>
         <div className="p-5">
           <div className="flex items-start gap-4">
             {profile?.avatarUrl ? (
@@ -587,7 +587,7 @@ export default function MatchesPage() {
                 className="w-14 h-14 rounded-2xl object-cover flex-shrink-0 border border-white/10" />
             ) : (
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg, #3B82F615, #8B5CF615)', border: '1px solid rgba(59,130,246,0.12)' }}>
+                style={{ background: 'linear-gradient(135deg, #6C63FF15, #4ECDC415)', border: '1px solid rgba(108,99,255,0.12)' }}>
                 {personaIcon[profile?.persona || 'OTHER'] || '💬'}
               </div>
             )}
@@ -601,10 +601,10 @@ export default function MatchesPage() {
                 )}
                 <button
                   onClick={() => setShowBreakdown(!showBreakdown)}
-                  className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold transition hover:opacity-80"
+                  className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold font-mono transition hover:opacity-80"
                   title="Click to see score breakdown"
-                  style={{ background: scorePercent >= 80 ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.12)',
-                    color: scorePercent >= 80 ? '#93C5FD' : scorePercent >= 60 ? '#93C5FD' : '#94A3B8' }}>
+                  style={{ background: scorePercent >= 80 ? 'rgba(78,205,196,0.12)' : 'rgba(108,99,255,0.1)',
+                    color: scorePercent >= 80 ? '#4ECDC4' : scorePercent >= 60 ? '#9B95FF' : '#94A3B8' }}>
                   {scorePercent}% · {scorePercent >= 80 ? 'Strong Match' : scorePercent >= 60 ? 'Good Fit' : 'Possible Fit'}
                   <svg className={`w-3 h-3 transition-transform ${showBreakdown ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -627,7 +627,7 @@ export default function MatchesPage() {
               </div>
               {profile?.persona && (
                 <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium border mt-1"
-                  style={{ background: 'rgba(59,130,246,0.08)', borderColor: 'rgba(59,130,246,0.15)', color: '#93C5FD' }}>
+                  style={{ background: 'rgba(108,99,255,0.08)', borderColor: 'rgba(108,99,255,0.15)', color: '#9B95FF' }}>
                   {personaLabel[profile.persona] || profile.persona}
                 </span>
               )}
@@ -639,7 +639,7 @@ export default function MatchesPage() {
             <div className="flex flex-wrap gap-1 mt-3">
               {profile.skills.slice(0, 5).map((skill) => (
                 <span key={skill} className="px-1.5 py-0.5 rounded-full text-[9px] border"
-                  style={{ background: 'rgba(139,92,246,0.06)', borderColor: 'rgba(139,92,246,0.12)', color: 'rgba(196,181,253,0.6)' }}>
+                  style={{ background: 'rgba(78,205,196,0.06)', borderColor: 'rgba(78,205,196,0.12)', color: 'rgba(155,149,255,0.6)' }}>
                   {skill.replace(/_/g, ' ').replace(/\b[a-z]/g, c => c.toUpperCase())}
                 </span>
               ))}
@@ -652,10 +652,10 @@ export default function MatchesPage() {
           {showBreakdown && <ScoreBreakdown breakdown={match.scoreBreakdown} overallScore={match.score} />}
 
           {match.reason && (
-            <div className="mt-3 p-3.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.06), rgba(139,92,246,0.04))', border: '1px solid rgba(59,130,246,0.1)' }}>
+            <div className="mt-3 p-3.5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.06), rgba(78,205,196,0.04))', border: '1px solid rgba(108,99,255,0.1)' }}>
               <div className="flex items-center gap-1.5 mb-1.5">
                 <span className="text-xs">💡</span>
-                <span className="text-[10px] font-semibold text-blue-300/80 uppercase tracking-wide">Thought of someone for you</span>
+                <span className="text-[10px] font-semibold text-brand-violet-hover/80 uppercase tracking-wide">Thought of someone for you</span>
               </div>
               <p className="text-xs text-white/60 leading-relaxed italic">
                 {match.reason}
@@ -680,7 +680,7 @@ export default function MatchesPage() {
           <button
             onClick={() => setExpandedProfile(match.id)}
             className="mt-3 text-[11px] font-medium transition hover:opacity-80"
-            style={{ color: '#93C5FD' }}>
+            style={{ color: '#9B95FF' }}>
             View Full Profile →
           </button>
 
@@ -691,7 +691,7 @@ export default function MatchesPage() {
                 <p className="text-xs text-white/60">📧 {other.email}</p>
                 {profile?.linkedinUrl && (
                   <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer"
-                    className="text-xs text-blue-300 hover:text-blue-200 transition block">
+                    className="text-xs text-brand-violet-hover hover:text-white/60 transition block">
                     🔗 LinkedIn Profile
                   </a>
                 )}
@@ -701,12 +701,12 @@ export default function MatchesPage() {
               </div>
               <div className="flex gap-2 mt-3">
                 <button onClick={() => router.push('/messages')}
-                  className="flex-1 py-2 rounded-lg text-xs font-medium text-white border border-blue-500/20 hover:bg-blue-500/5 transition"
-                  style={{ background: 'rgba(59,130,246,0.1)' }}>
+                  className="flex-1 py-2 rounded-lg text-xs font-medium text-white border border-brand-violet/20 hover:bg-brand-violet/5 transition"
+                  style={{ background: 'rgba(108,99,255,0.1)' }}>
                   💬 Message
                 </button>
                 <button onClick={() => router.push('/introductions')}
-                  className="flex-1 py-2 rounded-lg text-xs font-medium text-blue-300 border border-blue-500/20 hover:bg-blue-500/5 transition">
+                  className="flex-1 py-2 rounded-lg text-xs font-medium text-brand-violet-hover border border-brand-violet/20 hover:bg-brand-violet/5 transition">
                   View Intro →
                 </button>
               </div>
@@ -728,8 +728,8 @@ export default function MatchesPage() {
               onClick={() => handleRespond(match.id, 'ACCEPTED')}
               disabled={responding === match.id}
               className="flex-1 py-3 text-sm font-medium transition disabled:opacity-40"
-              style={{ color: '#93C5FD' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(59,130,246,0.08)'; }}
+              style={{ color: '#9B95FF' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(108,99,255,0.08)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
             >
               {responding === match.id ? 'Sending...' : 'Connect ✓'}
@@ -749,12 +749,12 @@ export default function MatchesPage() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-white/60 border border-white/10 focus:border-blue-500/30 focus:outline-none transition appearance-none cursor-pointer"
-            style={{ background: 'rgba(10,10,26,0.8)' }}>
+            className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-white/60 border border-white/10 focus:border-brand-violet/30 focus:outline-none transition appearance-none cursor-pointer"
+            style={{ background: 'rgba(15,22,41,0.8)' }}>
             <option value="score">Best Match</option>
             <option value="recent">Most Recent</option>
           </select>
-          <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: 'rgba(59,130,246,0.08)' }}>
+          <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: 'rgba(108,99,255,0.08)' }}>
             {[
               { id: 'pending' as Tab, label: `Pending (${matchStats.pending})` },
               { id: 'accepted' as Tab, label: `Accepted (${matchStats.accepted})` },
@@ -768,7 +768,7 @@ export default function MatchesPage() {
                     ? 'text-white shadow-sm'
                     : 'text-white/40 hover:text-white/60'
                 }`}
-                style={activeTab === tab.id ? { background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' } : {}}
+                style={activeTab === tab.id ? { background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' } : {}}
               >
                 {tab.label}
               </button>
@@ -786,8 +786,8 @@ export default function MatchesPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by name, persona, industry, company..."
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-white placeholder:text-white/20 border border-white/5 focus:border-blue-500/30 focus:outline-none transition"
-              style={{ background: 'rgba(10,10,26,0.8)' }}
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-white placeholder:text-white/20 border border-white/5 focus:border-brand-violet/30 focus:outline-none transition"
+              style={{ background: 'rgba(15,22,41,0.8)' }}
             />
             {searchQuery && (
               <button onClick={() => setSearchQuery('')}
@@ -808,7 +808,7 @@ export default function MatchesPage() {
                 <button
                   onClick={() => router.push('/dashboard')}
                   className="px-5 py-2.5 rounded-xl text-sm font-medium text-white transition"
-                  style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}
+                  style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}
                 >
                   Back to Dashboard
                 </button>
@@ -893,7 +893,7 @@ export default function MatchesPage() {
 
       {feedbackPrompt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
-          <div className="w-full max-w-sm mx-4 rounded-2xl border border-white/10 p-6 fade-up" style={{ background: 'rgba(10,10,26,0.8)' }}>
+          <div className="w-full max-w-sm mx-4 rounded-2xl border border-white/10 p-6 fade-up" style={{ background: 'rgba(15,22,41,0.8)' }}>
             <h3 className="text-lg font-semibold text-white mb-1">
               {feedbackPrompt.action === 'ACCEPTED' ? 'Great choice!' : 'Got it!'}
             </h3>
@@ -925,7 +925,7 @@ export default function MatchesPage() {
               <button onClick={submitFeedback}
                 disabled={feedbackPrompt.rating === 0 || submittingFeedback}
                 className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white transition disabled:opacity-40"
-                style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
+                style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}>
                 {submittingFeedback ? 'Sending...' : 'Submit'}
               </button>
             </div>

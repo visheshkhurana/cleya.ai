@@ -233,7 +233,7 @@ export default function BlogPostClient() {
       <AppShell className="flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-4xl font-bold gradient-text mb-4">Post Not Found</h1>
-          <Link href="/blog" className="px-6 py-3 rounded-xl text-white font-medium text-sm cta-shimmer" style={{ background: '#3B82F6' }}>
+          <Link href="/blog" className="px-6 py-3 rounded-xl text-white font-medium text-sm cta-shimmer" style={{ background: '#6C63FF' }}>
             Back to Blog
           </Link>
         </div>
@@ -259,15 +259,15 @@ export default function BlogPostClient() {
         <header className="mb-10">
           <div className="flex items-center gap-3 mb-4">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-white"
-              style={{ background: '#3B82F6' }}>
+              style={{ background: '#6C63FF' }}>
               {post.category}
             </span>
             <span className="text-xs" style={{ color: '#64748B' }}>{post.readTime}</span>
           </div>
-          <h1 className="font-display text-3xl sm:text-4xl font-bold text-white tracking-tight mb-6">{post.title}</h1>
+          <h1 className="font-sans text-3xl sm:text-4xl font-bold text-white tracking-tight mb-6">{post.title}</h1>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
-              style={{ background: 'rgba(59,130,246,0.15)', color: '#93C5FD' }}>
+              style={{ background: 'rgba(108,99,255,0.15)', color: '#9B95FF' }}>
               {post.author[0]}
             </div>
             <div>
@@ -295,7 +295,7 @@ export default function BlogPostClient() {
                       const linkMatch = part.match(/\[([^\]]+)\]\(([^)]+)\)/);
                       if (linkMatch) {
                         return (
-                          <Link key={k} href={linkMatch[2]} className="underline decoration-blue-400/40 hover:decoration-blue-400 transition" style={{ color: '#93C5FD' }}>
+                          <Link key={k} href={linkMatch[2]} className="underline decoration-brand-violet/40 hover:decoration-brand-violet transition" style={{ color: '#9B95FF' }}>
                             {linkMatch[1]}
                           </Link>
                         );
@@ -307,7 +307,7 @@ export default function BlogPostClient() {
                       <p key={j} className="text-sm leading-relaxed mb-3" style={{ color: '#CBD5E1' }}>
                         {line.startsWith('- ') ? (
                           <span className="flex items-start gap-2">
-                            <span style={{ color: '#3B82F6' }}>•</span>
+                            <span style={{ color: '#6C63FF' }}>•</span>
                             <span>{rendered}</span>
                           </span>
                         ) : rendered}
@@ -323,7 +323,7 @@ export default function BlogPostClient() {
               const linkMatch = part.match(/\[([^\]]+)\]\(([^)]+)\)/);
               if (linkMatch) {
                 return (
-                  <Link key={k} href={linkMatch[2]} className="underline decoration-blue-400/40 hover:decoration-blue-400 transition" style={{ color: '#93C5FD' }}>
+                  <Link key={k} href={linkMatch[2]} className="underline decoration-brand-violet/40 hover:decoration-brand-violet transition" style={{ color: '#9B95FF' }}>
                     {linkMatch[1]}
                   </Link>
                 );
@@ -338,13 +338,13 @@ export default function BlogPostClient() {
 
         {/* Related Articles */}
         {post.relatedLinks && post.relatedLinks.length > 0 && (
-          <div className="mt-12 rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(10,10,26,0.8)' }}>
+          <div className="mt-12 rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(15,22,41,0.8)' }}>
             <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider mb-4">Related Reading</h3>
             <div className="grid sm:grid-cols-2 gap-3">
               {post.relatedLinks.map((link, i) => (
                 <Link key={i} href={link.href}
-                  className="text-sm font-medium hover:text-blue-200 transition flex items-center gap-2"
-                  style={{ color: '#93C5FD' }}>
+                  className="text-sm font-medium hover:text-white/60 transition flex items-center gap-2"
+                  style={{ color: '#9B95FF' }}>
                   <span>→</span> {link.label}
                 </Link>
               ))}
@@ -352,14 +352,14 @@ export default function BlogPostClient() {
           </div>
         )}
 
-        <div className="mt-8 rounded-2xl border border-blue-500/15 p-6" style={{ background: 'rgba(59,130,246,0.06)' }}>
+        <div className="mt-8 rounded-2xl border border-brand-violet/15 p-6" style={{ background: 'rgba(108,99,255,0.06)' }}>
           <h3 className="text-lg font-semibold text-white mb-2">Ready to put these insights into action?</h3>
           <p className="text-sm mb-4" style={{ color: '#94A3B8' }}>
             Join Cleya.ai and connect with the right investors, founders, and operators for your startup.
           </p>
           <Link href="/?action=signup"
             className="inline-block px-6 py-3 rounded-xl text-white font-medium text-sm transition hover:scale-[1.02]"
-            style={{ background: '#3B82F6' }}>
+            style={{ background: '#6C63FF' }}>
             Get Started Free →
           </Link>
         </div>

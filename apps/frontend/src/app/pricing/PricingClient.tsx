@@ -99,23 +99,23 @@ export default function PricingClient() {
 
       <section className="pt-16 pb-8 text-center">
         <div className="max-w-4xl mx-auto px-6 lg:px-8">
-          <h1 className="font-display text-4xl sm:text-5xl font-bold text-white tracking-tight mb-4">
+          <h1 className="font-sans text-4xl sm:text-5xl font-bold text-white tracking-tight mb-4">
             Simple, transparent pricing
           </h1>
           <p className="text-lg max-w-xl mx-auto mb-8" style={{ color: '#94A3B8' }}>
             Start free. Upgrade when you need more matches, messaging, and premium features.
           </p>
-          <div className="inline-flex items-center gap-3 p-1 rounded-full border border-white/10" style={{ background: 'rgba(10,10,26,0.8)' }}>
+          <div className="inline-flex items-center gap-3 p-1 rounded-full border border-white/10" style={{ background: 'rgba(15,22,41,0.8)' }}>
             <button
               onClick={() => setAnnual(false)}
               className={`px-4 py-2 rounded-full text-sm font-medium transition ${!annual ? 'text-white' : 'text-white/40'}`}
-              style={!annual ? { background: '#3B82F6' } : {}}>
+              style={!annual ? { background: '#6C63FF' } : {}}>
               Monthly
             </button>
             <button
               onClick={() => setAnnual(true)}
               className={`px-4 py-2 rounded-full text-sm font-medium transition ${annual ? 'text-white' : 'text-white/40'}`}
-              style={annual ? { background: '#3B82F6' } : {}}>
+              style={annual ? { background: '#6C63FF' } : {}}>
               Annual <span className="text-xs opacity-75">(-20%)</span>
             </button>
           </div>
@@ -130,11 +130,11 @@ export default function PricingClient() {
                 annual ? Math.round(parseInt(plan.price.replace(',', '')) * 0.8).toLocaleString('en-IN') : plan.price;
               return (
                 <div key={plan.name} className={`relative rounded-2xl border p-6 flex flex-col ${
-                  plan.highlight ? 'border-blue-500/30' : 'border-white/5'
-                }`} style={{ background: plan.highlight ? 'rgba(59,130,246,0.06)' : 'rgba(10,10,26,0.8)' }}>
+                  plan.highlight ? 'border-brand-violet/30' : 'border-white/5'
+                }`} style={{ background: plan.highlight ? 'rgba(108,99,255,0.06)' : 'rgba(15,22,41,0.8)' }}>
                   {plan.badge && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-white"
-                      style={{ background: '#3B82F6' }}>
+                      style={{ background: '#6C63FF' }}>
                       {plan.badge}
                     </div>
                   )}
@@ -148,7 +148,7 @@ export default function PricingClient() {
                   <ul className="space-y-3 mb-8 flex-1">
                     {plan.features.map((f) => (
                       <li key={f} className="flex items-start gap-2 text-sm" style={{ color: '#CBD5E1' }}>
-                        <svg className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: '#3B82F6' }} viewBox="0 0 20 20" fill="currentColor">
+                        <svg className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: '#6C63FF' }} viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                         {f}
@@ -159,7 +159,7 @@ export default function PricingClient() {
                     className={`block text-center py-3 rounded-xl text-sm font-medium transition hover:scale-[1.02] ${
                       plan.highlight ? 'text-white' : 'text-white border border-white/10 hover:border-white/20'
                     }`}
-                    style={plan.highlight ? { background: '#3B82F6', boxShadow: '0 0 20px rgba(59,130,246,0.2)' } : {}}>
+                    style={plan.highlight ? { background: '#6C63FF', boxShadow: '0 0 20px rgba(108,99,255,0.2)' } : {}}>
                     {plan.cta}
                   </Link>
                 </div>
@@ -167,13 +167,13 @@ export default function PricingClient() {
             })}
           </div>
 
-          <div className="mt-12 text-center rounded-2xl border border-white/5 p-8" style={{ background: 'rgba(10,10,26,0.8)' }}>
+          <div className="mt-12 text-center rounded-2xl border border-white/5 p-8" style={{ background: 'rgba(15,22,41,0.8)' }}>
             <h3 className="text-xl font-semibold text-white mb-2">Enterprise</h3>
             <p className="text-sm mb-4" style={{ color: '#94A3B8' }}>
               Custom plans for accelerators, VC funds, and large teams. SSO, API access, dedicated support, and custom matching rules.
             </p>
             <a href="mailto:enterprise@cleya.ai"
-              className="inline-block px-6 py-3 rounded-xl text-sm font-medium text-blue-300 border border-blue-500/20 hover:bg-blue-500/5 transition">
+              className="inline-block px-6 py-3 rounded-xl text-sm font-medium text-brand-violet-hover border border-brand-violet/20 hover:bg-brand-violet/5 transition">
               Contact Sales
             </a>
           </div>
@@ -185,7 +185,7 @@ export default function PricingClient() {
           <h2 className="text-2xl font-bold text-white text-center mb-10">Frequently Asked Questions</h2>
           <div className="space-y-3">
             {faqs.map((faq, i) => (
-              <div key={i} className="rounded-xl border border-white/5 overflow-hidden" style={{ background: 'rgba(10,10,26,0.8)' }}>
+              <div key={i} className="rounded-xl border border-white/5 overflow-hidden" style={{ background: 'rgba(15,22,41,0.8)' }}>
                 <button
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
                   className="w-full flex items-center justify-between px-5 py-4 text-left">
@@ -212,7 +212,7 @@ export default function PricingClient() {
           <p className="text-sm mb-6" style={{ color: '#94A3B8' }}>Join founders and investors already on Cleya.ai.</p>
           <Link href="/?action=signup"
             className="inline-block px-8 py-3 rounded-[10px] text-white font-medium text-sm transition-all hover:scale-[1.02]"
-            style={{ background: '#3B82F6', boxShadow: '0 0 30px rgba(59,130,246,0.25)' }}>
+            style={{ background: '#6C63FF', boxShadow: '0 0 30px rgba(108,99,255,0.25)' }}>
             Get Started Free →
           </Link>
         </div>

@@ -17,9 +17,9 @@ const personaIcon: Record<string, string> = {
 
 const statusStyles: Record<string, { bg: string; text: string; labelKey: string; icon: string }> = {
   PENDING_APPROVAL: { bg: 'rgba(245,158,11,0.15)', text: '#fbbf24', labelKey: 'intro.statusReview', icon: '⏳' },
-  APPROVED: { bg: 'rgba(59,130,246,0.15)', text: '#93c5fd', labelKey: 'intro.statusApproved', icon: '✅' },
-  SENT: { bg: 'rgba(59,130,246,0.15)', text: '#93C5FD', labelKey: 'intro.statusSent', icon: '📤' },
-  VIEWED: { bg: 'rgba(59,130,246,0.15)', text: '#93c5fd', labelKey: 'intro.statusViewed', icon: '👀' },
+  APPROVED: { bg: 'rgba(108,99,255,0.15)', text: '#93c5fd', labelKey: 'intro.statusApproved', icon: '✅' },
+  SENT: { bg: 'rgba(108,99,255,0.15)', text: '#9B95FF', labelKey: 'intro.statusSent', icon: '📤' },
+  VIEWED: { bg: 'rgba(108,99,255,0.15)', text: '#93c5fd', labelKey: 'intro.statusViewed', icon: '👀' },
   RESPONDED: { bg: 'rgba(16,185,129,0.15)', text: '#6ee7b7', labelKey: 'intro.statusResponded', icon: '💬' },
   FOLLOWED_UP: { bg: 'rgba(245,158,11,0.15)', text: '#fbbf24', labelKey: 'intro.statusFollowedUp', icon: '🔔' },
   COMPLETED: { bg: 'rgba(16,185,129,0.2)', text: '#10B981', labelKey: 'intro.statusCompleted', icon: '🎉' },
@@ -28,7 +28,7 @@ const statusStyles: Record<string, { bg: string; text: string; labelKey: string;
 
 const outcomeKeys: Record<string, { labelKey: string; icon: string; color: string }> = {
   GREAT_MEETING: { labelKey: 'intro.greatMeeting', icon: '🎉', color: '#10B981' },
-  GOOD_CHAT: { labelKey: 'intro.goodChat', icon: '👍', color: '#3B82F6' },
+  GOOD_CHAT: { labelKey: 'intro.goodChat', icon: '👍', color: '#6C63FF' },
   DIDNT_MEET: { labelKey: 'intro.didntMeet', icon: '😕', color: '#f59e0b' },
   NOT_A_FIT: { labelKey: 'intro.notAFit', icon: '🤷', color: '#ef4444' },
 };
@@ -71,7 +71,7 @@ export default function IntroductionDetailPage() {
   if (loading || !intro) {
     return (
       <AppShell>
-        <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+        <div className="w-5 h-5 border-2 border-brand-violet border-t-transparent rounded-full animate-spin" />
       </AppShell>
     );
   }
@@ -154,10 +154,10 @@ export default function IntroductionDetailPage() {
       </div>
 
       <div className="max-w-2xl mx-auto px-6 lg:px-8 py-6 space-y-6">
-        <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(10,10,26,0.8)' }}>
+        <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(15,22,41,0.8)' }}>
           <div className="flex items-center gap-4 mb-4">
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl"
-              style={{ background: 'linear-gradient(135deg, #3B82F615, #8B5CF615)', border: '1px solid rgba(59,130,246,0.15)' }}>
+              style={{ background: 'linear-gradient(135deg, #6C63FF15, #4ECDC415)', border: '1px solid rgba(108,99,255,0.15)' }}>
               {personaIcon[profile?.persona || 'OTHER']}
             </div>
             <div>
@@ -190,7 +190,7 @@ export default function IntroductionDetailPage() {
         </div>
 
         {intro.introText && (
-          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(10,10,26,0.8)' }}>
+          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(15,22,41,0.8)' }}>
             <p className="text-[10px] uppercase tracking-wider text-white/30 mb-3 font-medium">
               {t('intro.preview')}
             </p>
@@ -198,12 +198,12 @@ export default function IntroductionDetailPage() {
               <div className="space-y-3">
                 <textarea value={editText} onChange={(e) => setEditText(e.target.value)}
                   className="w-full bg-transparent text-white/80 text-sm leading-relaxed resize-none outline-none min-h-[200px] border rounded-xl p-4"
-                  style={{ borderColor: 'rgba(59,130,246,0.3)' }}
+                  style={{ borderColor: 'rgba(108,99,255,0.3)' }}
                 />
                 <div className="flex gap-2">
                   <button onClick={handleSaveEdit} disabled={actionLoading === 'edit'}
                     className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50"
-                    style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
+                    style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}>
                     {actionLoading === 'edit' ? t('intro.saving') : t('intro.saveChanges')}
                   </button>
                   <button onClick={() => setEditMode(false)}
@@ -213,7 +213,7 @@ export default function IntroductionDetailPage() {
                 </div>
               </div>
             ) : (
-              <div className="rounded-xl border p-5" style={{ background: 'rgba(59,130,246,0.03)', borderColor: 'rgba(59,130,246,0.1)' }}>
+              <div className="rounded-xl border p-5" style={{ background: 'rgba(108,99,255,0.03)', borderColor: 'rgba(108,99,255,0.1)' }}>
                 <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{intro.introText}</p>
               </div>
             )}
@@ -221,12 +221,12 @@ export default function IntroductionDetailPage() {
         )}
 
         {intro.talkingPoints?.length > 0 && !editMode && (
-          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(10,10,26,0.8)' }}>
+          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(15,22,41,0.8)' }}>
             <p className="text-[10px] uppercase tracking-wider text-white/30 mb-3 font-medium">{t('intro.talkingPoints')}</p>
             <div className="space-y-3">
               {intro.talkingPoints.map((tp: string, i: number) => (
                 <div key={i} className="flex gap-3 items-start">
-                  <span className="text-blue-400/60 mt-0.5 flex-shrink-0 text-sm">💡</span>
+                  <span className="text-brand-violet/60 mt-0.5 flex-shrink-0 text-sm">💡</span>
                   <span className="text-white/50 text-sm">{tp}</span>
                 </div>
               ))}
@@ -235,13 +235,13 @@ export default function IntroductionDetailPage() {
         )}
 
         {intro.status !== 'PENDING_APPROVAL' && intro.status !== 'CANCELLED' && (
-          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(10,10,26,0.8)' }}>
+          <div className="rounded-2xl border border-white/5 p-6" style={{ background: 'rgba(15,22,41,0.8)' }}>
             <p className="text-[10px] uppercase tracking-wider text-white/30 mb-3 font-medium">{t('intro.contact')}</p>
             <div className="space-y-2">
               <p className="text-sm text-white/60">📧 {other.email}</p>
               {profile?.linkedinUrl && (
                 <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer"
-                  className="text-sm text-blue-400/80 hover:text-blue-300 transition block">
+                  className="text-sm text-brand-violet/80 hover:text-brand-violet-hover transition block">
                   🔗 {profile.linkedinUrl}
                 </a>
               )}
@@ -250,13 +250,13 @@ export default function IntroductionDetailPage() {
           </div>
         )}
 
-        <div className="rounded-2xl border border-white/5 p-6 space-y-3" style={{ background: 'rgba(10,10,26,0.8)' }}>
+        <div className="rounded-2xl border border-white/5 p-6 space-y-3" style={{ background: 'rgba(15,22,41,0.8)' }}>
           {isPending && !editMode && (
             <>
               <div className="flex gap-2">
                 <button onClick={handleApprove} disabled={actionLoading === 'approve'}
                   className="flex-1 py-3 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50"
-                  style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
+                  style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}>
                   {actionLoading === 'approve' ? t('intro.sending') : `✓ ${t('intro.approve')}`}
                 </button>
                 <button onClick={() => { setEditText(intro.introText || ''); setEditMode(true); }}
@@ -274,7 +274,7 @@ export default function IntroductionDetailPage() {
           {canFeedback && !showOutcome && (
             <button onClick={() => setShowOutcome(true)}
               className="w-full py-3 rounded-xl text-sm font-semibold text-white transition"
-              style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
+              style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}>
               {t('intro.howDidItGo')}
             </button>
           )}
@@ -287,7 +287,7 @@ export default function IntroductionDetailPage() {
                   <button key={key} onClick={() => handleOutcome(key)}
                     disabled={actionLoading === 'outcome'}
                     className="py-4 rounded-xl text-sm font-medium text-white/70 hover:text-white transition border border-white/10 hover:border-white/20 disabled:opacity-50"
-                    style={{ background: 'rgba(10,10,26,0.85)' }}>
+                    style={{ background: 'rgba(15,22,41,0.85)' }}>
                     <span className="block text-xl mb-1">{val.icon}</span>
                     {t(val.labelKey)}
                   </button>

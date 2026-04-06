@@ -44,7 +44,7 @@ export default function UserAvatar({ name, avatarUrl, size = 'md', className = '
 
   return (
     <div
-      className={`${container} rounded-full flex items-center justify-center ${text} font-bold flex-shrink-0 bg-gradient-to-br from-blue-500 to-purple-700 text-white ${className}`}
+      className={`${container} rounded-full flex items-center justify-center ${text} font-bold flex-shrink-0 bg-gradient-to-br from-brand-violet to-brand-teal text-white ${className}`}
     >
       {getInitials(name)}
     </div>

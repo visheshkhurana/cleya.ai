@@ -59,7 +59,7 @@ function NetworkNodes({ mouse }: { mouse: React.MutableRefObject<{ x: number; y:
   }, []);
 
   const teal = useMemo(() => new THREE.Color('#0D9488'), []);
-  const purple = useMemo(() => new THREE.Color('#7C3AED'), []);
+  const purple = useMemo(() => new THREE.Color('#6C63FF'), []);
   const tempColor = useMemo(() => new THREE.Color(), []);
 
   useFrame((state) => {
@@ -155,7 +155,7 @@ function ConnectionLines({ scrollProgress, mouse }: { scrollProgress: number; mo
 
   return (
     <lineSegments ref={ref} geometry={geometry}>
-      <lineBasicMaterial ref={matRef} color="#7C3AED" transparent opacity={0.08} />
+      <lineBasicMaterial ref={matRef} color="#6C63FF" transparent opacity={0.08} />
     </lineSegments>
   );
 }
@@ -192,7 +192,7 @@ function AICore({ scrollProgress, mouse }: { scrollProgress: number; mouse: Reac
       <mesh ref={meshRef}>
         <icosahedronGeometry args={[1, 2]} />
         <meshBasicMaterial
-          color="#7C3AED"
+          color="#6C63FF"
           transparent
           opacity={0.5 + scrollProgress * 0.3}
           wireframe
@@ -309,8 +309,8 @@ function CameraController({ scrollProgress, mouse }: { scrollProgress: number; m
 function Scene({ scrollProgress, mouse }: { scrollProgress: number; mouse: React.MutableRefObject<{ x: number; y: number }> }) {
   return (
     <>
-      <color attach="background" args={['#050510']} />
-      <fog attach="fog" args={['#050510', 15, 35]} />
+      <color attach="background" args={['#080D1A']} />
+      <fog attach="fog" args={['#080D1A', 15, 35]} />
 
       <CameraController scrollProgress={scrollProgress} mouse={mouse} />
       <NetworkNodes mouse={mouse} />
@@ -330,10 +330,10 @@ export default function NetworkCanvas() {
     setMounted(true);
   }, []);
 
-  if (!mounted) return <div className="fixed inset-0" style={{ background: '#050510' }} />;
+  if (!mounted) return <div className="fixed inset-0" style={{ background: '#080D1A' }} />;
 
   return (
-    <div className="fixed inset-0 z-0 pointer-events-none" style={{ background: '#050510' }}>
+    <div className="fixed inset-0 z-0 pointer-events-none" style={{ background: '#080D1A' }}>
       <Canvas
         camera={{ position: [0, 2, 15], fov: 60, near: 0.1, far: 100 }}
         dpr={[1, 1.5]}

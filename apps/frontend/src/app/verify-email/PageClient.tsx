@@ -22,7 +22,7 @@ export default function VerifyEmailPage() {
       <div className="text-center max-w-sm">
         {status === 'loading' && (
           <>
-            <div className="w-10 h-10 border-2 border-cleya-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <div className="w-10 h-10 border-2 border-brand-teal border-t-transparent rounded-full animate-spin mx-auto mb-4" />
             <p className="text-white">Verifying your email...</p>
           </>
         )}
@@ -33,7 +33,7 @@ export default function VerifyEmailPage() {
             </div>
             <h1 className="text-xl font-semibold text-white mb-2">Email Verified!</h1>
             <p className="text-sm mb-6" style={{ color: '#94A3B8' }}>Your email has been verified successfully.</p>
-            <a href="/dashboard" className="inline-block px-6 py-2.5 rounded-lg text-sm font-medium text-white" style={{ background: '#3B82F6' }}>Go to Dashboard</a>
+            <a href="/dashboard" className="inline-block px-6 py-2.5 rounded-lg text-sm font-medium text-white" style={{ background: '#6C63FF' }}>Go to Dashboard</a>
           </>
         )}
         {status === 'error' && (
@@ -43,7 +43,7 @@ export default function VerifyEmailPage() {
             </div>
             <h1 className="text-xl font-semibold text-white mb-2">Verification Failed</h1>
             <p className="text-sm mb-6" style={{ color: '#94A3B8' }}>{error}</p>
-            <a href="/" className="inline-block px-6 py-2.5 rounded-lg text-sm font-medium text-white" style={{ background: '#3B82F6' }}>Back to Home</a>
+            <a href="/" className="inline-block px-6 py-2.5 rounded-lg text-sm font-medium text-white" style={{ background: '#6C63FF' }}>Back to Home</a>
           </>
         )}
       </div>

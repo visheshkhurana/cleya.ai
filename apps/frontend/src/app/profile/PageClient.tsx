@@ -202,7 +202,7 @@ export default function ProfilePage() {
     return (
       <AppShell className="flex items-center justify-center">
         <div className="flex items-center gap-3">
-          <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-brand-violet border-t-transparent rounded-full animate-spin" />
           <p className="text-slate-400 text-sm">Loading profile...</p>
         </div>
       </AppShell>
@@ -222,20 +222,20 @@ export default function ProfilePage() {
           {saved && <span className="text-xs text-green-400 hidden sm:inline">Saved ✓</span>}
           <button onClick={handleSave} disabled={saving}
             className="px-4 py-1.5 text-xs font-medium rounded-lg text-white transition disabled:opacity-40"
-            style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
+            style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}>
             {saving ? 'Saving...' : 'Save'}
           </button>
         </div>
       } />
 
       <div className="max-w-3xl mx-auto px-6 lg:px-8 py-8 space-y-6">
-        <div className="rounded-2xl border border-white/5 p-6 flex items-center gap-4" style={{ background: 'rgba(10,10,26,0.8)' }}>
+        <div className="rounded-2xl border border-white/5 p-6 flex items-center gap-4" style={{ background: '#1A2035' }}>
           {profile.avatarUrl ? (
             <img src={profile.avatarUrl} alt={profile.currentRole || 'Profile'} referrerPolicy="no-referrer"
               className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 border border-white/10" />
           ) : (
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl"
-              style={{ background: 'linear-gradient(135deg, #3B82F620, #8B5CF620)', border: '1px solid rgba(59,130,246,0.15)' }}>
+              style={{ background: 'linear-gradient(135deg, #6C63FF20, #4ECDC420)', border: '1px solid rgba(108,99,255,0.15)' }}>
               {personaIcon[persona] || '💬'}
             </div>
           )}
@@ -243,12 +243,12 @@ export default function ProfilePage() {
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-white">{profile.currentRole || 'Your Profile'}</h2>
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium border"
-                style={{ background: 'rgba(59,130,246,0.1)', borderColor: 'rgba(59,130,246,0.2)', color: '#93C5FD' }}>
+                style={{ background: 'rgba(108,99,255,0.1)', borderColor: 'rgba(108,99,255,0.2)', color: '#9B95FF' }}>
                 {personaLabel[persona] || persona}
               </span>
               {profile.linkedinVerified && (
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-medium border"
-                  style={{ background: 'rgba(59,130,246,0.1)', borderColor: 'rgba(59,130,246,0.2)', color: '#93C5FD' }}>
+                  style={{ background: 'rgba(108,99,255,0.1)', borderColor: 'rgba(108,99,255,0.2)', color: '#9B95FF' }}>
                   ✓ LinkedIn
                 </span>
               )}
@@ -257,13 +257,13 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/5 p-4" style={{ background: 'rgba(10,10,26,0.8)' }}>
+        <div className="rounded-2xl border border-white/5 p-4" style={{ background: '#1A2035' }}>
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-white/50 uppercase tracking-wide">Profile Completion</span>
-            <span className="text-sm font-bold" style={{ color: completenessScore === 100 ? '#10b981' : '#93C5FD' }}>{completenessScore}%</span>
+            <span className="text-sm font-bold" style={{ color: completenessScore === 100 ? '#10b981' : '#9B95FF' }}>{completenessScore}%</span>
           </div>
           <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${completenessScore}%`, background: completenessScore === 100 ? '#10b981' : 'linear-gradient(90deg, #3B82F6, #60A5FA)' }} />
+            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${completenessScore}%`, background: completenessScore === 100 ? '#10b981' : 'linear-gradient(90deg, #6C63FF, #9B95FF)' }} />
           </div>
           {getMissingFields().length > 0 && (
             <p className="text-[11px] mt-2" style={{ color: '#94A3B8' }}>
@@ -276,7 +276,7 @@ export default function ProfilePage() {
           <div className="rounded-xl p-3 text-sm text-red-400 bg-red-500/10 border border-red-500/20">{error}</div>
         )}
 
-        <div className="rounded-2xl border border-white/5 p-6 space-y-5" style={{ background: 'rgba(10,10,26,0.8)' }}>
+        <div className="rounded-2xl border border-white/5 p-6 space-y-5" style={{ background: '#1A2035' }}>
           <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Basic Information</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -324,7 +324,7 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">LinkedIn URL</label>
-              <div className="flex items-center rounded-2xl border border-white/10 bg-white/5 overflow-hidden focus-within:ring-2 focus-within:ring-cleya-500 transition-all backdrop-blur-sm">
+              <div className="flex items-center rounded-2xl border border-white/10 bg-white/5 overflow-hidden focus-within:ring-2 focus-within:ring-brand-violet transition-all backdrop-blur-sm">
                 <span className="pl-4 pr-1 text-sm text-white/30 whitespace-nowrap select-none">linkedin.com/in/</span>
                 <input type="text"
                   value={(profile.linkedinUrl || '').replace(/^https?:\/\/(www\.)?linkedin\.com\/in\/?/i, '')}
@@ -345,7 +345,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: 'rgba(10,10,26,0.8)' }}>
+        <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: '#1A2035' }}>
           <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Industries</h3>
           <div className="flex flex-wrap gap-2">
             {industryOptions.map((ind) => {
@@ -354,10 +354,10 @@ export default function ProfilePage() {
                 <button key={ind} onClick={() => toggleIndustry(ind)}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
                     selected
-                      ? 'border-blue-500/40 text-blue-300'
+                      ? 'border-brand-violet/40 text-brand-violet-hover'
                       : 'border-white/10 text-white/40 hover:border-white/20 hover:text-white/60'
                   }`}
-                  style={selected ? { background: 'rgba(59,130,246,0.15)' } : { background: 'rgba(255,255,255,0.03)' }}>
+                  style={selected ? { background: 'rgba(108,99,255,0.15)' } : { background: 'rgba(255,255,255,0.03)' }}>
                   {ind === 'other' ? 'Other' : ind.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/\bAi Ml\b/, 'AI/ML').replace(/\bSaas\b/, 'SaaS').replace(/\bE Commerce\b/, 'E-Commerce')}
                 </button>
               );
@@ -370,7 +370,7 @@ export default function ProfilePage() {
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomIndustry(); } }} />
               <button onClick={addCustomIndustry}
                 className="px-4 py-3 rounded-2xl text-xs font-semibold text-white transition"
-                style={{ background: '#3B82F6' }}>
+                style={{ background: '#6C63FF' }}>
                 Add
               </button>
             </div>
@@ -378,8 +378,8 @@ export default function ProfilePage() {
           {(profile.industries || []).filter(i => !industryOptions.includes(i)).length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2">
               {(profile.industries || []).filter(i => !industryOptions.includes(i)).map(ind => (
-                <span key={ind} className="px-3 py-1.5 rounded-full text-xs font-medium border border-blue-500/40 text-blue-300 flex items-center gap-1.5"
-                  style={{ background: 'rgba(59,130,246,0.15)' }}>
+                <span key={ind} className="px-3 py-1.5 rounded-full text-xs font-medium border border-brand-violet/40 text-brand-violet-hover flex items-center gap-1.5"
+                  style={{ background: 'rgba(108,99,255,0.15)' }}>
                   {ind.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
                   <button onClick={() => updateField('industries', (profile.industries || []).filter(i => i !== ind))}
                     className="text-white/40 hover:text-white/70 text-xs">×</button>
@@ -390,7 +390,7 @@ export default function ProfilePage() {
         </div>
 
         {isFounder && (
-          <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: 'rgba(10,10,26,0.8)' }}>
+          <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: '#1A2035' }}>
             <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Founder Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -434,7 +434,7 @@ export default function ProfilePage() {
         )}
 
         {isInvestor && (
-          <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: 'rgba(10,10,26,0.8)' }}>
+          <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: '#1A2035' }}>
             <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Investor Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -468,7 +468,7 @@ export default function ProfilePage() {
         )}
 
         {isTalent && (
-          <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: 'rgba(10,10,26,0.8)' }}>
+          <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: '#1A2035' }}>
             <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Talent Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -514,7 +514,7 @@ export default function ProfilePage() {
         )}
 
         {isDealPartner && (
-          <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: 'rgba(10,10,26,0.8)' }}>
+          <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: '#1A2035' }}>
             <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Deal Partner Preferences</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -538,7 +538,7 @@ export default function ProfilePage() {
           </div>
         )}
 
-        <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: 'rgba(10,10,26,0.8)' }}>
+        <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: '#1A2035' }}>
           <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Availability & Intro Preferences</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -560,7 +560,7 @@ export default function ProfilePage() {
           <div className="flex items-center gap-3 pt-1">
             <button
               onClick={() => updateField('openToMeeting', !profile.openToMeeting)}
-              className={`relative w-11 h-6 rounded-full transition-colors ${profile.openToMeeting !== false ? 'bg-blue-500' : 'bg-white/10'}`}>
+              className={`relative w-11 h-6 rounded-full transition-colors ${profile.openToMeeting !== false ? 'bg-brand-violet' : 'bg-white/10'}`}>
               <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${profile.openToMeeting !== false ? 'translate-x-5' : ''}`} />
             </button>
             <span className="text-sm text-white/60">Open to meeting new people</span>
@@ -569,8 +569,8 @@ export default function ProfilePage() {
 
         <div className="flex justify-end pt-4 pb-8">
           <button onClick={handleSave} disabled={saving}
-            className="px-8 py-3 rounded-2xl text-white font-semibold text-sm transition-all disabled:opacity-40 shadow-lg shadow-blue-500/20"
-            style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
+            className="px-8 py-3 rounded-2xl text-white font-semibold text-sm transition-all disabled:opacity-40 shadow-lg shadow-brand-violet/20"
+            style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}>
             {saving ? 'Saving...' : saved ? 'Saved ✓' : 'Save Changes'}
           </button>
         </div>

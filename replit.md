@@ -14,7 +14,7 @@ Monorepo with:
 - `packages/types` — Shared TypeScript types
 
 ## Stack
-- **Frontend:** Next.js 14, React 18, Tailwind CSS (dark premium theme — #050510 bg, blue/purple/teal gradients), Framer Motion 11, @react-three/fiber 8.15.12 + drei 9.92.7 + three 0.160.0 (3D hero constellation), AppShell component (ParticleNetwork + dot-grid overlay for all pages), TiltCard (3D perspective hover), 3D scroll animations, flip counters, 3D button press effects
+- **Frontend:** Next.js 14, React 18, Tailwind CSS ("Premium Dark" theme — Canvas #080D1A, Surface #0F1629, Card #1A2035, Raised #252B42; Brand accents: Violet #6C63FF primary CTA, Teal #4ECDC4 success/match; Plus Jakarta Sans + DM Mono typography), Framer Motion 11, @react-three/fiber 8.15.12 + drei 9.92.7 + three 0.160.0 (3D hero constellation), AppShell component (ParticleNetwork + dot-grid overlay for all pages), TiltCard (3D perspective hover), 3D scroll animations, flip counters, 3D button press effects
 - **Mobile:** Expo SDK 52 (React Native 0.76), expo-router 4, React Query, SecureStore for auth tokens
 - **Backend:** Express, TypeScript, WebSocket
 - **Database:** PostgreSQL (Replit built-in), Prisma ORM, pgvector
@@ -78,7 +78,7 @@ Builds in dependency order: prisma generate → types → db → ai → matching
 
 **PublicNav component:** `PublicNav.tsx` provides unified navigation for public/marketing pages (About, Features, Pricing, Blog, Contact + Log In/Get Started). Blue "C" square logo used site-wide (nav, footer, 404).
 
-**Logo:** Blue-to-purple gradient square with white "C" — used consistently across homepage nav, PublicNav, AppNav, AppFooter, and 404 page.
+**Logo:** Violet (#6C63FF) square with white "C" — used consistently across homepage nav, PublicNav, AppNav, AppFooter, and 404 page.
 
 **/register route:** Redirects to `/?action=signup` (server-side redirect via Next.js).
 

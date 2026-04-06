@@ -117,7 +117,7 @@ export function DynamicForm({ fields, onSubmit, disabled }: DynamicFormProps) {
   const isLinkedInField = (field: FormField) => field.name === 'linkedinUrl';
 
   const inputClass = `w-full px-3 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white
-    placeholder-white/30 text-sm focus:outline-none focus:ring-2 focus:ring-cleya-500
+    placeholder-white/30 text-sm focus:outline-none focus:ring-2 focus:ring-brand-violet
     focus:border-transparent disabled:opacity-40 transition-all`;
 
   return (
@@ -127,7 +127,7 @@ export function DynamicForm({ fields, onSubmit, disabled }: DynamicFormProps) {
           <div key={field.name}>
             <label className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wide">
               {field.label}
-              {field.required && <span className="text-cleya-400 ml-0.5">*</span>}
+              {field.required && <span className="text-brand-teal ml-0.5">*</span>}
             </label>
 
             {field.type === 'select' && field.options && (
@@ -203,7 +203,7 @@ export function DynamicForm({ fields, onSubmit, disabled }: DynamicFormProps) {
                         onClick={() => toggleMultiselect(field.name, opt.value)}
                         disabled={submitted}
                         className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all
-                          ${sel ? 'bg-cleya-500 text-white border-cleya-500' : 'border-white/20 text-white/60 hover:border-cleya-500/50'}
+                          ${sel ? 'bg-brand-violet text-white border-brand-violet' : 'border-white/20 text-white/60 hover:border-brand-violet/50'}
                           disabled:opacity-40`}
                       >
                         {opt.label}
@@ -226,7 +226,7 @@ export function DynamicForm({ fields, onSubmit, disabled }: DynamicFormProps) {
                       type="button"
                       onClick={() => addCustomOtherValue(field.name)}
                       disabled={submitted}
-                      className="px-4 py-2.5 rounded-xl text-xs font-semibold text-white transition bg-cleya-500 hover:bg-cleya-600 disabled:opacity-40"
+                      className="px-4 py-2.5 rounded-xl text-xs font-semibold text-white transition bg-brand-violet hover:bg-brand-violet disabled:opacity-40"
                     >
                       Add
                     </button>
@@ -235,7 +235,7 @@ export function DynamicForm({ fields, onSubmit, disabled }: DynamicFormProps) {
                 {(values[field.name] || []).filter((v: string) => !(field.options || []).some((o) => o.value === v)).length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {(values[field.name] || []).filter((v: string) => !(field.options || []).some((o) => o.value === v)).map((val: string) => (
-                      <span key={val} className="px-3 py-1.5 rounded-full text-xs font-medium border border-cleya-500 text-white bg-cleya-500/20 flex items-center gap-1.5">
+                      <span key={val} className="px-3 py-1.5 rounded-full text-xs font-medium border border-brand-violet text-white bg-brand-violet/20 flex items-center gap-1.5">
                         {val.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
                         <button
                           type="button"
@@ -270,7 +270,7 @@ export function DynamicForm({ fields, onSubmit, disabled }: DynamicFormProps) {
             )}
 
             {isLinkedInField(field) && (
-              <div className={`flex items-center rounded-xl border border-white/10 bg-white/5 overflow-hidden focus-within:ring-2 focus-within:ring-cleya-500 transition-all`}>
+              <div className={`flex items-center rounded-xl border border-white/10 bg-white/5 overflow-hidden focus-within:ring-2 focus-within:ring-brand-violet transition-all`}>
                 <span className="pl-3 pr-1 text-sm text-white/30 whitespace-nowrap select-none">linkedin.com/in/</span>
                 <input
                   type="text"

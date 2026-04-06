@@ -40,9 +40,9 @@ export default function AnimatedOrb() {
         const alpha = 0.08 + layer * 0.05;
 
         const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-        gradient.addColorStop(0, `rgba(59,130,246,${alpha + 0.1})`);
-        gradient.addColorStop(0.6, `rgba(45,212,191,${alpha})`);
-        gradient.addColorStop(1, 'rgba(59,130,246,0)');
+        gradient.addColorStop(0, `rgba(108,99,255,${alpha + 0.1})`);
+        gradient.addColorStop(0.6, `rgba(78,205,196,${alpha})`);
+        gradient.addColorStop(1, 'rgba(108,99,255,0)');
 
         ctx.beginPath();
         const points = 100;

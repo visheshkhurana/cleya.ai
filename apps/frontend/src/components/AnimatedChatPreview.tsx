@@ -118,11 +118,11 @@ function TypingIndicator() {
     <div className="flex gap-2.5 items-end">
       <div
         className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] text-white font-bold flex-shrink-0"
-        style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}
+        style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}
       >
         C
       </div>
-      <div className="rounded-xl rounded-tl-sm px-3.5 py-3 flex gap-1.5" style={{ background: 'rgba(10,10,26,0.8)' }}>
+      <div className="rounded-xl rounded-tl-sm px-3.5 py-3 flex gap-1.5" style={{ background: 'rgba(15,22,41,0.8)' }}>
         <div className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#94A3B8', animationDelay: '0ms' }} />
         <div className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#94A3B8', animationDelay: '150ms' }} />
         <div className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#94A3B8', animationDelay: '300ms' }} />
@@ -136,11 +136,11 @@ function BotBubble({ text }: { text: string }) {
     <div className="flex gap-2.5 items-end">
       <div
         className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] text-white font-bold flex-shrink-0"
-        style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}
+        style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}
       >
         C
       </div>
-      <div className="rounded-xl rounded-tl-sm px-3.5 py-3 max-w-[82%]" style={{ background: 'rgba(10,10,26,0.8)' }}>
+      <div className="rounded-xl rounded-tl-sm px-3.5 py-3 max-w-[82%]" style={{ background: 'rgba(15,22,41,0.8)' }}>
         <p className="text-[13px] leading-relaxed text-white/80">{text}</p>
       </div>
     </div>
@@ -150,7 +150,7 @@ function BotBubble({ text }: { text: string }) {
 function UserBubble({ text }: { text: string }) {
   return (
     <div className="flex justify-end">
-      <div className="rounded-xl rounded-tr-sm px-3.5 py-3 max-w-[82%] bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6]">
+      <div className="rounded-xl rounded-tr-sm px-3.5 py-3 max-w-[82%] bg-gradient-to-r from-[#6C63FF] to-[#4ECDC4]">
         <p className="text-[13px] leading-relaxed text-white">{text}</p>
       </div>
     </div>
@@ -167,12 +167,12 @@ function MatchCards({ cards }: { cards: MatchCard[] }) {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: i * 0.15, duration: 0.4, type: 'spring', stiffness: 100 }}
           className="rounded-xl border border-white/[0.06] p-3"
-          style={{ background: 'rgba(59,130,246,0.04)' }}
+          style={{ background: 'rgba(108,99,255,0.04)' }}
         >
           <div className="flex items-center gap-3">
             <div
               className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold"
-              style={{ background: 'rgba(59,130,246,0.2)', color: '#60A5FA' }}
+              style={{ background: 'rgba(108,99,255,0.2)', color: '#9B95FF' }}
             >
               {m.initials}
             </div>
@@ -185,13 +185,13 @@ function MatchCards({ cards }: { cards: MatchCard[] }) {
               </p>
             </div>
           </div>
-          <div className="mt-2.5 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(59,130,246,0.15)' }}>
+          <div className="mt-2.5 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(108,99,255,0.15)' }}>
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${m.match}%` }}
               transition={{ delay: 0.3 + i * 0.15, duration: 0.8, ease: 'easeOut' }}
               className="h-full rounded-full"
-              style={{ background: 'linear-gradient(90deg, #3B82F6, #60A5FA)' }}
+              style={{ background: 'linear-gradient(90deg, #6C63FF, #9B95FF)' }}
             />
           </div>
         </motion.div>
@@ -207,17 +207,17 @@ function IntroCardView({ intro }: { intro: IntroCard }) {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.4, type: 'spring', stiffness: 120 }}
       className="ml-9 rounded-xl border border-emerald-500/20 p-3.5"
-      style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.08), rgba(59,130,246,0.02))' }}
+      style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.08), rgba(108,99,255,0.02))' }}
     >
       <div className="flex items-center justify-between mb-2.5">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold" style={{ background: 'rgba(59,130,246,0.25)', color: '#60A5FA' }}>
+          <div className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold" style={{ background: 'rgba(108,99,255,0.25)', color: '#9B95FF' }}>
             {intro.fromInitials}
           </div>
           <svg width="18" height="10" viewBox="0 0 18 10" fill="none">
-            <path d="M1 5h14M13 1l4 4-4 4" stroke="#60A5FA" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M1 5h14M13 1l4 4-4 4" stroke="#9B95FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          <div className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold" style={{ background: 'rgba(59,130,246,0.25)', color: '#60A5FA' }}>
+          <div className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold" style={{ background: 'rgba(108,99,255,0.25)', color: '#9B95FF' }}>
             {intro.toInitials}
           </div>
         </div>
@@ -236,10 +236,10 @@ function ScheduleCardView({ schedule }: { schedule: ScheduleCard }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, type: 'spring', stiffness: 120 }}
       className="ml-9 rounded-xl border border-white/[0.08] p-3.5"
-      style={{ background: 'rgba(10,10,26,0.8)' }}
+      style={{ background: 'rgba(15,22,41,0.8)' }}
     >
       <div className="flex items-center gap-3 mb-2">
-        <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: 'rgba(59,130,246,0.2)', color: '#60A5FA' }}>
+        <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: 'rgba(108,99,255,0.2)', color: '#9B95FF' }}>
           {schedule.withInitials}
         </div>
         <div className="flex-1">
@@ -306,10 +306,10 @@ export default function AnimatedChatPreview() {
   return (
     <div
       className="relative w-[400px] rounded-2xl border border-white/[0.08] overflow-hidden shadow-2xl"
-      style={{ background: '#050510', boxShadow: '0 30px 80px -12px rgba(0,0,0,0.6), 0 0 60px rgba(59,130,246,0.12), inset 0 1px 0 rgba(255,255,255,0.05)' }}
+      style={{ background: '#080D1A', boxShadow: '0 30px 80px -12px rgba(0,0,0,0.6), 0 0 60px rgba(108,99,255,0.12), inset 0 1px 0 rgba(255,255,255,0.05)' }}
     >
-      <div className="px-5 py-4 flex items-center gap-3 border-b border-white/[0.06]" style={{ background: 'rgba(10,10,26,0.8)' }}>
-        <div className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold" style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
+      <div className="px-5 py-4 flex items-center gap-3 border-b border-white/[0.06]" style={{ background: 'rgba(15,22,41,0.8)' }}>
+        <div className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold" style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}>
           C
         </div>
         <div className="flex-1">
@@ -331,8 +331,8 @@ export default function AnimatedChatPreview() {
             }}
             className="flex-1 text-center py-2 rounded-lg transition-all duration-300"
             style={{
-              background: i === scenarioIdx ? 'rgba(59,130,246,0.15)' : 'transparent',
-              border: i === scenarioIdx ? '1px solid rgba(59,130,246,0.3)' : '1px solid transparent',
+              background: i === scenarioIdx ? 'rgba(108,99,255,0.15)' : 'transparent',
+              border: i === scenarioIdx ? '1px solid rgba(108,99,255,0.3)' : '1px solid transparent',
             }}
           >
             <span className={`text-[11px] font-medium transition-colors ${i === scenarioIdx ? 'text-emerald-400' : 'text-white/30'}`}>
@@ -378,7 +378,7 @@ export default function AnimatedChatPreview() {
             className="h-1 rounded-full transition-all duration-500"
             style={{
               width: i === scenarioIdx ? '24px' : '8px',
-              background: i === scenarioIdx ? 'linear-gradient(90deg, #3B82F6, #60A5FA)' : 'rgba(255,255,255,0.1)',
+              background: i === scenarioIdx ? 'linear-gradient(90deg, #6C63FF, #9B95FF)' : 'rgba(255,255,255,0.1)',
             }}
           />
         ))}

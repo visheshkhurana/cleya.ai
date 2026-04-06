@@ -20,7 +20,7 @@ function getPasswordStrength(pw: string): { label: string; color: string; width:
   if (/[^A-Za-z0-9]/.test(pw)) score++;
   if (score <= 1) return { label: 'Weak', color: '#ef4444', width: '20%' };
   if (score === 2) return { label: 'Fair', color: '#f59e0b', width: '40%' };
-  if (score === 3) return { label: 'Good', color: '#60A5FA', width: '65%' };
+  if (score === 3) return { label: 'Good', color: '#9B95FF', width: '65%' };
   return { label: 'Strong', color: '#10b981', width: '100%' };
 }
 
@@ -116,7 +116,7 @@ function ProfileBuilder({ active, onComplete }: { active: boolean; onComplete?: 
   return (
     <div className="rounded-2xl p-6 relative overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(20px)' }}>
       <div className="flex items-center gap-3 mb-5 pb-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <div className="w-12 h-12 rounded-full flex items-center justify-center text-lg" style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.2), rgba(139,92,246,0.2))', border: '1px solid rgba(59,130,246,0.3)' }}>
+        <div className="w-12 h-12 rounded-full flex items-center justify-center text-lg" style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.2), rgba(78,205,196,0.2))', border: '1px solid rgba(108,99,255,0.3)' }}>
           {visibleFields > 0 ? '👤' : '?'}
         </div>
         <div>
@@ -126,7 +126,7 @@ function ProfileBuilder({ active, onComplete }: { active: boolean; onComplete?: 
         {matchScore > 0 && (
           <div className="ml-auto text-right">
             <div className="text-xs text-white/30">AI Match Score</div>
-            <div className="text-lg font-bold" style={{ color: '#3B82F6' }}>{matchScore}%</div>
+            <div className="text-lg font-bold" style={{ color: '#6C63FF' }}>{matchScore}%</div>
           </div>
         )}
       </div>
@@ -136,7 +136,7 @@ function ProfileBuilder({ active, onComplete }: { active: boolean; onComplete?: 
           <div key={i} className="flex items-center gap-3 transition-all duration-500" style={{ opacity: i <= visibleFields ? 1 : 0.15, transform: i <= visibleFields ? 'translateX(0)' : 'translateX(10px)' }}>
             <span className="text-sm w-5 text-center">{field.icon}</span>
             <span className="text-xs text-white/40 w-20 shrink-0">{field.label}</span>
-            <div className="flex-1 h-8 rounded-lg flex items-center px-3" style={{ background: 'rgba(255,255,255,0.03)', border: i === visibleFields && i < PROFILE_FIELDS.length ? '1px solid rgba(59,130,246,0.3)' : '1px solid rgba(255,255,255,0.04)' }}>
+            <div className="flex-1 h-8 rounded-lg flex items-center px-3" style={{ background: 'rgba(255,255,255,0.03)', border: i === visibleFields && i < PROFILE_FIELDS.length ? '1px solid rgba(108,99,255,0.3)' : '1px solid rgba(255,255,255,0.04)' }}>
               {i < visibleFields ? (
                 <span className="text-sm text-white/80">{field.value}</span>
               ) : i === visibleFields ? (
@@ -162,7 +162,7 @@ function ProfileBuilder({ active, onComplete }: { active: boolean; onComplete?: 
             <span className="text-xs font-medium" style={{ color: '#10b981' }}>Complete</span>
           </div>
           <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${matchScore}%`, background: 'linear-gradient(90deg, #3B82F6, #8B5CF6)' }} />
+            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${matchScore}%`, background: 'linear-gradient(90deg, #6C63FF, #4ECDC4)' }} />
           </div>
         </div>
       )}
@@ -171,17 +171,17 @@ function ProfileBuilder({ active, onComplete }: { active: boolean; onComplete?: 
 }
 
 const DIMENSION_TAGS = [
-  { label: 'Sector & Stage', color: '#3B82F6' },
-  { label: 'Investment Thesis', color: '#8B5CF6' },
-  { label: 'Geographic Reach', color: '#3B82F6' },
-  { label: 'Connection Intent', color: '#8B5CF6' },
+  { label: 'Sector & Stage', color: '#6C63FF' },
+  { label: 'Investment Thesis', color: '#4ECDC4' },
+  { label: 'Geographic Reach', color: '#6C63FF' },
+  { label: 'Connection Intent', color: '#4ECDC4' },
 ];
 
 const MATCH_RESULTS = [
-  { name: 'Meera I.', role: 'VC Partner · Seed Stage', match: 94, color: '#3B82F6' },
-  { name: 'Vikram R.', role: 'Angel · Fintech Focus', match: 91, color: '#8B5CF6' },
+  { name: 'Meera I.', role: 'VC Partner · Seed Stage', match: 94, color: '#6C63FF' },
+  { name: 'Vikram R.', role: 'Angel · Fintech Focus', match: 91, color: '#4ECDC4' },
   { name: 'Siddharth A.', role: 'LP · Growth Capital', match: 88, color: '#06B6D4' },
-  { name: 'Priya S.', role: 'Founder · Payments', match: 86, color: '#A78BFA' },
+  { name: 'Priya S.', role: 'Founder · Payments', match: 86, color: '#9B95FF' },
 ];
 
 function MatchResultCards({ active }: { active: boolean }) {
@@ -280,12 +280,12 @@ function ProfileSection() {
     <div ref={ref} className="grid lg:grid-cols-2 gap-16 items-start">
       <div className={`scroll-section ${active ? 'scroll-visible' : ''}`}>
         <div className="scroll-item">
-          <div className="text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#8B5CF6' }}>
+          <div className="text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#4ECDC4' }}>
             Watch It Work
           </div>
           <h2 className="font-sans font-bold text-white mb-6 tracking-tight" style={{ fontSize: 'clamp(28px, 3vw + 8px, 44px)' }}>
             Your profile becomes<br />
-            <span style={{ color: '#60A5FA' }}>structured intelligence</span>
+            <span style={{ color: '#9B95FF' }}>structured intelligence</span>
           </h2>
           <p className="text-base leading-relaxed mb-8 max-w-lg" style={{ color: 'rgba(255,255,255,0.6)' }}>
             Cleya transforms your professional identity into a rich data profile — then instantly finds your best matches across the network.
@@ -328,8 +328,8 @@ function ProfileSection() {
 
 const CHAT_MESSAGE = "I'm raising a Series A for my fintech startup. Looking for investors who've backed similar companies in India.";
 const CHAT_MATCHES = [
-  { name: 'Meera I.', role: 'VC Partner · Seed Stage', match: 94, color: '#3B82F6', initials: 'MI' },
-  { name: 'Vikram R.', role: 'Angel · Fintech Focus', match: 91, color: '#8B5CF6', initials: 'VR' },
+  { name: 'Meera I.', role: 'VC Partner · Seed Stage', match: 94, color: '#6C63FF', initials: 'MI' },
+  { name: 'Vikram R.', role: 'Angel · Fintech Focus', match: 91, color: '#4ECDC4', initials: 'VR' },
   { name: 'Siddharth A.', role: 'LP · Growth Capital', match: 88, color: '#06B6D4', initials: 'SA' },
 ];
 
@@ -394,7 +394,7 @@ function ChatDemo() {
   return (
     <div ref={ref} className="grid lg:grid-cols-2 gap-12 items-center">
       <div>
-        <div className="text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#3B82F6' }}>
+        <div className="text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#6C63FF' }}>
           Intelligence Engine
         </div>
         <h2 className="font-sans font-bold text-white mb-6 tracking-tight" style={{ fontSize: 'clamp(28px, 3vw + 8px, 44px)' }}>
@@ -414,10 +414,10 @@ function ChatDemo() {
               style={{ opacity: i <= activeStep ? 1 : 0.3 }}>
               <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold transition-all duration-500"
                 style={{
-                  background: i <= activeStep ? `${['#3B82F6','#8B5CF6','#06B6D4'][i]}15` : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${i <= activeStep ? `${['#3B82F6','#8B5CF6','#06B6D4'][i]}40` : 'rgba(255,255,255,0.06)'}`,
-                  color: i <= activeStep ? ['#3B82F6','#8B5CF6','#06B6D4'][i] : 'rgba(255,255,255,0.2)',
-                  boxShadow: i === activeStep ? `0 0 16px ${['#3B82F6','#8B5CF6','#06B6D4'][i]}25` : 'none',
+                  background: i <= activeStep ? `${['#6C63FF','#4ECDC4','#06B6D4'][i]}15` : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${i <= activeStep ? `${['#6C63FF','#4ECDC4','#06B6D4'][i]}40` : 'rgba(255,255,255,0.06)'}`,
+                  color: i <= activeStep ? ['#6C63FF','#4ECDC4','#06B6D4'][i] : 'rgba(255,255,255,0.2)',
+                  boxShadow: i === activeStep ? `0 0 16px ${['#6C63FF','#4ECDC4','#06B6D4'][i]}25` : 'none',
                 }}>
                 {i + 1}
               </div>
@@ -431,10 +431,10 @@ function ChatDemo() {
       </div>
 
       <div className="flex justify-center">
-        <div className="w-[320px] rounded-[2rem] p-3 relative" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 0 80px rgba(59,130,246,0.06)' }}>
+        <div className="w-[320px] rounded-[2rem] p-3 relative" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 0 80px rgba(108,99,255,0.06)' }}>
           <div className="rounded-[1.4rem] overflow-hidden" style={{ background: '#0A0A1A' }}>
             <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}>
                 <span className="text-white font-bold text-[10px]">C</span>
               </div>
               <span className="text-xs font-medium text-white/70">Cleya AI</span>
@@ -450,7 +450,7 @@ function ChatDemo() {
 
               {step >= 1 && (
                 <div className="flex justify-end">
-                  <div className="max-w-[220px] px-3 py-2.5 rounded-2xl rounded-br-md text-[12px] leading-relaxed text-white/90" style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.2), rgba(139,92,246,0.15))', border: '1px solid rgba(59,130,246,0.15)' }}>
+                  <div className="max-w-[220px] px-3 py-2.5 rounded-2xl rounded-br-md text-[12px] leading-relaxed text-white/90" style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.2), rgba(78,205,196,0.15))', border: '1px solid rgba(108,99,255,0.15)' }}>
                     {CHAT_MESSAGE.slice(0, typedChars)}
                     {typedChars < CHAT_MESSAGE.length && <span className="typing-cursor" />}
                   </div>
@@ -497,7 +497,7 @@ function ChatDemo() {
               {step >= 3 && !introSent && (
                 <div className="flex justify-center pt-1">
                   <button className={`px-5 py-2 rounded-full text-[11px] font-medium text-white transition-all duration-300 ${btnClicked ? 'scale-95 opacity-70' : 'scale-100'}`}
-                    style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
+                    style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}>
                     Send Intro to Meera I. →
                   </button>
                 </div>
@@ -524,18 +524,18 @@ function ChatDemo() {
 
 const USE_CASE_PREVIEWS = {
   FOUNDER: [
-    { label: 'Pre-Seed Round', status: 'Intro sent', statusColor: '#3B82F6', amount: '$500K' },
+    { label: 'Pre-Seed Round', status: 'Intro sent', statusColor: '#6C63FF', amount: '$500K' },
     { label: 'Series A Lead', status: 'Meeting set', statusColor: '#10b981', amount: '$4M' },
-    { label: 'Strategic Angel', status: 'Matched', statusColor: '#8B5CF6', amount: '$100K' },
+    { label: 'Strategic Angel', status: 'Matched', statusColor: '#4ECDC4', amount: '$100K' },
   ],
   INVESTOR: [
-    { label: 'Fintech · Seed', stage: 'Pre-pitch', score: 96, color: '#3B82F6' },
-    { label: 'HealthTech · A', stage: 'Deck received', score: 91, color: '#8B5CF6' },
+    { label: 'Fintech · Seed', stage: 'Pre-pitch', score: 96, color: '#6C63FF' },
+    { label: 'HealthTech · A', stage: 'Deck received', score: 91, color: '#4ECDC4' },
     { label: 'SaaS · Pre-Seed', stage: 'New match', score: 88, color: '#06B6D4' },
   ],
   TALENT: [
     { label: 'Founding Engineer', company: 'Stealth Fintech', fit: 'Strong', fitColor: '#10b981' },
-    { label: 'Head of Product', company: 'Series B SaaS', fit: 'Good', fitColor: '#3B82F6' },
+    { label: 'Head of Product', company: 'Series B SaaS', fit: 'Good', fitColor: '#6C63FF' },
     { label: 'Growth Lead', company: 'Seed HealthTech', fit: 'Strong', fitColor: '#10b981' },
   ],
 };
@@ -634,14 +634,14 @@ function UseCaseCard({ persona, setShowAuth, setMode, setSelectedPersona }: {
 }
 
 const ACTIVITY_FEED = [
-  { text: 'Meera matched with Vikram', time: '2min ago', color: '#3B82F6' },
-  { text: 'Arjun sent intro to Nandini', time: '5min ago', color: '#8B5CF6' },
+  { text: 'Meera matched with Vikram', time: '2min ago', color: '#6C63FF' },
+  { text: 'Arjun sent intro to Nandini', time: '5min ago', color: '#4ECDC4' },
   { text: 'Priya matched with Siddharth', time: '8min ago', color: '#06B6D4' },
-  { text: 'Rahul connected with Kavya', time: '12min ago', color: '#A78BFA' },
-  { text: 'Deepak matched with Ananya', time: '15min ago', color: '#3B82F6' },
-  { text: 'Sneha sent intro to Rohan', time: '18min ago', color: '#8B5CF6' },
+  { text: 'Rahul connected with Kavya', time: '12min ago', color: '#9B95FF' },
+  { text: 'Deepak matched with Ananya', time: '15min ago', color: '#6C63FF' },
+  { text: 'Sneha sent intro to Rohan', time: '18min ago', color: '#4ECDC4' },
   { text: 'Aditya matched with Pooja', time: '22min ago', color: '#06B6D4' },
-  { text: 'Neha connected with Kartik', time: '25min ago', color: '#A78BFA' },
+  { text: 'Neha connected with Kartik', time: '25min ago', color: '#9B95FF' },
 ];
 
 function FlipDigit({ digit, delay, color }: { digit: string; delay: number; color: string }) {
@@ -942,8 +942,8 @@ export default function Home() {
 
   if (checking) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#050510' }}>
-        <div className="w-10 h-10 border-2 border-electric-400 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#080D1A' }}>
+        <div className="w-10 h-10 border-2 border-brand-violet border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -957,7 +957,7 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen font-sans" style={{ background: '#050510' }} suppressHydrationWarning>
+    <div className="min-h-screen font-sans" style={{ background: '#080D1A' }} suppressHydrationWarning>
       <ThreeBackground />
 
       {/* NAVBAR */}
@@ -967,14 +967,14 @@ export default function Home() {
         suppressHydrationWarning
         className="fixed top-0 left-0 right-0 z-50 transition-all duration-500"
         style={{
-          background: scrolled ? 'rgba(5,5,16,0.85)' : 'transparent',
+          background: scrolled ? 'rgba(8,13,26,0.85)' : 'transparent',
           backdropFilter: scrolled ? 'blur(20px) saturate(180%)' : 'none',
           borderBottom: scrolled ? '1px solid rgba(255,255,255,0.04)' : '1px solid transparent',
         }}
       >
         <div className={`max-w-[1400px] mx-auto px-6 sm:px-10 lg:px-16 flex items-center justify-between transition-[padding] duration-300 ${scrolled ? 'py-3' : 'py-5'}`}>
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}>
               <span className="text-white font-bold text-sm">C</span>
             </div>
             <span className="text-white font-bold text-lg tracking-tight">Cleya.ai</span>
@@ -1003,8 +1003,8 @@ export default function Home() {
             <button onClick={() => { setShowAuth(true); setMode('login'); }}
               className="px-4 py-2 text-sm text-white/50 hover:text-white transition-colors">{t('nav.login')}</button>
             <button onClick={() => { setShowAuth(true); setMode('signup'); }}
-              className="px-6 py-2.5 text-sm font-medium text-white rounded-full transition-all hover:scale-[1.03] hover:shadow-[0_0_30px_rgba(59,130,246,0.3)]"
-              style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
+              className="px-6 py-2.5 text-sm font-medium text-white rounded-full transition-all hover:scale-[1.03] hover:shadow-[0_0_30px_rgba(108,99,255,0.3)]"
+              style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}>
               {t('nav.getStarted')}
             </button>
           </div>
@@ -1026,7 +1026,7 @@ export default function Home() {
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
                 className="md:hidden border-t border-white/[0.04] px-6 py-4 space-y-2 overflow-hidden"
-                style={{ background: 'rgba(5,5,16,0.97)' }}
+                style={{ background: 'rgba(8,13,26,0.97)' }}
               >
                 <button onClick={() => { scrollToSection('how-it-works'); setMobileMenuOpen(false); }}
                   className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">{t('nav.howItWorks')}</button>
@@ -1040,7 +1040,7 @@ export default function Home() {
                   className="block w-full text-left px-3 py-3 text-sm text-white/60 hover:text-white rounded-lg hover:bg-white/5 transition min-h-[44px]">{t('nav.login')}</button>
                 <button onClick={() => { setShowAuth(true); setMode('signup'); setMobileMenuOpen(false); }}
                   className="block w-full text-left px-3 py-3 text-sm font-medium rounded-lg min-h-[44px] text-white"
-                  style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>{t('nav.getStarted')}</button>
+                  style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}>{t('nav.getStarted')}</button>
               </motion.div>
             )}
           </AnimatePresence>
@@ -1055,9 +1055,9 @@ export default function Home() {
           <div className="max-w-4xl lg:max-w-5xl">
             <div
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-medium uppercase tracking-[0.2em] mb-8 hero-fade-in"
-              style={{ background: 'rgba(59,130,246,0.08)', color: '#60A5FA', border: '1px solid rgba(59,130,246,0.15)', animationDelay: '0.3s' }}
+              style={{ background: 'rgba(108,99,255,0.08)', color: '#9B95FF', border: '1px solid rgba(108,99,255,0.15)', animationDelay: '0.3s' }}
             >
-              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#60A5FA' }} />
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#9B95FF' }} />
               {t('hero.badge')}
             </div>
 
@@ -1084,7 +1084,7 @@ export default function Home() {
             >
               <GlowButton onClick={() => { setShowAuth(true); setMode('signup'); }}
                 className="group cta-glow px-10 py-4 rounded-full text-white font-medium text-[15px]"
-                style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
+                style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}>
                 Enter the Network
                 <span className="inline-block ml-2 transition-transform group-hover:translate-x-1">→</span>
               </GlowButton>
@@ -1113,7 +1113,7 @@ export default function Home() {
       {/* ════════════════════════════════════════════
           SCENE 2: PROFILE LAYER — DATA VISUALIZATION
           ════════════════════════════════════════════ */}
-      <section className="relative z-10 py-20 sm:py-28" style={{ background: '#050510' }}>
+      <section className="relative z-10 py-20 sm:py-28" style={{ background: '#080D1A' }}>
         <div className="max-w-[1400px] mx-auto px-6 sm:px-10 lg:px-16">
           <ProfileSection />
         </div>
@@ -1122,7 +1122,7 @@ export default function Home() {
       {/* ════════════════════════════════════════════
           SCENE 3: AI MATCHING ENGINE — INTERACTIVE CHAT DEMO
           ════════════════════════════════════════════ */}
-      <section id="how-it-works" className="relative z-10 py-20 sm:py-28" style={{ background: '#050510' }}>
+      <section id="how-it-works" className="relative z-10 py-20 sm:py-28" style={{ background: '#080D1A' }}>
         <div className="max-w-[1400px] mx-auto px-6 sm:px-10 lg:px-16">
           <ChatDemo />
         </div>
@@ -1131,10 +1131,10 @@ export default function Home() {
       {/* ════════════════════════════════════════════
           SCENE 4: USE CASES — INTERACTIVE HOVER CARDS
           ════════════════════════════════════════════ */}
-      <section className="relative z-10 py-20 sm:py-28" style={{ background: '#050510' }}>
+      <section className="relative z-10 py-20 sm:py-28" style={{ background: '#080D1A' }}>
         <div className="max-w-[1400px] mx-auto px-6 sm:px-10 lg:px-16">
           <AnimatedSection className="text-center mb-16">
-            <div className="scroll-item text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#A78BFA' }}>
+            <div className="scroll-item text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#9B95FF' }}>
               Built for Every Role
             </div>
             <h2 className="scroll-item font-sans font-bold text-white mb-5 tracking-tight" style={{ fontSize: 'clamp(28px, 3.5vw + 8px, 48px)' }}>
@@ -1150,9 +1150,9 @@ export default function Home() {
                 desc: "Get in front of investors who've already backed companies like yours.",
                 cta: "I'm a Founder",
                 personaValue: 'FOUNDER',
-                gradient: 'linear-gradient(135deg, rgba(59,130,246,0.08), rgba(59,130,246,0.02))',
-                borderColor: 'rgba(59,130,246,0.12)',
-                accentColor: '#3B82F6',
+                gradient: 'linear-gradient(135deg, rgba(108,99,255,0.08), rgba(108,99,255,0.02))',
+                borderColor: 'rgba(108,99,255,0.12)',
+                accentColor: '#6C63FF',
               },
               {
                 title: 'Investors',
@@ -1160,9 +1160,9 @@ export default function Home() {
                 desc: "See pre-pitch founders in your thesis verticals before they hit the market.",
                 cta: "I'm an Investor",
                 personaValue: 'INVESTOR',
-                gradient: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(139,92,246,0.02))',
-                borderColor: 'rgba(139,92,246,0.12)',
-                accentColor: '#8B5CF6',
+                gradient: 'linear-gradient(135deg, rgba(78,205,196,0.08), rgba(78,205,196,0.02))',
+                borderColor: 'rgba(78,205,196,0.12)',
+                accentColor: '#4ECDC4',
               },
               {
                 title: 'Talent & Operators',
@@ -1184,10 +1184,10 @@ export default function Home() {
       {/* ════════════════════════════════════════════
           SCENE 5: SOCIAL PROOF — 3D TESTIMONIAL CAROUSEL
           ════════════════════════════════════════════ */}
-      <section className="relative z-10 py-24" style={{ background: '#050510' }}>
+      <section className="relative z-10 py-24" style={{ background: '#080D1A' }}>
         <AnimatedSection className="max-w-[1400px] mx-auto px-6 sm:px-10 lg:px-16 mb-16">
           <div className="text-center mb-12">
-            <div className="text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#A78BFA' }}>
+            <div className="text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#9B95FF' }}>
               Real Results
             </div>
             <h2 className="font-sans font-bold text-white mb-4 tracking-tight" style={{ fontSize: 'clamp(28px, 3vw + 8px, 44px)' }}>
@@ -1198,7 +1198,7 @@ export default function Home() {
           <div className="carousel-3d relative">
             <div className="grid md:grid-cols-3 gap-6">
               {testimonials.slice(0, 3).map((item, i) => {
-                const colors = ['#3B82F6', '#8B5CF6', '#06B6D4'];
+                const colors = ['#6C63FF', '#4ECDC4', '#06B6D4'];
                 return (
                   <TiltCard key={i} className="carousel-card" glowColor={`${colors[i]}15`} floatIntensity={0.5}>
                     <div className="rounded-2xl p-6 h-full relative overflow-hidden"
@@ -1225,23 +1225,23 @@ export default function Home() {
         </AnimatedSection>
 
         <AnimatedSection className="max-w-[1400px] mx-auto px-6 sm:px-10 lg:px-16">
-          <TiltCard className="testimonial-3d" glowColor="rgba(139,92,246,0.1)" floatIntensity={0.3}>
+          <TiltCard className="testimonial-3d" glowColor="rgba(78,205,196,0.1)" floatIntensity={0.3}>
             <div className="rounded-2xl p-8 sm:p-14 relative overflow-hidden testimonial-featured"
               style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(20px)' }}>
               <div className="absolute top-0 right-0 w-[400px] h-[400px] rounded-full pointer-events-none"
-                style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 70%)' }} />
+                style={{ background: 'radial-gradient(circle, rgba(78,205,196,0.06) 0%, transparent 70%)' }} />
               <div className="absolute -left-4 top-6 font-sans text-[120px] font-bold leading-none pointer-events-none select-none"
-                style={{ color: 'rgba(59,130,246,0.04)' }}>"</div>
+                style={{ color: 'rgba(108,99,255,0.04)' }}>"</div>
               <blockquote className="font-sans leading-snug text-white/80 mb-8 relative" style={{ fontSize: 'clamp(18px, 2vw + 8px, 26px)' }}>
                 "Cleya introduced me to my lead investor in 48 hours. The match was so precise it felt like Cleya had read my pitch deck."
               </blockquote>
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold"
-                  style={{ background: 'rgba(139,92,246,0.1)', color: '#A78BFA', border: '1px solid rgba(139,92,246,0.15)' }}>PS</div>
+                  style={{ background: 'rgba(78,205,196,0.1)', color: '#9B95FF', border: '1px solid rgba(78,205,196,0.15)' }}>PS</div>
                 <div>
                   <p className="text-white font-semibold text-sm">Priya S.</p>
                   <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Founder, MedScan AI · Delhi NCR · Raised Series A</p>
-                  <p className="text-[11px] mt-0.5" style={{ color: '#8B5CF6' }}>Matched with: Meera I. · Blume Ventures · HealthTech</p>
+                  <p className="text-[11px] mt-0.5" style={{ color: '#4ECDC4' }}>Matched with: Meera I. · Blume Ventures · HealthTech</p>
                 </div>
               </div>
             </div>
@@ -1253,7 +1253,7 @@ export default function Home() {
             {[...testimonials, ...testimonials].map((item, i) => (
               <div key={i} className="inline-flex items-center gap-4 mx-8 flex-shrink-0 group">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                  style={{ background: 'rgba(59,130,246,0.08)', color: '#60A5FA', border: '1px solid rgba(59,130,246,0.12)' }}>
+                  style={{ background: 'rgba(108,99,255,0.08)', color: '#9B95FF', border: '1px solid rgba(108,99,255,0.12)' }}>
                   {item.initials}
                 </div>
                 <div>
@@ -1269,7 +1269,7 @@ export default function Home() {
       {/* ════════════════════════════════════════════
           SCENE 6: LIVE NETWORK — ANIMATED STATS
           ════════════════════════════════════════════ */}
-      <section className="relative z-10 py-20 sm:py-28" style={{ background: '#050510' }}>
+      <section className="relative z-10 py-20 sm:py-28" style={{ background: '#080D1A' }}>
         <div className="max-w-[1400px] mx-auto px-6 sm:px-10 lg:px-16">
           <AnimatedSection className="text-center mb-16">
             <div className="scroll-item text-xs font-medium uppercase tracking-[0.2em] mb-4" style={{ color: '#06B6D4' }}>
@@ -1281,8 +1281,8 @@ export default function Home() {
           </AnimatedSection>
 
           <div className="grid grid-cols-3 gap-6 sm:gap-10 max-w-3xl mx-auto mb-16">
-            <AnimatedCounter target={49} suffix="+" color="#3B82F6" label="Cities" />
-            <AnimatedCounter target={31} suffix="+" color="#8B5CF6" label="Industries" />
+            <AnimatedCounter target={49} suffix="+" color="#6C63FF" label="Cities" />
+            <AnimatedCounter target={31} suffix="+" color="#4ECDC4" label="Industries" />
             <AnimatedCounter target={1} suffix=" Lakh+" color="#06B6D4" label="Connections" />
           </div>
 
@@ -1303,11 +1303,11 @@ export default function Home() {
       {/* ════════════════════════════════════════════
           SCENE 7: FINAL CTA — INFINITE NETWORK
           ════════════════════════════════════════════ */}
-      <section className="relative z-10 py-20 sm:py-28" style={{ background: '#050510' }}>
+      <section className="relative z-10 py-20 sm:py-28" style={{ background: '#080D1A' }}>
         <AnimatedSection className="relative max-w-[1400px] mx-auto px-6 sm:px-10 lg:px-16 text-center">
           <div className="scroll-item mb-8">
             <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-8 pulse-ring"
-              style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', boxShadow: '0 0 60px rgba(59,130,246,0.3)' }}>
+              style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)', boxShadow: '0 0 60px rgba(108,99,255,0.3)' }}>
               <span className="text-white font-bold text-xl">C</span>
             </div>
           </div>
@@ -1325,7 +1325,7 @@ export default function Home() {
           <div className="scroll-item flex flex-col sm:flex-row items-center justify-center gap-4">
             <GlowButton onClick={() => { setShowAuth(true); setMode('signup'); }}
               className="group cta-shimmer px-12 py-4 rounded-full text-white font-medium text-[15px]"
-              style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', boxShadow: '0 0 50px rgba(59,130,246,0.3)' }}>
+              style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)', boxShadow: '0 0 50px rgba(108,99,255,0.3)' }}>
               Enter the Network
               <span className="inline-block ml-2 transition-transform group-hover:translate-x-1">→</span>
             </GlowButton>
@@ -1338,11 +1338,11 @@ export default function Home() {
       </section>
 
       {/* FOOTER */}
-      <footer role="contentinfo" className="relative z-10 border-t border-white/[0.04] py-12" style={{ background: '#050510' }}>
+      <footer role="contentinfo" className="relative z-10 border-t border-white/[0.04] py-12" style={{ background: '#080D1A' }}>
         <div className="max-w-[1400px] mx-auto px-6 sm:px-10 lg:px-16">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2.5">
-              <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
+              <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}>
                 <span className="text-white font-bold text-[10px]">C</span>
               </div>
               <span className="text-white font-semibold text-sm">Cleya.ai</span>
@@ -1396,7 +1396,7 @@ export default function Home() {
 
             <div className="text-center mb-6">
               <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-3"
-                style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', boxShadow: '0 0 30px rgba(59,130,246,0.3)' }}>
+                style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)', boxShadow: '0 0 30px rgba(108,99,255,0.3)' }}>
                 <span className="text-white text-xl font-bold">C</span>
               </div>
               <h2 className="font-sans text-2xl font-bold text-white">Welcome to Cleya.ai</h2>
@@ -1407,10 +1407,10 @@ export default function Home() {
               <div className="flex gap-1 mb-6 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)' }}>
                 <button onClick={() => { setMode('signup'); setError(''); setFieldErrors({}); }}
                   className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${mode === 'signup' ? 'text-white shadow-sm' : 'text-white/40 hover:text-white/70'}`}
-                  style={mode === 'signup' ? { background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' } : {}}>Sign Up</button>
+                  style={mode === 'signup' ? { background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' } : {}}>Sign Up</button>
                 <button onClick={() => { setMode('login'); setError(''); setFieldErrors({}); }}
                   className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${mode === 'login' ? 'text-white shadow-sm' : 'text-white/40 hover:text-white/70'}`}
-                  style={mode === 'login' ? { background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' } : {}}>Log In</button>
+                  style={mode === 'login' ? { background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' } : {}}>Log In</button>
               </div>
 
               {showForgotPassword ? (
@@ -1421,7 +1421,7 @@ export default function Home() {
                     </div>
                     <p className="text-white text-sm font-medium mb-1">Check your email</p>
                     <p className="text-xs mb-4" style={{ color: 'rgba(255,255,255,0.4)' }}>If an account exists with that email, we sent a reset link.</p>
-                    <button type="button" onClick={() => { setShowForgotPassword(false); setForgotSent(false); setError(''); setFieldErrors({}); }} className="text-xs font-medium" style={{ color: '#60A5FA' }}>Back to Login</button>
+                    <button type="button" onClick={() => { setShowForgotPassword(false); setForgotSent(false); setError(''); setFieldErrors({}); }} className="text-xs font-medium" style={{ color: '#9B95FF' }}>Back to Login</button>
                   </div>
                 ) : (
                   <form onSubmit={handleForgotPassword} className="space-y-4">
@@ -1431,7 +1431,7 @@ export default function Home() {
                       <input type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} placeholder="you@example.com" required className="input-dark" />
                     </div>
                     <button type="submit" disabled={forgotLoading} className="btn-primary">{forgotLoading ? 'Sending...' : 'Send Reset Link'}</button>
-                    <button type="button" onClick={() => { setShowForgotPassword(false); setError(''); setFieldErrors({}); }} className="w-full text-xs text-center font-medium" style={{ color: '#60A5FA' }}>Back to Login</button>
+                    <button type="button" onClick={() => { setShowForgotPassword(false); setError(''); setFieldErrors({}); }} className="w-full text-xs text-center font-medium" style={{ color: '#9B95FF' }}>Back to Login</button>
                   </form>
                 )
               ) : (
@@ -1458,11 +1458,11 @@ export default function Home() {
                             <button key={p.value} type="button" onClick={() => { setSelectedPersona(p.value); setFieldErrors(prev => { const n = {...prev}; delete n.persona; return n; }); }}
                               className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl border transition-all duration-200"
                               style={{
-                                background: selectedPersona === p.value ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.03)',
-                                borderColor: selectedPersona === p.value ? '#3B82F6' : fieldErrors.persona ? '#ef4444' : 'rgba(255,255,255,0.06)',
+                                background: selectedPersona === p.value ? 'rgba(108,99,255,0.12)' : 'rgba(255,255,255,0.03)',
+                                borderColor: selectedPersona === p.value ? '#6C63FF' : fieldErrors.persona ? '#ef4444' : 'rgba(255,255,255,0.06)',
                               }}>
                               <span className="text-lg">{p.icon}</span>
-                              <span className="text-xs font-medium" style={{ color: selectedPersona === p.value ? '#60A5FA' : 'rgba(255,255,255,0.4)' }}>{p.label}</span>
+                              <span className="text-xs font-medium" style={{ color: selectedPersona === p.value ? '#9B95FF' : 'rgba(255,255,255,0.4)' }}>{p.label}</span>
                             </button>
                           ))}
                         </div>
@@ -1509,7 +1509,7 @@ export default function Home() {
                     {mode === 'signup' && (
                       <label className="flex items-start gap-2 cursor-pointer">
                         <input type="checkbox" checked={consent} onChange={(e) => { setConsent(e.target.checked); setFieldErrors(prev => { const n = {...prev}; delete n.consent; return n; }); }}
-                          className="mt-0.5 w-4 h-4 rounded border-white/20 bg-white/5 text-electric-500 focus:ring-electric-500" />
+                          className="mt-0.5 w-4 h-4 rounded border-white/20 bg-white/5 text-brand-violet focus:ring-brand-violet" />
                         <span className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.4)' }}>
                           I agree to the <Link href="/terms" className="underline hover:text-white/70">Terms</Link> and <Link href="/privacy" className="underline hover:text-white/70">Privacy Policy</Link>
                         </span>
@@ -1522,7 +1522,7 @@ export default function Home() {
 
                   {mode === 'login' && (
                     <button type="button" onClick={() => { setShowForgotPassword(true); setError(''); setFieldErrors({}); }}
-                      className="w-full text-xs text-center font-medium mt-3" style={{ color: '#60A5FA' }}>Forgot password?</button>
+                      className="w-full text-xs text-center font-medium mt-3" style={{ color: '#9B95FF' }}>Forgot password?</button>
                   )}
 
                   {(googleEnabled || linkedinEnabled) && (

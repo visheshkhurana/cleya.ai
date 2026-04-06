@@ -237,7 +237,7 @@ export default function PhoneInput({
           aria-label="Phone number"
           aria-invalid={validationError ? true : undefined}
           aria-describedby={validationId}
-          className={`flex-1 min-w-0 px-3 py-2.5 rounded-r-xl border ${borderColor} bg-white/5 text-white placeholder-white/30 text-sm focus:outline-none focus:ring-2 focus:ring-cleya-500 focus:border-transparent disabled:opacity-40 transition-all`}
+          className={`flex-1 min-w-0 px-3 py-2.5 rounded-r-xl border ${borderColor} bg-white/5 text-white placeholder-white/30 text-sm focus:outline-none focus:ring-2 focus:ring-brand-violet focus:border-transparent disabled:opacity-40 transition-all`}
         />
 
         {open && (
@@ -254,7 +254,7 @@ export default function PhoneInput({
                 onChange={(e) => { setSearch(e.target.value); setHighlightIndex(-1); }}
                 onKeyDown={handleDropdownKeyDown}
                 placeholder="Search country..."
-                className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-white placeholder-white/30 text-xs focus:outline-none focus:ring-1 focus:ring-cleya-500"
+                className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-white placeholder-white/30 text-xs focus:outline-none focus:ring-1 focus:ring-brand-violet"
                 autoFocus
                 aria-label="Search countries"
                 aria-expanded={true}
@@ -273,7 +273,7 @@ export default function PhoneInput({
                   data-country-item
                   onClick={() => handleCountrySelect(country)}
                   className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-white/5 transition text-sm cursor-pointer ${
-                    selectedCountry.code === country.code ? 'bg-cleya-500/10 text-cleya-400' : 'text-white/70'
+                    selectedCountry.code === country.code ? 'bg-brand-violet/10 text-brand-teal' : 'text-white/70'
                   } ${index === highlightIndex ? 'bg-white/10' : ''}`}
                 >
                   <span className="text-base" aria-hidden="true">{country.flag}</span>

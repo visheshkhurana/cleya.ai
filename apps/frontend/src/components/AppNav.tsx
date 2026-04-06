@@ -25,14 +25,14 @@ export default function AppNav({ rightContent }: AppNavProps) {
 
   return (
     <header className="glass-header">
-      <div className="max-w-5xl mx-auto px-6 lg:px-8 py-3 flex items-center justify-between">
+      <div className="max-w-5xl mx-auto w-full flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button onClick={() => router.push('/dashboard')} className="flex items-center gap-2.5 hover:opacity-90 transition">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-blue-500/20"
-              style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold"
+              style={{ background: '#6C63FF' }}>
               C
             </div>
-            <span className="font-semibold text-white text-sm hidden sm:inline">Cleya.ai</span>
+            <span className="font-semibold text-white text-[13px] hidden sm:inline">Cleya.ai</span>
           </button>
         </div>
         <div className="hidden md:flex items-center gap-1">
@@ -42,12 +42,12 @@ export default function AppNav({ rightContent }: AppNavProps) {
               <button
                 key={item.href}
                 onClick={() => router.push(item.href)}
-                className={`px-3 py-1.5 text-xs rounded-lg transition ${
+                className={`px-3 py-1.5 text-[13px] rounded-lg transition ${
                   isActive
                     ? 'text-white font-medium'
-                    : 'text-white/50 hover:text-white/80 border border-transparent hover:border-white/10'
+                    : 'text-white/40 hover:text-white/70 border border-transparent hover:border-white/8'
                 }`}
-                style={isActive ? { background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)' } : {}}
+                style={isActive ? { background: 'rgba(108,99,255,0.12)', border: '1px solid rgba(108,99,255,0.25)' } : {}}
               >
                 {t(item.labelKey)}
               </button>

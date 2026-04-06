@@ -42,7 +42,7 @@ export function ChoiceButtons({ choices, onSelect, disabled }: ChoiceButtonsProp
           <span
             className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 transition-all ${
               selected === choice.value
-                ? 'bg-cleya-500 text-white'
+                ? 'bg-brand-violet text-white'
                 : 'bg-white/10 text-white/60'
             }`}
           >

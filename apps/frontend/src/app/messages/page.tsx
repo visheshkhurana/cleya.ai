@@ -148,7 +148,7 @@ export default function MessagesPage() {
   if (loading) {
     return (
       <AppShell className="flex items-center justify-center">
-        <div className="w-10 h-10 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-2 border-brand-violet border-t-transparent rounded-full animate-spin" />
       </AppShell>
     );
   }
@@ -170,7 +170,7 @@ export default function MessagesPage() {
                 {t('messages.noConversationsDesc')}
               </p>
               <button onClick={() => router.push('/matches')}
-                className="mt-4 px-4 py-2 rounded-lg text-xs font-medium text-blue-300 border border-blue-500/20 hover:bg-blue-500/5 transition">
+                className="mt-4 px-4 py-2 rounded-lg text-xs font-medium text-brand-violet-hover border border-brand-violet/20 hover:bg-brand-violet/5 transition">
                 {t('intro.viewMatches')}
               </button>
             </div>
@@ -184,7 +184,7 @@ export default function MessagesPage() {
                   }`}>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                      style={{ background: 'rgba(59,130,246,0.15)', color: '#93C5FD' }}>
+                      style={{ background: 'rgba(108,99,255,0.15)', color: '#9B95FF' }}>
                       {getPartnerDisplay(convo.partner)[0]?.toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -192,7 +192,7 @@ export default function MessagesPage() {
                         <p className="text-sm font-medium text-white truncate">{getPartnerDisplay(convo.partner)}</p>
                         {convo.unreadCount > 0 && (
                           <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
-                            style={{ background: '#3B82F6' }}>
+                            style={{ background: '#6C63FF' }}>
                             {convo.unreadCount}
                           </span>
                         )}
@@ -221,14 +221,14 @@ export default function MessagesPage() {
                   ←
                 </button>
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
-                  style={{ background: 'rgba(59,130,246,0.15)', color: '#93C5FD' }}>
+                  style={{ background: 'rgba(108,99,255,0.15)', color: '#9B95FF' }}>
                   {selectedConvo ? getPartnerDisplay(selectedConvo.partner)[0]?.toUpperCase() : '?'}
                 </div>
                 <div>
                   <p className="text-sm font-medium text-white">
                     {selectedConvo ? getPartnerDisplay(selectedConvo.partner) : ''}
                   </p>
-                  {typing && <p className="text-[10px]" style={{ color: '#93C5FD' }}>{t('messages.typing')}</p>}
+                  {typing && <p className="text-[10px]" style={{ color: '#9B95FF' }}>{t('messages.typing')}</p>}
                 </div>
               </div>
 
@@ -240,7 +240,7 @@ export default function MessagesPage() {
                       <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
                         isMe ? 'rounded-tr-sm' : 'rounded-tl-sm'
                       }`} style={{
-                        background: isMe ? '#3B82F6' : 'rgba(10,10,26,0.8)',
+                        background: isMe ? '#6C63FF' : 'rgba(15,22,41,0.8)',
                       }}>
                         <p className="text-sm text-white leading-relaxed">{msg.content}</p>
                         <p className="text-[10px] mt-1 text-right" style={{ color: isMe ? 'rgba(255,255,255,0.5)' : '#64748B' }}>
@@ -262,14 +262,14 @@ export default function MessagesPage() {
                     onChange={(e) => { setNewMessage(e.target.value); handleTyping(); }}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                     placeholder={t('messages.typePlaceholder')}
-                    className="flex-1 px-4 py-2.5 rounded-xl text-sm text-white placeholder:text-white/20 border border-white/5 focus:border-blue-500/30 focus:outline-none transition"
-                    style={{ background: 'rgba(10,10,26,0.8)' }}
+                    className="flex-1 px-4 py-2.5 rounded-xl text-sm text-white placeholder:text-white/20 border border-white/5 focus:border-brand-violet/30 focus:outline-none transition"
+                    style={{ background: 'rgba(15,22,41,0.8)' }}
                   />
                   <button
                     onClick={handleSend}
                     disabled={!newMessage.trim() || sending}
                     className="px-4 py-2.5 rounded-xl text-sm font-medium text-white transition disabled:opacity-30"
-                    style={{ background: '#3B82F6' }}>
+                    style={{ background: '#6C63FF' }}>
                     {sending ? '...' : t('messages.send')}
                   </button>
                 </div>

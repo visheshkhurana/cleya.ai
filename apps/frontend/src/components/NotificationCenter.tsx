@@ -124,7 +124,7 @@ export default function NotificationCenter() {
           borderRadius: '10px',
           transition: 'background 0.2s',
         }}
-        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(59,130,246,0.1)')}
+        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(108,99,255,0.1)')}
         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
       >
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -146,7 +146,7 @@ export default function NotificationCenter() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            border: '2px solid #050510',
+            border: '2px solid #080D1A',
           }}>
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
@@ -163,8 +163,8 @@ export default function NotificationCenter() {
             right: 0,
             width: '380px',
             maxHeight: '480px',
-            background: 'rgba(10,10,26,0.8)',
-            border: '1px solid rgba(59,130,246,0.2)',
+            background: 'rgba(15,22,41,0.8)',
+            border: '1px solid rgba(108,99,255,0.2)',
             borderRadius: '16px',
             overflow: 'hidden',
             zIndex: 1000,
@@ -181,8 +181,8 @@ export default function NotificationCenter() {
               <span style={{ color: '#fff', fontWeight: 600, fontSize: '15px' }}>Notifications</span>
               {unreadCount > 0 && (
                 <span style={{
-                  background: 'rgba(59,130,246,0.15)',
-                  color: '#93C5FD',
+                  background: 'rgba(108,99,255,0.15)',
+                  color: '#9B95FF',
                   fontSize: '12px',
                   padding: '2px 8px',
                   borderRadius: '10px',
@@ -199,7 +199,7 @@ export default function NotificationCenter() {
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#3B82F6',
+                  color: '#6C63FF',
                   fontSize: '12px',
                   cursor: 'pointer',
                   fontWeight: 500,
@@ -220,8 +220,8 @@ export default function NotificationCenter() {
                   width: '48px',
                   height: '48px',
                   borderRadius: '14px',
-                  background: 'rgba(59,130,246,0.1)',
-                  border: '1px solid rgba(59,130,246,0.15)',
+                  background: 'rgba(108,99,255,0.1)',
+                  border: '1px solid rgba(108,99,255,0.15)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -243,7 +243,7 @@ export default function NotificationCenter() {
                     padding: '14px 20px',
                     borderBottom: '1px solid rgba(255,255,255,0.03)',
                     cursor: n.readAt ? 'default' : 'pointer',
-                    background: n.readAt ? 'transparent' : 'rgba(59,130,246,0.03)',
+                    background: n.readAt ? 'transparent' : 'rgba(108,99,255,0.03)',
                     transition: 'background 0.2s',
                     display: 'flex',
                     gap: '12px',
@@ -265,7 +265,7 @@ export default function NotificationCenter() {
                           width: '6px',
                           height: '6px',
                           borderRadius: '50%',
-                          background: '#3B82F6',
+                          background: '#6C63FF',
                           flexShrink: 0,
                         }} />
                       )}

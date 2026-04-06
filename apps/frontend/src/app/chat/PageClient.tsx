@@ -308,7 +308,7 @@ export default function ChatPage() {
       <AppShell className="flex items-center justify-center">
         <div className="text-center">
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 glow-pulse"
-            style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}>
+            style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}>
             <span className="text-white text-2xl font-bold">C</span>
           </div>
           <p className="text-sm text-white/40">{t('chat.startConversation')}</p>
@@ -322,7 +322,7 @@ export default function ChatPage() {
       <AppShell className="flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-6">
           <div className="w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6"
-            style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', boxShadow: '0 8px 32px rgba(59,130,246,0.4)' }}>
+            style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)', boxShadow: '0 8px 32px rgba(108,99,255,0.4)' }}>
             <span className="text-4xl">🎉</span>
           </div>
           <h2 className="text-2xl font-bold text-white mb-3">{t('chat.completionTitle')}</h2>
@@ -335,7 +335,7 @@ export default function ChatPage() {
           <button
             onClick={handleViewMatches}
             className="px-8 py-4 rounded-2xl font-semibold text-white text-sm transition-all duration-200 hover:scale-105 hover:shadow-lg"
-            style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', boxShadow: '0 4px 20px rgba(59,130,246,0.3)' }}
+            style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)', boxShadow: '0 4px 20px rgba(108,99,255,0.3)' }}
           >
             {t('chat.viewMatches')}
           </button>
@@ -357,7 +357,7 @@ export default function ChatPage() {
       <AppNav rightContent={<NotificationCenter />} />
 
       {!isOnboarded && currentNode && (
-        <div className="px-6 lg:px-8 py-3 border-b border-white/5" style={{ background: 'rgba(5,5,16,0.9)' }}>
+        <div className="px-6 lg:px-8 py-3 border-b border-white/5" style={{ background: 'rgba(8,13,26,0.9)' }}>
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-medium text-white/60">
               {t('chat.stepOf').replace('{step}', String(currentStep)).replace('{total}', String(ONBOARDING_TOTAL_STEPS))}
@@ -370,12 +370,12 @@ export default function ChatPage() {
             <div className="h-full rounded-full transition-all duration-500 ease-out"
               style={{
                 width: `${(currentStep / ONBOARDING_TOTAL_STEPS) * 100}%`,
-                background: 'linear-gradient(90deg, #3B82F6, #93C5FD)',
+                background: 'linear-gradient(90deg, #6C63FF, #9B95FF)',
               }} />
           </div>
           <div className="flex justify-between mt-1.5">
             {ONBOARDING_STEP_LABEL_KEYS.map((key, i) => (
-              <span key={key} className={`text-[9px] ${i + 1 <= currentStep ? 'text-blue-400/60' : 'text-white/15'}`}>
+              <span key={key} className={`text-[9px] ${i + 1 <= currentStep ? 'text-brand-violet/60' : 'text-white/15'}`}>
                 {t(key)}
               </span>
             ))}
@@ -387,7 +387,7 @@ export default function ChatPage() {
         {messages.length === 0 && !typing && !loading && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl font-bold mb-4"
-              style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)', boxShadow: '0 4px 20px rgba(59,130,246,0.3)' }}>
+              style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)', boxShadow: '0 4px 20px rgba(108,99,255,0.3)' }}>
               C
             </div>
             <h3 className="text-lg font-semibold text-white mb-2">{t('chat.greeting')}</h3>
@@ -401,8 +401,8 @@ export default function ChatPage() {
                 <button
                   key={prompt.key}
                   onClick={() => { sendMessage({ textInput: prompt.value }); }}
-                  className="px-3 py-2 rounded-xl text-xs text-white/60 border border-white/10 hover:border-blue-500/30 hover:text-white/80 transition"
-                  style={{ background: 'rgba(59,130,246,0.06)' }}
+                  className="px-3 py-2 rounded-xl text-xs text-white/60 border border-white/10 hover:border-brand-violet/30 hover:text-white/80 transition"
+                  style={{ background: 'rgba(108,99,255,0.06)' }}
                 >
                   {t(prompt.key)}
                 </button>
@@ -459,7 +459,7 @@ export default function ChatPage() {
               type="submit"
               disabled={!inputText.trim() || aiLoading}
               className="px-5 py-3 rounded-2xl font-semibold text-sm transition-all duration-200 disabled:opacity-40"
-              style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}
+              style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}
             >
               ↑
             </button>

@@ -107,7 +107,7 @@ const AGENT_ICONS: Record<string, React.ReactNode> = {
 
 const AGENT_COLORS: Record<string, string> = {
   'purple': 'from-purple-500/20 to-purple-600/10 border-purple-500/20',
-  'blue': 'from-blue-500/20 to-blue-600/10 border-blue-500/20',
+  'blue': 'from-brand-violet/20 to-brand-violet/10 border-brand-violet/20',
   'pink': 'from-pink-500/20 to-pink-600/10 border-pink-500/20',
   'orange': 'from-orange-500/20 to-orange-600/10 border-orange-500/20',
   'red': 'from-red-500/20 to-red-600/10 border-red-500/20',
@@ -118,7 +118,7 @@ const AGENT_COLORS: Record<string, string> = {
 
 const PRIORITY_COLORS: Record<string, string> = {
   'low': 'bg-slate-500/20 text-slate-300 border-slate-500/30',
-  'medium': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+  'medium': 'bg-brand-violet/20 text-brand-violet-hover border-brand-violet/30',
   'high': 'bg-orange-500/20 text-orange-300 border-orange-500/30',
   'critical': 'bg-red-500/20 text-red-300 border-red-500/30',
 };
@@ -127,7 +127,7 @@ const STATUS_COLORS: Record<string, string> = {
   'success': 'bg-green-500/20 text-green-300',
   'error': 'bg-red-500/20 text-red-300',
   'warning': 'bg-yellow-500/20 text-yellow-300',
-  'info': 'bg-blue-500/20 text-blue-300',
+  'info': 'bg-brand-violet/20 text-brand-violet-hover',
 };
 
 // Supabase API helpers
@@ -174,7 +174,7 @@ async function updateSupabase(
 function LoadingSpinner() {
   return (
     <div className="flex items-center justify-center py-8">
-      <Loader className="animate-spin text-blue-400" size={32} />
+      <Loader className="animate-spin text-brand-violet" size={32} />
     </div>
   );
 }
@@ -224,11 +224,11 @@ function AgentCard({
   return (
     <button
       onClick={onClick}
-      className={`group relative bg-gradient-to-br ${colorClass} border rounded-xl p-6 transition-all hover:shadow-lg hover:shadow-blue-500/10 cursor-pointer w-full text-left`}
+      className={`group relative bg-gradient-to-br ${colorClass} border rounded-xl p-6 transition-all hover:shadow-lg hover:shadow-brand-violet/10 cursor-pointer w-full text-left`}
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="text-blue-300">{icon}</div>
+          <div className="text-brand-violet-hover">{icon}</div>
           <div>
             <h3 className="font-semibold text-white">{agent.name}</h3>
             <p className="text-sm text-slate-400">{agent.role}</p>
@@ -356,7 +356,7 @@ function TasksTab({ agentId }: { agentId: string }) {
         <p className="text-slate-400 text-center py-6">No tasks assigned</p>
       ) : (
         tasks.map((task) => (
-          <div key={task.id} className="border border-blue-500/10 rounded-lg p-4 bg-blue-900/5">
+          <div key={task.id} className="border border-brand-violet/10 rounded-lg p-4 bg-brand-violet-pressed/5">
             <div className="flex items-start justify-between mb-3">
               <div>
                 <h4 className="font-medium text-white">{task.title}</h4>
@@ -444,7 +444,7 @@ function ContentQueueTab({ agentId }: { agentId: string }) {
         <p className="text-slate-400 text-center py-6">No content in queue</p>
       ) : (
         items.map((item) => (
-          <div key={item.id} className="border border-blue-500/10 rounded-lg p-4 bg-blue-900/5 space-y-3">
+          <div key={item.id} className="border border-brand-violet/10 rounded-lg p-4 bg-brand-violet-pressed/5 space-y-3">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <h4 className="font-medium text-white">{item.title}</h4>
@@ -478,7 +478,7 @@ function ContentQueueTab({ agentId }: { agentId: string }) {
                 <span className={`ml-auto text-xs px-2 py-1 rounded font-medium ${
                   item.status === 'approved' ? 'bg-green-500/20 text-green-300' :
                   item.status === 'rejected' ? 'bg-red-500/20 text-red-300' :
-                  'bg-blue-500/20 text-blue-300'
+                  'bg-brand-violet/20 text-brand-violet-hover'
                 }`}>
                   {item.status}
                 </span>
@@ -550,7 +550,7 @@ function ChatTab({ agentId }: { agentId: string }) {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="flex flex-col h-[600px] bg-blue-900/5 rounded-lg border border-blue-500/10">
+    <div className="flex flex-col h-[600px] bg-brand-violet-pressed/5 rounded-lg border border-brand-violet/10">
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.length === 0 ? (
           <p className="text-slate-400 text-center py-6">No messages yet</p>
@@ -564,7 +564,7 @@ function ChatTab({ agentId }: { agentId: string }) {
                 className={`max-w-xs px-4 py-2 rounded-lg text-sm ${
                   msg.direction === 'outbound'
                     ? 'bg-slate-700 text-slate-100'
-                    : 'bg-blue-600 text-white'
+                    : 'bg-brand-violet text-white'
                 }`}
               >
                 <p>{msg.message}</p>
@@ -576,19 +576,19 @@ function ChatTab({ agentId }: { agentId: string }) {
           ))
         )}
       </div>
-      <div className="border-t border-blue-500/10 p-4 flex gap-2">
+      <div className="border-t border-brand-violet/10 p-4 flex gap-2">
         <input
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
           placeholder="Type a message..."
-          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-violet"
         />
         <button
           onClick={handleSendMessage}
           disabled={!newMessage.trim() || sending}
-          className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          className="px-4 py-2 rounded-lg bg-brand-violet text-white text-sm font-medium hover:bg-brand-violet/80 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
           <Send size={16} />
         </button>
@@ -627,7 +627,7 @@ function CodeChangesTab({ agentId }: { agentId: string }) {
         <p className="text-slate-400 text-center py-6">No code changes yet</p>
       ) : (
         changes.map((change) => (
-          <div key={change.id} className="border border-blue-500/10 rounded-lg p-4 bg-blue-900/5">
+          <div key={change.id} className="border border-brand-violet/10 rounded-lg p-4 bg-brand-violet-pressed/5">
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1">
                 <h4 className="font-medium text-white font-mono text-sm">{change.commit_message}</h4>
@@ -643,7 +643,7 @@ function CodeChangesTab({ agentId }: { agentId: string }) {
                 rel="noopener noreferrer"
                 className={`px-2 py-1 rounded text-xs font-medium ${
                   change.pr_status === 'merged' ? 'bg-green-500/20 text-green-300' :
-                  change.pr_status === 'open' ? 'bg-blue-500/20 text-blue-300' :
+                  change.pr_status === 'open' ? 'bg-brand-violet/20 text-brand-violet-hover' :
                   'bg-red-500/20 text-red-300'
                 }`}
               >
@@ -669,10 +669,10 @@ function DetailPanel({ agent, onClose }: { agent: Agent; onClose: () => void }) 
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-950 border border-blue-500/10 rounded-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex items-start justify-between p-6 border-b border-blue-500/10">
+      <div className="bg-slate-950 border border-brand-violet/10 rounded-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="flex items-start justify-between p-6 border-b border-brand-violet/10">
           <div className="flex items-center gap-4">
-            <div className="text-blue-300">{AGENT_ICONS[agent.icon]}</div>
+            <div className="text-brand-violet-hover">{AGENT_ICONS[agent.icon]}</div>
             <div>
               <h2 className="text-xl font-bold text-white">{agent.name}</h2>
               <p className="text-sm text-slate-400">{agent.role}</p>
@@ -699,7 +699,7 @@ function DetailPanel({ agent, onClose }: { agent: Agent; onClose: () => void }) 
               onClick={() => setActiveTab(tab.id as any)}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === tab.id
-                  ? 'border-blue-500 text-blue-400'
+                  ? 'border-brand-violet text-brand-violet'
                   : 'border-transparent text-slate-400 hover:text-slate-300'
               }`}
             >
@@ -751,7 +751,7 @@ function MetricsView() {
           onClick={() => setSelectedSource(null)}
           className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
             selectedSource === null
-              ? 'bg-blue-600 text-white'
+              ? 'bg-brand-violet text-white'
               : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
           }`}
         >
@@ -763,7 +763,7 @@ function MetricsView() {
             onClick={() => setSelectedSource(source)}
             className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
               selectedSource === source
-                ? 'bg-blue-600 text-white'
+                ? 'bg-brand-violet text-white'
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
@@ -777,7 +777,7 @@ function MetricsView() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredMetrics.map((metric) => (
-            <div key={metric.id} className="bg-gradient-to-br from-blue-900/20 to-blue-600/10 border border-blue-500/20 rounded-xl p-6">
+            <div key={metric.id} className="bg-gradient-to-br from-brand-violet-pressed/20 to-brand-violet/10 border border-brand-violet/20 rounded-xl p-6">
               <h3 className="font-semibold text-white mb-4">{metric.campaign_name}</h3>
               <div className="grid grid-cols-2 gap-4">
                 {Object.entries(metric.metrics || {}).map(([key, value]: [string, any]) => (
@@ -848,7 +848,7 @@ function ContentApprovalView() {
             onClick={() => setFilter(null)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               filter === null
-                ? 'bg-blue-600 text-white'
+                ? 'bg-brand-violet text-white'
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
@@ -860,7 +860,7 @@ function ContentApprovalView() {
               onClick={() => setFilter(channel)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 filter === channel
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-brand-violet text-white'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
               }`}
             >
@@ -916,7 +916,7 @@ function ContentQueueItemCard({
   }, [item.id, onUpdate]);
 
   return (
-    <div className="border border-blue-500/10 rounded-lg p-4 bg-blue-900/5">
+    <div className="border border-brand-violet/10 rounded-lg p-4 bg-brand-violet-pressed/5">
       <div className="mb-4">
         <h4 className="font-semibold text-white">{item.title}</h4>
         <p className="text-sm text-slate-300 mt-2">{item.body}</p>
@@ -951,7 +951,7 @@ function ContentQueueItemCard({
         <div className={`px-3 py-2 rounded-lg text-sm font-medium text-center ${
           item.status === 'approved' ? 'bg-green-500/20 text-green-300' :
           item.status === 'rejected' ? 'bg-red-500/20 text-red-300' :
-          'bg-blue-500/20 text-blue-300'
+          'bg-brand-violet/20 text-brand-violet-hover'
         }`}>
           {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
         </div>
@@ -1033,7 +1033,7 @@ export function AgentsManagement() {
               onClick={() => setView(v.id as any)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 view === v.id
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-brand-violet text-white'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
               }`}
             >

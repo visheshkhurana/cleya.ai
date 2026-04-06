@@ -42,11 +42,11 @@ export default function ThreeBackground() {
   }, []);
 
   if (!webglSupported || !Canvas) {
-    return <div className="fixed inset-0 z-0" style={{ background: '#050510' }} />;
+    return <div className="fixed inset-0 z-0" style={{ background: '#080D1A' }} />;
   }
 
   return (
-    <WebGLErrorBoundary fallback={<div className="fixed inset-0" style={{ background: '#050510' }} />}>
+    <WebGLErrorBoundary fallback={<div className="fixed inset-0" style={{ background: '#080D1A' }} />}>
       <Canvas />
     </WebGLErrorBoundary>
   );

@@ -17,7 +17,7 @@ export function ChatBubble({ sender, content, timestamp }: ChatBubbleProps) {
         {!isUser && (
           <div
             className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mb-1"
-            style={{ background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)' }}
+            style={{ background: '#6C63FF' }}
           >
             C
           </div>
@@ -38,12 +38,12 @@ export function ChatBubble({ sender, content, timestamp }: ChatBubbleProps) {
                     ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
                     li: ({ children }) => <li>{children}</li>,
                     a: ({ href, children }) => (
-                      <a href={href} target="_blank" rel="noopener noreferrer" className="underline" style={{ color: '#93C5FD' }}>
+                      <a href={href} target="_blank" rel="noopener noreferrer" className="underline" style={{ color: '#9B95FF' }}>
                         {children}
                       </a>
                     ),
                     code: ({ children }) => (
-                      <code className="px-1.5 py-0.5 rounded text-xs font-mono" style={{ background: 'rgba(255,255,255,0.1)' }}>
+                      <code className="px-1.5 py-0.5 rounded text-xs font-mono" style={{ background: 'rgba(255,255,255,0.06)' }}>
                         {children}
                       </code>
                     ),
@@ -51,7 +51,7 @@ export function ChatBubble({ sender, content, timestamp }: ChatBubbleProps) {
                     h2: ({ children }) => <h2 className="text-sm font-bold mb-2">{children}</h2>,
                     h3: ({ children }) => <h3 className="text-sm font-semibold mb-1">{children}</h3>,
                     blockquote: ({ children }) => (
-                      <blockquote className="border-l-2 border-blue-400/40 pl-3 my-2 text-white/60 italic">
+                      <blockquote className="border-l-2 pl-3 my-2 italic" style={{ borderColor: 'rgba(108,99,255,0.4)', color: 'rgba(255,255,255,0.5)' }}>
                         {children}
                       </blockquote>
                     ),
@@ -63,7 +63,7 @@ export function ChatBubble({ sender, content, timestamp }: ChatBubbleProps) {
             )}
           </div>
           {timestamp && (
-            <p className={`text-[10px] text-white/20 mt-1 ${isUser ? 'text-right' : 'text-left'}`}>
+            <p className={`text-[10px] font-mono text-white/20 mt-1 ${isUser ? 'text-right' : 'text-left'}`}>
               {new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </p>
           )}

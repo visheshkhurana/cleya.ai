@@ -69,8 +69,8 @@ export default function ParticleNetwork() {
           const dy = particles[i].y - particles[j].y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < connectionThreshold) {
-            const alpha = (1 - dist / connectionThreshold) * 0.15;
-            ctx.strokeStyle = `rgba(59,130,246,${alpha})`;
+            const alpha = (1 - dist / connectionThreshold) * 0.12;
+            ctx.strokeStyle = `rgba(108,99,255,${alpha})`;
             ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
@@ -83,7 +83,7 @@ export default function ParticleNetwork() {
       for (const p of particles) {
         ctx.beginPath();
         ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(147,197,253,0.6)';
+        ctx.fillStyle = 'rgba(155,149,255,0.5)';
         ctx.fill();
       }
 

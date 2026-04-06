@@ -52,9 +52,9 @@ const posts = [
 ];
 
 const categoryColors: Record<string, string> = {
-  Fundraising: '#3B82F6',
-  Investors: '#3B82F6',
-  Product: '#8B5CF6',
+  Fundraising: '#6C63FF',
+  Investors: '#6C63FF',
+  Product: '#4ECDC4',
   Ecosystem: '#F59E0B',
 };
 
@@ -65,7 +65,7 @@ export default function BlogPage() {
 
       <section className="pt-16 pb-10 text-center">
         <div className="max-w-4xl mx-auto px-6 lg:px-8">
-          <h1 className="font-display text-4xl sm:text-5xl font-bold text-white tracking-tight mb-4">
+          <h1 className="font-sans text-4xl sm:text-5xl font-bold text-white tracking-tight mb-4">
             Startup Insights
           </h1>
           <p className="text-lg max-w-xl mx-auto" style={{ color: '#94A3B8' }}>
@@ -79,16 +79,16 @@ export default function BlogPage() {
           <div className="space-y-6">
             {posts.map((post) => (
               <Link key={post.slug} href={`/blog/${post.slug}`}
-                className="block rounded-2xl border border-white/5 p-6 transition hover:border-blue-500/15 group"
-                style={{ background: 'rgba(10,10,26,0.8)' }}>
+                className="block rounded-2xl border border-white/5 p-6 transition hover:border-brand-violet/15 group"
+                style={{ background: 'rgba(15,22,41,0.8)' }}>
                 <div className="flex items-center gap-3 mb-3">
                   <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-white"
-                    style={{ background: categoryColors[post.category] || '#3B82F6' }}>
+                    style={{ background: categoryColors[post.category] || '#6C63FF' }}>
                     {post.category}
                   </span>
                   <span className="text-xs" style={{ color: '#64748B' }}>{post.readTime}</span>
                 </div>
-                <h2 className="text-lg font-semibold text-white mb-2 group-hover:text-blue-300 transition">
+                <h2 className="text-lg font-semibold text-white mb-2 group-hover:text-brand-violet-hover transition">
                   {post.title}
                 </h2>
                 <p className="text-sm leading-relaxed mb-4" style={{ color: '#94A3B8' }}>
@@ -96,7 +96,7 @@ export default function BlogPage() {
                 </p>
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
-                    style={{ background: 'rgba(59,130,246,0.15)', color: '#93C5FD' }}>
+                    style={{ background: 'rgba(108,99,255,0.15)', color: '#9B95FF' }}>
                     {post.author[0]}
                   </div>
                   <span className="text-xs text-white/60">{post.author}</span>
@@ -119,7 +119,7 @@ export default function BlogPage() {
           </p>
           <Link href="/"
             className="inline-block px-8 py-3 rounded-[10px] text-white font-medium text-sm transition-all hover:scale-[1.02]"
-            style={{ background: '#3B82F6', boxShadow: '0 0 30px rgba(59,130,246,0.25)' }}>
+            style={{ background: '#6C63FF', boxShadow: '0 0 30px rgba(108,99,255,0.25)' }}>
             Get Started Free →
           </Link>
         </div>
