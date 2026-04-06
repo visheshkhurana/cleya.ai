@@ -167,6 +167,19 @@ export class ProfileService {
       profileData.businessDescription = context.businessDescription;
     }
 
+    if (context.matchingGoal || context.matchingExpertiseNeeded) {
+      const existingExtra = profileData.extraData || {};
+      profileData.extraData = {
+        ...existingExtra,
+        ...(context.matchingGoal ? { matchingGoal: context.matchingGoal } : {}),
+        ...(context.matchingExpertiseNeeded ? {
+          matchingExpertiseNeeded: typeof context.matchingExpertiseNeeded === 'string'
+            ? context.matchingExpertiseNeeded.split(',').map((s: string) => s.trim()).filter(Boolean)
+            : context.matchingExpertiseNeeded
+        } : {}),
+      };
+    }
+
     if (channelSource) {
       profileData.channelSource = channelSource;
     }
@@ -235,6 +248,7 @@ export class ProfileService {
       'introPreference', 'openToMeeting', 'maxIntrosPerWeek',
       'equityExpectation', 'preferredStage', 'workStyle', 'functionalArea',
       'preferredStageRange', 'sectorFocus', 'checkSizeRange',
+      'extraData',
     ];
 
     const sanitized: Record<string, any> = {};

@@ -1,6 +1,6 @@
 import { prisma } from '@cleya/db';
 import { createAIService } from '@cleya/ai';
-import { matchingEngine, ProfileForMatching } from '@cleya/matching';
+import { matchingEngine, ProfileForMatching, normalizeToExpertiseTags } from '@cleya/matching';
 
 const ai = createAIService();
 
@@ -262,6 +262,17 @@ export async function getProfileForMatching(userId: string): Promise<ProfileForM
 
   const tractionMetrics = buildTractionMetrics(p, extraData);
 
+  const expertiseInputs = [
+    ...profile.skills,
+    ...(extraData?.enrichedData?.domainExpertise || []),
+  ];
+  if (profile.headline) expertiseInputs.push(profile.headline);
+  if (p.functionalArea) expertiseInputs.push(p.functionalArea);
+  const expertiseTags = normalizeToExpertiseTags(expertiseInputs);
+
+  const matchingGoal = extraData?.matchingGoal || undefined;
+  const matchingExpertiseNeeded = extraData?.matchingExpertiseNeeded || undefined;
+
   return {
     userId,
     persona: p.persona || 'OTHER',
@@ -295,6 +306,9 @@ export async function getProfileForMatching(userId: string): Promise<ProfileForM
     functionalArea: p.functionalArea || extraData?.functionalArea || undefined,
     tractionMetrics,
     enrichedData: extraData?.enrichedData || undefined,
+    expertiseTags,
+    matchingGoal,
+    matchingExpertiseNeeded,
   };
 }
 
@@ -427,12 +441,24 @@ export async function hybridMatch(
   const allowedPersonas = getMatchablePersonas(userProfile.persona);
   const crossPersonaCandidates = validCandidates.filter(c => allowedPersonas.includes(c.persona));
 
+  const hasExplicitIntent = !!(userProfile.matchingGoal || (userProfile.matchingExpertiseNeeded && userProfile.matchingExpertiseNeeded.length > 0) || userProfile.lookingFor.length > 0 || userProfile.priority);
+  const intentFiltered = crossPersonaCandidates.filter(c => matchingEngine.passesIntentFilter(userProfile, c));
+
+  let candidates: ProfileForMatching[];
+  if (hasExplicitIntent) {
+    candidates = intentFiltered;
+  } else if (intentFiltered.length >= Math.min(5, crossPersonaCandidates.length)) {
+    candidates = intentFiltered;
+  } else {
+    candidates = crossPersonaCandidates;
+  }
+
   const [pastOutcomes, dynamicIntent] = await Promise.all([
     getUserPastMatchOutcomes(userId),
     computeDynamicIntent(userId),
   ]);
 
-  const scored: HybridMatchResult[] = crossPersonaCandidates.map((candidate) => {
+  const scored: HybridMatchResult[] = candidates.map((candidate) => {
     const matchScore = matchingEngine.score(userProfile, candidate);
 
     let adjustedScore = matchScore.total;
@@ -785,6 +811,14 @@ function mapProfileToMatching(p: any): ProfileForMatching {
       })
     : (extraData?.portfolioCompanies || undefined);
 
+  const mapExpertiseInputs = [
+    ...(p.skills || []),
+    ...(extraData?.enrichedData?.domainExpertise || []),
+  ];
+  if (p.headline) mapExpertiseInputs.push(p.headline);
+  if (p.functionalArea) mapExpertiseInputs.push(p.functionalArea);
+  const expertiseTags = normalizeToExpertiseTags(mapExpertiseInputs);
+
   return {
     userId: p.userId,
     persona: p.persona || 'OTHER',
@@ -817,5 +851,8 @@ function mapProfileToMatching(p: any): ProfileForMatching {
     functionalArea: p.functionalArea || extraData?.functionalArea || undefined,
     tractionMetrics: buildTractionMetrics(p, extraData),
     enrichedData: extraData?.enrichedData || undefined,
+    expertiseTags,
+    matchingGoal: extraData?.matchingGoal || undefined,
+    matchingExpertiseNeeded: extraData?.matchingExpertiseNeeded || undefined,
   };
 }

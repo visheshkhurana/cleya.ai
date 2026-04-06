@@ -79,6 +79,76 @@ matchRouter.post('/:id/feedback', authenticate, validate(matchFeedbackSchema), a
   }
 });
 
+matchRouter.get('/:id/feedback-prompt', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const match = await prisma.match.findFirst({
+      where: {
+        id: req.params.id,
+        status: 'ACCEPTED',
+        OR: [{ userAId: req.user!.userId }, { userBId: req.user!.userId }],
+      },
+      include: {
+        feedbacks: { where: { userId: req.user!.userId } },
+      },
+    });
+    if (!match) {
+      return res.status(404).json({ success: false, error: { message: 'Match not found' } });
+    }
+    const hasFeedback = match.feedbacks.length > 0;
+    const daysSinceAccepted = Math.floor((Date.now() - new Date(match.updatedAt).getTime()) / (1000 * 60 * 60 * 24));
+    const shouldPrompt = !hasFeedback && daysSinceAccepted >= 1;
+    res.json({
+      success: true,
+      data: {
+        matchId: match.id,
+        shouldPrompt,
+        hasFeedback,
+        daysSinceAccepted,
+        prompt: shouldPrompt ? 'Was this match useful? Your feedback helps us find better matches for you.' : null,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+matchRouter.get('/pending-feedback', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId;
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const acceptedMatches = await prisma.match.findMany({
+      where: {
+        status: 'ACCEPTED',
+        updatedAt: { lte: oneDayAgo },
+        OR: [{ userAId: userId }, { userBId: userId }],
+        feedbacks: { none: { userId } },
+      },
+      include: {
+        userA: { select: { id: true, profile: { select: { headline: true, companyName: true, persona: true } } } },
+        userB: { select: { id: true, profile: { select: { headline: true, companyName: true, persona: true } } } },
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 5,
+    });
+    const pendingFeedback = acceptedMatches.map(m => {
+      const isUserA = m.userAId === userId;
+      const other = isUserA ? m.userB : m.userA;
+      return {
+        matchId: m.id,
+        otherUser: {
+          headline: other?.profile?.headline,
+          companyName: other?.profile?.companyName,
+          persona: other?.profile?.persona,
+        },
+        acceptedAt: m.updatedAt,
+      };
+    });
+    res.json({ success: true, data: pendingFeedback });
+  } catch (error) {
+    next(error);
+  }
+});
+
 matchRouter.post('/:id/respond', authenticate, validate(matchResponseSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { response } = req.body;

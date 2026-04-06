@@ -83,6 +83,9 @@ export interface ProfileData {
   founderAccessPitch?: string;
   channelSource?: string;
   channelType?: string;
+  matchingGoal?: string;
+  matchingExpertiseNeeded?: string[];
+  expertiseTags?: string[];
   [key: string]: any;
 }
 

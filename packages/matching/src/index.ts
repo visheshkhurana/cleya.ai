@@ -39,6 +39,9 @@ export interface ProfileForMatching {
   tractionMetrics?: TractionMetrics;
   enrichedData?: EnrichedProfileData;
   keyTractionPoints?: string;
+  expertiseTags?: string[];
+  matchingGoal?: string;
+  matchingExpertiseNeeded?: string[];
 }
 
 export interface PortfolioCompany {
@@ -312,15 +315,42 @@ const STAGE_COMPATIBILITY: Record<string, string[]> = {
 // ─── Intent Alignment: lookingFor → persona mapping ───
 const INTENT_TO_PERSONA: Record<string, string[]> = {
   fundraising: ['INVESTOR', 'DEAL_PARTNER', 'VENTURE_PARTNER'],
+  FUNDRAISING: ['INVESTOR', 'DEAL_PARTNER', 'VENTURE_PARTNER'],
   investors: ['INVESTOR', 'DEAL_PARTNER', 'VENTURE_PARTNER'],
   deal_flow: ['FOUNDER', 'EVENT_PARTICIPANT', 'DEAL_PARTNER'],
   hiring: ['TALENT', 'JOB_SEEKER', 'RECRUITER'],
+  HIRING: ['TALENT', 'JOB_SEEKER', 'RECRUITER'],
   job_opportunities: ['FOUNDER', 'OPERATOR', 'RECRUITER'],
   cofounder: ['FOUNDER', 'TALENT'],
+  COFOUNDER: ['FOUNDER', 'TALENT'],
   advisors: ['ADVISOR', 'VENTURE_PARTNER'],
   advisory_roles: ['FOUNDER', 'OPERATOR'],
   partnerships: ['FOUNDER', 'OPERATOR', 'DEAL_PARTNER'],
   mentoring: ['FOUNDER', 'TALENT', 'JOB_SEEKER'],
+  marketing: ['ADVISOR', 'OPERATOR', 'FREELANCER'],
+  MARKETING: ['ADVISOR', 'OPERATOR', 'FREELANCER'],
+  SALES_BD: ['ADVISOR', 'DEAL_PARTNER', 'OPERATOR'],
+  VENTURE_PARTNER_HIRE: ['VENTURE_PARTNER', 'DEAL_PARTNER', 'ADVISOR'],
+  FOUNDING_ENGINEER: ['FOUNDER'],
+  FOUNDING_GTM: ['FOUNDER'],
+  CHIEF_OF_STAFF: ['FOUNDER', 'OPERATOR'],
+  GROWTH_CONTENT: ['FOUNDER', 'OPERATOR'],
+  OPEN_APPLICATION: ['FOUNDER', 'OPERATOR', 'RECRUITER'],
+};
+
+// ─── Structured Expertise Tags: normalize free-text to categories ───
+export const EXPERTISE_TAGS: Record<string, string[]> = {
+  marketing: ['marketing', 'growth', 'growth marketing', 'content marketing', 'seo', 'sem', 'paid ads', 'branding', 'brand strategy', 'digital marketing', 'social media', 'influencer marketing', 'performance marketing', 'demand gen', 'demand generation', 'gtm', 'go-to-market'],
+  fundraising: ['fundraising', 'investor relations', 'pitch deck', 'venture capital', 'seed funding', 'angel investing', 'cap table', 'term sheet', 'due diligence', 'fundraise', 'raising capital'],
+  hiring: ['hiring', 'recruiting', 'talent acquisition', 'hr', 'human resources', 'people ops', 'team building', 'employer branding', 'recruitment'],
+  product: ['product', 'product management', 'product strategy', 'product design', 'ux', 'ui', 'user experience', 'user research', 'product-market fit', 'pmf', 'roadmap'],
+  engineering: ['engineering', 'software', 'software engineering', 'development', 'backend', 'frontend', 'full stack', 'devops', 'infrastructure', 'architecture', 'system design', 'coding', 'programming', 'tech lead', 'cto'],
+  sales: ['sales', 'business development', 'bd', 'enterprise sales', 'b2b sales', 'partnerships', 'channel sales', 'account management', 'revenue', 'closing deals'],
+  operations: ['operations', 'ops', 'supply chain', 'logistics', 'process optimization', 'project management', 'program management', 'chief of staff', 'strategy', 'management consulting'],
+  finance: ['finance', 'financial modeling', 'accounting', 'cfo', 'financial planning', 'fp&a', 'treasury', 'compliance', 'audit'],
+  legal: ['legal', 'contracts', 'ip', 'intellectual property', 'regulatory', 'compliance', 'corporate law', 'privacy', 'gdpr'],
+  data: ['data', 'data science', 'analytics', 'data engineering', 'machine learning', 'ai', 'deep learning', 'nlp', 'computer vision', 'ml ops'],
+  design: ['design', 'graphic design', 'visual design', 'ui design', 'ux design', 'brand design', 'motion design', 'creative direction'],
 };
 
 // ─── Founder Priority → Best persona match ───
@@ -343,9 +373,31 @@ const TARGET_ROLE_BOOST: Record<string, string[]> = {
   COFOUNDER: ['FOUNDER'],
 };
 
+export function normalizeToExpertiseTags(inputs: string[]): string[] {
+  const tags = new Set<string>();
+  for (const input of inputs) {
+    const lower = input.toLowerCase().trim();
+    if (!lower || lower.length < 2) continue;
+    for (const [tag, keywords] of Object.entries(EXPERTISE_TAGS)) {
+      if (keywords.includes(lower)) {
+        tags.add(tag);
+        continue;
+      }
+      const tokens = lower.split(/[\s,;/&|]+/).filter(t => t.length >= 3);
+      for (const token of tokens) {
+        if (keywords.includes(token) || keywords.some(kw => kw === token)) {
+          tags.add(tag);
+          break;
+        }
+      }
+    }
+  }
+  return Array.from(tags);
+}
+
 export class MatchingEngine {
-  private ruleWeight = 0.50;
-  private intentWeight = 0.20;
+  private ruleWeight = 0.35;
+  private intentWeight = 0.35;
   private semanticWeight = 0.30;
 
   private sectorFamilyCache = new Map<string, string | null>();
@@ -546,6 +598,41 @@ export class MatchingEngine {
     };
   }
 
+  passesIntentFilter(user: ProfileForMatching, candidate: ProfileForMatching): boolean {
+    const userIntents = user.lookingFor;
+    const neededExpertise = user.matchingExpertiseNeeded || [];
+    if (!userIntents.length && !user.priority && !user.matchingGoal && !neededExpertise.length) return true;
+
+    for (const intent of userIntents) {
+      const idealPersonas = INTENT_TO_PERSONA[intent];
+      if (idealPersonas && idealPersonas.includes(candidate.persona)) return true;
+    }
+
+    if (user.priority) {
+      const boostPersonas = PRIORITY_PERSONA_BOOST[user.priority];
+      if (boostPersonas && boostPersonas.includes(candidate.persona)) return true;
+    }
+
+    if (neededExpertise.length > 0) {
+      const candidateExpertise = candidate.expertiseTags || normalizeToExpertiseTags([
+        ...candidate.skills,
+        ...(candidate.enrichedData?.domainExpertise || []),
+      ]);
+      const hasExpertiseMatch = neededExpertise.some(need => {
+        const needLower = need.toLowerCase();
+        return candidateExpertise.some(tag => tag === needLower);
+      });
+      if (hasExpertiseMatch) return true;
+    }
+
+    if (user.matchingGoal) {
+      const goalPersonas = INTENT_TO_PERSONA[user.matchingGoal] || INTENT_TO_PERSONA[user.matchingGoal.toUpperCase()];
+      if (goalPersonas && goalPersonas.includes(candidate.persona)) return true;
+    }
+
+    return false;
+  }
+
   findMatches(
     user: ProfileForMatching,
     candidates: ProfileForMatching[],
@@ -553,8 +640,11 @@ export class MatchingEngine {
   ): Array<{ profile: ProfileForMatching; score: MatchScore }> {
     const { limit = 10, minScore = 0.35 } = options;
 
-    const scored = candidates
+    const intentFiltered = candidates
       .filter((c) => c.userId !== user.userId)
+      .filter((c) => this.passesIntentFilter(user, c));
+
+    const scored = intentFiltered
       .map((candidate) => ({
         profile: candidate,
         score: this.score(user, candidate),
@@ -852,6 +942,39 @@ export class MatchingEngine {
     const lookingForOverlap = this.scoreArrayOverlap(a.lookingFor, b.lookingFor);
     score += lookingForOverlap * 0.5;
     checks++;
+
+    if (a.matchingGoal) {
+      const goalPersonas = INTENT_TO_PERSONA[a.matchingGoal] || INTENT_TO_PERSONA[a.matchingGoal.toUpperCase()] || [];
+      if (goalPersonas.includes(b.persona)) {
+        score += 1.0;
+      }
+      checks++;
+    }
+    if (b.matchingGoal) {
+      const goalPersonas = INTENT_TO_PERSONA[b.matchingGoal] || INTENT_TO_PERSONA[b.matchingGoal.toUpperCase()] || [];
+      if (goalPersonas.includes(a.persona)) {
+        score += 1.0;
+      }
+      checks++;
+    }
+
+    const aNeeded = a.matchingExpertiseNeeded || [];
+    const bTags = b.expertiseTags || normalizeToExpertiseTags([...b.skills, ...(b.enrichedData?.domainExpertise || [])]);
+    if (aNeeded.length > 0 && bTags.length > 0) {
+      const aNeededSet = new Set(aNeeded.map(s => s.toLowerCase()));
+      const matchCount = bTags.filter(t => aNeededSet.has(t)).length;
+      score += matchCount > 0 ? Math.min(matchCount / aNeededSet.size, 1.0) : 0;
+      checks++;
+    }
+
+    const bNeeded = b.matchingExpertiseNeeded || [];
+    const aTags = a.expertiseTags || normalizeToExpertiseTags([...a.skills, ...(a.enrichedData?.domainExpertise || [])]);
+    if (bNeeded.length > 0 && aTags.length > 0) {
+      const bNeededSet = new Set(bNeeded.map(s => s.toLowerCase()));
+      const matchCount = aTags.filter(t => bNeededSet.has(t)).length;
+      score += matchCount > 0 ? Math.min(matchCount / bNeededSet.size, 1.0) : 0;
+      checks++;
+    }
 
     return checks > 0 ? Math.min(score / checks, 1.0) : 0.3;
   }

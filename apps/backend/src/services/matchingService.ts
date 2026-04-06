@@ -204,6 +204,10 @@ export class MatchingService {
       whatsappTemplates.triggerMatchAccepted(updated.userBId, updated.userAId).catch((e) =>
         console.log('[MatchingService] WhatsApp match accepted (B) failed:', e)
       );
+
+      this.scheduleFeedbackPrompt(matchId, updated.userAId, updated.userBId).catch((e) =>
+        console.log('[MatchingService] Feedback prompt scheduling failed:', e)
+      );
     }
 
     return updated;
@@ -336,6 +340,34 @@ export class MatchingService {
       }),
     ]);
     return { total, pending, accepted };
+  }
+
+  private async scheduleFeedbackPrompt(matchId: string, userAId: string, userBId: string) {
+    const FEEDBACK_DELAY_MS = 24 * 60 * 60 * 1000;
+    setTimeout(async () => {
+      try {
+        const existingFeedbackA = await prisma.matchFeedback.findUnique({
+          where: { matchId_userId: { matchId, userId: userAId } },
+        });
+        if (!existingFeedbackA) {
+          sendToUser(userAId, 'match:feedback_prompt', {
+            matchId,
+            prompt: 'Was this match useful? Your feedback helps us find better matches for you.',
+          });
+        }
+        const existingFeedbackB = await prisma.matchFeedback.findUnique({
+          where: { matchId_userId: { matchId, userId: userBId } },
+        });
+        if (!existingFeedbackB) {
+          sendToUser(userBId, 'match:feedback_prompt', {
+            matchId,
+            prompt: 'Was this match useful? Your feedback helps us find better matches for you.',
+          });
+        }
+      } catch (e) {
+        console.log('[MatchingService] Feedback prompt delivery failed:', e);
+      }
+    }, FEEDBACK_DELAY_MS);
   }
 
   private async progressDealOnAcceptance(userAId: string, userBId: string) {
