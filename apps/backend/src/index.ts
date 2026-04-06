@@ -35,6 +35,7 @@ import { whatsappRouter } from './routes/whatsapp';
 import { gupshupRouter } from './routes/gupshup';
 import { calendarRouter } from './routes/calendar';
 import { matchScheduler } from './services/matchScheduler';
+import { cleanupExpiredStates } from './services/calendarService';
 
 if (env.SENTRY_DSN) {
   Sentry.init({
@@ -117,6 +118,27 @@ if (env.SENTRY_DSN) {
 }
 
 app.use(errorHandler);
+
+if (!env.ZOOM_CLIENT_ID || !env.ZOOM_CLIENT_SECRET) {
+  console.warn('⚠️  Zoom integration is not configured. Set ZOOM_CLIENT_ID and ZOOM_CLIENT_SECRET to enable Zoom meetings.');
+  console.warn('   To set up: Create a General App in the Zoom Marketplace (https://marketplace.zoom.us/)');
+  console.warn('   Required scopes: meeting:write:meeting');
+  console.warn('   Redirect URL: <BACKEND_URL>/api/zoom/callback');
+}
+
+if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET || !env.GOOGLE_REDIRECT_URI) {
+  console.warn('⚠️  Google Calendar integration is not configured. Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REDIRECT_URI.');
+} else {
+  const expectedRedirectUri = `${env.BACKEND_URL}/api/calendar/callback`;
+  if (env.GOOGLE_REDIRECT_URI !== expectedRedirectUri) {
+    console.warn(`⚠️  GOOGLE_REDIRECT_URI mismatch: configured as "${env.GOOGLE_REDIRECT_URI}" but expected "${expectedRedirectUri}". OAuth callbacks may fail if these don't match.`);
+  }
+}
+
+cleanupExpiredStates().catch(err => console.error('Failed to clean up expired OAuth states:', err));
+setInterval(() => {
+  cleanupExpiredStates().catch(err => console.error('Failed to clean up expired OAuth states:', err));
+}, 60 * 60 * 1000);
 
 const PORT = env.PORT;
 app.listen(PORT, '0.0.0.0', () => {

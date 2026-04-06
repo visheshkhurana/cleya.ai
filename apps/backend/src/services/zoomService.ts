@@ -1,5 +1,11 @@
+// Zoom OAuth Setup:
+// 1. Create a "General App" at https://marketplace.zoom.us/
+// 2. Add required OAuth scopes: meeting:write:meeting
+// 3. Set redirect URL to: <BACKEND_URL>/api/zoom/callback
+// 4. Set env vars: ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET, and optionally ZOOM_REDIRECT_URI
 import { env } from '../config/env';
 import { prisma } from '@cleya/db';
+import crypto from 'crypto';
 
 const ZOOM_AUTH_URL = 'https://zoom.us/oauth/authorize';
 const ZOOM_TOKEN_URL = 'https://zoom.us/oauth/token';
@@ -7,6 +13,29 @@ const ZOOM_API_BASE = 'https://api.zoom.us/v2';
 
 export function isZoomConfigured(): boolean {
   return !!(env.ZOOM_CLIENT_ID && env.ZOOM_CLIENT_SECRET);
+}
+
+export async function createZoomOAuthState(userId: string): Promise<string> {
+  const state = crypto.randomBytes(32).toString('hex');
+  await prisma.oAuthState.create({
+    data: {
+      state,
+      userId,
+      provider: 'zoom',
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    },
+  });
+  return state;
+}
+
+export async function validateZoomState(state: string): Promise<string | null> {
+  const entry = await prisma.oAuthState.findUnique({ where: { state } });
+  if (!entry || entry.provider !== 'zoom') return null;
+
+  await prisma.oAuthState.delete({ where: { state } });
+
+  if (new Date() > entry.expiresAt) return null;
+  return entry.userId;
 }
 
 export function getZoomAuthUrl(state: string): string {

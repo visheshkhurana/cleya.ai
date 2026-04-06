@@ -11,6 +11,7 @@ import {
   checkAvailability,
   disconnect,
 } from '../services/calendarService';
+import { env } from '../config/env';
 
 export const calendarRouter = Router();
 
@@ -33,7 +34,7 @@ calendarRouter.get('/connect', authenticate, async (req, res) => {
     if (!isCalendarConfigured()) {
       return res.status(400).json({ success: false, error: 'Google Calendar is not configured' });
     }
-    const authUrl = getAuthUrl(req.user!.userId);
+    const authUrl = await getAuthUrl(req.user!.userId);
     res.json({ success: true, data: { authUrl } });
   } catch (err: any) {
     console.error('Calendar connect error:', err);
@@ -45,17 +46,17 @@ calendarRouter.get('/callback', async (req, res) => {
   try {
     const { code, state } = req.query;
     if (!code || !state) {
-      return res.redirect(`${process.env.FRONTEND_URL || ''}/settings?calendar=error&reason=missing_params`);
+      return res.redirect(`${env.FRONTEND_URL}/settings?calendar=error&reason=missing_params`);
     }
-    const userId = validateState(state as string);
+    const userId = await validateState(state as string);
     if (!userId) {
-      return res.redirect(`${process.env.FRONTEND_URL || ''}/settings?calendar=error&reason=invalid_state`);
+      return res.redirect(`${env.FRONTEND_URL}/settings?calendar=error&reason=invalid_state`);
     }
     await handleCallback(code as string, userId);
-    res.redirect(`${process.env.FRONTEND_URL || ''}/settings?calendar=connected`);
+    res.redirect(`${env.FRONTEND_URL}/settings?calendar=connected`);
   } catch (err: any) {
     console.error('Calendar callback error:', err);
-    res.redirect(`${process.env.FRONTEND_URL || ''}/settings?calendar=error&reason=auth_failed`);
+    res.redirect(`${env.FRONTEND_URL}/settings?calendar=error&reason=auth_failed`);
   }
 });
 

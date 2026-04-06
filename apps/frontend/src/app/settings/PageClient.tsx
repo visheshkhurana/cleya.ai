@@ -31,6 +31,7 @@ export default function SettingsPage() {
   const [waPhoneInput, setWaPhoneInput] = useState('');
   const [waLoading, setWaLoading] = useState(false);
   const [waMsg, setWaMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [integrationMsg, setIntegrationMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     api.getMe().then((user) => {
@@ -77,10 +78,26 @@ export default function SettingsPage() {
     }
     if (params.get('calendar') === 'connected') {
       setCalendarStatus({ configured: true, connected: true });
+      setIntegrationMsg({ type: 'success', text: 'Google Calendar connected successfully.' });
       api.calendarStatus().then(data => {
         if (data) setCalendarStatus(data);
       }).catch(() => {});
       window.history.replaceState({}, '', '/settings');
+    }
+    if (params.get('zoom') === 'error' || params.get('calendar') === 'error') {
+      const reason = params.get('reason') || 'unknown';
+      const service = params.get('zoom') === 'error' ? 'Zoom' : 'Google Calendar';
+      const reasonMessages: Record<string, string> = {
+        invalid_state: 'Connection expired or was already used. Please try again.',
+        missing_params: 'The authorization response was incomplete. Please try again.',
+        auth_failed: 'Authorization failed. Please try again or contact support.',
+        unknown: 'Something went wrong. Please try again.',
+      };
+      setIntegrationMsg({ type: 'error', text: `${service}: ${reasonMessages[reason] || reasonMessages.unknown}` });
+      window.history.replaceState({}, '', '/settings');
+    }
+    if (params.get('zoom') === 'connected') {
+      setIntegrationMsg({ type: 'success', text: 'Zoom connected successfully.' });
     }
   }, [router]);
 
@@ -574,6 +591,29 @@ export default function SettingsPage() {
         }}>
           <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 600, marginBottom: '4px' }}>Integrations</h2>
           <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '13px', marginBottom: '20px' }}>Connect external services to enhance your Cleya experience.</p>
+
+          {integrationMsg && (
+            <div style={{
+              padding: '12px 16px',
+              borderRadius: '8px',
+              marginBottom: '16px',
+              fontSize: '13px',
+              background: integrationMsg.type === 'success' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+              border: `1px solid ${integrationMsg.type === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
+              color: integrationMsg.type === 'success' ? '#6ee7b7' : '#fca5a5',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}>
+              <span>{integrationMsg.text}</span>
+              <button
+                onClick={() => setIntegrationMsg(null)}
+                style={{
+                  background: 'none', border: 'none', color: 'inherit',
+                  cursor: 'pointer', fontSize: '16px', padding: '0 4px',
+                }}>×</button>
+            </div>
+          )}
 
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',

@@ -3,11 +3,13 @@ import { authenticate } from '../middleware/auth';
 import {
   isZoomConfigured,
   getZoomAuthUrl,
+  createZoomOAuthState,
+  validateZoomState,
   handleZoomCallback,
   isUserZoomConnected,
   disconnectZoom,
 } from '../services/zoomService';
-import crypto from 'crypto';
+import { env } from '../config/env';
 
 export const zoomRouter = Router();
 
@@ -28,7 +30,7 @@ zoomRouter.get('/connect', authenticate, async (req, res) => {
       return res.status(400).json({ success: false, error: 'Zoom is not configured' });
     }
 
-    const state = `${req.user!.userId}:${crypto.randomBytes(16).toString('hex')}`;
+    const state = await createZoomOAuthState(req.user!.userId);
     const authUrl = getZoomAuthUrl(state);
     res.json({ success: true, data: { authUrl } });
   } catch (err: any) {
@@ -41,20 +43,19 @@ zoomRouter.get('/callback', async (req, res) => {
   try {
     const { code, state } = req.query;
     if (!code || !state) {
-      return res.redirect(`${process.env.FRONTEND_URL || ''}/settings?zoom=error&reason=missing_params`);
+      return res.redirect(`${env.FRONTEND_URL}/settings?zoom=error&reason=missing_params`);
     }
 
-    const stateStr = state as string;
-    const userId = stateStr.split(':')[0];
+    const userId = await validateZoomState(state as string);
     if (!userId) {
-      return res.redirect(`${process.env.FRONTEND_URL || ''}/settings?zoom=error&reason=invalid_state`);
+      return res.redirect(`${env.FRONTEND_URL}/settings?zoom=error&reason=invalid_state`);
     }
 
     await handleZoomCallback(userId, code as string);
-    res.redirect(`${process.env.FRONTEND_URL || ''}/settings?zoom=connected`);
+    res.redirect(`${env.FRONTEND_URL}/settings?zoom=connected`);
   } catch (err: any) {
     console.error('Zoom callback error:', err);
-    res.redirect(`${process.env.FRONTEND_URL || ''}/settings?zoom=error&reason=auth_failed`);
+    res.redirect(`${env.FRONTEND_URL}/settings?zoom=error&reason=auth_failed`);
   }
 });
 

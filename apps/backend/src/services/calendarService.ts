@@ -8,8 +8,6 @@ const SCOPES = [
   'https://www.googleapis.com/auth/calendar.events',
 ];
 
-const pendingStates = new Map<string, { userId: string; expiresAt: number }>();
-
 function getOAuth2Client() {
   if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET || !env.GOOGLE_REDIRECT_URI) {
     throw new Error('Google Calendar is not configured');
@@ -25,11 +23,19 @@ export function isCalendarConfigured(): boolean {
   return !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REDIRECT_URI);
 }
 
-export function getAuthUrl(userId: string): string {
+export async function getAuthUrl(userId: string): Promise<string> {
   const oauth2Client = getOAuth2Client();
-  const nonce = crypto.randomBytes(32).toString('hex');
-  const state = `${nonce}`;
-  pendingStates.set(state, { userId, expiresAt: Date.now() + 10 * 60 * 1000 });
+  const state = crypto.randomBytes(32).toString('hex');
+
+  await prisma.oAuthState.create({
+    data: {
+      state,
+      userId,
+      provider: 'google_calendar',
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    },
+  });
+
   return oauth2Client.generateAuthUrl({
     access_type: 'offline',
     prompt: 'consent',
@@ -38,12 +44,20 @@ export function getAuthUrl(userId: string): string {
   });
 }
 
-export function validateState(state: string): string | null {
-  const entry = pendingStates.get(state);
-  if (!entry) return null;
-  pendingStates.delete(state);
-  if (Date.now() > entry.expiresAt) return null;
+export async function validateState(state: string): Promise<string | null> {
+  const entry = await prisma.oAuthState.findUnique({ where: { state } });
+  if (!entry || entry.provider !== 'google_calendar') return null;
+
+  await prisma.oAuthState.delete({ where: { state } });
+
+  if (new Date() > entry.expiresAt) return null;
   return entry.userId;
+}
+
+export async function cleanupExpiredStates(): Promise<void> {
+  await prisma.oAuthState.deleteMany({
+    where: { expiresAt: { lt: new Date() } },
+  });
 }
 
 export async function handleCallback(code: string, userId: string): Promise<void> {
