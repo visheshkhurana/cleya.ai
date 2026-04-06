@@ -163,6 +163,15 @@ matchRouter.post('/:id/respond', authenticate, validate(matchResponseSchema), as
   }
 });
 
+matchRouter.post('/:id/view', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const match = await matchingService.markMatchViewed(req.params.id, req.user!.userId);
+    res.json({ success: true, data: match });
+  } catch (error) {
+    next(error);
+  }
+});
+
 matchRouter.post('/similar', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { limit, minSimilarity } = req.body;

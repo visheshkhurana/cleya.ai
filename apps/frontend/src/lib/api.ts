@@ -200,6 +200,12 @@ class ApiClient {
     });
   }
 
+  async markMatchViewed(matchId: string) {
+    return this.fetch(`/matches/${matchId}/view`, {
+      method: 'POST',
+    });
+  }
+
   // Notifications
   async getNotifications(limit = 20) {
     return this.fetch(`/notifications?limit=${limit}`);

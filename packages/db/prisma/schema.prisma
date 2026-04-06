@@ -320,6 +320,8 @@ model Match {
   userBResponse MatchResponse?
   userARespondedAt DateTime?
   userBRespondedAt DateTime?
+  userAViewedAt DateTime?
+  userBViewedAt DateTime?
 
   reason      String?
   eventId     String?

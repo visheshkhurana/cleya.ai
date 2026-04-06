@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import NotificationCenter from '@/components/NotificationCenter';
@@ -20,9 +20,11 @@ interface MatchData {
   userBId: string;
   userAResponse: string;
   userBResponse: string;
+  userAViewedAt?: string;
+  userBViewedAt?: string;
   createdAt: string;
-  userA: { id: string; email: string; profile?: ProfileData };
-  userB: { id: string; email: string; profile?: ProfileData };
+  userA: { id: string; email: string; name?: string; profile?: ProfileData };
+  userB: { id: string; email: string; name?: string; profile?: ProfileData };
 }
 
 interface ProfileData {
@@ -36,15 +38,31 @@ interface ProfileData {
   skills?: string[];
   linkedinUrl?: string;
   bio?: string;
+  verificationScore?: number;
+  companyStage?: string;
+  fundName?: string;
+  raiseAmount?: string;
+  investmentRange?: string;
+  keyTractionPoints?: string;
+  yearsExperience?: number;
+  businessDescription?: string;
+  investmentThesis?: string;
 }
 
-type Tab = 'pending' | 'accepted';
+type Tab = 'pending' | 'accepted' | 'declined';
+type SortOption = 'score' | 'recent';
 
 interface FeedbackState {
   matchId: string;
   rating: number;
   text: string;
   action: 'ACCEPTED' | 'REJECTED';
+}
+
+interface MatchStats {
+  total: number;
+  pending: number;
+  accepted: number;
 }
 
 export default function MatchesPage() {
@@ -55,6 +73,9 @@ export default function MatchesPage() {
   const [me, setMe] = useState<any>(null);
   const [feedbackPrompt, setFeedbackPrompt] = useState<FeedbackState | null>(null);
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>('score');
+  const [expandedProfile, setExpandedProfile] = useState<string | null>(null);
+  const [matchStats, setMatchStats] = useState<MatchStats>({ total: 0, pending: 0, accepted: 0 });
   const toast = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
@@ -69,15 +90,17 @@ export default function MatchesPage() {
 
   const loadData = async () => {
     try {
-      const [matchesData, userData] = await Promise.all([
+      const [matchesData, userData, statsData] = await Promise.all([
         api.getMatches(),
         api.getMe(),
+        api.getMatchStats().catch(() => ({ total: 0, pending: 0, accepted: 0 })),
       ]);
       const matchArr = Array.isArray(matchesData) ? matchesData : [];
       setMatches(matchArr);
       setMe(userData);
-      const pending = matchArr.filter((m: any) => m.status === 'PENDING');
-      pending.forEach((m: any) => analytics.matchProposed(m.id));
+      setMatchStats(statsData);
+      const proposed = matchArr.filter((m: any) => m.status === 'PROPOSED');
+      proposed.forEach((m: any) => analytics.matchProposed(m.id));
     } catch (err: any) {
       console.error('Load failed:', err);
       if (err.message?.includes('Unauthorized')) router.push('/');
@@ -125,6 +148,10 @@ export default function MatchesPage() {
     }
   };
 
+  const handleMarkViewed = useCallback((matchId: string) => {
+    api.markMatchViewed(matchId).catch(() => {});
+  }, []);
+
   const getOtherUser = (match: MatchData) => {
     if (!me) return match.userB;
     return match.userAId === me.id ? match.userB : match.userA;
@@ -133,6 +160,11 @@ export default function MatchesPage() {
   const getMyResponse = (match: MatchData) => {
     if (!me) return 'PENDING';
     return match.userAId === me.id ? match.userAResponse : match.userBResponse;
+  };
+
+  const getOtherViewedAt = (match: MatchData) => {
+    if (!me) return null;
+    return match.userAId === me.id ? match.userBViewedAt : match.userAViewedAt;
   };
 
   const isPending = (match: MatchData) => {
@@ -155,13 +187,18 @@ export default function MatchesPage() {
     });
   };
 
-  const sortByScore = (list: MatchData[]) => [...list].sort((a, b) => (b.score || 0) - (a.score || 0));
-  const pendingMatches = sortByScore(filterBySearch(matches.filter(isPending)));
-  const acceptedMatches = sortByScore(filterBySearch(matches.filter((m) => m.status === 'ACCEPTED')));
-  const waitingMatches = sortByScore(filterBySearch(matches.filter((m) => {
+  const sortList = (list: MatchData[]) => {
+    if (sortBy === 'recent') return [...list].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return [...list].sort((a, b) => (b.score || 0) - (a.score || 0));
+  };
+
+  const pendingMatches = sortList(filterBySearch(matches.filter(isPending)));
+  const acceptedMatches = sortList(filterBySearch(matches.filter((m) => m.status === 'ACCEPTED')));
+  const waitingMatches = sortList(filterBySearch(matches.filter((m) => {
     const myResp = getMyResponse(m);
     return myResp === 'ACCEPTED' && m.status !== 'ACCEPTED' && m.status !== 'REJECTED';
   })));
+  const declinedMatches = sortList(filterBySearch(matches.filter((m) => m.status === 'REJECTED')));
 
   const personaIcon: Record<string, string> = {
     FOUNDER: '🚀', INVESTOR: '💰', TALENT: '🎯', DEAL_PARTNER: '🤝',
@@ -173,6 +210,11 @@ export default function MatchesPage() {
     FOUNDER: 'Founder', INVESTOR: 'Investor', TALENT: 'Talent', DEAL_PARTNER: 'Deal Partner',
     EVENT_PARTICIPANT: 'The Pitch by Deel', VENTURE_PARTNER: 'Venture Partner', ADVISOR: 'Advisor',
     OPERATOR: 'Operator', JOB_SEEKER: 'Job Seeker', RECRUITER: 'Recruiter', FREELANCER: 'Freelancer', OTHER: 'Other',
+  };
+
+  const formatStage = (stage?: string) => {
+    if (!stage) return null;
+    return stage.replace(/_/g, ' ').replace(/\b[a-z]/g, c => c.toUpperCase());
   };
 
   if (loading) {
@@ -264,12 +306,276 @@ export default function MatchesPage() {
     );
   };
 
+  const ConnectionStatusBadge = ({ match }: { match: MatchData }) => {
+    const myResp = getMyResponse(match);
+    const otherViewed = getOtherViewedAt(match);
+
+    if (match.status === 'ACCEPTED') {
+      return (
+        <div className="flex items-center gap-1.5 mt-2">
+          {[
+            { label: 'Sent', done: true },
+            { label: 'Viewed', done: true },
+            { label: 'Accepted', done: true },
+          ].map((step, i) => (
+            <div key={step.label} className="flex items-center gap-1">
+              {i > 0 && <div className="w-3 h-px" style={{ background: 'rgba(16,185,129,0.4)' }} />}
+              <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full"
+                style={{ background: 'rgba(16,185,129,0.12)', color: '#34D399' }}>
+                {step.label}
+              </span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (match.status === 'REJECTED') {
+      const declinedSteps = [
+        { label: 'Sent', done: true, declined: false },
+        { label: 'Viewed', done: !!otherViewed, declined: false },
+        { label: 'Declined', done: true, declined: true },
+      ];
+      return (
+        <div className="flex items-center gap-1.5 mt-2">
+          {declinedSteps.map((step, i) => (
+            <div key={step.label} className="flex items-center gap-1">
+              {i > 0 && <div className="w-3 h-px" style={{ background: step.declined ? 'rgba(239,68,68,0.3)' : 'rgba(59,130,246,0.4)' }} />}
+              <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full"
+                style={{
+                  background: step.declined ? 'rgba(239,68,68,0.12)' : step.done ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.04)',
+                  color: step.declined ? '#F87171' : step.done ? '#93C5FD' : 'rgba(255,255,255,0.25)',
+                }}>
+                {step.label}
+              </span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (myResp === 'ACCEPTED') {
+      const steps = [
+        { label: 'Sent', done: true },
+        { label: 'Viewed', done: !!otherViewed },
+        { label: 'Accepted', done: false },
+      ];
+      return (
+        <div className="flex items-center gap-1.5 mt-2">
+          {steps.map((step, i) => (
+            <div key={step.label} className="flex items-center gap-1">
+              {i > 0 && <div className="w-3 h-px" style={{ background: step.done ? 'rgba(59,130,246,0.4)' : 'rgba(255,255,255,0.08)' }} />}
+              <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full"
+                style={{
+                  background: step.done ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.04)',
+                  color: step.done ? '#93C5FD' : 'rgba(255,255,255,0.25)',
+                }}>
+                {step.label}
+              </span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    const pendingSteps = [
+      { label: 'Sent', done: true },
+      { label: 'Viewed', done: false },
+      { label: 'Pending', done: false },
+    ];
+    return (
+      <div className="flex items-center gap-1.5 mt-2">
+        {pendingSteps.map((step, i) => (
+          <div key={step.label} className="flex items-center gap-1">
+            {i > 0 && <div className="w-3 h-px" style={{ background: step.done ? 'rgba(59,130,246,0.4)' : 'rgba(255,255,255,0.08)' }} />}
+            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full"
+              style={{
+                background: step.done ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.04)',
+                color: step.done ? '#93C5FD' : 'rgba(255,255,255,0.25)',
+              }}>
+              {step.label}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const FullProfileModal = ({ match, onClose }: { match: MatchData; onClose: () => void }) => {
+    const other = getOtherUser(match);
+    const profile = other.profile;
+    const scorePercent = Math.round((match.score || 0) * 100);
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}
+        onClick={onClose}>
+        <div className="w-full max-w-lg mx-4 max-h-[85vh] overflow-y-auto rounded-2xl border border-white/10 fade-up"
+          style={{ background: 'rgba(10,10,26,0.95)' }}
+          onClick={(e) => e.stopPropagation()}>
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-semibold text-white">Full Profile</h2>
+              <button onClick={onClose} className="text-white/30 hover:text-white/60 transition text-xl">✕</button>
+            </div>
+
+            <div className="flex items-start gap-4 mb-5">
+              {profile?.avatarUrl ? (
+                <img src={profile.avatarUrl} alt={profile?.currentRole || 'Profile'} referrerPolicy="no-referrer"
+                  className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 border border-white/10" />
+              ) : (
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
+                  style={{ background: 'linear-gradient(135deg, #3B82F615, #8B5CF615)', border: '1px solid rgba(59,130,246,0.12)' }}>
+                  {personaIcon[profile?.persona || 'OTHER'] || '💬'}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-white text-base">
+                  {other.name || profile?.currentRole || other.email?.split('@')[0] || 'Unknown'}
+                </h3>
+                {profile?.headline && <p className="text-sm text-white/50 mt-0.5">{profile.headline}</p>}
+                {profile?.companyName && (
+                  <p className="text-xs text-white/40 mt-0.5">
+                    {profile.companyName}
+                    {profile.companyStage && ` · ${formatStage(profile.companyStage)}`}
+                  </p>
+                )}
+                {profile?.location && <p className="text-xs text-white/30 mt-0.5">📍 {profile.location}</p>}
+              </div>
+              <div className="flex-shrink-0">
+                <div className="relative">
+                  <CircularProgress value={scorePercent} size={52} strokeWidth={4} />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-xs font-bold" style={{ color: '#93C5FD' }}>{scorePercent}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {profile?.persona && (
+              <div className="mb-4">
+                <span className="inline-block px-2.5 py-1 rounded-full text-xs font-medium border"
+                  style={{ background: 'rgba(59,130,246,0.08)', borderColor: 'rgba(59,130,246,0.15)', color: '#93C5FD' }}>
+                  {personaLabel[profile.persona] || profile.persona}
+                </span>
+                {profile.verificationScore !== undefined && profile.verificationScore > 0 && (
+                  <span className="ml-2"><VerificationBadge score={profile.verificationScore} size="sm" showLabel={true} /></span>
+                )}
+              </div>
+            )}
+
+            {profile?.bio && (
+              <div className="mb-4">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-white/25 mb-1.5">About</p>
+                <p className="text-sm text-white/60 leading-relaxed">{profile.bio}</p>
+              </div>
+            )}
+
+            {profile?.businessDescription && (
+              <div className="mb-4">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-white/25 mb-1.5">Business</p>
+                <p className="text-sm text-white/60 leading-relaxed">{profile.businessDescription}</p>
+              </div>
+            )}
+
+            {profile?.investmentThesis && (
+              <div className="mb-4">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-white/25 mb-1.5">Investment Thesis</p>
+                <p className="text-sm text-white/60 leading-relaxed">{profile.investmentThesis}</p>
+              </div>
+            )}
+
+            {profile?.keyTractionPoints && (
+              <div className="mb-4">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-white/25 mb-1.5">Traction</p>
+                <p className="text-sm text-white/60 leading-relaxed">{profile.keyTractionPoints}</p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              {profile?.fundName && (
+                <div className="p-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <p className="text-[10px] text-white/25 mb-0.5">Fund</p>
+                  <p className="text-xs text-white/60">{profile.fundName}</p>
+                </div>
+              )}
+              {profile?.raiseAmount && (
+                <div className="p-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <p className="text-[10px] text-white/25 mb-0.5">Raising</p>
+                  <p className="text-xs text-white/60">{profile.raiseAmount}</p>
+                </div>
+              )}
+              {profile?.investmentRange && (
+                <div className="p-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <p className="text-[10px] text-white/25 mb-0.5">Check Size</p>
+                  <p className="text-xs text-white/60">{profile.investmentRange}</p>
+                </div>
+              )}
+              {profile?.yearsExperience && (
+                <div className="p-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <p className="text-[10px] text-white/25 mb-0.5">Experience</p>
+                  <p className="text-xs text-white/60">{profile.yearsExperience}+ years</p>
+                </div>
+              )}
+            </div>
+
+            {profile?.skills && profile.skills.length > 0 && (
+              <div className="mb-4">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-white/25 mb-1.5">Skills & Expertise</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {profile.skills.map((skill) => (
+                    <span key={skill} className="px-2 py-0.5 rounded-full text-[10px] border"
+                      style={{ background: 'rgba(139,92,246,0.06)', borderColor: 'rgba(139,92,246,0.12)', color: 'rgba(196,181,253,0.7)' }}>
+                      {skill.replace(/_/g, ' ').replace(/\b[a-z]/g, c => c.toUpperCase())}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {profile?.industries && profile.industries.length > 0 && (
+              <div className="mb-4">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-white/25 mb-1.5">Industries</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {profile.industries.map((ind) => (
+                    <span key={ind} className="px-2 py-0.5 rounded-full text-[10px] border"
+                      style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)' }}>
+                      {ind.replace(/_/g, ' ').replace(/\b(ai|ml|saas|b2b|b2c|iot|ar|vr|hr|it|ui|ux|api|ev|nft|defi|d2c)\b/gi, (m) => m.toUpperCase()).replace(/\b[a-z]/g, (c) => c.toUpperCase())}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {match.reason && (
+              <div className="p-3 rounded-xl" style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.08)' }}>
+                <p className="text-xs text-white/50 leading-relaxed">
+                  <span className="text-blue-300/70 font-medium">Why connect: </span>
+                  {match.reason}
+                </p>
+              </div>
+            )}
+
+            {match.scoreBreakdown && (
+              <ScoreBreakdown breakdown={match.scoreBreakdown} overallScore={match.score} />
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const MatchCard = ({ match, showActions }: { match: MatchData; showActions: boolean }) => {
     const other = getOtherUser(match);
     const profile = other.profile;
     const scorePercent = Math.round((match.score || 0) * 100);
     const isAccepted = match.status === 'ACCEPTED';
     const [showBreakdown, setShowBreakdown] = useState(false);
+
+    useEffect(() => {
+      if (showActions) {
+        handleMarkViewed(match.id);
+      }
+    }, [match.id, showActions]);
 
     return (
       <div className="rounded-2xl border border-white/5 overflow-hidden transition hover:border-blue-500/15"
@@ -288,16 +594,16 @@ export default function MatchesPage() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <h3 className="font-semibold text-white text-sm truncate">
-                  {profile?.currentRole || other.email.split('@')[0]}
+                  {other.name || profile?.currentRole || other.email?.split('@')[0] || 'Unknown'}
                 </h3>
-                {(profile as any)?.verificationScore > 0 && (
-                  <VerificationBadge score={(profile as any).verificationScore} size="sm" showLabel={true} />
+                {profile?.verificationScore !== undefined && profile.verificationScore > 0 && (
+                  <VerificationBadge score={profile.verificationScore} size="sm" showLabel={true} />
                 )}
                 <button
                   onClick={() => setShowBreakdown(!showBreakdown)}
                   className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold transition hover:opacity-80"
                   title="Click to see score breakdown"
-                  style={{ background: scorePercent >= 80 ? 'rgba(59,130,246,0.15)' : scorePercent >= 60 ? 'rgba(59,130,246,0.12)' : 'rgba(59,130,246,0.12)',
+                  style={{ background: scorePercent >= 80 ? 'rgba(59,130,246,0.15)' : 'rgba(59,130,246,0.12)',
                     color: scorePercent >= 80 ? '#93C5FD' : scorePercent >= 60 ? '#93C5FD' : '#94A3B8' }}>
                   {scorePercent}% · {scorePercent >= 80 ? 'Strong Match' : scorePercent >= 60 ? 'Good Fit' : 'Possible Fit'}
                   <svg className={`w-3 h-3 transition-transform ${showBreakdown ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
@@ -305,20 +611,42 @@ export default function MatchesPage() {
                   </svg>
                 </button>
               </div>
-              {profile?.companyName && (
-                <p className="text-xs text-white/40 mb-0.5">{profile.companyName}</p>
+              {profile?.headline && (
+                <p className="text-xs text-white/50 mb-0.5 truncate">{profile.headline}</p>
               )}
+              <div className="flex items-center gap-2 flex-wrap">
+                {profile?.companyName && (
+                  <p className="text-xs text-white/40">
+                    {profile.companyName}
+                    {profile.companyStage && ` · ${formatStage(profile.companyStage)}`}
+                  </p>
+                )}
+                {profile?.location && (
+                  <p className="text-[10px] text-white/25">📍 {profile.location}</p>
+                )}
+              </div>
               {profile?.persona && (
                 <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium border mt-1"
                   style={{ background: 'rgba(59,130,246,0.08)', borderColor: 'rgba(59,130,246,0.15)', color: '#93C5FD' }}>
                   {personaLabel[profile.persona] || profile.persona}
                 </span>
               )}
+              <ConnectionStatusBadge match={match} />
             </div>
           </div>
 
-          {profile?.headline && (
-            <p className="text-sm text-white/50 mt-3 line-clamp-2">{profile.headline}</p>
+          {profile?.skills && profile.skills.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-3">
+              {profile.skills.slice(0, 5).map((skill) => (
+                <span key={skill} className="px-1.5 py-0.5 rounded-full text-[9px] border"
+                  style={{ background: 'rgba(139,92,246,0.06)', borderColor: 'rgba(139,92,246,0.12)', color: 'rgba(196,181,253,0.6)' }}>
+                  {skill.replace(/_/g, ' ').replace(/\b[a-z]/g, c => c.toUpperCase())}
+                </span>
+              ))}
+              {profile.skills.length > 5 && (
+                <span className="text-[9px] text-white/20">+{profile.skills.length - 5}</span>
+              )}
+            </div>
           )}
 
           {showBreakdown && <ScoreBreakdown breakdown={match.scoreBreakdown} overallScore={match.score} />}
@@ -348,6 +676,13 @@ export default function MatchesPage() {
               )}
             </div>
           )}
+
+          <button
+            onClick={() => setExpandedProfile(match.id)}
+            className="mt-3 text-[11px] font-medium transition hover:opacity-80"
+            style={{ color: '#93C5FD' }}>
+            View Full Profile →
+          </button>
 
           {isAccepted && (
             <div className="mt-4 p-3 rounded-xl" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.12)' }}>
@@ -411,10 +746,19 @@ export default function MatchesPage() {
       <div className="max-w-5xl mx-auto px-6 lg:px-8 py-3 flex items-center justify-between">
           <h1 className="font-semibold text-white text-sm">Your Matches</h1>
           <div className="flex items-center gap-2 sm:gap-3">
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-white/60 border border-white/10 focus:border-blue-500/30 focus:outline-none transition appearance-none cursor-pointer"
+            style={{ background: 'rgba(10,10,26,0.8)' }}>
+            <option value="score">Best Match</option>
+            <option value="recent">Most Recent</option>
+          </select>
           <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: 'rgba(59,130,246,0.08)' }}>
             {[
-              { id: 'pending' as Tab, label: `Pending (${pendingMatches.length})` },
-              { id: 'accepted' as Tab, label: `Accepted (${acceptedMatches.length})` },
+              { id: 'pending' as Tab, label: `Pending (${matchStats.pending})` },
+              { id: 'accepted' as Tab, label: `Accepted (${matchStats.accepted})` },
+              { id: 'declined' as Tab, label: `Declined (${declinedMatches.length})` },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -517,7 +861,35 @@ export default function MatchesPage() {
             )}
           </div>
         )}
+
+        {activeTab === 'declined' && (
+          <div className="space-y-4">
+            {declinedMatches.length === 0 ? (
+              <div className="text-center py-16">
+                <span className="text-5xl block mb-4">📋</span>
+                <h3 className="text-white font-semibold mb-2">No declined matches</h3>
+                <p className="text-white/40 text-sm">Matches that were passed on will appear here</p>
+              </div>
+            ) : (
+              <>
+                <p className="text-xs font-medium uppercase tracking-wider text-white/30 mb-3">
+                  {declinedMatches.length} declined match{declinedMatches.length !== 1 ? 'es' : ''}
+                </p>
+                {declinedMatches.map((match) => (
+                  <MatchCard key={match.id} match={match} showActions={false} />
+                ))}
+              </>
+            )}
+          </div>
+        )}
       </div>
+
+      {expandedProfile && matches.find(m => m.id === expandedProfile) && (
+        <FullProfileModal
+          match={matches.find(m => m.id === expandedProfile)!}
+          onClose={() => setExpandedProfile(null)}
+        />
+      )}
 
       {feedbackPrompt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>

@@ -256,52 +256,51 @@ export class MatchingService {
   }
 
   async getMatchesForUser(userId: string) {
+    const profileSelect = {
+      persona: true,
+      headline: true,
+      companyName: true,
+      currentRole: true,
+      location: true,
+      industries: true,
+      skills: true,
+      linkedinUrl: true,
+      bio: true,
+      avatarUrl: true,
+      verificationScore: true,
+      companyStage: true,
+      fundName: true,
+      raiseAmount: true,
+      investmentRange: true,
+      keyTractionPoints: true,
+      yearsExperience: true,
+      businessDescription: true,
+      investmentThesis: true,
+    } as const;
+
     const matches = await prisma.match.findMany({
       where: {
         OR: [{ userAId: userId }, { userBId: userId }],
-        status: { not: 'REJECTED' },
       },
       include: {
         userA: {
           select: {
             id: true,
             email: true,
-            profile: {
-              select: {
-                persona: true,
-                headline: true,
-                companyName: true,
-                currentRole: true,
-                location: true,
-                industries: true,
-                skills: true,
-                linkedinUrl: true,
-                bio: true,
-              },
-            },
+            name: true,
+            profile: { select: profileSelect },
           },
         },
         userB: {
           select: {
             id: true,
             email: true,
-            profile: {
-              select: {
-                persona: true,
-                headline: true,
-                companyName: true,
-                currentRole: true,
-                location: true,
-                industries: true,
-                skills: true,
-                linkedinUrl: true,
-                bio: true,
-              },
-            },
+            name: true,
+            profile: { select: profileSelect },
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { score: 'desc' },
     });
 
     return matches.map((m) => {
@@ -317,6 +316,23 @@ export class MatchingService {
       }
       return m;
     });
+  }
+
+  async markMatchViewed(matchId: string, userId: string) {
+    const match = await prisma.match.findUnique({ where: { id: matchId } });
+    if (!match) throw new AppError(404, 'Match not found');
+
+    const isUserA = match.userAId === userId;
+    const isUserB = match.userBId === userId;
+    if (!isUserA && !isUserB) throw new AppError(403, 'Not part of this match');
+
+    if (isUserA && !match.userAViewedAt) {
+      return prisma.match.update({ where: { id: matchId }, data: { userAViewedAt: new Date() } });
+    }
+    if (isUserB && !match.userBViewedAt) {
+      return prisma.match.update({ where: { id: matchId }, data: { userBViewedAt: new Date() } });
+    }
+    return match;
   }
 
   async getMatchStats(userId: string) {
@@ -542,7 +558,14 @@ export class MatchingService {
           role: 'system',
           content: `You are Cleya, an AI superconnector. Write a warm referral — like a mutual friend texting someone about a person they should meet. Start with a phrase like "thought of someone for you" or "okay so i know someone you'd want to meet" or "had to connect you two."
 
-Write 2-3 sentences max. Be specific: mention actual roles, companies, what they're building/investing in, traction, and why it matters to THIS person specifically. Use casual, lowercase tone. Never be generic. Never say "complementary backgrounds" or "synergy." Make it feel personal, not algorithmic.
+Write 2-3 sentences max. Use casual, lowercase tone. Make it feel personal, not algorithmic.
+
+Rules:
+- Reference SPECIFIC details: actual role titles, company names, traction numbers, fund names, check sizes, sectors, and locations.
+- Explain the concrete value exchange: what each person gets from the connection (deal flow, fundraising, hiring, domain expertise, market access).
+- If traction data exists, mention it ("they're at $X MRR", "growing Y% MoM", "raised $Z").
+- Never use generic phrases like "complementary backgrounds", "synergy", "mutual benefit", or "valuable connection".
+- Never start with "Both" — lead with the most compelling detail about one person, then bridge to the other.
 
 You have structured compatibility data — weave in specific details (sector overlap, check size fit, traction numbers, shared geography) naturally.`,
         },
