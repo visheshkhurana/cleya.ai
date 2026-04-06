@@ -1,4 +1,4 @@
-import { prisma } from '@cleya/db';
+import { prisma, Prisma } from '@cleya/db';
 import { gupshupService } from './gupshupService';
 import { conversationService } from './conversationService';
 import { matchingService } from './matchingService';
@@ -255,7 +255,7 @@ export class WhatsAppBotService {
               context: {
                 ...currentCtx,
                 [`_wa_form_field_idx_${responseNode.id}`]: 0,
-              },
+              } as Prisma.InputJsonValue,
             },
           });
         }
@@ -307,7 +307,7 @@ export class WhatsAppBotService {
       await prisma.conversation.update({
         where: { id: conversationId },
         data: {
-          context: { ...context, ...formData, [waFormKey]: nextIdx },
+          context: { ...context, ...formData, [waFormKey]: nextIdx } as Prisma.InputJsonValue,
         },
       });
 
@@ -330,7 +330,7 @@ export class WhatsAppBotService {
 
       await prisma.conversation.update({
         where: { id: conversationId },
-        data: { context: cleanedContext },
+        data: { context: cleanedContext as Prisma.InputJsonValue },
       });
 
       return { formData: allFormData };

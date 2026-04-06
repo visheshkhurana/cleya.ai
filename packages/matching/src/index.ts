@@ -26,6 +26,7 @@ export interface ProfileForMatching {
   industryFocus?: string[];
   investmentThesis?: string;
   fundName?: string;
+  companyName?: string;
   businessDescription?: string;
   investmentRange?: string;
   portfolioCompanies?: PortfolioCompany[];
@@ -38,7 +39,6 @@ export interface ProfileForMatching {
   tractionMetrics?: TractionMetrics;
   enrichedData?: EnrichedProfileData;
   keyTractionPoints?: string;
-  companyName?: string;
 }
 
 export interface PortfolioCompany {
