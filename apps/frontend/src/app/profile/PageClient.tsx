@@ -267,7 +267,7 @@ export default function ProfilePage() {
           </div>
           {getMissingFields().length > 0 && (
             <p className="text-[11px] mt-2" style={{ color: '#94A3B8' }}>
-              Missing: {getMissingFields().join(', ')}
+              Add {getMissingFields().join(', ')} to reach 100%
             </p>
           )}
         </div>
