@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import PhoneInput from '@/components/PhoneInput';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid } from 'recharts';
+import { AgentsManagement } from '@/components/admin/AgentsManagement';
 
 interface Stats {
   totalUsers: number;
@@ -1681,115 +1682,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {activeTab === 'agents' && (
-        <div className="flex gap-4" style={{ height: 'calc(100vh - 180px)' }}>
-          {/* Agent sidebar */}
-          <div className="w-64 flex-shrink-0 space-y-2">
-            <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wider px-2 mb-2">AI Agents</p>
-            {agentList.map((a) => {
-              const isActive = selectedAgent === a.id;
-              const colorMap: Record<string, string> = { indigo: 'border-indigo-500/30', emerald: 'border-emerald-500/30', amber: 'border-amber-500/30', rose: 'border-rose-500/30' };
-              const textMap: Record<string, string> = { indigo: 'text-indigo-400', emerald: 'text-emerald-400', amber: 'text-amber-400', rose: 'text-rose-400' };
-              return (
-                <button
-                  key={a.id}
-                  onClick={() => setSelectedAgent(a.id)}
-                  className={`w-full text-left px-3 py-2.5 rounded-xl border transition-all ${
-                    isActive ? `${colorMap[a.color] || 'border-blue-500/30'} bg-blue-900/20` : 'border-transparent hover:bg-blue-900/10'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{a.emoji}</span>
-                    <div>
-                      <span className="text-sm font-medium text-white">{a.name}</span>
-                      <span className={`text-[10px] ml-1.5 font-mono ${textMap[a.color] || 'text-blue-400'}`}>{a.role}</span>
-                    </div>
-                  </div>
-                  <p className="text-[10px] text-slate-500 mt-0.5 ml-7">{a.description}</p>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Chat area */}
-          <div className="flex-1 flex flex-col rounded-xl border border-blue-500/10 overflow-hidden" style={{ background: 'rgba(10,10,26,0.6)' }}>
-            {selectedAgent ? (
-              <>
-                {/* Chat header */}
-                <div className="px-4 py-3 border-b border-blue-500/10 flex items-center gap-2">
-                  <span className="text-xl">{agentList.find((a) => a.id === selectedAgent)?.emoji}</span>
-                  <span className="text-sm font-semibold text-white">{agentList.find((a) => a.id === selectedAgent)?.name}</span>
-                  <span className="text-[10px] text-blue-300/40 font-mono">{agentList.find((a) => a.id === selectedAgent)?.role}</span>
-                  <div className="ml-auto flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-[10px] text-slate-500">Online</span>
-                  </div>
-                </div>
-
-                {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                  {(!agentMessages[selectedAgent] || agentMessages[selectedAgent].length === 0) && (
-                    <div className="text-center text-slate-500 text-sm mt-16">
-                      <span className="text-3xl block mb-2">{agentList.find((a) => a.id === selectedAgent)?.emoji}</span>
-                      <p>Start a conversation with {agentList.find((a) => a.id === selectedAgent)?.name}</p>
-                    </div>
-                  )}
-                  {(agentMessages[selectedAgent] || []).map((msg, i) => (
-                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[80%] rounded-xl px-4 py-2.5 text-sm whitespace-pre-wrap ${
-                        msg.role === 'user'
-                          ? 'bg-blue-600 text-white'
-                          : 'border border-blue-500/10 text-slate-200'
-                      }`} style={msg.role === 'assistant' ? { background: 'rgba(10,10,26,0.8)' } : {}}>
-                        {msg.content}
-                      </div>
-                    </div>
-                  ))}
-                  {agentLoading && (
-                    <div className="flex justify-start">
-                      <div className="border border-blue-500/10 rounded-xl px-4 py-2.5 text-sm text-slate-500" style={{ background: 'rgba(10,10,26,0.8)' }}>
-                        <span className="inline-flex gap-1">
-                          <span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                          <span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                          <span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Input */}
-                <div className="p-3 border-t border-blue-500/10">
-                  <div className="flex gap-2">
-                    <input
-                      value={agentInput}
-                      onChange={(e) => setAgentInput(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAgentMsg(); } }}
-                      placeholder={`Message ${agentList.find((a) => a.id === selectedAgent)?.name}...`}
-                      className="flex-1 bg-transparent border border-blue-500/20 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500/40"
-                      disabled={agentLoading}
-                    />
-                    <button
-                      onClick={sendAgentMsg}
-                      disabled={agentLoading || !agentInput.trim()}
-                      className="bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white rounded-lg px-4 py-2.5 text-sm font-medium transition"
-                    >
-                      Send
-                    </button>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center">
-                  <span className="text-4xl block mb-3">🤖</span>
-                  <p className="text-sm text-slate-400">Select an agent to start chatting</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+          {activeTab === 'agents' && <AgentsManagement />}
 
       {triggerModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
