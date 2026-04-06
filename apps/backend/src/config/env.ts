@@ -57,6 +57,13 @@ const envSchema = z.object({
 
   SENTRY_DSN: z.string().optional(),
   POSTHOG_KEY: z.string().optional(),
+
+  GA4_PROPERTY_ID: z.string().optional(),
+  GA4_SERVICE_ACCOUNT_KEY: z.string().optional(),
+  INSTAGRAM_ACCESS_TOKEN: z.string().optional(),
+  INSTAGRAM_BUSINESS_ACCOUNT_ID: z.string().optional(),
+  POSTHOG_API_KEY: z.string().optional(),
+  POSTHOG_HOST: z.string().optional(),
 });
 
 function validateEnv() {

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import PhoneInput from '@/components/PhoneInput';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid } from 'recharts';
 
 interface Stats {
   totalUsers: number;
@@ -69,6 +70,15 @@ export default function AdminDashboard() {
   const [newEvent, setNewEvent] = useState({ name: '', description: '', date: '', location: '', isVirtual: false, maxCapacity: '' });
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [digestLoading, setDigestLoading] = useState(false);
+  const [analyticsRange, setAnalyticsRange] = useState<'7d' | '30d' | '90d'>('30d');
+  const [ga4Data, setGa4Data] = useState<any>(null);
+  const [instagramData, setInstagramData] = useState<any>(null);
+  const [posthogData, setPosthogData] = useState<any>(null);
+  const [ga4Loading, setGa4Loading] = useState(false);
+  const [instagramLoading, setInstagramLoading] = useState(false);
+  const [posthogLoading, setPosthogLoading] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+  const [funnelData, setFunnelData] = useState<{ stage: string; count: number }[] | null>(null);
   const [whatsappData, setWhatsappData] = useState<any>(null);
   const [whatsappUsers, setWhatsappUsers] = useState<any[] | null>(null);
   const [waSubTab, setWaSubTab] = useState<'activity' | 'users'>('activity');
@@ -161,13 +171,69 @@ export default function AdminDashboard() {
     }
   };
 
-  const loadAnalytics = async () => {
+  const loadAnalytics = async (range?: '7d' | '30d' | '90d') => {
+    const r = range || analyticsRange;
     try {
-      const data = await api.getAdminAnalytics();
+      const data = await api.getAdminAnalytics(r);
       setAnalyticsData(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to load analytics:', err);
     }
+    loadGA4(r);
+    loadInstagram(r);
+    loadPostHog(r);
+    loadFunnel();
+  };
+
+  const loadFunnel = async () => {
+    try {
+      const data = await api.getAdminFunnel();
+      if (data?.funnel) setFunnelData(data.funnel);
+    } catch {
+      // funnel data optional
+    }
+  };
+
+  const loadGA4 = async (range: string = analyticsRange) => {
+    setGa4Loading(true);
+    try {
+      const data = await api.getAdminAnalyticsGA4(range);
+      setGa4Data(data);
+    } catch (err: any) {
+      setGa4Data({ configured: false, data: null });
+    }
+    setGa4Loading(false);
+  };
+
+  const loadInstagram = async (range: string = analyticsRange) => {
+    setInstagramLoading(true);
+    try {
+      const data = await api.getAdminAnalyticsInstagram(range);
+      setInstagramData(data);
+    } catch (err: any) {
+      setInstagramData({ configured: false, data: null });
+    }
+    setInstagramLoading(false);
+  };
+
+  const loadPostHog = async (range: string = analyticsRange) => {
+    setPosthogLoading(true);
+    try {
+      const data = await api.getAdminAnalyticsPostHog(range);
+      setPosthogData(data);
+    } catch (err: any) {
+      setPosthogData({ configured: false, data: null });
+    }
+    setPosthogLoading(false);
+  };
+
+  const toggleSection = (key: string) => {
+    setCollapsedSections(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleRangeChange = (range: '7d' | '30d' | '90d') => {
+    setAnalyticsRange(range);
+    loadAnalytics(range);
   };
 
   const loadWhatsApp = async () => {
@@ -954,200 +1020,526 @@ export default function AdminDashboard() {
 
       {activeTab === 'analytics' && (
         <div className="space-y-6">
-          {!analyticsData ? (
-            <div className="text-center py-12 text-blue-300/40">Loading analytics...</div>
-          ) : (
-            <>
-              <div className="flex items-center justify-between">
-                <h2 className="text-white text-lg font-semibold">Platform Analytics</h2>
-                <button onClick={handleSendDigest} disabled={digestLoading}
-                  className="px-4 py-2 rounded-xl text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 transition disabled:opacity-40">
-                  {digestLoading ? 'Sending...' : '📧 Send Weekly Digest'}
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                  { label: 'Total Users', value: analyticsData.totalUsers, icon: '👥', color: '#93C5FD' },
-                  { label: 'Complete Profiles', value: analyticsData.completedProfiles, icon: '✅', color: '#6ee7b7' },
-                  { label: 'Onboarding Rate', value: `${analyticsData.onboardingRate}%`, icon: '📈', color: '#fbbf24' },
-                  { label: 'Signups (7d)', value: analyticsData.recentSignups, icon: '🆕', color: '#60a5fa' },
-                  { label: 'Total Matches', value: analyticsData.totalMatches, icon: '🎯', color: '#93C5FD' },
-                  { label: 'Accepted', value: analyticsData.acceptedMatches, icon: '✅', color: '#6ee7b7' },
-                  { label: 'Accept Rate', value: `${analyticsData.matchAcceptRate}%`, icon: '📊', color: '#fbbf24' },
-                  { label: 'Avg Score', value: `${analyticsData.avgMatchScore}%`, icon: '⭐', color: '#f472b6' },
-                ].map((s, i) => (
-                  <div key={i} className="rounded-xl border border-blue-500/10 p-4" style={{ background: 'rgba(10,10,26,0.8)' }}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-lg">{s.icon}</span>
-                      <span className="text-xs text-blue-300/40 uppercase font-medium">{s.label}</span>
-                    </div>
-                    <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
-                  </div>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <h2 className="text-white text-lg font-semibold">Analytics Dashboard</h2>
+            <div className="flex items-center gap-3">
+              <div className="flex rounded-lg border border-blue-500/20 overflow-hidden">
+                {(['7d', '30d', '90d'] as const).map(r => (
+                  <button key={r} onClick={() => handleRangeChange(r)}
+                    className={`px-3 py-1.5 text-xs font-medium transition ${analyticsRange === r ? 'bg-blue-600 text-white' : 'text-blue-300/50 hover:text-blue-200'}`}>
+                    {r === '7d' ? '7 Days' : r === '30d' ? '30 Days' : '90 Days'}
+                  </button>
                 ))}
               </div>
+              <button onClick={handleSendDigest} disabled={digestLoading}
+                className="px-4 py-1.5 rounded-lg text-xs font-medium bg-blue-600 text-white hover:bg-blue-500 transition disabled:opacity-40">
+                {digestLoading ? 'Sending...' : 'Send Digest'}
+              </button>
+            </div>
+          </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="rounded-xl border border-blue-500/10 p-5" style={{ background: 'rgba(10,10,26,0.8)' }}>
-                  <h3 className="text-white text-sm font-semibold mb-4">📊 Daily Signups (7 days)</h3>
-                  <div className="flex items-end gap-2 h-32">
-                    {analyticsData.dailySignups?.map((d: any, i: number) => {
-                      const max = Math.max(...analyticsData.dailySignups.map((x: any) => x.count), 1);
-                      const height = (d.count / max) * 100;
-                      return (
-                        <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                          <span className="text-xs text-blue-300/40">{d.count}</span>
-                          <div className="w-full rounded-t-md" style={{
-                            height: `${Math.max(height, 4)}%`,
-                            background: 'linear-gradient(180deg, #3B82F6, #8B5CF6)',
-                            minHeight: '4px',
-                          }} />
-                          <span className="text-[10px] text-blue-300/30">{d.date.slice(5)}</span>
-                        </div>
-                      );
-                    })}
+          {/* Website Traffic - GA4 */}
+          <div className="rounded-xl border border-blue-500/10 overflow-hidden" style={{ background: 'rgba(10,10,26,0.8)' }}>
+            <button onClick={() => toggleSection('ga4')} className="w-full flex items-center justify-between p-5 hover:bg-blue-500/5 transition">
+              <div className="flex items-center gap-3">
+                <span className="text-lg">🌐</span>
+                <h3 className="text-white text-sm font-semibold">Website Traffic</h3>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300/50">GA4</span>
+              </div>
+              <span className="text-blue-300/30 text-sm">{collapsedSections['ga4'] ? '▶' : '▼'}</span>
+            </button>
+            {!collapsedSections['ga4'] && (
+              <div className="px-5 pb-5 space-y-4">
+                {ga4Loading ? (
+                  <div className="text-center py-8 text-blue-300/40 text-sm">Loading GA4 data...</div>
+                ) : !ga4Data?.configured ? (
+                  <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-4">
+                    <p className="text-yellow-300/80 text-sm font-medium mb-1">Not Configured</p>
+                    <p className="text-yellow-300/50 text-xs">Set <code className="bg-yellow-500/10 px-1 rounded">GA4_PROPERTY_ID</code> and <code className="bg-yellow-500/10 px-1 rounded">GA4_SERVICE_ACCOUNT_KEY</code> environment variables to enable Google Analytics data.</p>
                   </div>
-                </div>
-
-                <div className="rounded-xl border border-blue-500/10 p-5" style={{ background: 'rgba(10,10,26,0.8)' }}>
-                  <h3 className="text-white text-sm font-semibold mb-4">🎭 Personas</h3>
-                  <div className="space-y-2">
-                    {analyticsData.personaBreakdown?.map((p: any, i: number) => {
-                      const total = analyticsData.personaBreakdown.reduce((s: number, x: any) => s + x.count, 0);
-                      const pct = total > 0 ? Math.round((p.count / total) * 100) : 0;
-                      return (
-                        <div key={i}>
-                          <div className="flex justify-between text-xs mb-1">
-                            <span className="text-blue-200/60">{p.persona}</span>
-                            <span className="text-blue-300/40">{p.count} ({pct}%)</span>
-                          </div>
-                          <div className="h-2 rounded-full bg-blue-900/30">
-                            <div className="h-full rounded-full" style={{
-                              width: `${pct}%`,
-                              background: 'linear-gradient(90deg, #3B82F6, #93C5FD)',
-                            }} />
-                          </div>
+                ) : ga4Data?.data ? (
+                  <>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {[
+                        { label: 'Pageviews', value: ga4Data.data.pageviews?.toLocaleString(), color: '#93C5FD' },
+                        { label: 'Sessions', value: ga4Data.data.sessions?.toLocaleString(), color: '#6ee7b7' },
+                        { label: 'Active Users', value: ga4Data.data.activeUsers?.toLocaleString(), color: '#fbbf24' },
+                        { label: 'Bounce Rate', value: `${ga4Data.data.bounceRate}%`, color: '#f472b6' },
+                      ].map((s, i) => (
+                        <div key={i} className="rounded-lg border border-blue-500/10 p-3" style={{ background: 'rgba(59,130,246,0.03)' }}>
+                          <p className="text-[10px] text-blue-300/40 uppercase font-medium mb-1">{s.label}</p>
+                          <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
                         </div>
-                      );
-                    })}
-                    {(!analyticsData.personaBreakdown || analyticsData.personaBreakdown.length === 0) && (
-                      <p className="text-blue-300/30 text-xs">No persona data yet</p>
+                      ))}
+                    </div>
+                    {ga4Data.data.dailyTrend?.length > 0 && (
+                      <div>
+                        <p className="text-xs text-blue-300/40 mb-2">Daily Pageviews</p>
+                        <ResponsiveContainer width="100%" height={120}>
+                          <AreaChart data={ga4Data.data.dailyTrend}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(59,130,246,0.1)" />
+                            <XAxis dataKey="date" tick={{ fontSize: 9, fill: 'rgba(147,197,253,0.3)' }} tickFormatter={(v: string) => v.slice(5)} />
+                            <YAxis tick={{ fontSize: 9, fill: 'rgba(147,197,253,0.3)' }} width={30} />
+                            <Tooltip contentStyle={{ background: 'rgba(10,10,26,0.95)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 8, fontSize: 11, color: '#fff' }} />
+                            <Area type="monotone" dataKey="pageviews" stroke="#3B82F6" fill="rgba(59,130,246,0.2)" strokeWidth={2} />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
                     )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-blue-500/10 p-5" style={{ background: 'rgba(10,10,26,0.8)' }}>
-                <h3 className="text-white text-sm font-semibold mb-4">📣 Channel Attribution</h3>
-                <div className="space-y-2">
-                  {analyticsData.attributionBreakdown?.map((a: any, i: number) => {
-                    const total = analyticsData.attributionBreakdown.reduce((s: number, x: any) => s + x.count, 0);
-                    const pct = total > 0 ? Math.round((a.count / total) * 100) : 0;
-                    const sourceLabels: Record<string, string> = {
-                      linkedin: 'LinkedIn', twitter: 'Twitter / X', whatsapp_group: 'WhatsApp Group',
-                      friend_referral: 'Friend Referral', event_the_pitch: 'Event (The Pitch)',
-                      angel_network: 'Angel Network', vc_newsletter: 'VC Newsletter',
-                      google_search: 'Google Search', referral: 'Referral', email: 'Email',
-                      event: 'Event', other: 'Other',
-                    };
-                    return (
-                      <div key={i}>
-                        <div className="flex justify-between text-xs mb-1">
-                          <span className="text-blue-200/60">{sourceLabels[a.source] || a.source}</span>
-                          <span className="text-blue-300/40">{a.count} ({pct}%)</span>
-                        </div>
-                        <div className="h-2 rounded-full bg-blue-900/30">
-                          <div className="h-full rounded-full" style={{
-                            width: `${pct}%`,
-                            background: 'linear-gradient(90deg, #14B8A6, #93C5FD)',
-                          }} />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <p className="text-xs text-blue-300/40 mb-2">Top Pages</p>
+                        <div className="space-y-1.5">
+                          {ga4Data.data.topPages?.slice(0, 5).map((p: any, i: number) => (
+                            <div key={i} className="flex justify-between text-xs">
+                              <span className="text-blue-200/60 truncate mr-2">{p.page}</span>
+                              <span className="text-blue-300/40 flex-shrink-0">{p.views?.toLocaleString()}</span>
+                            </div>
+                          ))}
+                          {(!ga4Data.data.topPages || ga4Data.data.topPages.length === 0) && <p className="text-blue-300/30 text-xs">No data</p>}
                         </div>
                       </div>
-                    );
-                  })}
-                  {(!analyticsData.attributionBreakdown || analyticsData.attributionBreakdown.length === 0) && (
-                    <p className="text-blue-300/30 text-xs">No attribution data yet</p>
-                  )}
-                </div>
+                      <div>
+                        <p className="text-xs text-blue-300/40 mb-2">Traffic Sources</p>
+                        <div className="space-y-1.5">
+                          {ga4Data.data.trafficSources?.slice(0, 5).map((s: any, i: number) => (
+                            <div key={i} className="flex justify-between text-xs">
+                              <span className="text-blue-200/60 truncate mr-2">{s.source}</span>
+                              <span className="text-blue-300/40 flex-shrink-0">{s.sessions?.toLocaleString()}</span>
+                            </div>
+                          ))}
+                          {(!ga4Data.data.trafficSources || ga4Data.data.trafficSources.length === 0) && <p className="text-blue-300/30 text-xs">No data</p>}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs text-blue-300/40 mb-2">Top Countries</p>
+                        <div className="space-y-1.5">
+                          {ga4Data.data.geoBreakdown?.slice(0, 5).map((g: any, i: number) => (
+                            <div key={i} className="flex justify-between text-xs">
+                              <span className="text-blue-200/60 truncate mr-2">{g.country}</span>
+                              <span className="text-blue-300/40 flex-shrink-0">{g.users?.toLocaleString()}</span>
+                            </div>
+                          ))}
+                          {(!ga4Data.data.geoBreakdown || ga4Data.data.geoBreakdown.length === 0) && <p className="text-blue-300/30 text-xs">No data</p>}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-6 text-blue-300/30 text-xs">Failed to load GA4 data. Check your credentials.</div>
+                )}
               </div>
+            )}
+          </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="rounded-xl border border-blue-500/10 p-5" style={{ background: 'rgba(10,10,26,0.8)' }}>
-                  <h3 className="text-white text-sm font-semibold mb-4">⭐ Feedback</h3>
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="text-center">
-                      <p className="text-3xl font-bold text-yellow-400">{analyticsData.feedbackStats?.avgRating || 0}</p>
-                      <p className="text-xs text-blue-300/40">Avg Rating</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-3xl font-bold text-blue-400">{analyticsData.feedbackStats?.total || 0}</p>
-                      <p className="text-xs text-blue-300/40">Total Reviews</p>
-                    </div>
+          {/* Instagram */}
+          <div className="rounded-xl border border-purple-500/10 overflow-hidden" style={{ background: 'rgba(10,10,26,0.8)' }}>
+            <button onClick={() => toggleSection('instagram')} className="w-full flex items-center justify-between p-5 hover:bg-purple-500/5 transition">
+              <div className="flex items-center gap-3">
+                <span className="text-lg">📸</span>
+                <h3 className="text-white text-sm font-semibold">Instagram</h3>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300/50">Graph API</span>
+              </div>
+              <span className="text-blue-300/30 text-sm">{collapsedSections['instagram'] ? '▶' : '▼'}</span>
+            </button>
+            {!collapsedSections['instagram'] && (
+              <div className="px-5 pb-5 space-y-4">
+                {instagramLoading ? (
+                  <div className="text-center py-8 text-blue-300/40 text-sm">Loading Instagram data...</div>
+                ) : !instagramData?.configured ? (
+                  <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-4">
+                    <p className="text-yellow-300/80 text-sm font-medium mb-1">Not Configured</p>
+                    <p className="text-yellow-300/50 text-xs">Set <code className="bg-yellow-500/10 px-1 rounded">INSTAGRAM_ACCESS_TOKEN</code> and <code className="bg-yellow-500/10 px-1 rounded">INSTAGRAM_BUSINESS_ACCOUNT_ID</code> environment variables to enable Instagram data.</p>
                   </div>
-                  <div className="space-y-1">
-                    {[5, 4, 3, 2, 1].map(r => {
-                      const count = analyticsData.feedbackStats?.distribution?.find((d: any) => d.rating === r)?.count || 0;
-                      const total = analyticsData.feedbackStats?.total || 1;
-                      return (
-                        <div key={r} className="flex items-center gap-2">
-                          <span className="text-xs text-yellow-400 w-6">{r}★</span>
-                          <div className="flex-1 h-2 rounded-full bg-blue-900/30">
-                            <div className="h-full rounded-full bg-yellow-400/60" style={{ width: `${(count / total) * 100}%` }} />
+                ) : instagramData?.data ? (
+                  <>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                      {[
+                        { label: 'Followers', value: instagramData.data.accountInfo?.followersCount?.toLocaleString(), color: '#c084fc' },
+                        { label: 'Follower Growth', value: instagramData.data.followerGrowth > 0 ? `+${instagramData.data.followerGrowth}` : String(instagramData.data.followerGrowth), color: instagramData.data.followerGrowth >= 0 ? '#6ee7b7' : '#f87171' },
+                        { label: 'Reach', value: instagramData.data.postReach?.toLocaleString(), color: '#93C5FD' },
+                        { label: 'Impressions', value: instagramData.data.impressions?.toLocaleString(), color: '#fbbf24' },
+                        { label: 'Engagement', value: `${instagramData.data.engagementRate}%`, color: '#f472b6' },
+                      ].map((s, i) => (
+                        <div key={i} className="rounded-lg border border-purple-500/10 p-3" style={{ background: 'rgba(139,92,246,0.03)' }}>
+                          <p className="text-[10px] text-purple-300/40 uppercase font-medium mb-1">{s.label}</p>
+                          <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                    {instagramData.data.topPosts?.length > 0 && (
+                      <div>
+                        <p className="text-xs text-purple-300/40 mb-2">Top Posts</p>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                          {instagramData.data.topPosts.map((post: any, i: number) => (
+                            <div key={i} className="rounded-lg border border-purple-500/10 p-3" style={{ background: 'rgba(139,92,246,0.03)' }}>
+                              <p className="text-xs text-white/70 truncate mb-2">{post.caption || 'No caption'}</p>
+                              <div className="flex items-center gap-3 text-xs">
+                                <span className="text-pink-400">❤ {post.likeCount}</span>
+                                <span className="text-blue-400">💬 {post.commentsCount}</span>
+                              </div>
+                              <p className="text-[10px] text-purple-300/20 mt-1">{post.timestamp ? new Date(post.timestamp).toLocaleDateString() : ''}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {(instagramData.data.audienceDemographics?.countries?.length > 0 || instagramData.data.audienceDemographics?.cities?.length > 0) && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {instagramData.data.audienceDemographics.countries?.length > 0 && (
+                          <div>
+                            <p className="text-xs text-purple-300/40 mb-2">Audience Countries</p>
+                            <div className="space-y-1.5">
+                              {instagramData.data.audienceDemographics.countries.slice(0, 5).map((c: any, i: number) => (
+                                <div key={i} className="flex justify-between text-xs">
+                                  <span className="text-purple-200/60">{c.name}</span>
+                                  <span className="text-purple-300/40">{c.value}</span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                          <span className="text-xs text-blue-300/40 w-6 text-right">{count}</span>
+                        )}
+                        {instagramData.data.audienceDemographics.cities?.length > 0 && (
+                          <div>
+                            <p className="text-xs text-purple-300/40 mb-2">Audience Cities</p>
+                            <div className="space-y-1.5">
+                              {instagramData.data.audienceDemographics.cities.slice(0, 5).map((c: any, i: number) => (
+                                <div key={i} className="flex justify-between text-xs">
+                                  <span className="text-purple-200/60">{c.name}</span>
+                                  <span className="text-purple-300/40">{c.value}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-6 text-blue-300/30 text-xs">Failed to load Instagram data. Check your credentials.</div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Product Analytics - PostHog */}
+          <div className="rounded-xl border border-green-500/10 overflow-hidden" style={{ background: 'rgba(10,10,26,0.8)' }}>
+            <button onClick={() => toggleSection('posthog')} className="w-full flex items-center justify-between p-5 hover:bg-green-500/5 transition">
+              <div className="flex items-center gap-3">
+                <span className="text-lg">📊</span>
+                <h3 className="text-white text-sm font-semibold">Product Analytics</h3>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-300/50">PostHog</span>
+              </div>
+              <span className="text-blue-300/30 text-sm">{collapsedSections['posthog'] ? '▶' : '▼'}</span>
+            </button>
+            {!collapsedSections['posthog'] && (
+              <div className="px-5 pb-5 space-y-4">
+                {posthogLoading ? (
+                  <div className="text-center py-8 text-blue-300/40 text-sm">Loading PostHog data...</div>
+                ) : !posthogData?.configured ? (
+                  <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-4">
+                    <p className="text-yellow-300/80 text-sm font-medium mb-1">Not Configured</p>
+                    <p className="text-yellow-300/50 text-xs">Set <code className="bg-yellow-500/10 px-1 rounded">POSTHOG_API_KEY</code> and optionally <code className="bg-yellow-500/10 px-1 rounded">POSTHOG_HOST</code> environment variables to enable PostHog product analytics.</p>
+                  </div>
+                ) : posthogData?.data ? (
+                  <>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {[
+                        { label: 'Unique Users', value: posthogData.data.uniqueUsers?.toLocaleString(), color: '#6ee7b7' },
+                        { label: 'Total Events', value: posthogData.data.totalEvents?.toLocaleString(), color: '#93C5FD' },
+                        { label: 'Events/User', value: posthogData.data.avgEventsPerUser, color: '#fbbf24' },
+                        { label: 'Avg Session', value: posthogData.data.avgSessionDurationSeconds > 0 ? `${Math.round(posthogData.data.avgSessionDurationSeconds / 60)}m ${posthogData.data.avgSessionDurationSeconds % 60}s` : '—', color: '#c084fc' },
+                      ].map((s, i) => (
+                        <div key={i} className="rounded-lg border border-green-500/10 p-3" style={{ background: 'rgba(34,197,94,0.03)' }}>
+                          <p className="text-[10px] text-green-300/40 uppercase font-medium mb-1">{s.label}</p>
+                          <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-blue-500/10 p-5" style={{ background: 'rgba(10,10,26,0.8)' }}>
-                  <h3 className="text-white text-sm font-semibold mb-4">📞 Communications</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-lg border border-blue-500/10 p-3 text-center" style={{ background: 'rgba(59,130,246,0.05)' }}>
-                      <p className="text-xl font-bold text-blue-400">{analyticsData.totalCalls}</p>
-                      <p className="text-xs text-blue-300/40">Calls</p>
+                      ))}
                     </div>
-                    <div className="rounded-lg border border-blue-500/10 p-3 text-center" style={{ background: 'rgba(59,130,246,0.05)' }}>
-                      <p className="text-xl font-bold text-blue-400">{analyticsData.totalMessages}</p>
-                      <p className="text-xs text-blue-300/40">Messages</p>
-                    </div>
-                  </div>
-                  <div className="mt-3 space-y-1.5">
-                    {analyticsData.channelBreakdown?.map((c: any, i: number) => (
-                      <div key={i} className="flex justify-between text-xs">
-                        <span className="text-blue-200/60">{c.channel}</span>
-                        <span className="text-blue-300/40">{c.count}</span>
+                    {posthogData.data.dailyEventVolume?.length > 0 && (
+                      <div>
+                        <p className="text-xs text-green-300/40 mb-2">Daily Event Volume</p>
+                        <ResponsiveContainer width="100%" height={120}>
+                          <AreaChart data={posthogData.data.dailyEventVolume}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(34,197,94,0.1)" />
+                            <XAxis dataKey="date" tick={{ fontSize: 9, fill: 'rgba(134,239,172,0.3)' }} tickFormatter={(v: string) => v.slice(5)} />
+                            <YAxis tick={{ fontSize: 9, fill: 'rgba(134,239,172,0.3)' }} width={30} />
+                            <Tooltip contentStyle={{ background: 'rgba(10,10,26,0.95)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 8, fontSize: 11, color: '#fff' }} />
+                            <Area type="monotone" dataKey="count" stroke="#22C55E" fill="rgba(34,197,94,0.2)" strokeWidth={2} />
+                          </AreaChart>
+                        </ResponsiveContainer>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-blue-500/10 p-5" style={{ background: 'rgba(10,10,26,0.8)' }}>
-                <h3 className="text-white text-sm font-semibold mb-4">🔔 Recent Activity</h3>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {analyticsData.recentActivity?.map((a: any, i: number) => (
-                    <div key={i} className="flex items-center gap-3 px-3 py-2 rounded-lg" style={{ background: 'rgba(59,130,246,0.03)' }}>
-                      <span className="text-sm">
-                        {a.type === 'MATCH_FOUND' ? '🎯' : a.type === 'INTRO_ACCEPTED' ? '✅' : a.type === 'INTRO_REQUEST' ? '🤝' : '🔔'}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <span className="text-xs text-white/70 truncate block">{a.title}</span>
-                        {a.email && <span className="text-[10px] text-blue-300/30">{a.email}</span>}
-                      </div>
-                      <span className="text-[10px] text-blue-300/20 flex-shrink-0">
-                        {new Date(a.createdAt).toLocaleDateString()}
-                      </span>
+                    )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {posthogData.data.topEvents?.length > 0 && (
+                        <div>
+                          <p className="text-xs text-green-300/40 mb-2">Top Events</p>
+                          <div className="space-y-1.5">
+                            {posthogData.data.topEvents.slice(0, 8).map((e: any, i: number) => {
+                              const max = posthogData.data.topEvents[0]?.count || 1;
+                              const pct = Math.round((e.count / max) * 100);
+                              return (
+                                <div key={i}>
+                                  <div className="flex justify-between text-xs mb-0.5">
+                                    <span className="text-green-200/60 truncate mr-2">{e.event}</span>
+                                    <span className="text-green-300/40 flex-shrink-0">{e.count?.toLocaleString()}</span>
+                                  </div>
+                                  <div className="h-1.5 rounded-full bg-green-900/20">
+                                    <div className="h-full rounded-full" style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #22C55E, #86EFAC)' }} />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      {posthogData.data.featureUsage?.length > 0 && (
+                        <div>
+                          <p className="text-xs text-green-300/40 mb-2">Feature Usage</p>
+                          <div className="space-y-1.5">
+                            {posthogData.data.featureUsage.slice(0, 6).map((f: any, i: number) => {
+                              const max = posthogData.data.featureUsage[0]?.count || 1;
+                              const pct = Math.round((f.count / max) * 100);
+                              return (
+                                <div key={i}>
+                                  <div className="flex justify-between text-xs mb-0.5">
+                                    <span className="text-green-200/60 truncate mr-2">{f.feature}</span>
+                                    <span className="text-green-300/40 flex-shrink-0">{f.count?.toLocaleString()}</span>
+                                  </div>
+                                  <div className="h-1.5 rounded-full bg-green-900/20">
+                                    <div className="h-full rounded-full" style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #14B8A6, #6EE7B7)' }} />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  ))}
-                  {(!analyticsData.recentActivity || analyticsData.recentActivity.length === 0) && (
-                    <p className="text-blue-300/30 text-xs text-center py-4">No recent activity</p>
-                  )}
-                </div>
+                    {posthogData.data.retention?.length > 0 && (
+                      <div>
+                        <p className="text-xs text-green-300/40 mb-2">Retention (first-time users)</p>
+                        <ResponsiveContainer width="100%" height={100}>
+                          <BarChart data={posthogData.data.retention}>
+                            <XAxis dataKey="day" tick={{ fontSize: 9, fill: 'rgba(134,239,172,0.3)' }} tickFormatter={(v: number) => `D${v}`} />
+                            <YAxis tick={{ fontSize: 9, fill: 'rgba(134,239,172,0.3)' }} width={30} unit="%" />
+                            <Tooltip contentStyle={{ background: 'rgba(10,10,26,0.95)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 8, fontSize: 11, color: '#fff' }} formatter={(v) => [`${v}%`, 'Retention']} />
+                            <Bar dataKey="percentage" fill="#22C55E" radius={[2, 2, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-6 text-blue-300/30 text-xs">Failed to load PostHog data. Check your credentials.</div>
+                )}
               </div>
-            </>
-          )}
+            )}
+          </div>
+
+          {/* Platform Metrics - Internal */}
+          <div className="rounded-xl border border-blue-500/10 overflow-hidden" style={{ background: 'rgba(10,10,26,0.8)' }}>
+            <button onClick={() => toggleSection('platform')} className="w-full flex items-center justify-between p-5 hover:bg-blue-500/5 transition">
+              <div className="flex items-center gap-3">
+                <span className="text-lg">🏗️</span>
+                <h3 className="text-white text-sm font-semibold">Platform Metrics</h3>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300/50">Internal</span>
+              </div>
+              <span className="text-blue-300/30 text-sm">{collapsedSections['platform'] ? '▶' : '▼'}</span>
+            </button>
+            {!collapsedSections['platform'] && (
+              <div className="px-5 pb-5 space-y-4">
+                {!analyticsData ? (
+                  <div className="text-center py-8 text-blue-300/40 text-sm">Loading platform data...</div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {[
+                        { label: 'Total Users', value: analyticsData.totalUsers, color: '#93C5FD' },
+                        { label: 'Complete Profiles', value: analyticsData.completedProfiles, color: '#6ee7b7' },
+                        { label: 'Onboarding Rate', value: `${analyticsData.onboardingRate}%`, color: '#fbbf24' },
+                        { label: `Signups (${analyticsRange})`, value: analyticsData.recentSignups, color: '#60a5fa' },
+                        { label: 'Total Matches', value: analyticsData.totalMatches, color: '#93C5FD' },
+                        { label: 'Accepted', value: analyticsData.acceptedMatches, color: '#6ee7b7' },
+                        { label: 'Accept Rate', value: `${analyticsData.matchAcceptRate}%`, color: '#fbbf24' },
+                        { label: 'Avg Score', value: `${analyticsData.avgMatchScore}%`, color: '#f472b6' },
+                      ].map((s, i) => (
+                        <div key={i} className="rounded-lg border border-blue-500/10 p-3" style={{ background: 'rgba(59,130,246,0.03)' }}>
+                          <p className="text-[10px] text-blue-300/40 uppercase font-medium mb-1">{s.label}</p>
+                          <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {funnelData && funnelData.length > 0 && (
+                      <div>
+                        <p className="text-xs text-blue-300/40 mb-2">User Funnel</p>
+                        <ResponsiveContainer width="100%" height={140}>
+                          <BarChart data={funnelData} layout="vertical">
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(59,130,246,0.1)" />
+                            <XAxis type="number" tick={{ fontSize: 9, fill: 'rgba(147,197,253,0.3)' }} />
+                            <YAxis dataKey="stage" type="category" tick={{ fontSize: 9, fill: 'rgba(147,197,253,0.4)' }} width={120} />
+                            <Tooltip contentStyle={{ background: 'rgba(10,10,26,0.95)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 8, fontSize: 11, color: '#fff' }} />
+                            <Bar dataKey="count" fill="#8B5CF6" radius={[0, 3, 3, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-blue-300/40 mb-2">Daily Signups</p>
+                        {analyticsData.dailySignups?.length > 0 && (
+                          <ResponsiveContainer width="100%" height={120}>
+                            <BarChart data={analyticsData.dailySignups}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="rgba(59,130,246,0.1)" />
+                              <XAxis dataKey="date" tick={{ fontSize: 9, fill: 'rgba(147,197,253,0.3)' }} tickFormatter={(v: string) => v.slice(5)} />
+                              <YAxis tick={{ fontSize: 9, fill: 'rgba(147,197,253,0.3)' }} width={25} allowDecimals={false} />
+                              <Tooltip contentStyle={{ background: 'rgba(10,10,26,0.95)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 8, fontSize: 11, color: '#fff' }} />
+                              <Bar dataKey="count" fill="#3B82F6" radius={[3, 3, 0, 0]} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        )}
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-blue-300/40 mb-2">Personas</p>
+                        <div className="space-y-1.5">
+                          {analyticsData.personaBreakdown?.map((p: any, i: number) => {
+                            const total = analyticsData.personaBreakdown.reduce((s: number, x: any) => s + x.count, 0);
+                            const pct = total > 0 ? Math.round((p.count / total) * 100) : 0;
+                            return (
+                              <div key={i}>
+                                <div className="flex justify-between text-xs mb-0.5">
+                                  <span className="text-blue-200/60">{p.persona}</span>
+                                  <span className="text-blue-300/40">{p.count} ({pct}%)</span>
+                                </div>
+                                <div className="h-1.5 rounded-full bg-blue-900/30">
+                                  <div className="h-full rounded-full" style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #3B82F6, #93C5FD)' }} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                          {(!analyticsData.personaBreakdown || analyticsData.personaBreakdown.length === 0) && (
+                            <p className="text-blue-300/30 text-xs">No persona data yet</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-blue-300/40 mb-2">Channel Attribution</p>
+                        <div className="space-y-1.5">
+                          {analyticsData.attributionBreakdown?.map((a: any, i: number) => {
+                            const total = analyticsData.attributionBreakdown.reduce((s: number, x: any) => s + x.count, 0);
+                            const pct = total > 0 ? Math.round((a.count / total) * 100) : 0;
+                            const sourceLabels: Record<string, string> = {
+                              linkedin: 'LinkedIn', twitter: 'Twitter / X', whatsapp_group: 'WhatsApp Group',
+                              friend_referral: 'Friend Referral', event_the_pitch: 'Event (The Pitch)',
+                              angel_network: 'Angel Network', vc_newsletter: 'VC Newsletter',
+                              google_search: 'Google Search', referral: 'Referral', email: 'Email',
+                              event: 'Event', other: 'Other',
+                            };
+                            return (
+                              <div key={i}>
+                                <div className="flex justify-between text-xs mb-0.5">
+                                  <span className="text-blue-200/60">{sourceLabels[a.source] || a.source}</span>
+                                  <span className="text-blue-300/40">{a.count} ({pct}%)</span>
+                                </div>
+                                <div className="h-1.5 rounded-full bg-blue-900/30">
+                                  <div className="h-full rounded-full" style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #14B8A6, #93C5FD)' }} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                          {(!analyticsData.attributionBreakdown || analyticsData.attributionBreakdown.length === 0) && (
+                            <p className="text-blue-300/30 text-xs">No attribution data yet</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-blue-300/40 mb-2">Feedback</p>
+                        <div className="flex items-center gap-4 mb-3">
+                          <div className="text-center">
+                            <p className="text-2xl font-bold text-yellow-400">{analyticsData.feedbackStats?.avgRating || 0}</p>
+                            <p className="text-[10px] text-blue-300/40">Avg Rating</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-2xl font-bold text-blue-400">{analyticsData.feedbackStats?.total || 0}</p>
+                            <p className="text-[10px] text-blue-300/40">Total Reviews</p>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          {[5, 4, 3, 2, 1].map(r => {
+                            const count = analyticsData.feedbackStats?.distribution?.find((d: any) => d.rating === r)?.count || 0;
+                            const total = analyticsData.feedbackStats?.total || 1;
+                            return (
+                              <div key={r} className="flex items-center gap-2">
+                                <span className="text-[10px] text-yellow-400 w-5">{r}★</span>
+                                <div className="flex-1 h-1.5 rounded-full bg-blue-900/30">
+                                  <div className="h-full rounded-full bg-yellow-400/60" style={{ width: `${(count / total) * 100}%` }} />
+                                </div>
+                                <span className="text-[10px] text-blue-300/40 w-5 text-right">{count}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-blue-300/40 mb-2">Communications</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="rounded-lg border border-blue-500/10 p-3 text-center" style={{ background: 'rgba(59,130,246,0.03)' }}>
+                            <p className="text-lg font-bold text-blue-400">{analyticsData.totalCalls}</p>
+                            <p className="text-[10px] text-blue-300/40">Calls</p>
+                          </div>
+                          <div className="rounded-lg border border-blue-500/10 p-3 text-center" style={{ background: 'rgba(59,130,246,0.03)' }}>
+                            <p className="text-lg font-bold text-blue-400">{analyticsData.totalMessages}</p>
+                            <p className="text-[10px] text-blue-300/40">Messages</p>
+                          </div>
+                        </div>
+                        <div className="mt-2 space-y-1">
+                          {analyticsData.channelBreakdown?.map((c: any, i: number) => (
+                            <div key={i} className="flex justify-between text-xs">
+                              <span className="text-blue-200/60">{c.channel}</span>
+                              <span className="text-blue-300/40">{c.count}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-blue-300/40 mb-2">Recent Activity</p>
+                        <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                          {analyticsData.recentActivity?.map((a: any, i: number) => (
+                            <div key={i} className="flex items-center gap-2 px-2 py-1.5 rounded-lg" style={{ background: 'rgba(59,130,246,0.03)' }}>
+                              <span className="text-xs">
+                                {a.type === 'MATCH_FOUND' ? '🎯' : a.type === 'INTRO_ACCEPTED' ? '✅' : a.type === 'INTRO_REQUEST' ? '🤝' : '🔔'}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <span className="text-[10px] text-white/70 truncate block">{a.title}</span>
+                                {a.email && <span className="text-[9px] text-blue-300/30">{a.email}</span>}
+                              </div>
+                              <span className="text-[9px] text-blue-300/20 flex-shrink-0">
+                                {new Date(a.createdAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                          ))}
+                          {(!analyticsData.recentActivity || analyticsData.recentActivity.length === 0) && (
+                            <p className="text-blue-300/30 text-xs text-center py-4">No recent activity</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

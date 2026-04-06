@@ -1,6 +1,6 @@
 run = "npm run dev"
 entrypoint = "apps/backend/src/index.ts"
-modules = ["nodejs-20", "python-3.11", "postgresql-16"]
+modules = ["nodejs-20", "python-3.11", "postgresql-16", "javascript"]
 
 hidden = [".config", "package-lock.json"]
 

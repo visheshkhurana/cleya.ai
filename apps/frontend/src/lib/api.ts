@@ -254,8 +254,24 @@ class ApiClient {
   }
 
   // Admin Analytics
-  async getAdminAnalytics() {
-    return this.fetch('/admin/analytics');
+  async getAdminAnalytics(range: string = '7d') {
+    return this.fetch(`/admin/analytics?range=${range}`);
+  }
+
+  async getAdminAnalyticsOverview(range: string = '30d') {
+    return this.fetch(`/admin/analytics/overview?range=${range}`);
+  }
+
+  async getAdminAnalyticsGA4(range: string = '30d') {
+    return this.fetch(`/admin/analytics/ga4?range=${range}`);
+  }
+
+  async getAdminAnalyticsInstagram(range: string = '30d') {
+    return this.fetch(`/admin/analytics/instagram?range=${range}`);
+  }
+
+  async getAdminAnalyticsPostHog(range: string = '30d') {
+    return this.fetch(`/admin/analytics/posthog?range=${range}`);
   }
 
   async sendWeeklyDigest() {

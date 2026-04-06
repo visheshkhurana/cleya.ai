@@ -10,6 +10,7 @@ import { emailService } from '../services/email';
 import { whatsappTemplates } from '../services/whatsappTemplates';
 import { gupshupService } from '../services/gupshupService';
 import { whatsappBotService } from '../services/whatsappBotService';
+import { analyticsAggregatorService } from '../services/analyticsAggregatorService';
 
 export const adminRouter = Router();
 
@@ -222,20 +223,24 @@ adminRouter.post('/match/run/:userId', async (req: Request, res: Response, next:
   }
 });
 
-adminRouter.get('/analytics', async (_req: Request, res: Response, next: NextFunction) => {
+adminRouter.get('/analytics', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const rangeParam = (req.query.range as string) || '7d';
+    const days = rangeParam === '90d' ? 90 : rangeParam === '30d' ? 30 : 7;
+    const rangeStart = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
     const [
       totalUsers, completedProfiles, totalMatches, acceptedMatches,
       rejectedMatches, totalCalls, totalMessages, totalFeedbacks,
     ] = await Promise.all([
       prisma.user.count({ where: { role: 'USER' } }),
       prisma.profile.count({ where: { isComplete: true, user: { role: 'USER' } } }),
-      prisma.match.count(),
-      prisma.match.count({ where: { status: 'ACCEPTED' } }),
-      prisma.match.count({ where: { status: 'REJECTED' } }),
-      prisma.call.count(),
-      prisma.messageRecord.count(),
-      prisma.matchFeedback.count(),
+      prisma.match.count({ where: { createdAt: { gte: rangeStart } } }),
+      prisma.match.count({ where: { status: 'ACCEPTED', createdAt: { gte: rangeStart } } }),
+      prisma.match.count({ where: { status: 'REJECTED', createdAt: { gte: rangeStart } } }),
+      prisma.call.count({ where: { createdAt: { gte: rangeStart } } }),
+      prisma.messageRecord.count({ where: { createdAt: { gte: rangeStart } } }),
+      prisma.matchFeedback.count({ where: { createdAt: { gte: rangeStart } } }),
     ]);
 
     const personaBreakdown = await prisma.profile.groupBy({
@@ -244,22 +249,29 @@ adminRouter.get('/analytics', async (_req: Request, res: Response, next: NextFun
       where: { persona: { not: null } },
     });
 
-    const avgScore = await prisma.match.aggregate({ _avg: { score: true } });
+    const avgScore = await prisma.match.aggregate({
+      _avg: { score: true },
+      where: { createdAt: { gte: rangeStart } },
+    });
 
-    const avgRating = await prisma.matchFeedback.aggregate({ _avg: { rating: true } });
+    const avgRating = await prisma.matchFeedback.aggregate({
+      _avg: { rating: true },
+      where: { createdAt: { gte: rangeStart } },
+    });
 
     const ratingDist = await prisma.matchFeedback.groupBy({
       by: ['rating'],
       _count: { rating: true },
+      where: { createdAt: { gte: rangeStart } },
     });
 
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const recentSignups = await prisma.user.count({
-      where: { createdAt: { gte: sevenDaysAgo }, role: 'USER' },
+      where: { createdAt: { gte: rangeStart }, role: 'USER' },
     });
 
     const dailySignups: { date: string; count: number }[] = [];
-    for (let i = 6; i >= 0; i--) {
+    const chartDays = Math.min(days, 30);
+    for (let i = chartDays - 1; i >= 0; i--) {
       const start = new Date();
       start.setDate(start.getDate() - i);
       start.setHours(0, 0, 0, 0);
@@ -274,6 +286,7 @@ adminRouter.get('/analytics', async (_req: Request, res: Response, next: NextFun
     const channelBreakdown = await prisma.messageRecord.groupBy({
       by: ['channel'],
       _count: { channel: true },
+      where: { createdAt: { gte: rangeStart } },
     });
 
     const attributionBreakdown = await prisma.profile.groupBy({
@@ -282,17 +295,22 @@ adminRouter.get('/analytics', async (_req: Request, res: Response, next: NextFun
       where: { channelSource: { not: null } },
     });
 
-    const topMatchedPersonas = await prisma.$queryRaw`
+    interface TopMatchedPersona {
+      persona: string;
+      match_count: number;
+    }
+    const topMatchedPersonas: TopMatchedPersona[] = await prisma.$queryRaw`
       SELECT p.persona, COUNT(*)::int as match_count
       FROM matches m
       JOIN profiles p ON (p."userId" = m."userAId" OR p."userId" = m."userBId")
-      WHERE p.persona IS NOT NULL
+      WHERE p.persona IS NOT NULL AND m."createdAt" >= ${rangeStart}
       GROUP BY p.persona
       ORDER BY match_count DESC
       LIMIT 10
-    ` as any[];
+    `;
 
     const recentActivity = await prisma.notification.findMany({
+      where: { createdAt: { gte: rangeStart } },
       orderBy: { createdAt: 'desc' },
       take: 20,
       include: { user: { select: { email: true } } },
@@ -339,7 +357,7 @@ adminRouter.get('/analytics', async (_req: Request, res: Response, next: NextFun
           type: n.event,
           title: n.title,
           body: n.body,
-          email: (n as any).user?.email,
+          email: (n.user as { email?: string } | null)?.email,
           createdAt: n.createdAt,
         })),
       },
@@ -352,6 +370,50 @@ adminRouter.get('/analytics', async (_req: Request, res: Response, next: NextFun
 adminRouter.post('/send-digest', async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await emailService.sendDigestToAll();
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/analytics/overview', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const dateRange = (req.query.range as string) || '30d';
+    const validRange = ['7d', '30d', '90d'].includes(dateRange) ? dateRange as '7d' | '30d' | '90d' : '30d';
+    const overview = await analyticsAggregatorService.getOverview(validRange);
+    res.json({ success: true, data: overview });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/analytics/ga4', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const dateRange = (req.query.range as string) || '30d';
+    const validRange = ['7d', '30d', '90d'].includes(dateRange) ? dateRange as '7d' | '30d' | '90d' : '30d';
+    const result = await analyticsAggregatorService.getGA4(validRange);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/analytics/instagram', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const dateRange = (req.query.range as string) || '30d';
+    const validRange = ['7d', '30d', '90d'].includes(dateRange) ? dateRange as '7d' | '30d' | '90d' : '30d';
+    const result = await analyticsAggregatorService.getInstagram(validRange);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/analytics/posthog', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const dateRange = (req.query.range as string) || '30d';
+    const validRange = ['7d', '30d', '90d'].includes(dateRange) ? dateRange as '7d' | '30d' | '90d' : '30d';
+    const result = await analyticsAggregatorService.getPostHog(validRange);
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
