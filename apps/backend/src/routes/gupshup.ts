@@ -82,3 +82,32 @@ gupshupRouter.post('/webhook', async (req: Request, res: Response, next: NextFun
 gupshupRouter.get('/webhook', (_req: Request, res: Response) => {
   res.status(200).send('OK');
 });
+
+gupshupRouter.get('/status', (_req: Request, res: Response) => {
+  res.json({
+    configured: gupshupService.isConfigured(),
+    apiKey: !!env.GUPSHUP_API_KEY,
+    appName: !!env.GUPSHUP_APP_NAME,
+    sourceNumber: !!env.GUPSHUP_SOURCE_NUMBER,
+  });
+});
+
+gupshupRouter.post('/test-send', async (req: Request, res: Response) => {
+  try {
+    const { phone, message } = req.body;
+    if (!phone || !message) {
+      res.status(400).json({ error: 'phone and message are required' });
+      return;
+    }
+    if (!gupshupService.isConfigured()) {
+      res.status(503).json({ error: 'Gupshup is not configured' });
+      return;
+    }
+    const result = await gupshupService.sendWhatsAppDirect(phone, message);
+    res.json({ success: true, result });
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error('[Gupshup Test Send] Error:', errMsg);
+    res.status(500).json({ error: errMsg });
+  }
+});
