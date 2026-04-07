@@ -1044,15 +1044,50 @@ export function AgentsManagement() {
       </div>
 
       {view === 'overview' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {agents.map((agent) => (
-            <AgentCard
-              key={agent.id}
-              agent={agent}
-              stats={stats[agent.id] || { tasksToday: 0, contentPending: 0, messagesUnread: 0 }}
-              onClick={() => setSelectedAgent(agent)}
-            />
-          ))}
+        <div className="space-y-6">
+          {/* OpenClaw Agents */}
+          {(() => {
+            const openclawAgents = agents.filter(a => ['cleya-marketing', 'cleya-growth', 'cleya-finance', 'cleya-sales'].includes(a.id));
+            const otherAgents = agents.filter(a => !['cleya-marketing', 'cleya-growth', 'cleya-finance', 'cleya-sales'].includes(a.id));
+            return (
+              <>
+                {openclawAgents.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                      <span>🐾</span> OpenClaw Agents
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {openclawAgents.map((agent) => (
+                        <AgentCard
+                          key={agent.id}
+                          agent={agent}
+                          stats={stats[agent.id] || { tasksToday: 0, contentPending: 0, messagesUnread: 0 }}
+                          onClick={() => setSelectedAgent(agent)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {otherAgents.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                      <span>⚙️</span> Other Agents
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {otherAgents.map((agent) => (
+                        <AgentCard
+                          key={agent.id}
+                          agent={agent}
+                          stats={stats[agent.id] || { tasksToday: 0, contentPending: 0, messagesUnread: 0 }}
+                          onClick={() => setSelectedAgent(agent)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
       )}
 
