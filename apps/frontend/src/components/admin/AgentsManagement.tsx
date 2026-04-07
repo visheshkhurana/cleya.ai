@@ -551,12 +551,12 @@ function ChatTab({ agentId }: { agentId: string }) {
         content: m.message,
       }));
 
-      // Call backend agent-chat API for AI response
-      const apiBase = typeof window !== 'undefined' ? window.location.origin.replace(':3000', ':3001') : '';
-      const token = document.cookie.split(';').find(c => c.trim().startsWith('token='))?.split('=')[1] || localStorage.getItem('token') || '';
-      const chatResponse = await fetch(`${apiBase}/api/agents/chat`, {
+      // Call backend agent-chat API for AI response (uses cookie auth + CSRF)
+      const csrf = document.cookie.match(/(?:^|; )cleo_csrf=([^;]*)/)?.[1] || '';
+      const chatResponse = await fetch('/api/agents/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrf },
         body: JSON.stringify({ agentId, message: userMsg, history }),
       });
 
