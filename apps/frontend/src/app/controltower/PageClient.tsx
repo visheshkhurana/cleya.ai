@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import PhoneInput from '@/components/PhoneInput';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid } from 'recharts';
 import { AgentsManagement } from '@/components/admin/AgentsManagement';
+import { AgentArchitecture } from '@/components/admin/AgentArchitecture';
 
 interface Stats {
   totalUsers: number;
@@ -29,7 +30,7 @@ interface CommData {
   messageStats: { totalSMS: number; totalWhatsApp: number; delivered: number; failed: number; total: number };
 }
 
-type Tab = 'overview' | 'communications' | 'deals' | 'events' | 'analytics' | 'agents' | 'whatsapp';
+type Tab = 'overview' | 'communications' | 'deals' | 'events' | 'analytics' | 'agents' | 'architecture' | 'whatsapp';
 
 interface AgentInfo {
   id: string;
@@ -473,6 +474,7 @@ export default function AdminDashboard() {
             { id: 'analytics' as Tab, label: 'Analytics', icon: '📈' },
             { id: 'whatsapp' as Tab, label: 'WhatsApp', icon: '💬' },
             { id: 'agents' as Tab, label: 'Agents', icon: '🤖' },
+            { id: 'architecture' as Tab, label: 'Architecture', icon: '🏗️' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -1683,6 +1685,8 @@ export default function AdminDashboard() {
       )}
 
       {activeTab === 'agents' && <AgentsManagement />}
+
+      {activeTab === 'architecture' && <AgentArchitecture />}
 
       {triggerModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
