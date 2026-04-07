@@ -6,6 +6,7 @@ import {
   Clock, AlertCircle, CheckCircle, ChevronRight, X, Send, Plus,
   Filter, Download, Eye, Check, XCircle, Loader
 } from 'lucide-react';
+import { api } from '@/lib/api';
 
 // Types
 interface Agent {
@@ -551,19 +552,13 @@ function ChatTab({ agentId }: { agentId: string }) {
         content: m.message,
       }));
 
-      // Call backend agent-chat API for AI response (uses cookie auth + CSRF)
-      const csrf = document.cookie.match(/(?:^|; )cleo_csrf=([^;]*)/)?.[1] || '';
-      const chatResponse = await fetch('/api/agents/chat', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrf },
-        body: JSON.stringify({ agentId, message: userMsg, history }),
-      });
-
+      // Call backend agent-chat API via the authenticated api client
       let assistantText = 'Sorry, I could not generate a response. Please check that the OpenAI API key is configured.';
-      if (chatResponse.ok) {
-        const data = await chatResponse.json();
+      try {
+        const data = await api.sendAgentMessage(agentId, userMsg, history);
         assistantText = data.data?.content || data.content || assistantText;
+      } catch (apiErr) {
+        console.error('Agent chat API error:', apiErr);
       }
 
       // Add AI response to UI
