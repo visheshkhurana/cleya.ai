@@ -26,25 +26,29 @@ export class NotificationService {
       },
     });
 
-    switch (payload.channel) {
-      case 'IN_APP':
-        this.sendInApp(payload);
-        break;
-      case 'WHATSAPP':
-        await this.sendWhatsApp(payload);
-        break;
-      case 'SMS':
-        await this.sendSMS(payload);
-        break;
-      case 'EMAIL':
-        await this.sendEmail(payload);
-        break;
-    }
+    try {
+      switch (payload.channel) {
+        case 'IN_APP':
+          this.sendInApp(payload);
+          break;
+        case 'WHATSAPP':
+          await this.sendWhatsApp(payload);
+          break;
+        case 'SMS':
+          await this.sendSMS(payload);
+          break;
+        case 'EMAIL':
+          await this.sendEmail(payload);
+          break;
+      }
 
-    await prisma.notification.update({
-      where: { id: notification.id },
-      data: { sentAt: new Date() },
-    });
+      await prisma.notification.update({
+        where: { id: notification.id },
+        data: { sentAt: new Date() },
+      });
+    } catch (error) {
+      console.error(`Notification dispatch failed for ${payload.channel}:`, error);
+    }
 
     return notification;
   }

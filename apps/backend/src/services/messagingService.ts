@@ -15,6 +15,7 @@ export class MessagingService {
   }
 
   async sendSMS(userId: string, phoneNumber: string, message: string) {
+    console.log(`SMS routed to WhatsApp via Gupshup for ${phoneNumber}`);
     return gupshupService.sendWhatsApp(userId, phoneNumber, message);
   }
 
