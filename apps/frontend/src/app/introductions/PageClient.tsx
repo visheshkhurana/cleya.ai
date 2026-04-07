@@ -49,7 +49,6 @@ const outcomeKeys: Record<string, { labelKey: string; icon: string; color: strin
   DIDNT_MEET: { labelKey: 'intro.didntMeet', icon: '😕', color: '#f59e0b' },
   NOT_A_FIT: { labelKey: 'intro.notAFit', icon: '🤷', color: '#ef4444' },
 };
-};
 
 export default function IntroductionsPage() {
   const [introductions, setIntroductions] = useState<IntroData[]>([]);
