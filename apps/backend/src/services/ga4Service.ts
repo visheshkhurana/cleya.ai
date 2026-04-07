@@ -148,8 +148,12 @@ async function getMetrics(dateRange: '7d' | '30d' | '90d' = '30d'): Promise<GA4M
     return { pageviews, sessions, activeUsers, bounceRate: Math.round(bounceRate * 100) / 100, topPages, trafficSources, geoBreakdown, dailyTrend };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error('GA4 fetch error:', message);
-    return null;
+    if (message.includes('invalid_grant') || message.includes('Invalid JWT') || message.includes('PERMISSION_DENIED')) {
+      console.error('GA4 authentication failed — check that GA4_SERVICE_ACCOUNT_KEY is valid JSON and the service account has access to property', GA4_PROPERTY_ID, ':', message);
+    } else {
+      console.error('GA4 fetch error:', message);
+    }
+    throw error;
   }
 }
 

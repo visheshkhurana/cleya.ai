@@ -51,6 +51,9 @@ const envSchema = z.object({
   ZOOM_REDIRECT_URI: z.string().optional(),
 
   SENTRY_DSN: z.string().optional(),
+  SENTRY_AUTH_TOKEN: z.string().optional(),
+  SENTRY_ORG: z.string().optional(),
+  SENTRY_PROJECT: z.string().optional(),
   POSTHOG_KEY: z.string().optional(),
 
   GA4_PROPERTY_ID: z.string().optional(),
@@ -59,6 +62,7 @@ const envSchema = z.object({
   INSTAGRAM_BUSINESS_ACCOUNT_ID: z.string().optional(),
   POSTHOG_API_KEY: z.string().optional(),
   POSTHOG_HOST: z.string().optional(),
+  POSTHOG_PROJECT_ID: z.string().optional(),
 });
 
 function validateEnv() {

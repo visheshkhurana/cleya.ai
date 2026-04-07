@@ -420,6 +420,17 @@ adminRouter.get('/analytics/posthog', async (req: Request, res: Response, next: 
   }
 });
 
+adminRouter.get('/analytics/sentry', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const dateRange = (req.query.range as string) || '30d';
+    const validRange = ['7d', '30d', '90d'].includes(dateRange) ? dateRange as '7d' | '30d' | '90d' : '30d';
+    const result = await analyticsAggregatorService.getSentry(validRange);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
 adminRouter.post('/test-email', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { to, type } = req.body;

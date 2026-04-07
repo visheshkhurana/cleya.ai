@@ -76,9 +76,11 @@ export default function AdminDashboard() {
   const [ga4Data, setGa4Data] = useState<any>(null);
   const [instagramData, setInstagramData] = useState<any>(null);
   const [posthogData, setPosthogData] = useState<any>(null);
+  const [sentryData, setSentryData] = useState<any>(null);
   const [ga4Loading, setGa4Loading] = useState(false);
   const [instagramLoading, setInstagramLoading] = useState(false);
   const [posthogLoading, setPosthogLoading] = useState(false);
+  const [sentryLoading, setSentryLoading] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const [funnelData, setFunnelData] = useState<{ stage: string; count: number }[] | null>(null);
   const [whatsappData, setWhatsappData] = useState<any>(null);
@@ -184,6 +186,7 @@ export default function AdminDashboard() {
     loadGA4(r);
     loadInstagram(r);
     loadPostHog(r);
+    loadSentry(r);
     loadFunnel();
   };
 
@@ -202,7 +205,7 @@ export default function AdminDashboard() {
       const data = await api.getAdminAnalyticsGA4(range);
       setGa4Data(data);
     } catch (err: any) {
-      setGa4Data({ configured: false, data: null });
+      setGa4Data({ configured: true, data: null, error: err?.message || 'Failed to load' });
     }
     setGa4Loading(false);
   };
@@ -213,7 +216,7 @@ export default function AdminDashboard() {
       const data = await api.getAdminAnalyticsInstagram(range);
       setInstagramData(data);
     } catch (err: any) {
-      setInstagramData({ configured: false, data: null });
+      setInstagramData({ configured: true, data: null, error: err?.message || 'Failed to load' });
     }
     setInstagramLoading(false);
   };
@@ -224,9 +227,20 @@ export default function AdminDashboard() {
       const data = await api.getAdminAnalyticsPostHog(range);
       setPosthogData(data);
     } catch (err: any) {
-      setPosthogData({ configured: false, data: null });
+      setPosthogData({ configured: true, data: null, error: err?.message || 'Failed to load' });
     }
     setPosthogLoading(false);
+  };
+
+  const loadSentry = async (range: string = analyticsRange) => {
+    setSentryLoading(true);
+    try {
+      const data = await api.getAdminAnalyticsSentry(range);
+      setSentryData(data);
+    } catch (err: any) {
+      setSentryData({ configured: true, data: null, error: err?.message || 'Failed to load' });
+    }
+    setSentryLoading(false);
   };
 
   const toggleSection = (key: string) => {
@@ -1129,7 +1143,7 @@ export default function AdminDashboard() {
                     </div>
                   </>
                 ) : (
-                  <div className="text-center py-6 text-brand-violet-hover/30 text-xs">Failed to load GA4 data. Check your credentials.</div>
+                  <div className="text-center py-6 text-brand-violet-hover/30 text-xs">{ga4Data?.error || 'Failed to load GA4 data. Check your credentials.'}</div>
                 )}
               </div>
             )}
@@ -1219,7 +1233,7 @@ export default function AdminDashboard() {
                     )}
                   </>
                 ) : (
-                  <div className="text-center py-6 text-brand-violet-hover/30 text-xs">Failed to load Instagram data. Check your credentials.</div>
+                  <div className="text-center py-6 text-brand-violet-hover/30 text-xs">{instagramData?.error || 'Failed to load Instagram data. Check your credentials.'}</div>
                 )}
               </div>
             )}
@@ -1242,7 +1256,7 @@ export default function AdminDashboard() {
                 ) : !posthogData?.configured ? (
                   <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-4">
                     <p className="text-yellow-300/80 text-sm font-medium mb-1">Not Configured</p>
-                    <p className="text-yellow-300/50 text-xs">Set <code className="bg-yellow-500/10 px-1 rounded">POSTHOG_API_KEY</code> and optionally <code className="bg-yellow-500/10 px-1 rounded">POSTHOG_HOST</code> environment variables to enable PostHog product analytics.</p>
+                    <p className="text-yellow-300/50 text-xs">Set <code className="bg-yellow-500/10 px-1 rounded">POSTHOG_API_KEY</code> and optionally <code className="bg-yellow-500/10 px-1 rounded">POSTHOG_HOST</code> and <code className="bg-yellow-500/10 px-1 rounded">POSTHOG_PROJECT_ID</code> environment variables to enable PostHog product analytics.</p>
                   </div>
                 ) : posthogData?.data ? (
                   <>
@@ -1334,7 +1348,100 @@ export default function AdminDashboard() {
                     )}
                   </>
                 ) : (
-                  <div className="text-center py-6 text-brand-violet-hover/30 text-xs">Failed to load PostHog data. Check your credentials.</div>
+                  <div className="text-center py-6 text-brand-violet-hover/30 text-xs">{posthogData?.error || 'Failed to load PostHog data. Check your credentials.'}</div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Error Tracking - Sentry */}
+          <div className="rounded-xl border border-red-500/10 overflow-hidden" style={{ background: 'rgba(8,13,26,0.8)' }}>
+            <button onClick={() => toggleSection('sentry')} className="w-full flex items-center justify-between p-5 hover:bg-red-500/5 transition">
+              <div className="flex items-center gap-3">
+                <span className="text-lg">🐛</span>
+                <h3 className="text-white text-sm font-semibold">Error Tracking</h3>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-300/50">Sentry</span>
+              </div>
+              <span className="text-brand-violet-hover/30 text-sm">{collapsedSections['sentry'] ? '▶' : '▼'}</span>
+            </button>
+            {!collapsedSections['sentry'] && (
+              <div className="px-5 pb-5 space-y-4">
+                {sentryLoading ? (
+                  <div className="text-center py-8 text-brand-violet-hover/40 text-sm">Loading Sentry data...</div>
+                ) : !sentryData?.configured ? (
+                  <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-4">
+                    <p className="text-yellow-300/80 text-sm font-medium mb-1">Not Configured</p>
+                    <p className="text-yellow-300/50 text-xs">Set <code className="bg-yellow-500/10 px-1 rounded">SENTRY_AUTH_TOKEN</code>, <code className="bg-yellow-500/10 px-1 rounded">SENTRY_ORG</code>, and <code className="bg-yellow-500/10 px-1 rounded">SENTRY_PROJECT</code> environment variables to enable Sentry error tracking data.</p>
+                  </div>
+                ) : sentryData?.data ? (
+                  <>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {[
+                        { label: 'Total Errors', value: sentryData.data.totalErrors?.toLocaleString(), color: '#f87171' },
+                        { label: 'Unresolved Issues', value: sentryData.data.unresolvedIssues?.toLocaleString(), color: '#fbbf24' },
+                        { label: 'Transactions', value: sentryData.data.transactionStats?.totalTransactions?.toLocaleString() || '—', color: '#93C5FD' },
+                        { label: 'Avg Duration', value: sentryData.data.transactionStats?.avgDuration ? `${sentryData.data.transactionStats.avgDuration}ms` : '—', color: '#6ee7b7' },
+                      ].map((s, i) => (
+                        <div key={i} className="rounded-lg border border-red-500/10 p-3" style={{ background: 'rgba(239,68,68,0.03)' }}>
+                          <p className="text-[10px] text-red-300/40 uppercase font-medium mb-1">{s.label}</p>
+                          <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                    {sentryData.data.errorTrend?.length > 0 && (
+                      <div>
+                        <p className="text-xs text-red-300/40 mb-2">Error Trend</p>
+                        <ResponsiveContainer width="100%" height={120}>
+                          <AreaChart data={sentryData.data.errorTrend}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(239,68,68,0.1)" />
+                            <XAxis dataKey="date" tick={{ fontSize: 9, fill: 'rgba(252,165,165,0.3)' }} tickFormatter={(v: string) => v.slice(5)} />
+                            <YAxis tick={{ fontSize: 9, fill: 'rgba(252,165,165,0.3)' }} width={30} />
+                            <Tooltip contentStyle={{ background: 'rgba(8,13,26,0.95)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, fontSize: 11, color: '#fff' }} />
+                            <Area type="monotone" dataKey="count" stroke="#EF4444" fill="rgba(239,68,68,0.2)" strokeWidth={2} />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+                    {sentryData.data.topIssues?.length > 0 && (
+                      <div>
+                        <p className="text-xs text-red-300/40 mb-2">Top Issues</p>
+                        <div className="space-y-2">
+                          {sentryData.data.topIssues.slice(0, 8).map((issue: any, i: number) => {
+                            const max = sentryData.data.topIssues[0]?.count || 1;
+                            const pct = Math.round((issue.count / max) * 100);
+                            return (
+                              <div key={i}>
+                                <div className="flex justify-between text-xs mb-0.5">
+                                  <span className="text-red-200/60 truncate mr-2" title={issue.title}>{issue.shortId}: {issue.title}</span>
+                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                    <span className={`text-[9px] px-1.5 py-0.5 rounded ${issue.level === 'error' ? 'bg-red-500/10 text-red-300/60' : issue.level === 'warning' ? 'bg-yellow-500/10 text-yellow-300/60' : 'bg-blue-500/10 text-blue-300/60'}`}>{issue.level}</span>
+                                    <span className="text-red-300/40">{issue.count?.toLocaleString()}</span>
+                                  </div>
+                                </div>
+                                <div className="h-1.5 rounded-full bg-red-900/20">
+                                  <div className="h-full rounded-full" style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #EF4444, #FCA5A5)' }} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {sentryData.data.transactionStats && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="rounded-lg border border-red-500/10 p-3" style={{ background: 'rgba(239,68,68,0.03)' }}>
+                          <p className="text-[10px] text-red-300/40 uppercase font-medium mb-1">P95 Duration</p>
+                          <p className="text-lg font-bold text-orange-400">{sentryData.data.transactionStats.p95Duration}ms</p>
+                        </div>
+                        <div className="rounded-lg border border-red-500/10 p-3" style={{ background: 'rgba(239,68,68,0.03)' }}>
+                          <p className="text-[10px] text-red-300/40 uppercase font-medium mb-1">Avg Duration</p>
+                          <p className="text-lg font-bold text-green-400">{sentryData.data.transactionStats.avgDuration}ms</p>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-6 text-brand-violet-hover/30 text-xs">{sentryData?.error || 'Failed to load Sentry data. Check your credentials.'}</div>
                 )}
               </div>
             )}

@@ -280,6 +280,10 @@ class ApiClient {
     return this.fetch(`/admin/analytics/posthog?range=${range}`);
   }
 
+  async getAdminAnalyticsSentry(range: string = '30d') {
+    return this.fetch(`/admin/analytics/sentry?range=${range}`);
+  }
+
   async sendWeeklyDigest() {
     return this.fetch('/admin/send-digest', { method: 'POST' });
   }

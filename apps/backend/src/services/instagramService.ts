@@ -79,6 +79,9 @@ async function igFetch<T = Record<string, unknown>>(url: string): Promise<T> {
   const res = await fetch(`${url}${separator}access_token=${INSTAGRAM_ACCESS_TOKEN}`);
   if (!res.ok) {
     const err = await res.text();
+    if (err.includes('OAuthException') || err.includes('expired') || err.includes('Invalid OAuth') || err.includes('"code":190') || err.includes('"code": 190')) {
+      throw new Error(`Instagram token expired or invalid (HTTP ${res.status}). Generate a new long-lived access token.`);
+    }
     throw new Error(`Instagram API error: ${res.status} - ${err}`);
   }
   return res.json() as Promise<T>;
@@ -197,7 +200,7 @@ async function getMetrics(dateRange: '7d' | '30d' | '90d' = '30d'): Promise<Inst
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error('Instagram fetch error:', message);
-    return null;
+    throw error;
   }
 }
 
