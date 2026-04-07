@@ -1,5 +1,4 @@
-getWhatsAppProvider
-  import twilio from 'twilio';
+import twilio from 'twilio';
 import { prisma } from '@cleya/db';
 import { env } from '../config/env';
 import { gupshupService } from './gupshupService';
