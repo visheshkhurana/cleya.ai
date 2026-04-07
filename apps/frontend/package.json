@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 5000",
+    "prebuild": "rm -rf .next",
     "build": "NEXT_IGNORE_INCORRECT_LOCKFILE=1 NODE_ENV=production next build",
     "start": "next start --port 5000"
   },
