@@ -15,16 +15,11 @@ const envSchema = z.object({
   AI_PROVIDER: z.enum(['openai', 'anthropic']).default('openai'),
   EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
 
-  TWILIO_ACCOUNT_SID: z.string().optional(),
-  TWILIO_AUTH_TOKEN: z.string().optional(),
-  TWILIO_PHONE_NUMBER: z.string().optional(),
-  TWILIO_WHATSAPP_NUMBER: z.string().optional(),
-
   GUPSHUP_API_KEY: z.string().optional(),
   GUPSHUP_APP_NAME: z.string().optional(),
   GUPSHUP_SOURCE_NUMBER: z.string().optional(),
   GUPSHUP_TEMPLATE_NAMESPACE: z.string().optional(),
-  MESSAGING_PROVIDER: z.enum(['twilio', 'gupshup', 'auto']).default('auto'),
+  GUPSHUP_WEBHOOK_SECRET: z.string().optional(),
 
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(3001),

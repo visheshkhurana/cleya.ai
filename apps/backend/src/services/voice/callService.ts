@@ -1,62 +1,13 @@
-import twilio from 'twilio';
 import { prisma } from '@cleya/db';
 import { createAIService } from '@cleya/ai';
 import { env } from '../../config/env';
 
 export class CallService {
-  private twilioClient: twilio.Twilio | null = null;
   private ai = createAIService();
 
-  constructor() {
-    if (env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN) {
-      this.twilioClient = twilio(env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN);
-    }
-  }
-
-  // Trigger outbound AI call
   async initiateCall(userId: string, phoneNumber: string) {
-    if (!this.twilioClient) {
-      console.warn('⚠️ Twilio not configured, skipping call');
-      return null;
-    }
-
-    const call = await prisma.call.create({
-      data: {
-        userId,
-        phoneNumber,
-        status: 'SCHEDULED',
-        direction: 'OUTBOUND',
-        scheduledAt: new Date(),
-      },
-    });
-
-    try {
-      const twilioCall = await this.twilioClient.calls.create({
-        to: phoneNumber,
-        from: env.TWILIO_PHONE_NUMBER!,
-        url: `${env.BACKEND_URL}/api/calls/twiml/${call.id}`,
-        statusCallback: `${env.BACKEND_URL}/api/calls/status/${call.id}`,
-        statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
-        record: true,
-      });
-
-      await prisma.call.update({
-        where: { id: call.id },
-        data: {
-          twilioCallSid: twilioCall.sid,
-          status: 'IN_PROGRESS',
-          startedAt: new Date(),
-        },
-      });
-
-      return { callId: call.id, twilioSid: twilioCall.sid };
-    } catch (error) {
-      await prisma.call.update({
-        where: { id: call.id },
-        data: { status: 'FAILED' },
-      });
-      throw error;
-    }
+    console.warn('Voice calls not available — use WhatsApp via Gupshup instead');
+    return null;
   }
 
   // Generate TwiML for AI conversation

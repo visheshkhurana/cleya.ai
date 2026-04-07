@@ -1,6 +1,4 @@
-import twilio from 'twilio';
 import { prisma } from '@cleya/db';
-import { env } from '../../config/env';
 import { sendToUser } from '../../websocket/server';
 
 type NotifChannel = 'WHATSAPP' | 'EMAIL' | 'SMS' | 'IN_APP';
@@ -16,16 +14,7 @@ interface NotificationPayload {
 }
 
 export class NotificationService {
-  private twilioClient: twilio.Twilio | null = null;
-
-  constructor() {
-    if (env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN) {
-      this.twilioClient = twilio(env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN);
-    }
-  }
-
   async send(payload: NotificationPayload) {
-    // Save to DB
     const notification = await prisma.notification.create({
       data: {
         userId: payload.userId,
@@ -37,7 +26,6 @@ export class NotificationService {
       },
     });
 
-    // Dispatch by channel
     switch (payload.channel) {
       case 'IN_APP':
         this.sendInApp(payload);
@@ -53,7 +41,6 @@ export class NotificationService {
         break;
     }
 
-    // Mark as sent
     await prisma.notification.update({
       where: { id: notification.id },
       data: { sentAt: new Date() },
@@ -62,12 +49,11 @@ export class NotificationService {
     return notification;
   }
 
-  // Send to all configured channels
   async sendMultiChannel(userId: string, event: NotifEvent, title: string, body: string, metadata?: Record<string, any>) {
     const channels: NotifChannel[] = ['IN_APP'];
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (user?.phone) channels.push('SMS');
+    if (user?.phone) channels.push('WHATSAPP');
 
     const results = await Promise.allSettled(
       channels.map((channel) =>
@@ -92,7 +78,7 @@ export class NotificationService {
     const provider = messagingService.getActiveProvider();
 
     if (provider === 'none') {
-      console.warn('No WhatsApp provider configured');
+      console.warn('Gupshup not configured, WhatsApp notification skipped');
       return;
     }
 
@@ -106,13 +92,16 @@ export class NotificationService {
         `*${payload.title}*\n\n${payload.body}`
       );
     } catch (error) {
-      console.error('WhatsApp send failed:', error);
+      console.error('WhatsApp notification failed:', error);
     }
   }
 
   private async sendSMS(payload: NotificationPayload) {
-    if (!this.twilioClient || !env.TWILIO_PHONE_NUMBER) {
-      console.warn('⚠️ SMS not configured');
+    const { messagingService } = await import('../messagingService');
+    const provider = messagingService.getActiveProvider();
+
+    if (provider === 'none') {
+      console.warn('Gupshup not configured, SMS notification skipped (would send via WhatsApp)');
       return;
     }
 
@@ -120,19 +109,18 @@ export class NotificationService {
     if (!user?.phone) return;
 
     try {
-      await this.twilioClient.messages.create({
-        from: env.TWILIO_PHONE_NUMBER,
-        to: user.phone,
-        body: `${payload.title}: ${payload.body}`,
-      });
+      await messagingService.sendWhatsApp(
+        payload.userId,
+        user.phone,
+        `${payload.title}: ${payload.body}`
+      );
     } catch (error) {
-      console.error('SMS send failed:', error);
+      console.error('SMS (via WhatsApp) notification failed:', error);
     }
   }
 
   private async sendEmail(payload: NotificationPayload) {
-    // SendGrid integration placeholder
-    console.log(`📧 Email would be sent to user ${payload.userId}: ${payload.title}`);
+    console.log(`Email would be sent to user ${payload.userId}: ${payload.title}`);
   }
 
   async getNotifications(userId: string, limit = 20) {
