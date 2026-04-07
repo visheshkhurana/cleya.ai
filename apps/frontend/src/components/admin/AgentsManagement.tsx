@@ -517,31 +517,84 @@ function ChatTab({ agentId }: { agentId: string }) {
 
   const handleSendMessage = useCallback(async () => {
     if (!newMessage.trim()) return;
-
+    const userMsg = newMessage.trim();
+    setNewMessage('');
     setSending(true);
+
+    // Add user message to UI immediately
+    const tempUserMsg: AgentMessage = {
+      id: Date.now(),
+      agent_id: agentId,
+      direction: 'inbound',
+      message: userMsg,
+      message_type: 'text',
+      metadata: {},
+      read: false,
+      created_at: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, tempUserMsg]);
+
     try {
-      const response = await fetch(
-        `${SUPABASE_URL}/rest/v1/dm_agent_messages`,
-        {
-          method: 'POST',
-          headers: { ...supabaseHeaders, 'Prefer': 'return=representation' },
-          body: JSON.stringify({
-            agent_id: agentId,
-            direction: 'inbound',
-            message: newMessage,
-            message_type: 'text',
-            metadata: {},
-            read: false,
-          }),
-        }
-      );
-      if (response.ok) {
-        const newMsg = await response.json();
-        setMessages([...messages, newMsg[0]]);
-        setNewMessage('');
+      // Save user message to Supabase
+      await fetch(`${SUPABASE_URL}/rest/v1/dm_agent_messages`, {
+        method: 'POST',
+        headers: { ...supabaseHeaders, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({
+          agent_id: agentId, direction: 'inbound', message: userMsg,
+          message_type: 'text', metadata: {}, read: false,
+        }),
+      });
+
+      // Build chat history from recent messages for context
+      const history = messages.slice(-10).map(m => ({
+        role: m.direction === 'inbound' ? 'user' : 'assistant',
+        content: m.message,
+      }));
+
+      // Call backend agent-chat API for AI response
+      const apiBase = typeof window !== 'undefined' ? window.location.origin.replace(':3000', ':3001') : '';
+      const token = document.cookie.split(';').find(c => c.trim().startsWith('token='))?.split('=')[1] || localStorage.getItem('token') || '';
+      const chatResponse = await fetch(`${apiBase}/api/agents/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ agentId, message: userMsg, history }),
+      });
+
+      let assistantText = 'Sorry, I could not generate a response. Please check that the OpenAI API key is configured.';
+      if (chatResponse.ok) {
+        const data = await chatResponse.json();
+        assistantText = data.data?.content || data.content || assistantText;
       }
+
+      // Add AI response to UI
+      const aiMsg: AgentMessage = {
+        id: Date.now() + 1,
+        agent_id: agentId,
+        direction: 'outbound',
+        message: assistantText,
+        message_type: 'text',
+        metadata: {},
+        read: false,
+        created_at: new Date().toISOString(),
+      };
+      setMessages(prev => [...prev, aiMsg]);
+
+      // Save AI response to Supabase
+      await fetch(`${SUPABASE_URL}/rest/v1/dm_agent_messages`, {
+        method: 'POST',
+        headers: { ...supabaseHeaders, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({
+          agent_id: agentId, direction: 'outbound', message: assistantText,
+          message_type: 'text', metadata: {}, read: false,
+        }),
+      });
     } catch (error) {
       console.error('Failed to send message:', error);
+      setMessages(prev => [...prev, {
+        id: Date.now() + 1, agent_id: agentId, direction: 'outbound',
+        message: `Error: ${error instanceof Error ? error.message : 'Failed to reach AI service'}`,
+        message_type: 'text', metadata: {}, read: false, created_at: new Date().toISOString(),
+      }]);
     } finally {
       setSending(false);
     }
