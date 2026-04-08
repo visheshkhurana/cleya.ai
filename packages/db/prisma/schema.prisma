@@ -889,6 +889,68 @@ model AgentRunLog {
 }
 
 // ─────────────────────────────────────────────
+// SECURITY AUDIT LOGS
+// ─────────────────────────────────────────────
+
+model SecurityLog {
+  id        String              @id @default(cuid())
+  timestamp DateTime            @default(now())
+  userId    String?
+  action    SecurityAction
+  result    SecurityResult
+  severity  SecuritySeverity    @default(INFO)
+  ipAddress String?
+  userAgent String?
+  metadata  Json?               @db.JsonB
+
+  @@index([timestamp])
+  @@index([userId])
+  @@index([action])
+  @@index([severity])
+  @@index([result])
+  @@map("security_logs")
+}
+
+enum SecurityAction {
+  LOGIN_SUCCESS
+  LOGIN_FAILURE
+  SIGNUP
+  LOGOUT
+  PASSWORD_RESET_REQUEST
+  PASSWORD_RESET_COMPLETE
+  EMAIL_VERIFICATION
+  OAUTH_GOOGLE
+  OAUTH_LINKEDIN
+  TOKEN_REFRESH
+  TOKEN_INVALID
+  ACCESS_DENIED
+  ROLE_CHECK_FAILURE
+  PROFILE_VIEW
+  DATA_EXPORT
+  PII_ACCESS
+  ADMIN_DATA_QUERY
+  ROLE_CHANGE
+  CONFIG_CHANGE
+  RATE_LIMIT_HIT
+  REPEATED_AUTH_FAILURE
+  BLOCKED_INPUT
+  ACCOUNT_DELETION
+  PASSWORD_CHANGE
+}
+
+enum SecurityResult {
+  SUCCESS
+  FAILURE
+  BLOCKED
+}
+
+enum SecuritySeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+// ─────────────────────────────────────────────
 // WAITLIST
 // ─────────────────────────────────────────────
 

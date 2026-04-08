@@ -11,6 +11,7 @@ import * as Sentry from '@sentry/node';
 import { env } from './config/env';
 import { prisma } from '@cleya/db';
 import { errorHandler } from './middleware/errorHandler';
+import { sanitizeInput } from './middleware/sanitize';
 import { authRouter } from './routes/auth';
 import { userRouter } from './routes/user';
 import { conversationRouter } from './routes/conversation';
@@ -44,6 +45,7 @@ import { healthRouter } from './routes/health';
 import { metricsMiddleware } from './middleware/metricsMiddleware';
 import { logger } from './lib/logger';
 import { agentScheduler } from './services/agentScheduler';
+import { startLogRetentionJob } from './services/securityLogger';
 
 const app = express();
 
@@ -96,6 +98,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(metricsMiddleware);
+app.use(sanitizeInput);
 
 app.use('/api/health', healthRouter);
 app.use('/api/auth', authRouter);
@@ -139,6 +142,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   });
   matchScheduler.start();
   agentScheduler.start();
+  startLogRetentionJob();
 });
 
 async function gracefulShutdown(signal: string) {

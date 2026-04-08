@@ -104,6 +104,19 @@ class SlackService {
     }
   }
 
+  async notifySecurityAlert(title: string, details: string) {
+    const blocks = [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `:rotating_light: *Security Alert: ${title}*\n${details}`
+        }
+      }
+    ];
+    await this.post(`Security Alert: ${title} — ${details}`, blocks);
+  }
+
   async notifyUserRegistered(user: { id: string; email: string; name?: string }) {
     const totalUsers = await prisma.user.count();
     const blocks = [

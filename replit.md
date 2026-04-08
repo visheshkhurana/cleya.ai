@@ -28,6 +28,7 @@ Monorepo with:
   - **Tiered AI Rate Limiting** (`middleware/aiRateLimit.ts`): In-memory per-user rate buckets. FREE: 10/min, 100/hr, 1000/day. PRO: 60/min, 1000/hr, 10000/day. ENTERPRISE: 120/min, 5000/hr, 50000/day. User `tier` field on User model (enum: FREE/PRO/ENTERPRISE).
   - **AI Audit Logging** (`services/aiAuditService.ts`): All AI interactions logged to `AIAuditLog` table with userId, endpoint, provider, model, input/output length, token usage, latency, injection detection flag, PII redaction details, agent ID, user tier, success/error.
   - **AI Usage Monitoring**: Daily token/request counts tracked in `AIUsageDaily` table per provider/model. Alerts sent to admin users (IN_APP notification) when daily requests exceed 5000 or tokens exceed 2M.
+- **Security Audit Logging:** Structured event logging to `SecurityLog` Prisma model (`security_logs` table). Covers auth events (login/signup/logout/OAuth/password reset/token failures), authorization failures (role checks, invalid tokens), data access (profile views, data exports, admin queries), suspicious activity (rate limit hits, blocked inputs, repeated auth failures). Non-blocking writes via `services/securityLogger.ts`. Automated 90-day retention cleanup (daily cron at 03:00). Admin API: `GET /api/admin/security-logs` with filters (action, userId, severity, result, date range, IP) and pagination.
 - **AI:** OpenAI for embeddings + chat (gpt-4-turbo-preview, text-embedding-3-small)
 
 ## Environment Variables (see .env.example for full list)

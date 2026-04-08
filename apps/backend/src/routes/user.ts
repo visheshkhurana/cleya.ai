@@ -4,12 +4,14 @@ import { profileService } from '../services/profileService';
 import { prisma } from '@cleya/db';
 import bcrypt from 'bcryptjs';
 import { validate, profileUpdateSchema, changePasswordSchema } from '../middleware/validation';
+import { securityLogger } from '../services/securityLogger';
 
 export const userRouter = Router();
 
 userRouter.get('/profile', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const profile = await profileService.getProfile(req.user!.userId);
+    securityLogger.accessEvent(req, 'PROFILE_VIEW', req.user!.userId, { viewedUserId: req.user!.userId });
     res.json({ success: true, data: profile });
   } catch (error) {
     next(error);
@@ -67,6 +69,7 @@ userRouter.post('/change-password', authenticate, validate(changePasswordSchema)
     }
     const hashed = await bcrypt.hash(newPassword, 12);
     await prisma.user.update({ where: { id: user.id }, data: { passwordHash: hashed } });
+    securityLogger.authEvent(req, 'PASSWORD_CHANGE', 'SUCCESS', req.user!.userId);
     res.json({ success: true });
   } catch (error) {
     next(error);
@@ -76,6 +79,8 @@ userRouter.post('/change-password', authenticate, validate(changePasswordSchema)
 userRouter.delete('/account', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.userId;
+
+    securityLogger.configEvent(req, 'ACCOUNT_DELETION', userId, { email: req.user!.email });
 
     await prisma.$transaction(async (tx) => {
       await tx.activity.deleteMany({ where: { userId } });
@@ -146,6 +151,8 @@ userRouter.get('/export', authenticate, async (req: Request, res: Response, next
         select: { id: true, matchId: true, rating: true, feedback: true, createdAt: true },
       }),
     ]);
+
+    securityLogger.accessEvent(req, 'DATA_EXPORT', userId, { format: format });
 
     const exportData = {
       exportedAt: new Date().toISOString(),

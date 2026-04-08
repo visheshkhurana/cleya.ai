@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { prisma } from '@cleya/db';
+import { z } from 'zod';
+import { prisma, Prisma } from '@cleya/db';
 import { authenticate, requireAdmin } from '../middleware/auth';
 import { matchingService } from '../services/matchingService';
 import { matchScheduler } from '../services/matchScheduler';
@@ -13,6 +14,7 @@ import { whatsappBotService } from '../services/whatsappBotService';
 import { analyticsAggregatorService } from '../services/analyticsAggregatorService';
 import { agentScheduler } from '../services/agentScheduler';
 import { runAgent, getAgentStatuses, KNOWN_AGENT_IDS } from '../services/agentRunner';
+import { securityLogger } from '../services/securityLogger';
 
 export const adminRouter = Router();
 
@@ -116,8 +118,9 @@ adminRouter.get('/messaging-delivery-stats', async (_req: Request, res: Response
   }
 });
 
-adminRouter.get('/stats', async (_req: Request, res: Response, next: NextFunction) => {
+adminRouter.get('/stats', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    securityLogger.accessEvent(req, 'ADMIN_DATA_QUERY', req.user!.userId, { endpoint: '/admin/stats' });
     const [totalUsers, activeConversations, completedProfiles, totalMatches, acceptedMatches, totalCalls, totalMessages] = await Promise.all([
       prisma.user.count(),
       prisma.conversation.count({ where: { status: 'ACTIVE' } }),
@@ -148,6 +151,7 @@ adminRouter.get('/stats', async (_req: Request, res: Response, next: NextFunctio
 
 adminRouter.get('/users', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    securityLogger.accessEvent(req, 'ADMIN_DATA_QUERY', req.user!.userId, { endpoint: '/admin/users' });
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const skip = (page - 1) * limit;
@@ -877,6 +881,86 @@ adminRouter.get('/agents/status', async (_req: Request, res: Response, next: Nex
     const scheduleInfo = agentScheduler.getScheduleInfo();
     const statuses = getAgentStatuses(scheduleInfo);
     res.json({ success: true, data: statuses });
+  } catch (error) {
+    next(error);
+  }
+});
+
+const securityLogQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+  action: z.enum([
+    'LOGIN_SUCCESS', 'LOGIN_FAILURE', 'SIGNUP', 'LOGOUT',
+    'PASSWORD_RESET_REQUEST', 'PASSWORD_RESET_COMPLETE', 'EMAIL_VERIFICATION',
+    'OAUTH_GOOGLE', 'OAUTH_LINKEDIN', 'TOKEN_REFRESH', 'TOKEN_INVALID',
+    'ACCESS_DENIED', 'ROLE_CHECK_FAILURE', 'PROFILE_VIEW', 'DATA_EXPORT',
+    'PII_ACCESS', 'ADMIN_DATA_QUERY', 'ROLE_CHANGE', 'CONFIG_CHANGE',
+    'RATE_LIMIT_HIT', 'REPEATED_AUTH_FAILURE', 'BLOCKED_INPUT',
+    'ACCOUNT_DELETION', 'PASSWORD_CHANGE',
+  ]).optional(),
+  userId: z.string().optional(),
+  severity: z.enum(['INFO', 'WARNING', 'CRITICAL']).optional(),
+  result: z.enum(['SUCCESS', 'FAILURE', 'BLOCKED']).optional(),
+  startDate: z.string().datetime({ offset: true }).or(z.string().date()).optional(),
+  endDate: z.string().datetime({ offset: true }).or(z.string().date()).optional(),
+  ipAddress: z.string().optional(),
+});
+
+adminRouter.get('/security-logs', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    securityLogger.accessEvent(req, 'ADMIN_DATA_QUERY', req.user!.userId, { endpoint: '/admin/security-logs' });
+
+    const parsed = securityLogQuerySchema.parse(req.query);
+    const { page, limit } = parsed;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.SecurityLogWhereInput = {};
+
+    if (parsed.action) {
+      where.action = parsed.action;
+    }
+    if (parsed.userId) {
+      where.userId = parsed.userId;
+    }
+    if (parsed.severity) {
+      where.severity = parsed.severity;
+    }
+    if (parsed.result) {
+      where.result = parsed.result;
+    }
+    if (parsed.startDate || parsed.endDate) {
+      where.timestamp = {};
+      if (parsed.startDate) {
+        where.timestamp.gte = new Date(parsed.startDate);
+      }
+      if (parsed.endDate) {
+        where.timestamp.lte = new Date(parsed.endDate);
+      }
+    }
+    if (parsed.ipAddress) {
+      where.ipAddress = parsed.ipAddress;
+    }
+
+    const [logs, total] = await Promise.all([
+      prisma.securityLog.findMany({
+        where,
+        orderBy: { timestamp: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.securityLog.count({ where }),
+    ]);
+
+    res.json({
+      success: true,
+      data: logs,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     next(error);
   }

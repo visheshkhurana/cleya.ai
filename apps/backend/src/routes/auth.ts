@@ -9,6 +9,7 @@ import { env } from '../config/env';
 import { whatsappTemplates } from '../services/whatsappTemplates';
 import { gupshupService } from '../services/gupshupService';
 import { prisma } from '@cleya/db';
+import { securityLogger, checkRepeatedAuthFailures } from '../services/securityLogger';
 
 export const authRouter = Router();
 
@@ -72,6 +73,7 @@ authRouter.post('/signup', signupLimiter, async (req: Request, res: Response, ne
   try {
     const data = signupSchema.parse(req.body);
     const result = await authService.signup(data);
+    securityLogger.authEvent(req, 'SIGNUP', 'SUCCESS', result.user.id, { email: data.email });
     const smtpConfigured = !!(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS);
     if (smtpConfigured) {
       emailService.sendWelcome(data.email).catch(() => {});
@@ -96,6 +98,7 @@ authRouter.post('/signup', signupLimiter, async (req: Request, res: Response, ne
       });
       return;
     }
+    securityLogger.authEvent(req, 'SIGNUP', 'FAILURE', null, { email: req.body?.email, error: error?.message });
     next(error);
   }
 });
@@ -104,14 +107,19 @@ authRouter.post('/login', loginLimiter, async (req: Request, res: Response, next
   try {
     const data = loginSchema.parse(req.body);
     const result = await authService.login(data);
+    securityLogger.authEvent(req, 'LOGIN_SUCCESS', 'SUCCESS', result.user.id, { email: data.email });
     setAuthCookie(res, result.token);
     res.json({ success: true, data: result });
   } catch (error) {
+    securityLogger.authEvent(req, 'LOGIN_FAILURE', 'FAILURE', null, { email: req.body?.email, error: (error as Error)?.message });
+    const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || 'unknown';
+    checkRepeatedAuthFailures(req, ipAddress);
     next(error);
   }
 });
 
-authRouter.post('/logout', (_req: Request, res: Response) => {
+authRouter.post('/logout', (req: Request, res: Response) => {
+  securityLogger.authEvent(req, 'LOGOUT', 'SUCCESS', req.user?.userId ?? null);
   res.clearCookie('cleo_auth', { httpOnly: true, secure: true, sameSite: 'lax', path: '/' });
   res.json({ success: true, message: 'Logged out' });
 });
@@ -192,6 +200,7 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
       name: profile.name,
       googleId: profile.id,
     });
+    securityLogger.authEvent(req, 'OAUTH_GOOGLE', 'SUCCESS', result.user.id, { email: profile.email, isNew: result.isNew });
     if (result.isNew) {
       emailService.sendWelcome(profile.email).catch(() => {});
       if (result.user.phone) {
@@ -208,6 +217,7 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
     const dest = (result.user.role as string).toLowerCase() === 'admin' ? '/admin' : profileComplete ? '/dashboard' : '/chat';
     res.redirect(`${baseUrl}${dest}`);
   } catch (err) {
+    securityLogger.authEvent(req, 'OAUTH_GOOGLE', 'FAILURE', null, { error: (err as Error)?.message });
     console.error('Google OAuth error:', err);
     res.redirect(`${env.FRONTEND_URL}/?error=google_auth_error`);
   }
@@ -342,6 +352,8 @@ authRouter.get('/linkedin/callback', async (req: Request, res: Response) => {
       industryName: linkedinIndustry || undefined,
     });
 
+    securityLogger.authEvent(req, 'OAUTH_LINKEDIN', 'SUCCESS', result.user.id, { email: profile.email, isNew: result.isNew });
+
     if (result.isNew) {
       emailService.sendWelcome(profile.email).catch(() => {});
       if (result.user.phone) {
@@ -359,6 +371,7 @@ authRouter.get('/linkedin/callback', async (req: Request, res: Response) => {
     const dest = (result.user.role as string).toLowerCase() === 'admin' ? '/admin' : profileComplete ? '/dashboard' : '/chat';
     res.redirect(`${baseUrl}${dest}`);
   } catch (err) {
+    securityLogger.authEvent(req, 'OAUTH_LINKEDIN', 'FAILURE', null, { error: (err as Error)?.message });
     console.error('LinkedIn OAuth error:', err);
     res.redirect(`${env.FRONTEND_URL}/?error=linkedin_auth_error`);
   }
@@ -391,6 +404,7 @@ authRouter.post('/forgot-password', passwordResetLimiter, async (req: Request, r
   try {
     const { email } = z.object({ email: z.string().email() }).parse(req.body);
     const user = await authService.findUserByEmail(email);
+    securityLogger.authEvent(req, 'PASSWORD_RESET_REQUEST', 'SUCCESS', user?.id ?? null, { email });
     if (user) {
       const token = crypto.randomBytes(32).toString('hex');
       resetTokens.set(token, { email, createdAt: Date.now() });
@@ -417,6 +431,7 @@ authRouter.post('/reset-password', passwordResetLimiter, async (req: Request, re
 
     await authService.resetPassword(entry.email, password);
     resetTokens.delete(token);
+    securityLogger.authEvent(req, 'PASSWORD_RESET_COMPLETE', 'SUCCESS', null, { email: entry.email });
     res.json({ success: true, message: 'Password has been reset successfully.' });
   } catch (error) {
     next(error);
@@ -445,6 +460,7 @@ authRouter.post('/verify-email', async (req: Request, res: Response, next: NextF
     }
     await authService.verifyEmail(entry.userId);
     verifyTokens.delete(token);
+    securityLogger.authEvent(req, 'EMAIL_VERIFICATION', 'SUCCESS', entry.userId);
     res.json({ success: true, message: 'Email verified successfully.' });
   } catch (error) {
     next(error);
