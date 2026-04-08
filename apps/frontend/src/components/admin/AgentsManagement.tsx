@@ -136,8 +136,8 @@ interface AccountabilityStats {
   contentItemsGenerated: number;
 }
 
-const SUPABASE_URL = 'https://lyuiazskqubmlzwuokzm.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5dWlhenNrcXVibWx6d3Vva3ptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1MjIyNzQsImV4cCI6MjA5MDA5ODI3NH0.R-8NDZHFpmfqt0Lw0QhdZtNvaXY28NzLKFSEyFpb6g4';
+const SUPABASE_URL = 'https://kocvqzcxycwzoftcsxch.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtvY3ZxemN4eWN3em9mdGNzeGNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2MjU1MTksImV4cCI6MjA5MTIwMTUxOX0.a5RQvI1rCQQI7mO8jyxWzn7yhZ49ZCbeTGlLcVWTfQ0';
 
 const AGENT_ICONS: Record<string, React.ReactNode> = {
   'brain': <Brain size={20} />,
