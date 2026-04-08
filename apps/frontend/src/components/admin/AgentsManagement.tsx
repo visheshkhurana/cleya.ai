@@ -1998,7 +1998,7 @@ export function AgentsManagement() {
             'id',
             { agent_id: agent.id }
           );
-          const tasksToday = tasks.filter(t => t.created_at.startsWith(today) && t.status === 'completed').length;
+          const tasksToday = tasks.filter(t => t.created_at && t.created_at.startsWith(today) && t.status === 'completed').length;
 
           const content = await fetchSupabase<ContentQueueItem>(
             'dm_content_queue',
