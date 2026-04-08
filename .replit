@@ -133,6 +133,7 @@ AhlvzCczYIkwMM5ca/JBsvGnTupMoV0j6NyuWnVFOmCSyYxfn4SzBpZ90Oww7U1r
 qwIDAQAB
 -----END PUBLIC KEY-----
 """
+GA4_PROPERTY_ID = "530514964"
 
 [userenv.development]
 BACKEND_URL = "https://boardy-ai-platform.replit.dev:3001"
