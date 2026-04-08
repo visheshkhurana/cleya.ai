@@ -136,8 +136,6 @@ interface AccountabilityStats {
   contentItemsGenerated: number;
 }
 
-const SUPABASE_URL = 'https://kocvqzcxycwzoftcsxch.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtvY3ZxemN4eWN3em9mdGNzeGNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2MjU1MTksImV4cCI6MjA5MTIwMTUxOX0.a5RQvI1rCQQI7mO8jyxWzn7yhZ49ZCbeTGlLcVWTfQ0';
 
 const AGENT_ICONS: Record<string, React.ReactNode> = {
   'brain': <Brain size={20} />,
@@ -175,45 +173,6 @@ const STATUS_COLORS: Record<string, string> = {
   'info': 'bg-brand-violet/20 text-brand-violet-hover',
 };
 
-// Supabase API helpers
-const supabaseHeaders = {
-  'apikey': SUPABASE_ANON_KEY,
-  'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-  'Content-Type': 'application/json',
-};
-
-async function fetchSupabase<T>(
-  table: string,
-  query: string = '*',
-  filters?: Record<string, string>
-): Promise<T[]> {
-  let url = `${SUPABASE_URL}/rest/v1/${table}?select=${query}`;
-  if (filters) {
-    Object.entries(filters).forEach(([key, value]) => {
-      url += `&${key}=eq.${value}`;
-    });
-  }
-  const response = await fetch(url, { headers: supabaseHeaders });
-  if (!response.ok) throw new Error(`Supabase error: ${response.statusText}`);
-  return response.json();
-}
-
-async function updateSupabase(
-  table: string,
-  id: string | number,
-  data: Record<string, any>
-): Promise<any> {
-  const response = await fetch(
-    `${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`,
-    {
-      method: 'PATCH',
-      headers: { ...supabaseHeaders, 'Prefer': 'return=minimal' },
-      body: JSON.stringify(data),
-    }
-  );
-  if (!response.ok) throw new Error(`Update failed: ${response.statusText}`);
-  return response.json();
-}
 
 // Components
 function LoadingSpinner() {
@@ -322,11 +281,8 @@ function ActivityLogTab({ agentId }: { agentId: string }) {
   useEffect(() => {
     const loadLogs = async () => {
       try {
-        const data = await fetchSupabase<AgentLog>(
-          'dm_agent_logs',
-          '*',
-          { agent_id: agentId }
-        );
+        const result = await api.getAgentDataLogs(agentId);
+        const data = (Array.isArray(result) ? result : result?.data || []) as AgentLog[];
         setLogs(data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
       } catch (error) {
         console.error('Failed to load logs:', error);
@@ -372,11 +328,8 @@ function TasksTab({ agentId }: { agentId: string }) {
   useEffect(() => {
     const loadTasks = async () => {
       try {
-        const data = await fetchSupabase<AgentTask>(
-          'dm_agent_tasks',
-          '*',
-          { agent_id: agentId }
-        );
+        const result = await api.getAgentDataTasks(agentId);
+        const data = (Array.isArray(result) ? result : result?.data || []) as AgentTask[];
         setTasks(data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
       } catch (error) {
         console.error('Failed to load tasks:', error);
@@ -390,7 +343,7 @@ function TasksTab({ agentId }: { agentId: string }) {
   const handleStatusChange = useCallback(
     async (taskId: number, newStatus: string) => {
       try {
-        await updateSupabase('dm_agent_tasks', taskId, { status: newStatus });
+        await api.updateAgentTaskStatus(taskId, newStatus);
         setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus as any } : t));
       } catch (error) {
         console.error('Failed to update task:', error);
@@ -448,11 +401,8 @@ function ContentQueueTab({ agentId }: { agentId: string }) {
   useEffect(() => {
     const loadItems = async () => {
       try {
-        const data = await fetchSupabase<ContentQueueItem>(
-          'dm_content_queue',
-          '*',
-          { agent_id: agentId }
-        );
+        const result = await api.getAgentDataContent(agentId);
+        const data = (Array.isArray(result) ? result : result?.data || []) as ContentQueueItem[];
         setItems(data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
       } catch (error) {
         console.error('Failed to load content queue:', error);
@@ -466,7 +416,7 @@ function ContentQueueTab({ agentId }: { agentId: string }) {
   const handleApprove = useCallback(
     async (itemId: number) => {
       try {
-        await updateSupabase('dm_content_queue', itemId, { status: 'approved' });
+        await api.updateAgentContentStatus(itemId, 'approved');
         setItems(items.map(i => i.id === itemId ? { ...i, status: 'approved' } : i));
       } catch (error) {
         console.error('Failed to approve:', error);
@@ -478,7 +428,7 @@ function ContentQueueTab({ agentId }: { agentId: string }) {
   const handleReject = useCallback(
     async (itemId: number) => {
       try {
-        await updateSupabase('dm_content_queue', itemId, { status: 'rejected' });
+        await api.updateAgentContentStatus(itemId, 'rejected');
         setItems(items.map(i => i.id === itemId ? { ...i, status: 'rejected' } : i));
       } catch (error) {
         console.error('Failed to reject:', error);
@@ -551,11 +501,8 @@ function ChatTab({ agentId }: { agentId: string }) {
   useEffect(() => {
     const loadMessages = async () => {
       try {
-        const data = await fetchSupabase<AgentMessage>(
-          'dm_agent_messages',
-          '*',
-          { agent_id: agentId }
-        );
+        const result = await api.getAgentDataMessages(agentId);
+        const data = (Array.isArray(result) ? result : result?.data || []) as AgentMessage[];
         setMessages(data.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
       } catch (error) {
         console.error('Failed to load messages:', error);
@@ -586,15 +533,7 @@ function ChatTab({ agentId }: { agentId: string }) {
     setMessages(prev => [...prev, tempUserMsg]);
 
     try {
-      // Save user message to Supabase
-      await fetch(`${SUPABASE_URL}/rest/v1/dm_agent_messages`, {
-        method: 'POST',
-        headers: { ...supabaseHeaders, 'Prefer': 'return=minimal' },
-        body: JSON.stringify({
-          agent_id: agentId, direction: 'inbound', message: userMsg,
-          message_type: 'text', metadata: {}, read: false,
-        }),
-      });
+      await api.saveAgentMessage(agentId, 'inbound', userMsg);
 
       // Build chat history from recent messages for context
       const history = messages.slice(-10).map(m => ({
@@ -624,15 +563,7 @@ function ChatTab({ agentId }: { agentId: string }) {
       };
       setMessages(prev => [...prev, aiMsg]);
 
-      // Save AI response to Supabase
-      await fetch(`${SUPABASE_URL}/rest/v1/dm_agent_messages`, {
-        method: 'POST',
-        headers: { ...supabaseHeaders, 'Prefer': 'return=minimal' },
-        body: JSON.stringify({
-          agent_id: agentId, direction: 'outbound', message: assistantText,
-          message_type: 'text', metadata: {}, read: false,
-        }),
-      });
+      await api.saveAgentMessage(agentId, 'outbound', assistantText);
     } catch (error) {
       console.error('Failed to send message:', error);
       setMessages(prev => [...prev, {
@@ -702,11 +633,8 @@ function CodeChangesTab({ agentId }: { agentId: string }) {
   useEffect(() => {
     const loadChanges = async () => {
       try {
-        const data = await fetchSupabase<CodeChange>(
-          'dm_code_changes',
-          '*',
-          { agent_id: agentId }
-        );
+        const result = await api.getAgentDataCodeChanges(agentId);
+        const data = (Array.isArray(result) ? result : result?.data || []) as CodeChange[];
         setChanges(data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
       } catch (error) {
         console.error('Failed to load code changes:', error);
@@ -1679,7 +1607,8 @@ function MetricsView() {
   useEffect(() => {
     const loadMetrics = async () => {
       try {
-        const data = await fetchSupabase<CampaignMetric>('dm_campaign_metrics');
+        const result = await api.getAgentDataCampaigns();
+        const data = (Array.isArray(result) ? result : result?.data || []) as CampaignMetric[];
         setMetrics(data);
       } catch (error) {
         console.error('Failed to load metrics:', error);
@@ -1759,7 +1688,8 @@ function ContentApprovalView() {
   useEffect(() => {
     const loadItems = async () => {
       try {
-        const data = await fetchSupabase<ContentQueueItem>('dm_content_queue');
+        const result = await api.getAgentDataContent();
+        const data = (Array.isArray(result) ? result : result?.data || []) as ContentQueueItem[];
         setItems(data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
       } catch (error) {
         console.error('Failed to load content queue:', error);
@@ -1774,7 +1704,7 @@ function ContentApprovalView() {
     const pendingItems = filteredItems.filter(i => i.status === 'pending');
     for (const item of pendingItems) {
       try {
-        await updateSupabase('dm_content_queue', item.id, { status: 'approved' });
+        await api.updateAgentContentStatus(item.id, 'approved');
       } catch (error) {
         console.error('Failed to approve:', error);
       }
@@ -1858,7 +1788,7 @@ function ContentQueueItemCard({
   const handleAction = useCallback(async (status: string) => {
     setUpdating(true);
     try {
-      await updateSupabase('dm_content_queue', item.id, { status });
+      await api.updateAgentContentStatus(item.id, status);
       onUpdate(item.id, status);
     } catch (error) {
       console.error('Failed to update:', error);
@@ -1984,36 +1914,28 @@ export function AgentsManagement() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const agentsData = await fetchSupabase<Agent>('dm_agents');
+        const agentsResult = await api.getAgentDataList();
+        const agentsData = (Array.isArray(agentsResult) ? agentsResult : agentsResult?.data || []) as Agent[];
         setAgents(agentsData);
 
         await loadStatuses();
 
+        const [tasksResult, contentResult, messagesResult] = await Promise.all([
+          api.getAgentDataTasks(),
+          api.getAgentDataContent(),
+          api.getAgentDataMessages(),
+        ]);
+
+        const allTasks = (Array.isArray(tasksResult) ? tasksResult : tasksResult?.data || []) as AgentTask[];
+        const allContent = (Array.isArray(contentResult) ? contentResult : contentResult?.data || []) as ContentQueueItem[];
+        const allMessages = (Array.isArray(messagesResult) ? messagesResult : messagesResult?.data || []) as AgentMessage[];
+
+        const today = new Date().toISOString().split('T')[0];
         const stats: Record<string, any> = {};
         for (const agent of agentsData) {
-          const today = new Date().toISOString().split('T')[0];
-
-          const tasks = await fetchSupabase<AgentTask>(
-            'dm_agent_tasks',
-            '*',
-            { agent_id: agent.id }
-          );
-          const tasksToday = tasks.filter(t => t.created_at && t.created_at.startsWith(today) && t.status === 'completed').length;
-
-          const content = await fetchSupabase<ContentQueueItem>(
-            'dm_content_queue',
-            '*',
-            { agent_id: agent.id }
-          );
-          const contentPending = content.filter(c => c.status === 'pending').length;
-
-          const messages = await fetchSupabase<AgentMessage>(
-            'dm_agent_messages',
-            '*',
-            { agent_id: agent.id }
-          );
-          const messagesUnread = messages.filter(m => !m.read && m.direction === 'outbound').length;
-
+          const tasksToday = allTasks.filter(t => t.agent_id === agent.id && t.created_at && t.created_at.startsWith(today) && t.status === 'completed').length;
+          const contentPending = allContent.filter(c => c.agent_id === agent.id && c.status === 'pending').length;
+          const messagesUnread = allMessages.filter(m => m.agent_id === agent.id && !m.read && m.direction === 'outbound').length;
           stats[agent.id] = { tasksToday, contentPending, messagesUnread };
         }
         setStats(stats);

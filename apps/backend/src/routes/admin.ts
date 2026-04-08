@@ -407,6 +407,39 @@ adminRouter.get('/analytics/overview', async (req: Request, res: Response, next:
   }
 });
 
+adminRouter.get('/analytics/health', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { ga4Service } = await import('../services/ga4Service');
+    const { instagramService } = await import('../services/instagramService');
+    const { posthogService } = await import('../services/posthogService');
+    const { sentryService } = await import('../services/sentryService');
+
+    res.json({
+      success: true,
+      data: {
+        ga4: {
+          configured: ga4Service.isConfigured(),
+          requiredVars: ['GA4_PROPERTY_ID', 'GA4_SERVICE_ACCOUNT_KEY'],
+        },
+        instagram: {
+          configured: instagramService.isConfigured(),
+          requiredVars: ['INSTAGRAM_ACCESS_TOKEN', 'INSTAGRAM_BUSINESS_ACCOUNT_ID'],
+        },
+        posthog: {
+          configured: posthogService.isConfigured(),
+          requiredVars: ['POSTHOG_API_KEY'],
+        },
+        sentry: {
+          configured: sentryService.isConfigured(),
+          requiredVars: ['SENTRY_AUTH_TOKEN', 'SENTRY_ORG', 'SENTRY_PROJECT'],
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 adminRouter.get('/analytics/ga4', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const dateRange = (req.query.range as string) || '30d';
@@ -453,10 +486,33 @@ adminRouter.get('/analytics/sentry', async (req: Request, res: Response, next: N
 
 adminRouter.post('/test-email', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { to, type } = req.body;
+    const { to, type, matchName, matchRole, matchScore, companyName, raiseAmount, sector, traction, linkedinUrl, matchReason, matchEmail, matchTitle } = req.body;
     if (!to) return res.status(400).json({ success: false, error: 'Missing "to" email address' });
 
     const emailType = type || 'welcome';
+
+    let testUser: { name: string; company: string; role: string; email: string; linkedinUrl: string } | null = null;
+    if (['match-proposed', 'match-accepted'].includes(emailType) && !matchName) {
+      const dbUser = await prisma.user.findFirst({
+        where: { onboardingComplete: true },
+        select: { name: true, email: true, profile: { select: { companyName: true, linkedinUrl: true, currentRole: true } } },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (dbUser) {
+        testUser = {
+          name: dbUser.name || 'Test User',
+          company: dbUser.profile?.companyName || 'Test Company',
+          role: dbUser.profile?.currentRole || 'Founder',
+          email: dbUser.email,
+          linkedinUrl: dbUser.profile?.linkedinUrl || '',
+        };
+      }
+    }
+
+    const resolvedMatchName = matchName || testUser?.name || 'Test User';
+    const resolvedCompany = companyName || testUser?.company || 'Test Company';
+    const resolvedLinkedin = linkedinUrl || testUser?.linkedinUrl || 'https://www.linkedin.com/in/example';
+    const resolvedEmail = matchEmail || testUser?.email || 'test@example.com';
 
     switch (emailType) {
       case 'welcome':
@@ -469,17 +525,19 @@ adminRouter.post('/test-email', async (req: Request, res: Response, next: NextFu
         await emailService.sendPasswordReset(to, 'test-token-456');
         break;
       case 'match-proposed':
-        await emailService.sendMatchProposed(to, 'You', 'Kartik Dixit', 'Founder', 0.92, {
-          companyName: 'Skand Industries',
-          raiseAmount: '$2M Seed',
-          sector: 'Defense Tech',
-          traction: 'Already has a Letter of Intent with India\'s BSF and an active pilot invitation from the Armenian Border Guard.',
-          linkedinUrl: 'https://www.linkedin.com/in/example',
-          matchReason: 'Feels aligned with your focus on backing repeat founders early.',
+        const parsedScore = matchScore ? parseFloat(matchScore) : 0.92;
+        const validScore = isNaN(parsedScore) ? 0.92 : Math.min(1, Math.max(0, parsedScore));
+        await emailService.sendMatchProposed(to, 'You', resolvedMatchName, matchRole || 'Founder', validScore, {
+          companyName: resolvedCompany,
+          raiseAmount: raiseAmount || '$2M Seed',
+          sector: sector || 'Technology',
+          traction: traction || 'Growing steadily with strong engagement metrics.',
+          linkedinUrl: resolvedLinkedin,
+          matchReason: matchReason || 'Strong alignment with your investment thesis and focus areas.',
         });
         break;
       case 'match-accepted':
-        await emailService.sendMatchAccepted(to, 'You', 'Kartik Dixit', 'Founder · Defense Tech', 'kartik@example.com', 'https://www.linkedin.com/in/example');
+        await emailService.sendMatchAccepted(to, 'You', resolvedMatchName, matchTitle || `${matchRole || 'Founder'} · ${sector || 'Technology'}`, resolvedEmail, resolvedLinkedin);
         break;
       default:
         return res.status(400).json({ success: false, error: `Unknown email type: ${emailType}` });
@@ -495,6 +553,22 @@ adminRouter.get('/whatsapp/templates', async (_req: Request, res: Response, next
   try {
     const templates = whatsappTemplates.getAllTemplates();
     const provider = messagingService.getActiveProvider();
+
+    let sampleUser: { name: string } = { name: 'User' };
+    let sampleMatch: { name: string; role: string; company: string } = { name: 'Match Name', role: 'Founder', company: 'Company' };
+    try {
+      const users = await prisma.user.findMany({
+        where: { onboardingComplete: true },
+        select: { name: true, profile: { select: { currentRole: true, companyName: true } } },
+        take: 2,
+        orderBy: { createdAt: 'desc' },
+      });
+      if (users[0]) sampleUser = { name: users[0].name || 'User' };
+      if (users[1]) sampleMatch = { name: users[1].name || 'Match Name', role: users[1].profile?.currentRole || 'Founder', company: users[1].profile?.companyName || 'Company' };
+    } catch (err) {
+      console.warn('[WhatsApp templates] Failed to fetch sample users from DB:', err);
+    }
+
     res.json({
       success: true,
       data: {
@@ -505,20 +579,20 @@ adminRouter.get('/whatsapp/templates', async (_req: Request, res: Response, next
           description: t.description,
           gupshupTemplateId: t.gupshupTemplateId,
           sampleMessage: t.buildMessage({
-            name: 'Rahul',
-            matchName: 'Priya Sharma',
-            matchRole: 'VC Partner',
-            matchCompany: 'Sequoia Capital',
+            name: sampleUser.name,
+            matchName: sampleMatch.name,
+            matchRole: sampleMatch.role,
+            matchCompany: sampleMatch.company,
             matchScore: '94',
-            introName: 'Vikram Singh',
-            introRole: 'CTO at Razorpay',
+            introName: sampleMatch.name,
+            introRole: `${sampleMatch.role} at ${sampleMatch.company}`,
             meetingTitle: 'Coffee Chat',
-            withName: 'Ananya Patel',
+            withName: sampleMatch.name,
             proposedTime: 'Tomorrow at 3:00 PM IST',
-            confirmedTime: 'Mar 31, 2026 at 3:00 PM IST',
+            confirmedTime: new Date(Date.now() + 86400000).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) + ' at 3:00 PM IST',
             location: 'Google Meet',
-            eventName: 'Pitch by Deel',
-            eventDate: 'Apr 15, 2026',
+            eventName: 'Networking Event',
+            eventDate: new Date(Date.now() + 7 * 86400000).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }),
             completionPct: '40',
             newMatches: '3',
             introsSent: '2',
@@ -1524,6 +1598,124 @@ adminRouter.get('/founder/priority-inbox', async (_req: Request, res: Response, 
   try {
     const inbox = await getPriorityInbox();
     res.json({ success: true, data: inbox });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/agents/data/list', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await supabaseSelect('dm_agents');
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/agents/data/logs', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const agentId = req.query.agent_id as string | undefined;
+    const filters = agentId ? { agent_id: agentId } : undefined;
+    const data = await supabaseSelect('dm_agent_logs', filters, { order: 'created_at.desc', limit: 100 });
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/agents/data/tasks', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const agentId = req.query.agent_id as string | undefined;
+    const filters = agentId ? { agent_id: agentId } : undefined;
+    const data = await supabaseSelect('dm_agent_tasks', filters, { order: 'created_at.desc', limit: 100 });
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.patch('/agents/data/tasks/:taskId/status', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { taskId } = req.params;
+    const { status } = req.body;
+    if (!status) return res.status(400).json({ success: false, error: { message: 'status is required' } });
+    const { supabaseUpdate } = await import('../services/supabaseClient');
+    await supabaseUpdate('dm_agent_tasks', { id: taskId }, { status });
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/agents/data/content', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const agentId = req.query.agent_id as string | undefined;
+    const filters = agentId ? { agent_id: agentId } : undefined;
+    const data = await supabaseSelect('dm_content_queue', filters, { order: 'created_at.desc', limit: 100 });
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.patch('/agents/data/content/:contentId/status', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { contentId } = req.params;
+    const { status } = req.body;
+    if (!status) return res.status(400).json({ success: false, error: { message: 'status is required' } });
+    const { supabaseUpdate } = await import('../services/supabaseClient');
+    await supabaseUpdate('dm_content_queue', { id: contentId }, { status });
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/agents/data/messages', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { agent_id, direction, message, message_type, metadata } = req.body;
+    if (!agent_id || !message) return res.status(400).json({ success: false, error: { message: 'agent_id and message are required' } });
+    const { supabaseInsert } = await import('../services/supabaseClient');
+    await supabaseInsert('dm_agent_messages', {
+      agent_id,
+      direction: direction || 'inbound',
+      message,
+      message_type: message_type || 'text',
+      metadata: metadata || {},
+      read: false,
+    });
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/agents/data/messages', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const agentId = req.query.agent_id as string | undefined;
+    const filters = agentId ? { agent_id: agentId } : undefined;
+    const data = await supabaseSelect('dm_agent_messages', filters, { order: 'created_at.desc', limit: 100 });
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/agents/data/code-changes', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const agentId = req.query.agent_id as string | undefined;
+    const filters = agentId ? { agent_id: agentId } : undefined;
+    const data = await supabaseSelect('dm_code_changes', filters, { order: 'created_at.desc', limit: 100 });
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/agents/data/campaigns', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await supabaseSelect('dm_campaign_metrics');
+    res.json({ success: true, data });
   } catch (error) {
     next(error);
   }

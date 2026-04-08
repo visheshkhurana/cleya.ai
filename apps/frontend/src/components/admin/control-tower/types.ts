@@ -1,3 +1,5 @@
+import { AGENT_REGISTRY, type AgentDefinition } from '@/lib/agentDefinitions';
+
 export interface Channel {
   id: string;
   name: string;
@@ -50,27 +52,42 @@ export interface CommandAction {
   action: () => void;
 }
 
+const ROLE_DESCRIPTIONS: Record<string, string> = {
+  nexus: 'Orchestrator \u2014 coordinates all agents',
+  maven: 'Marketing \u2014 content, SEO, social',
+  ledger: 'Finance \u2014 modeling, runway, fundraising',
+  sentinel: 'CTO \u2014 architecture, security, performance',
+  ally: 'Support \u2014 customer success, onboarding',
+  catalyst: 'Growth \u2014 viral loops, referrals, activation',
+  closer: 'Sales \u2014 outreach, pipeline, investor relations',
+};
+
 export const AGENT_CHANNELS: Channel[] = [
   { id: 'founder-room', name: 'founder-room', type: 'special', emoji: '\uD83C\uDFE0', description: 'Your command center \u2014 talk to any agent', color: 'indigo', unreadCount: 0, presence: 'active' },
   { id: 'all-agents', name: 'all-agents', type: 'special', emoji: '\uD83D\uDCE2', description: 'Broadcast to all agents', color: 'violet', unreadCount: 0, presence: 'active' },
-  { id: 'nexus', name: 'nexus', type: 'agent', agentId: 'nexus', emoji: '\uD83E\uDDE0', description: 'Orchestrator \u2014 coordinates all agents', color: 'purple', unreadCount: 0, presence: 'idle' },
-  { id: 'maven', name: 'maven', type: 'agent', agentId: 'maven', emoji: '\uD83C\uDFAF', description: 'Marketing \u2014 content, SEO, social', color: 'blue', unreadCount: 0, presence: 'idle' },
-  { id: 'ledger', name: 'ledger', type: 'agent', agentId: 'ledger', emoji: '\uD83D\uDCCA', description: 'Finance \u2014 modeling, runway, fundraising', color: 'amber', unreadCount: 0, presence: 'idle' },
-  { id: 'sentinel', name: 'sentinel', type: 'agent', agentId: 'sentinel', emoji: '\uD83D\uDEE1\uFE0F', description: 'CTO \u2014 architecture, security, performance', color: 'cyan', unreadCount: 0, presence: 'idle' },
-  { id: 'ally', name: 'ally', type: 'agent', agentId: 'ally', emoji: '\uD83D\uDCAC', description: 'Support \u2014 customer success, onboarding', color: 'green', unreadCount: 0, presence: 'idle' },
-  { id: 'catalyst', name: 'catalyst', type: 'agent', agentId: 'catalyst', emoji: '\uD83D\uDE80', description: 'Growth \u2014 viral loops, referrals, activation', color: 'emerald', unreadCount: 0, presence: 'idle' },
-  { id: 'closer', name: 'closer', type: 'agent', agentId: 'closer', emoji: '\uD83E\uDD1D', description: 'Sales \u2014 outreach, pipeline, investor relations', color: 'rose', unreadCount: 0, presence: 'idle' },
+  ...Object.values(AGENT_REGISTRY).map((agent: AgentDefinition) => ({
+    id: agent.id,
+    name: agent.id,
+    type: 'agent' as const,
+    agentId: agent.id,
+    emoji: agent.emoji,
+    description: ROLE_DESCRIPTIONS[agent.id] || agent.description,
+    color: agent.color,
+    unreadCount: 0,
+    presence: 'idle' as const,
+  })),
 ];
 
-export const AGENT_MAP: Record<string, AgentInfo> = {
-  nexus: { id: 'nexus', name: 'Nexus', emoji: '\uD83E\uDDE0', role: 'Orchestrator', description: 'Master coordinator', color: 'purple' },
-  maven: { id: 'maven', name: 'Maven', emoji: '\uD83C\uDFAF', role: 'Marketing', description: 'Content, SEO, social media', color: 'blue' },
-  ledger: { id: 'ledger', name: 'Ledger', emoji: '\uD83D\uDCCA', role: 'Finance', description: 'Financial modeling, runway', color: 'amber' },
-  sentinel: { id: 'sentinel', name: 'Sentinel', emoji: '\uD83D\uDEE1\uFE0F', role: 'CTO', description: 'Architecture, security', color: 'cyan' },
-  ally: { id: 'ally', name: 'Ally', emoji: '\uD83D\uDCAC', role: 'Support', description: 'Customer success', color: 'green' },
-  catalyst: { id: 'catalyst', name: 'Catalyst', emoji: '\uD83D\uDE80', role: 'Growth', description: 'Viral loops, referrals', color: 'emerald' },
-  closer: { id: 'closer', name: 'Closer', emoji: '\uD83E\uDD1D', role: 'Sales', description: 'B2B sales, outreach', color: 'rose' },
-};
+export const AGENT_MAP: Record<string, AgentInfo> = Object.fromEntries(
+  Object.entries(AGENT_REGISTRY).map(([id, agent]) => [id, {
+    id: agent.id,
+    name: agent.name,
+    emoji: agent.emoji,
+    role: agent.role,
+    description: agent.description,
+    color: agent.color,
+  }])
+);
 
 export const PRESENCE_COLORS: Record<string, string> = {
   active: 'bg-green-400',

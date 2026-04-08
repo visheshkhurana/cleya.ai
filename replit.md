@@ -93,7 +93,7 @@ Memory is assembled and injected into agent system prompts automatically before 
 
 **Smart Orchestrator Delegation**: When Nexus completes, scheduler parses its full JSON output for task keys (`mavenTasks`, `ledgerTasks`, `sentinelTasks`, `allyTasks`, `catalystTasks`, `closerTasks`), creates `dm_agent_tasks` entries for each sub-agent. Falls back to triggering all sub-agents if JSON parsing fails.
 
-**Supabase client** (`apps/backend/src/services/supabaseClient.ts`): Lightweight REST client for backend to read/write Supabase `dm_*` tables (content queue, logs, tasks).
+**Supabase client** (`apps/backend/src/services/supabaseClient.ts`): Lightweight REST client for backend to read/write Supabase `dm_*` tables (content queue, logs, tasks). All frontend agent data access goes through backend proxy endpoints (`/api/admin/agents/data/*`) — no direct Supabase credentials in the frontend.
 
 **Autonomy & Guardrails** (`apps/backend/src/services/guardrailsService.ts`): Per-agent autonomy levels — `manual` (all content queued for review), `semi_autonomous` (low-risk auto-executed, high-risk queued), `autonomous` (all auto-executed within guardrails). Guardrails framework enforces `daily_action_limit`, `daily_spend_cap`, and `content_blocklist` per agent. Execution audit log written to `dm_execution_log` table for every agent action.
 
@@ -111,6 +111,16 @@ Memory is assembled and injected into agent system prompts automatically before 
 - `POST /api/admin/content/:id/publish` — publish a single approved content item to its channel
 - `POST /api/admin/content/publish-approved` — batch publish all approved content
 - `GET /api/admin/execution-log` — query execution audit log with optional agent_id filter
+- `GET /api/admin/analytics/health` — reports which analytics services (GA4, Instagram, PostHog, Sentry) are configured
+- `GET /api/admin/agents/data/list` — proxy to Supabase dm_agents table
+- `GET /api/admin/agents/data/logs` — proxy to dm_agent_logs (optional ?agent_id filter)
+- `GET /api/admin/agents/data/tasks` — proxy to dm_agent_tasks (optional ?agent_id filter)
+- `PATCH /api/admin/agents/data/tasks/:id/status` — update task status
+- `GET /api/admin/agents/data/content` — proxy to dm_content_queue (optional ?agent_id filter)
+- `PATCH /api/admin/agents/data/content/:id/status` — update content status
+- `GET/POST /api/admin/agents/data/messages` — read/write dm_agent_messages (optional ?agent_id filter)
+- `GET /api/admin/agents/data/code-changes` — proxy to dm_code_changes (optional ?agent_id filter)
+- `GET /api/admin/agents/data/campaigns` — proxy to dm_campaign_metrics
 
 **Frontend — Control Tower (Slack-style 3-panel layout):**
 The admin Control Tower (`apps/frontend/src/app/controltower/PageClient.tsx`) uses a three-panel Slack-style layout:
@@ -118,7 +128,7 @@ The admin Control Tower (`apps/frontend/src/app/controltower/PageClient.tsx`) us
 - **Center panel (flexible):** Chat feed (`ChatPanel.tsx`) — Slack-style message timeline where admin can chat with agents inline. Supports @mentions routing (e.g., @maven in #founder-room routes to Marketing agent), threaded conversations, and expandable message content. Agent run outputs and system events render as styled messages.
 - **Right panel (320px, collapsible):** Insights panel (`InsightsPanel.tsx`) — shows contextual data per channel: agent stats, run history, quick actions for agent channels; Overview stats, Comms, Deals, Events, Analytics, WhatsApp data for #founder-room.
 - **Command palette (Cmd+K):** `CommandPalette.tsx` — fuzzy search overlay for /ask, /run, /report, /schedule, /approve commands and channel navigation.
-- **Shared types/data:** `control-tower/types.ts` — Channel, ChatMessage, Thread, AgentInfo types plus AGENT_CHANNELS and AGENT_MAP constants.
+- **Shared types/data:** `control-tower/types.ts` — Channel, ChatMessage, Thread, AgentInfo types plus AGENT_CHANNELS and AGENT_MAP (derived from shared `lib/agentDefinitions.ts` registry for single source of truth).
 
 Legacy components `AgentsManagement.tsx` and `AgentArchitecture.tsx` are preserved but no longer directly rendered in the main layout (functionality migrated to insights panel and chat system).
 

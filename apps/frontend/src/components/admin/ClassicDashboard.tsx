@@ -63,6 +63,7 @@ export function ClassicDashboard() {
   const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [newEvent, setNewEvent] = useState({ name: '', description: '', date: '', location: '', isVirtual: false, maxCapacity: '' });
   const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [analyticsHealth, setAnalyticsHealth] = useState<any>(null);
   const [digestLoading, setDigestLoading] = useState(false);
   const [analyticsRange, setAnalyticsRange] = useState<'7d' | '30d' | '90d'>('30d');
   const [ga4Data, setGa4Data] = useState<any>(null);
@@ -78,12 +79,7 @@ export function ClassicDashboard() {
   const [whatsappData, setWhatsappData] = useState<any>(null);
   const [whatsappUsers, setWhatsappUsers] = useState<any[] | null>(null);
   const [waSubTab, setWaSubTab] = useState<'activity' | 'users'>('activity');
-  const [agentList] = useState<AgentInfo[]>([
-    { id: 'cleya-marketing', name: 'Mira', emoji: '🎯', role: 'Marketing', description: 'Content, SEO, social media, viral campaigns', color: 'indigo' },
-    { id: 'cleya-growth', name: 'Vega', emoji: '🚀', role: 'Growth', description: 'User acquisition, referral loops, retention', color: 'emerald' },
-    { id: 'cleya-finance', name: 'Arjun', emoji: '📊', role: 'Finance', description: 'Metrics, revenue modeling, fundraising prep', color: 'amber' },
-    { id: 'cleya-sales', name: 'Kavi', emoji: '🤝', role: 'Sales', description: 'Lead gen, outreach, investor relations', color: 'rose' },
-  ]);
+  const [agentList, setAgentList] = useState<AgentInfo[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [agentMessages, setAgentMessages] = useState<Record<string, AgentMessage[]>>({});
   const [agentInput, setAgentInput] = useState('');
@@ -141,8 +137,12 @@ export function ClassicDashboard() {
   const loadAnalytics = async (range?: '7d' | '30d' | '90d') => {
     const r = range || analyticsRange;
     try {
-      const data = await api.getAdminAnalytics(r);
+      const [data, health] = await Promise.all([
+        api.getAdminAnalytics(r),
+        api.getAnalyticsHealth(),
+      ]);
       setAnalyticsData(data);
+      setAnalyticsHealth(health);
     } catch (err: unknown) {
       console.error('Failed to load analytics:', err);
     }
@@ -275,12 +275,33 @@ export function ClassicDashboard() {
     setAgentLoading(false);
   };
 
+  const loadAgents = async () => {
+    try {
+      const data = await api.getAgentStatuses();
+      if (Array.isArray(data)) {
+        const EMOJI_MAP: Record<string, string> = { nexus: '🧠', maven: '🎯', ledger: '📊', sentinel: '🛡️', ally: '💬', catalyst: '🚀', closer: '🤝' };
+        const COLOR_MAP: Record<string, string> = { nexus: 'purple', maven: 'indigo', ledger: 'amber', sentinel: 'cyan', ally: 'green', catalyst: 'emerald', closer: 'rose' };
+        setAgentList(data.map((a: any) => ({
+          id: a.agentId,
+          name: a.name,
+          emoji: EMOJI_MAP[a.agentId] || '🤖',
+          role: a.codename,
+          description: `${a.codename} agent`,
+          color: COLOR_MAP[a.agentId] || 'slate',
+        })));
+      }
+    } catch (err) {
+      console.error('Failed to load agents:', err);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'communications' && !commData) loadComms();
     if (activeTab === 'deals' && !dealData) loadDeals();
     if (activeTab === 'events' && !eventData) loadEvents();
     if (activeTab === 'analytics' && !analyticsData) loadAnalytics();
     if (activeTab === 'whatsapp' && !whatsappData) loadWhatsApp();
+    if (activeTab === 'agents' && agentList.length === 0) loadAgents();
   }, [activeTab]);
 
   const handleTrigger = async () => {
@@ -862,7 +883,11 @@ export function ClassicDashboard() {
                   ) : !ga4Data?.configured ? (
                     <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-4">
                       <p className="text-yellow-300/80 text-sm font-medium mb-1">Not Configured</p>
-                      <p className="text-yellow-300/50 text-xs">Set <code className="bg-yellow-500/10 px-1 rounded">GA4_PROPERTY_ID</code> and <code className="bg-yellow-500/10 px-1 rounded">GA4_SERVICE_ACCOUNT_KEY</code> environment variables to enable Google Analytics data.</p>
+                      <p className="text-yellow-300/50 text-xs">
+                        {analyticsHealth?.ga4?.requiredVars
+                          ? <>Set {analyticsHealth.ga4.requiredVars.map((v: string, i: number) => <><code key={v} className="bg-yellow-500/10 px-1 rounded">{v}</code>{i < analyticsHealth.ga4.requiredVars.length - 1 ? ' and ' : ''}</>)} environment variables to enable Google Analytics data.</>
+                          : <>Set <code className="bg-yellow-500/10 px-1 rounded">GA4_PROPERTY_ID</code> and <code className="bg-yellow-500/10 px-1 rounded">GA4_SERVICE_ACCOUNT_KEY</code> environment variables to enable Google Analytics data.</>}
+                      </p>
                     </div>
                   ) : ga4Data?.data ? (
                     <>
@@ -955,7 +980,11 @@ export function ClassicDashboard() {
                   ) : !instagramData?.configured ? (
                     <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-4">
                       <p className="text-yellow-300/80 text-sm font-medium mb-1">Not Configured</p>
-                      <p className="text-yellow-300/50 text-xs">Set <code className="bg-yellow-500/10 px-1 rounded">INSTAGRAM_ACCESS_TOKEN</code> and <code className="bg-yellow-500/10 px-1 rounded">INSTAGRAM_BUSINESS_ACCOUNT_ID</code> environment variables.</p>
+                      <p className="text-yellow-300/50 text-xs">
+                        {analyticsHealth?.instagram?.requiredVars
+                          ? <>Set {analyticsHealth.instagram.requiredVars.map((v: string, i: number) => <><code key={v} className="bg-yellow-500/10 px-1 rounded">{v}</code>{i < analyticsHealth.instagram.requiredVars.length - 1 ? ' and ' : ''}</>)} environment variables.</>
+                          : <>Set <code className="bg-yellow-500/10 px-1 rounded">INSTAGRAM_ACCESS_TOKEN</code> and <code className="bg-yellow-500/10 px-1 rounded">INSTAGRAM_BUSINESS_ACCOUNT_ID</code> environment variables.</>}
+                      </p>
                     </div>
                   ) : instagramData?.data ? (
                     <>
@@ -1014,7 +1043,11 @@ export function ClassicDashboard() {
                   ) : !posthogData?.configured ? (
                     <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-4">
                       <p className="text-yellow-300/80 text-sm font-medium mb-1">Not Configured</p>
-                      <p className="text-yellow-300/50 text-xs">Set <code className="bg-yellow-500/10 px-1 rounded">POSTHOG_API_KEY</code> environment variables.</p>
+                      <p className="text-yellow-300/50 text-xs">
+                        {analyticsHealth?.posthog?.requiredVars
+                          ? <>Set {analyticsHealth.posthog.requiredVars.map((v: string, i: number) => <><code key={v} className="bg-yellow-500/10 px-1 rounded">{v}</code>{i < analyticsHealth.posthog.requiredVars.length - 1 ? ' and ' : ''}</>)} environment variables.</>
+                          : <>Set <code className="bg-yellow-500/10 px-1 rounded">POSTHOG_API_KEY</code> environment variables.</>}
+                      </p>
                     </div>
                   ) : posthogData?.data ? (
                     <>
@@ -1128,7 +1161,11 @@ export function ClassicDashboard() {
                   ) : !sentryData?.configured ? (
                     <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-4">
                       <p className="text-yellow-300/80 text-sm font-medium mb-1">Not Configured</p>
-                      <p className="text-yellow-300/50 text-xs">Set <code className="bg-yellow-500/10 px-1 rounded">SENTRY_AUTH_TOKEN</code>, <code className="bg-yellow-500/10 px-1 rounded">SENTRY_ORG</code>, and <code className="bg-yellow-500/10 px-1 rounded">SENTRY_PROJECT</code> environment variables.</p>
+                      <p className="text-yellow-300/50 text-xs">
+                        {analyticsHealth?.sentry?.requiredVars
+                          ? <>Set {analyticsHealth.sentry.requiredVars.map((v: string, i: number) => <><code key={v} className="bg-yellow-500/10 px-1 rounded">{v}</code>{i < analyticsHealth.sentry.requiredVars.length - 1 ? ', ' : ''}</>)} environment variables.</>
+                          : <>Set <code className="bg-yellow-500/10 px-1 rounded">SENTRY_AUTH_TOKEN</code>, <code className="bg-yellow-500/10 px-1 rounded">SENTRY_ORG</code>, and <code className="bg-yellow-500/10 px-1 rounded">SENTRY_PROJECT</code> environment variables.</>}
+                      </p>
                     </div>
                   ) : sentryData?.data ? (
                     <>

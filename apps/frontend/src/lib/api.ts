@@ -750,6 +750,64 @@ class ApiClient {
   async getFounderPriorityInbox() {
     return this.fetch('/admin/founder/priority-inbox');
   }
+
+  async getAnalyticsHealth() {
+    return this.fetch('/admin/analytics/health');
+  }
+
+  async getAgentDataList() {
+    return this.fetch('/admin/agents/data/list');
+  }
+
+  async getAgentDataLogs(agentId?: string) {
+    const params = agentId ? `?agent_id=${agentId}` : '';
+    return this.fetch(`/admin/agents/data/logs${params}`);
+  }
+
+  async getAgentDataTasks(agentId?: string) {
+    const params = agentId ? `?agent_id=${agentId}` : '';
+    return this.fetch(`/admin/agents/data/tasks${params}`);
+  }
+
+  async updateAgentTaskStatus(taskId: string | number, status: string) {
+    return this.fetch(`/admin/agents/data/tasks/${taskId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  async getAgentDataContent(agentId?: string) {
+    const params = agentId ? `?agent_id=${agentId}` : '';
+    return this.fetch(`/admin/agents/data/content${params}`);
+  }
+
+  async updateAgentContentStatus(contentId: string | number, status: string) {
+    return this.fetch(`/admin/agents/data/content/${contentId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  async getAgentDataMessages(agentId?: string) {
+    const params = agentId ? `?agent_id=${agentId}` : '';
+    return this.fetch(`/admin/agents/data/messages${params}`);
+  }
+
+  async saveAgentMessage(agentId: string, direction: string, message: string) {
+    return this.fetch('/admin/agents/data/messages', {
+      method: 'POST',
+      body: JSON.stringify({ agent_id: agentId, direction, message, message_type: 'text', metadata: {} }),
+    });
+  }
+
+  async getAgentDataCodeChanges(agentId?: string) {
+    const params = agentId ? `?agent_id=${agentId}` : '';
+    return this.fetch(`/admin/agents/data/code-changes${params}`);
+  }
+
+  async getAgentDataCampaigns() {
+    return this.fetch('/admin/agents/data/campaigns');
+  }
 }
 
 export const api = new ApiClient();
