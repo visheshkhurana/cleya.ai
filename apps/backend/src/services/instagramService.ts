@@ -204,5 +204,82 @@ async function getMetrics(dateRange: '7d' | '30d' | '90d' = '30d'): Promise<Inst
   }
 }
 
-export const instagramService = { isConfigured, getMetrics };
-export type { InstagramMetrics };
+interface InstagramPublishResult {
+  success: boolean;
+  postId?: string;
+  error?: string;
+}
+
+async function publishSingleImage(imageUrl: string, caption: string): Promise<InstagramPublishResult> {
+  if (!isConfigured()) {
+    return { success: false, error: 'Instagram publishing not configured. Set INSTAGRAM_ACCESS_TOKEN and INSTAGRAM_BUSINESS_ACCOUNT_ID.' };
+  }
+
+  try {
+    const accountId = INSTAGRAM_BUSINESS_ACCOUNT_ID!;
+
+    const containerRes = await igFetch<{ id?: string }>(
+      `${IG_BASE}/${accountId}/media?image_url=${encodeURIComponent(imageUrl)}&caption=${encodeURIComponent(caption)}`
+    );
+
+    if (!containerRes.id) {
+      return { success: false, error: 'Failed to create media container' };
+    }
+
+    const publishRes = await igFetch<{ id?: string }>(
+      `${IG_BASE}/${accountId}/media_publish?creation_id=${containerRes.id}`
+    );
+
+    return { success: true, postId: publishRes.id };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+async function publishCarousel(imageUrls: string[], caption: string): Promise<InstagramPublishResult> {
+  if (!isConfigured()) {
+    return { success: false, error: 'Instagram publishing not configured.' };
+  }
+
+  if (imageUrls.length < 2 || imageUrls.length > 10) {
+    return { success: false, error: 'Carousel requires 2-10 images' };
+  }
+
+  try {
+    const accountId = INSTAGRAM_BUSINESS_ACCOUNT_ID!;
+
+    const childIds: string[] = [];
+    for (const url of imageUrls) {
+      const child = await igFetch<{ id?: string }>(
+        `${IG_BASE}/${accountId}/media?image_url=${encodeURIComponent(url)}&is_carousel_item=true`
+      );
+      if (!child.id) {
+        return { success: false, error: `Failed to create carousel item for ${url}` };
+      }
+      childIds.push(child.id);
+    }
+
+    const containerRes = await igFetch<{ id?: string }>(
+      `${IG_BASE}/${accountId}/media?media_type=CAROUSEL&caption=${encodeURIComponent(caption)}&children=${childIds.join(',')}`
+    );
+
+    if (!containerRes.id) {
+      return { success: false, error: 'Failed to create carousel container' };
+    }
+
+    const publishRes = await igFetch<{ id?: string }>(
+      `${IG_BASE}/${accountId}/media_publish?creation_id=${containerRes.id}`
+    );
+
+    return { success: true, postId: publishRes.id };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+async function publishTextPost(caption: string): Promise<InstagramPublishResult> {
+  return { success: false, error: 'Instagram does not support text-only posts. An image URL is required.' };
+}
+
+export const instagramService = { isConfigured, getMetrics, publishSingleImage, publishCarousel, publishTextPost };
+export type { InstagramMetrics, InstagramPublishResult };

@@ -4,7 +4,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Brain, Lightbulb, Share2, Mail, Target, Globe, Zap, BarChart3,
   Clock, AlertCircle, CheckCircle, ChevronRight, X, Send, Plus,
-  Filter, Download, Eye, Check, XCircle, Loader, Database, Trash2
+  Filter, Download, Eye, Check, XCircle, Loader, Database, Trash2, Shield, Octagon,
+  Upload, ScrollText
 } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -103,6 +104,27 @@ interface AgentStatusInfo {
   nextRunAt: string | null;
   enabled: boolean;
   cronExpression: string | null;
+  autonomyLevel: 'manual' | 'semi_autonomous' | 'autonomous';
+  guardrails: {
+    maxActionsPerDay: number;
+    maxSpendPerDay: number;
+    maxPostsPerDay: number;
+    contentBlocklist: string[];
+  };
+}
+
+interface ExecutionLogEntry {
+  id: number;
+  agent_id: string;
+  action_type: string;
+  action_description: string;
+  autonomy_level: string;
+  guardrails_checked: string[];
+  guardrail_result: string;
+  execution_result: string;
+  details: Record<string, any>;
+  spend_amount: number;
+  executed_at: string;
 }
 
 interface AccountabilityStats {
@@ -889,6 +911,272 @@ function AccountabilityTab({ agentId }: { agentId: string }) {
   );
 }
 
+function AutonomyConfigTab({ agentId, liveStatus, onConfigChange }: {
+  agentId: string;
+  liveStatus?: AgentStatusInfo;
+  onConfigChange: () => void;
+}) {
+  const [autonomyLevel, setAutonomyLevel] = useState(liveStatus?.autonomyLevel || 'manual');
+  const [guardrails, setGuardrails] = useState(liveStatus?.guardrails || {
+    maxActionsPerDay: 10,
+    maxSpendPerDay: 0,
+    maxPostsPerDay: 5,
+    contentBlocklist: [],
+  });
+  const [blocklistInput, setBlocklistInput] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setAutonomyLevel(liveStatus?.autonomyLevel || 'manual');
+    setGuardrails(liveStatus?.guardrails || {
+      maxActionsPerDay: 10,
+      maxSpendPerDay: 0,
+      maxPostsPerDay: 5,
+      contentBlocklist: [],
+    });
+  }, [liveStatus]);
+
+  const handleSaveAutonomy = async (level: string) => {
+    setSaving(true);
+    try {
+      await api.updateAgentConfig(agentId, { autonomyLevel: level });
+      setAutonomyLevel(level as any);
+      onConfigChange();
+    } catch (error) {
+      console.error('Failed to update autonomy:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveGuardrails = async () => {
+    setSaving(true);
+    try {
+      await api.updateAgentConfig(agentId, { guardrails });
+      onConfigChange();
+    } catch (error) {
+      console.error('Failed to update guardrails:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const addBlocklistTerm = () => {
+    if (blocklistInput.trim() && !guardrails.contentBlocklist.includes(blocklistInput.trim())) {
+      setGuardrails({
+        ...guardrails,
+        contentBlocklist: [...guardrails.contentBlocklist, blocklistInput.trim()],
+      });
+      setBlocklistInput('');
+    }
+  };
+
+  const removeBlocklistTerm = (term: string) => {
+    setGuardrails({
+      ...guardrails,
+      contentBlocklist: guardrails.contentBlocklist.filter(t => t !== term),
+    });
+  };
+
+  const autonomyOptions = [
+    {
+      value: 'manual',
+      label: 'Manual',
+      desc: 'All content requires approval before any action',
+      color: 'border-slate-500/30 bg-slate-500/10',
+      activeColor: 'border-blue-500 bg-blue-500/20 ring-1 ring-blue-500/50',
+    },
+    {
+      value: 'semi_autonomous',
+      label: 'Semi-Autonomous',
+      desc: 'Low-risk actions auto-execute; high-risk ones need approval',
+      color: 'border-yellow-500/30 bg-yellow-500/10',
+      activeColor: 'border-yellow-500 bg-yellow-500/20 ring-1 ring-yellow-500/50',
+    },
+    {
+      value: 'autonomous',
+      label: 'Fully Autonomous',
+      desc: 'All actions execute within guardrails; you get notified after',
+      color: 'border-green-500/30 bg-green-500/10',
+      activeColor: 'border-green-500 bg-green-500/20 ring-1 ring-green-500/50',
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h4 className="text-white font-medium mb-3 flex items-center gap-2">
+          <Shield size={16} className="text-brand-violet" /> Autonomy Level
+        </h4>
+        <div className="grid gap-3">
+          {autonomyOptions.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => handleSaveAutonomy(opt.value)}
+              disabled={saving}
+              className={`p-4 rounded-xl border text-left transition-all ${
+                autonomyLevel === opt.value ? opt.activeColor : opt.color
+              } ${saving ? 'opacity-50' : 'hover:opacity-80'}`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-white">{opt.label}</span>
+                {autonomyLevel === opt.value && <Check size={16} className="text-green-400" />}
+              </div>
+              <p className="text-xs text-slate-400 mt-1">{opt.desc}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-slate-800/50 rounded-xl p-6 space-y-4">
+        <h4 className="text-white font-medium flex items-center gap-2">
+          <Shield size={16} className="text-orange-400" /> Guardrails
+        </h4>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="text-xs text-slate-400 block mb-1">Max Actions/Day</label>
+            <input
+              type="number"
+              min={1}
+              value={guardrails.maxActionsPerDay}
+              onChange={(e) => setGuardrails({ ...guardrails, maxActionsPerDay: parseInt(e.target.value) || 1 })}
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-violet"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-slate-400 block mb-1">Max Posts/Day</label>
+            <input
+              type="number"
+              min={0}
+              value={guardrails.maxPostsPerDay}
+              onChange={(e) => setGuardrails({ ...guardrails, maxPostsPerDay: parseInt(e.target.value) || 0 })}
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-violet"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-slate-400 block mb-1">Max Spend/Day ($)</label>
+            <input
+              type="number"
+              min={0}
+              value={guardrails.maxSpendPerDay}
+              onChange={(e) => setGuardrails({ ...guardrails, maxSpendPerDay: parseFloat(e.target.value) || 0 })}
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-violet"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xs text-slate-400 block mb-1">Content Blocklist</label>
+          <div className="flex gap-2 mb-2">
+            <input
+              type="text"
+              value={blocklistInput}
+              onChange={(e) => setBlocklistInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addBlocklistTerm()}
+              placeholder="Add blocked term..."
+              className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-violet"
+            />
+            <button
+              onClick={addBlocklistTerm}
+              className="px-3 py-2 rounded-lg bg-slate-700 text-white text-sm hover:bg-slate-600"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {guardrails.contentBlocklist.map((term) => (
+              <span key={term} className="flex items-center gap-1 px-2 py-1 rounded bg-red-500/20 text-red-300 text-xs">
+                {term}
+                <button onClick={() => removeBlocklistTerm(term)} className="hover:text-red-100">
+                  <X size={12} />
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <button
+          onClick={handleSaveGuardrails}
+          disabled={saving}
+          className="px-4 py-2 rounded-lg bg-brand-violet text-white text-sm font-medium hover:bg-brand-violet/80 disabled:opacity-50"
+        >
+          Save Guardrails
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ExecutionLogTab({ agentId }: { agentId: string }) {
+  const [logs, setLogs] = useState<ExecutionLogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadLogs = async () => {
+      try {
+        const resp = await api.getExecutionLog(agentId, 50);
+        const data = Array.isArray(resp) ? resp : resp?.data || [];
+        setLogs(data);
+      } catch (error) {
+        console.error('Failed to load execution log:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadLogs();
+  }, [agentId]);
+
+  if (loading) return <LoadingSpinner />;
+
+  const resultColors: Record<string, string> = {
+    success: 'bg-green-500/20 text-green-300',
+    error: 'bg-red-500/20 text-red-300',
+    queued: 'bg-yellow-500/20 text-yellow-300',
+  };
+
+  const guardrailColors: Record<string, string> = {
+    passed: 'text-green-400',
+    blocked: 'text-red-400',
+    escalated: 'text-yellow-400',
+  };
+
+  return (
+    <div className="space-y-3">
+      {logs.length === 0 ? (
+        <p className="text-slate-400 text-center py-6">No execution logs yet</p>
+      ) : (
+        logs.map((log) => (
+          <div key={log.id} className="border border-brand-violet/10 rounded-lg p-4 bg-brand-violet-pressed/5">
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex-1">
+                <span className="text-sm font-medium text-white">{log.action_description || log.action_type}</span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={`text-xs px-2 py-0.5 rounded ${resultColors[log.execution_result] || 'bg-slate-500/20 text-slate-300'}`}>
+                    {log.execution_result}
+                  </span>
+                  <span className={`text-xs ${guardrailColors[log.guardrail_result] || 'text-slate-400'}`}>
+                    Guardrails: {log.guardrail_result}
+                  </span>
+                  <span className="text-xs text-slate-500">{log.autonomy_level}</span>
+                </div>
+              </div>
+              <time className="text-xs text-slate-500">{new Date(log.executed_at).toLocaleString()}</time>
+            </div>
+            {log.guardrails_checked && log.guardrails_checked.length > 0 && (
+              <div className="flex gap-1 flex-wrap mt-2">
+                {log.guardrails_checked.map((g, i) => (
+                  <span key={i} className="text-xs px-1.5 py-0.5 rounded bg-slate-700 text-slate-400">{g}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
 function ScheduleConfigTab({ agentId, liveStatus, onConfigChange }: {
   agentId: string;
   liveStatus?: AgentStatusInfo;
@@ -1299,7 +1587,13 @@ function DetailPanel({ agent, onClose, liveStatus, onConfigChange }: {
   liveStatus?: AgentStatusInfo;
   onConfigChange: () => void;
 }) {
-  const [activeTab, setActiveTab] = useState<'activity' | 'history' | 'accountability' | 'tasks' | 'content' | 'chat' | 'schedule' | 'code' | 'memory'>('accountability');
+  const [activeTab, setActiveTab] = useState<'autonomy' | 'activity' | 'history' | 'accountability' | 'tasks' | 'content' | 'chat' | 'schedule' | 'code' | 'memory' | 'execlog'>('autonomy');
+
+  const autonomyLabel = liveStatus?.autonomyLevel === 'autonomous' ? 'Autonomous' :
+    liveStatus?.autonomyLevel === 'semi_autonomous' ? 'Semi-Auto' : 'Manual';
+
+  const autonomyColor = liveStatus?.autonomyLevel === 'autonomous' ? 'bg-green-500/20 text-green-300' :
+    liveStatus?.autonomyLevel === 'semi_autonomous' ? 'bg-yellow-500/20 text-yellow-300' : 'bg-slate-500/20 text-slate-300';
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -1313,6 +1607,9 @@ function DetailPanel({ agent, onClose, liveStatus, onConfigChange }: {
               {liveStatus && (
                 <div className="flex items-center gap-2 mt-1">
                   <StatusBadge status={liveStatus.status} />
+                  <span className={`text-xs px-2 py-0.5 rounded font-medium ${autonomyColor}`}>
+                    {autonomyLabel}
+                  </span>
                   {!liveStatus.enabled && (
                     <span className="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-400">Disabled</span>
                   )}
@@ -1330,7 +1627,9 @@ function DetailPanel({ agent, onClose, liveStatus, onConfigChange }: {
 
         <div className="flex gap-2 px-6 pt-4 border-b border-slate-700 overflow-x-auto">
           {[
+            { id: 'autonomy', label: 'Autonomy & Guardrails' },
             { id: 'accountability', label: 'Accountability' },
+            { id: 'execlog', label: 'Execution Log' },
             { id: 'history', label: 'Run History' },
             { id: 'schedule', label: 'Schedule' },
             { id: 'activity', label: 'Activity Log' },
@@ -1355,7 +1654,9 @@ function DetailPanel({ agent, onClose, liveStatus, onConfigChange }: {
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">
+          {activeTab === 'autonomy' && <AutonomyConfigTab agentId={agent.id} liveStatus={liveStatus} onConfigChange={onConfigChange} />}
           {activeTab === 'accountability' && <AccountabilityTab agentId={agent.id} />}
+          {activeTab === 'execlog' && <ExecutionLogTab agentId={agent.id} />}
           {activeTab === 'history' && <RunHistoryTab agentId={agent.id} />}
           {activeTab === 'schedule' && <ScheduleConfigTab agentId={agent.id} liveStatus={liveStatus} onConfigChange={onConfigChange} />}
           {activeTab === 'activity' && <ActivityLogTab agentId={agent.id} />}
@@ -1552,6 +1853,7 @@ function ContentQueueItemCard({
   onUpdate: (id: number, status: string) => void;
 }) {
   const [updating, setUpdating] = useState(false);
+  const [publishing, setPublishing] = useState(false);
 
   const handleAction = useCallback(async (status: string) => {
     setUpdating(true);
@@ -1562,6 +1864,23 @@ function ContentQueueItemCard({
       console.error('Failed to update:', error);
     } finally {
       setUpdating(false);
+    }
+  }, [item.id, onUpdate]);
+
+  const handlePublish = useCallback(async () => {
+    setPublishing(true);
+    try {
+      const result = await api.publishContent(item.id);
+      if (result?.data?.success || result?.success) {
+        onUpdate(item.id, 'published');
+      } else {
+        alert(`Publish failed: ${result?.data?.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Failed to publish:', error);
+      alert('Failed to publish content');
+    } finally {
+      setPublishing(false);
     }
   }, [item.id, onUpdate]);
 
@@ -1597,13 +1916,31 @@ function ContentQueueItemCard({
         </div>
       )}
 
-      {item.status !== 'pending' && (
-        <div className={`px-3 py-2 rounded-lg text-sm font-medium text-center ${
-          item.status === 'approved' ? 'bg-green-500/20 text-green-300' :
-          item.status === 'rejected' ? 'bg-red-500/20 text-red-300' :
-          'bg-brand-violet/20 text-brand-violet-hover'
-        }`}>
-          {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+      {item.status === 'approved' && (
+        <div className="flex gap-2">
+          <div className="flex-1 px-3 py-2 rounded-lg text-sm font-medium text-center bg-green-500/20 text-green-300">
+            Approved
+          </div>
+          <button
+            onClick={handlePublish}
+            disabled={publishing}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-violet text-white text-sm font-medium hover:bg-brand-violet/80 disabled:opacity-50"
+          >
+            <Upload size={14} />
+            {publishing ? 'Publishing...' : 'Publish'}
+          </button>
+        </div>
+      )}
+
+      {item.status === 'published' && (
+        <div className="px-3 py-2 rounded-lg text-sm font-medium text-center bg-brand-violet/20 text-brand-violet-hover">
+          Published
+        </div>
+      )}
+
+      {item.status === 'rejected' && (
+        <div className="px-3 py-2 rounded-lg text-sm font-medium text-center bg-red-500/20 text-red-300">
+          Rejected
         </div>
       )}
     </div>
@@ -1619,20 +1956,29 @@ export function AgentsManagement() {
   const [error, setError] = useState<string | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [agentStatuses, setAgentStatuses] = useState<AgentStatusInfo[]>([]);
+  const [emergencyStopping, setEmergencyStopping] = useState(false);
 
   const loadStatuses = useCallback(async () => {
     try {
-      const res = await api.getAgentStatuses();
-      if (res?.data) {
-        setAgentStatuses(res.data);
-      }
-    } catch (e) {}
+      const resp = await api.getAgentStatuses();
+      const data = Array.isArray(resp) ? resp : resp?.data || [];
+      setAgentStatuses(data);
+    } catch (err) {
+      console.error('Failed to load agent statuses:', err);
+    }
   }, []);
 
-  useEffect(() => {
-    loadStatuses();
-    const interval = setInterval(loadStatuses, 10000);
-    return () => clearInterval(interval);
+  const handleEmergencyStop = useCallback(async () => {
+    if (!confirm('This will immediately pause ALL autonomous agent activity and set all agents to Manual mode. Continue?')) return;
+    setEmergencyStopping(true);
+    try {
+      await api.emergencyStopAllAgents();
+      await loadStatuses();
+    } catch (err) {
+      console.error('Emergency stop failed:', err);
+    } finally {
+      setEmergencyStopping(false);
+    }
   }, [loadStatuses]);
 
   useEffect(() => {
@@ -1640,6 +1986,8 @@ export function AgentsManagement() {
       try {
         const agentsData = await fetchSupabase<Agent>('dm_agents');
         setAgents(agentsData);
+
+        await loadStatuses();
 
         const stats: Record<string, any> = {};
         for (const agent of agentsData) {
@@ -1679,16 +2027,28 @@ export function AgentsManagement() {
     loadData();
     const interval = setInterval(loadData, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [loadStatuses]);
 
   if (loading) return <LoadingSpinner />;
   if (error) return <ErrorState message={error} />;
+
+  const hasAutonomousAgents = agentStatuses.some(s => s.autonomyLevel !== 'manual');
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-white">AI Agent Workforce</h2>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          {hasAutonomousAgents && (
+            <button
+              onClick={handleEmergencyStop}
+              disabled={emergencyStopping}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-bold hover:bg-red-700 disabled:opacity-50 animate-pulse hover:animate-none"
+            >
+              <Octagon size={16} />
+              {emergencyStopping ? 'Stopping...' : 'Emergency Stop'}
+            </button>
+          )}
           {[
             { id: 'overview', label: 'Overview' },
             { id: 'metrics', label: 'Metrics' },
@@ -1711,7 +2071,6 @@ export function AgentsManagement() {
 
       {view === 'overview' && (
         <div className="space-y-6">
-          {/* OpenClaw Agents */}
           {(() => {
             const openclawAgents = agents.filter(a => ['cleya-marketing', 'cleya-growth', 'cleya-finance', 'cleya-sales'].includes(a.id));
             const otherAgents = agents.filter(a => !['cleya-marketing', 'cleya-growth', 'cleya-finance', 'cleya-sales'].includes(a.id));

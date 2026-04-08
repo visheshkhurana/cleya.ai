@@ -30,6 +30,7 @@ Monorepo with:
 **Required:** `DATABASE_URL`, `JWT_SECRET` (min 32 chars; startup throws if missing)
 **Optional (graceful fallback):** `OPENAI_API_KEY` (AI chat → fallback responses), `GUPSHUP_API_KEY` + `GUPSHUP_APP_NAME` + `GUPSHUP_SOURCE_NUMBER` (Gupshup WhatsApp — sole messaging provider), `GUPSHUP_TEMPLATE_NAMESPACE` (Gupshup template messages), `GUPSHUP_WEBHOOK_SECRET` (optional webhook verification), `SMTP_*` (emails logged only), `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` + `GOOGLE_REDIRECT_URI` (Google Calendar + Google login), `LINKEDIN_CLIENT_ID` + `LINKEDIN_CLIENT_SECRET` (LinkedIn login hidden), `SENTRY_DSN` (backend error tracking), `NEXT_PUBLIC_SENTRY_DSN` (frontend error tracking via CDN), `NEXT_PUBLIC_POSTHOG_KEY` (PostHog analytics), `NEXT_PUBLIC_GA_MEASUREMENT_ID` (Google Analytics 4)
 **Admin Analytics Integrations (optional):** `GA4_PROPERTY_ID` + `GA4_SERVICE_ACCOUNT_KEY` (GA4 Data API — website traffic in Control Tower), `INSTAGRAM_ACCESS_TOKEN` + `INSTAGRAM_BUSINESS_ACCOUNT_ID` (Instagram Graph API — social metrics), `POSTHOG_API_KEY` + `POSTHOG_HOST` + `POSTHOG_PROJECT_ID` (PostHog API — product analytics), `SENTRY_AUTH_TOKEN` + `SENTRY_ORG` + `SENTRY_PROJECT` (Sentry API — error tracking analytics in Control Tower). All show "Not configured" UI when missing.
+**Publishing Integrations (optional):** `LINKEDIN_PAGE_ACCESS_TOKEN` + `LINKEDIN_ORG_ID` (LinkedIn UGC Posts API — content publishing). Email publishing uses existing Resend integration.
 **Admin seed:** `ADMIN_EMAIL` + `ADMIN_PASSWORD` — both must be set to create admin; no defaults in code
 **CORS:** `CORS_ORIGIN` env var → defaults to `FRONTEND_URL`; locked to single origin (not wildcard)
 
@@ -94,14 +95,24 @@ Memory is assembled and injected into agent system prompts automatically before 
 
 **Supabase client** (`apps/backend/src/services/supabaseClient.ts`): Lightweight REST client for backend to read/write Supabase `dm_*` tables (content queue, logs, tasks).
 
+**Autonomy & Guardrails** (`apps/backend/src/services/guardrailsService.ts`): Per-agent autonomy levels — `manual` (all content queued for review), `semi_autonomous` (low-risk auto-executed, high-risk queued), `autonomous` (all auto-executed within guardrails). Guardrails framework enforces `daily_action_limit`, `daily_spend_cap`, and `content_blocklist` per agent. Execution audit log written to `dm_execution_log` table for every agent action.
+
+**Publishing Services** (`apps/backend/src/services/publishingService.ts`): Orchestrates multi-channel content publishing for approved content. Channels: LinkedIn (`linkedinPublisher.ts` — UGC Posts API), Instagram (`instagramService.ts` — Graph API single image + carousel), Email (Resend integration). `POST /api/admin/content/:id/publish` publishes single item; `POST /api/admin/content/publish-approved` batch-publishes all approved content.
+
+**Emergency Kill Switch**: `POST /api/admin/agents/emergency-stop` sets all agents to `manual` autonomy and disables them, halting all autonomous activity immediately. Frontend shows a red "Emergency Stop" button when any agent is non-manual.
+
 **Admin API endpoints:**
-- `GET /api/admin/agents/status` — returns real-time agent statuses (running/completed/failed/scheduled), last run times, durations, enabled state, cron schedules
+- `GET /api/admin/agents/status` — returns real-time agent statuses (running/completed/failed/scheduled), last run times, durations, enabled state, cron schedules, autonomy level
 - `POST /api/admin/agents/:id/run` — manually trigger any agent immediately
 - `GET /api/admin/agents/:id/run-history?limit=30` — paginated run history logs
 - `GET /api/admin/agents/:id/accountability` — accountability stats (success rate, total runs, avg duration, generated content)
-- `PATCH /api/admin/agents/:id/config` — update enabled state, cron expression (validated), cron description; triggers schedule reload
+- `PATCH /api/admin/agents/:id/config` — update enabled state, cron expression (validated), cron description, autonomy_level, guardrails; triggers schedule reload
+- `POST /api/admin/agents/emergency-stop` — emergency kill switch, disables all agents and sets to manual
+- `POST /api/admin/content/:id/publish` — publish a single approved content item to its channel
+- `POST /api/admin/content/publish-approved` — batch publish all approved content
+- `GET /api/admin/execution-log` — query execution audit log with optional agent_id filter
 
-**Frontend:** `AgentsManagement.tsx` shows live agent status (polled every 10s) with "Run Now" button per agent card, plus tabbed detail panel with Run History timeline, Accountability stats, and Schedule Configuration with enable/disable toggles and cron editor.
+**Frontend:** `AgentsManagement.tsx` shows live agent status (polled every 10s) with "Run Now" button per agent card, autonomy level badge per agent, emergency stop button in header. Tabbed detail panel with Run History timeline, Accountability stats, Schedule Configuration, Autonomy & Guardrails config, and Execution Log viewer. Content queue cards show Publish button for approved items.
 
 ## Slack Notifications
 `apps/backend/src/services/slackService.ts` uses `@slack/web-api@7.10.0` via Replit's Slack connector (OAuth token auto-managed). Posts to `#all-cleya` channel (fallback: `#new-signups`, `#general`). Bot name in Slack: `replit`.

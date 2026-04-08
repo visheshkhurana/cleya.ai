@@ -14,8 +14,10 @@ import { whatsappBotService } from '../services/whatsappBotService';
 import { analyticsAggregatorService } from '../services/analyticsAggregatorService';
 import { agentScheduler } from '../services/agentScheduler';
 import cronValidator from 'node-cron';
-import { runAgent, getAgentStatuses, KNOWN_AGENT_IDS, getAgentRunHistory, getAgentAccountability, updateAgentConfig, resolveAgentId } from '../services/agentRunner';
+import { runAgent, getAgentStatuses, KNOWN_AGENT_IDS, getAgentRunHistory, getAgentAccountability, updateAgentConfig, resolveAgentId, emergencyStopAllAgents } from '../services/agentRunner';
 import { getAllMemories, addShortTermMemory, addLongTermMemory, addEpisodicMemory, addSemanticMemory, deleteShortTermMemory, deleteLongTermMemory, deleteEpisodicMemory, deleteSemanticMemory, setWorkingMemory, clearWorkingMemory } from '../services/agentMemoryService';
+import { publishingService } from '../services/publishingService';
+import { supabaseSelect } from '../services/supabaseClient';
 import { securityLogger } from '../services/securityLogger';
 import { logAdminAction, getAuditLogs } from '../services/auditLogger';
 
@@ -813,7 +815,7 @@ adminRouter.get('/agents/:id/accountability', async (req: Request, res: Response
 adminRouter.patch('/agents/:id/config', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { enabled, cronExpression, cronDescription } = req.body;
+    const { enabled, cronExpression, cronDescription, autonomyLevel, guardrails } = req.body;
 
     const resolved = resolveAgentId(id);
     if (!KNOWN_AGENT_IDS.includes(resolved) && !KNOWN_AGENT_IDS.includes(id)) {
@@ -826,7 +828,36 @@ adminRouter.patch('/agents/:id/config', async (req: Request, res: Response, next
       return;
     }
 
-    await updateAgentConfig(resolved, { enabled, cronExpression, cronDescription });
+    if (autonomyLevel !== undefined && !['manual', 'semi_autonomous', 'autonomous'].includes(autonomyLevel)) {
+      res.status(400).json({ success: false, error: { message: `Invalid autonomy level: ${autonomyLevel}` } });
+      return;
+    }
+
+    if (guardrails !== undefined) {
+      if (typeof guardrails !== 'object' || guardrails === null) {
+        res.status(400).json({ success: false, error: { message: 'Guardrails must be an object' } });
+        return;
+      }
+      const { maxActionsPerDay, maxSpendPerDay, maxPostsPerDay, contentBlocklist } = guardrails;
+      if (maxActionsPerDay !== undefined && (typeof maxActionsPerDay !== 'number' || maxActionsPerDay < 0 || maxActionsPerDay > 1000)) {
+        res.status(400).json({ success: false, error: { message: 'maxActionsPerDay must be a number between 0 and 1000' } });
+        return;
+      }
+      if (maxSpendPerDay !== undefined && (typeof maxSpendPerDay !== 'number' || maxSpendPerDay < 0 || maxSpendPerDay > 100000)) {
+        res.status(400).json({ success: false, error: { message: 'maxSpendPerDay must be a number between 0 and 100000' } });
+        return;
+      }
+      if (maxPostsPerDay !== undefined && (typeof maxPostsPerDay !== 'number' || maxPostsPerDay < 0 || maxPostsPerDay > 100)) {
+        res.status(400).json({ success: false, error: { message: 'maxPostsPerDay must be a number between 0 and 100' } });
+        return;
+      }
+      if (contentBlocklist !== undefined && (!Array.isArray(contentBlocklist) || !contentBlocklist.every((t: any) => typeof t === 'string'))) {
+        res.status(400).json({ success: false, error: { message: 'contentBlocklist must be an array of strings' } });
+        return;
+      }
+    }
+
+    await updateAgentConfig(resolved, { enabled, cronExpression, cronDescription, autonomyLevel, guardrails });
 
     if (cronExpression !== undefined) {
       await agentScheduler.reload();
@@ -837,6 +868,16 @@ adminRouter.patch('/agents/:id/config', async (req: Request, res: Response, next
     const updated = statuses.find(s => s.agentId === resolved);
 
     res.json({ success: true, data: updated });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/agents/emergency-stop', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    agentScheduler.stop();
+    const result = await emergencyStopAllAgents();
+    res.json({ success: true, data: result });
   } catch (error) {
     next(error);
   }
@@ -918,6 +959,20 @@ adminRouter.post('/agents/:id/memory', async (req: Request, res: Response, next:
   }
 });
 
+adminRouter.post('/content/:id/publish', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      res.status(400).json({ success: false, error: { message: 'Invalid content ID' } });
+      return;
+    }
+    const result = await publishingService.publishContentItem(id);
+    res.json({ success: result.success, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
 adminRouter.delete('/agents/:id/memory/:memoryId', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id, memoryId } = req.params;
@@ -946,6 +1001,34 @@ adminRouter.delete('/agents/:id/memory/:memoryId', async (req: Request, res: Res
     }
 
     res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/content/publish-approved', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await publishingService.publishApprovedContent();
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/execution-log', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const agentId = req.query.agentId as string | undefined;
+    const limit = parseInt(req.query.limit as string) || 50;
+
+    const filters: Record<string, string> = {};
+    if (agentId) filters.agent_id = agentId;
+
+    const logs = await supabaseSelect('dm_execution_log', Object.keys(filters).length > 0 ? filters : undefined, {
+      order: 'executed_at.desc',
+      limit,
+    });
+
+    res.json({ success: true, data: logs });
   } catch (error) {
     next(error);
   }

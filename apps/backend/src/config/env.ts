@@ -63,6 +63,9 @@ const envSchema = z.object({
   POSTHOG_API_KEY: z.string().optional(),
   POSTHOG_HOST: z.string().optional(),
   POSTHOG_PROJECT_ID: z.string().optional(),
+
+  LINKEDIN_PAGE_ACCESS_TOKEN: z.string().optional(),
+  LINKEDIN_ORG_ID: z.string().optional(),
 });
 
 function validateEnv() {

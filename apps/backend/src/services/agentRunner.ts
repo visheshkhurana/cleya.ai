@@ -3,6 +3,15 @@ import { prisma } from '@cleya/db';
 import { supabaseInsert, supabaseSelect, supabaseUpdate, supabaseUpsert } from './supabaseClient';
 import { notifyAgentCompletion } from './agentNotifier';
 import { assembleMemoryContext, formatMemoryForPrompt, storeRunMemories, setWorkingMemory, clearWorkingMemory } from './agentMemoryService';
+import {
+  type AutonomyLevel,
+  type AgentGuardrails,
+  DEFAULT_GUARDRAILS,
+  checkGuardrails,
+  shouldAutoExecute,
+  classifyActionRisk,
+  logExecution,
+} from './guardrailsService';
 
 const AGENT_PROMPTS: Record<string, { name: string; codename: string; systemPrompt: string; contentType: string; channel: string }> = {
   'nexus': {
@@ -161,6 +170,8 @@ interface AgentStatusInfo {
   nextRunAt: string | null;
   enabled: boolean;
   cronExpression: string | null;
+  autonomyLevel: AutonomyLevel;
+  guardrails: AgentGuardrails;
 }
 
 interface AgentStateRecord {
@@ -172,6 +183,8 @@ interface AgentStateRecord {
   enabled: boolean;
   cron_expression: string | null;
   cron_description: string | null;
+  autonomy_level: AutonomyLevel | null;
+  guardrails: AgentGuardrails | null;
 }
 
 const agentStates = new Map<string, {
@@ -182,6 +195,8 @@ const agentStates = new Map<string, {
   enabled: boolean;
   cronExpression: string | null;
   cronDescription: string | null;
+  autonomyLevel: AutonomyLevel;
+  guardrails: AgentGuardrails;
 }>();
 
 const DEFAULT_SCHEDULES: Record<string, { cron: string; desc: string }> = {
@@ -205,6 +220,8 @@ function initAgentState(agentId: string) {
       enabled: true,
       cronExpression: schedule?.cron || null,
       cronDescription: schedule?.desc || null,
+      autonomyLevel: 'manual',
+      guardrails: { ...DEFAULT_GUARDRAILS },
     });
   }
 }
@@ -213,12 +230,40 @@ Object.keys(AGENT_PROMPTS).forEach(id => initAgentState(id));
 
 export async function hydrateAgentStatesFromDB(): Promise<void> {
   try {
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE dm_agent_state ADD COLUMN IF NOT EXISTS autonomy_level TEXT DEFAULT 'manual'`
+    ).catch(() => {});
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE dm_agent_state ADD COLUMN IF NOT EXISTS guardrails JSONB DEFAULT '{}'`
+    ).catch(() => {});
+
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS dm_execution_log (
+        id SERIAL PRIMARY KEY,
+        agent_id TEXT NOT NULL,
+        action_type TEXT NOT NULL,
+        action_description TEXT,
+        autonomy_level TEXT DEFAULT 'manual',
+        guardrails_checked TEXT[] DEFAULT '{}',
+        guardrail_result TEXT DEFAULT 'passed',
+        execution_result TEXT DEFAULT 'success',
+        details JSONB DEFAULT '{}',
+        spend_amount NUMERIC DEFAULT 0,
+        executed_at TIMESTAMPTZ DEFAULT now(),
+        created_at TIMESTAMPTZ DEFAULT now()
+      );
+    `).catch(() => {});
+
     const records = await prisma.$queryRawUnsafe<AgentStateRecord[]>(
-      `SELECT agent_id, status, last_run_at::text, last_run_duration, last_run_status, enabled, cron_expression, cron_description FROM dm_agent_state`
+      `SELECT agent_id, status, last_run_at::text, last_run_duration, last_run_status, enabled, cron_expression, cron_description, autonomy_level, guardrails FROM dm_agent_state`
     );
 
     for (const record of records) {
       if (AGENT_PROMPTS[record.agent_id]) {
+        const parsedGuardrails = record.guardrails && typeof record.guardrails === 'object' && Object.keys(record.guardrails).length > 0
+          ? { ...DEFAULT_GUARDRAILS, ...record.guardrails }
+          : { ...DEFAULT_GUARDRAILS };
+
         agentStates.set(record.agent_id, {
           status: record.status === 'running' ? 'idle' : ((record.status as AgentStatus) || 'idle'),
           lastRunAt: record.last_run_at,
@@ -227,6 +272,8 @@ export async function hydrateAgentStatesFromDB(): Promise<void> {
           enabled: record.enabled !== false,
           cronExpression: record.cron_expression || DEFAULT_SCHEDULES[record.agent_id]?.cron || null,
           cronDescription: record.cron_description || DEFAULT_SCHEDULES[record.agent_id]?.desc || null,
+          autonomyLevel: (record.autonomy_level as AutonomyLevel) || 'manual',
+          guardrails: parsedGuardrails,
         });
       }
     }
@@ -236,10 +283,11 @@ export async function hydrateAgentStatesFromDB(): Promise<void> {
         const schedule = DEFAULT_SCHEDULES[agentId];
         try {
           await prisma.$executeRawUnsafe(
-            `INSERT INTO dm_agent_state (agent_id, status, enabled, cron_expression, cron_description) VALUES ($1, 'idle', true, $2, $3) ON CONFLICT (agent_id) DO NOTHING`,
+            `INSERT INTO dm_agent_state (agent_id, status, enabled, cron_expression, cron_description, autonomy_level, guardrails) VALUES ($1, 'idle', true, $2, $3, 'manual', $4::jsonb) ON CONFLICT (agent_id) DO NOTHING`,
             agentId,
             schedule?.cron || null,
-            schedule?.desc || null
+            schedule?.desc || null,
+            JSON.stringify(DEFAULT_GUARDRAILS)
           );
         } catch (err: any) {
           console.log(`[AgentRunner] Could not seed state for ${agentId}: ${err.message}`);
@@ -259,8 +307,8 @@ async function persistAgentState(agentId: string): Promise<void> {
 
   try {
     await prisma.$executeRawUnsafe(
-      `INSERT INTO dm_agent_state (agent_id, status, last_run_at, last_run_duration, last_run_status, enabled, cron_expression, cron_description, updated_at)
-       VALUES ($1, $2, $3::timestamptz, $4, $5, $6, $7, $8, now())
+      `INSERT INTO dm_agent_state (agent_id, status, last_run_at, last_run_duration, last_run_status, enabled, cron_expression, cron_description, autonomy_level, guardrails, updated_at)
+       VALUES ($1, $2, $3::timestamptz, $4, $5, $6, $7, $8, $9, $10::jsonb, now())
        ON CONFLICT (agent_id) DO UPDATE SET
          status = EXCLUDED.status,
          last_run_at = EXCLUDED.last_run_at,
@@ -269,6 +317,8 @@ async function persistAgentState(agentId: string): Promise<void> {
          enabled = EXCLUDED.enabled,
          cron_expression = EXCLUDED.cron_expression,
          cron_description = EXCLUDED.cron_description,
+         autonomy_level = EXCLUDED.autonomy_level,
+         guardrails = EXCLUDED.guardrails,
          updated_at = now()`,
       agentId,
       state.status,
@@ -277,7 +327,9 @@ async function persistAgentState(agentId: string): Promise<void> {
       state.lastRunStatus,
       state.enabled,
       state.cronExpression,
-      state.cronDescription
+      state.cronDescription,
+      state.autonomyLevel,
+      JSON.stringify(state.guardrails)
     );
   } catch (err: any) {
     console.log(`[AgentRunner] Failed to persist state for ${agentId}: ${err.message}`);
@@ -385,6 +437,20 @@ async function executeAgentOnce(agentId: string, taskContext?: string): Promise<
   const duration = Date.now() - startTime;
   const outputSummary = content.substring(0, 200) + (content.length > 200 ? '...' : '');
 
+  const state = agentStates.get(agentId);
+  const autonomyLevel = state?.autonomyLevel || 'manual';
+  const guardrails = state?.guardrails || DEFAULT_GUARDRAILS;
+
+  const actionRisk = classifyActionRisk('content_generation');
+  const decision = shouldAutoExecute(autonomyLevel, actionRisk);
+
+  const guardrailCheck = await checkGuardrails(agentId, 'content_generation', guardrails, content);
+
+  let contentStatus = 'pending';
+  if (guardrailCheck.allowed && decision === 'execute') {
+    contentStatus = 'approved';
+  }
+
   await supabaseInsert('dm_content_queue', {
     agent_id: agentId,
     channel: config.channel,
@@ -393,9 +459,20 @@ async function executeAgentOnce(agentId: string, taskContext?: string): Promise<
     body: content,
     media_urls: [],
     scheduled_for: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    status: 'pending',
-    metadata: { generated_by: 'agent_scheduler', task_context: taskContext || null },
+    status: contentStatus,
+    metadata: { generated_by: 'agent_scheduler', task_context: taskContext || null, autonomy_level: autonomyLevel },
     created_at: new Date().toISOString(),
+  });
+
+  await logExecution({
+    agentId,
+    actionType: 'content_generation',
+    actionDescription: `Generated ${config.contentType} for ${config.channel}`,
+    autonomyLevel,
+    guardrailsChecked: ['max_actions_per_day', 'content_blocklist'],
+    guardrailResult: guardrailCheck.allowed ? 'passed' : (guardrailCheck.escalated ? 'escalated' : 'blocked'),
+    executionResult: contentStatus === 'approved' ? 'success' : 'queued',
+    details: { contentType: config.contentType, channel: config.channel, autoApproved: contentStatus === 'approved' },
   });
 
   return {
@@ -589,6 +666,8 @@ export function getAgentStatuses(scheduleInfo?: Record<string, string>): AgentSt
       nextRunAt: scheduleInfo?.[id] || state?.cronDescription || null,
       enabled: state?.enabled !== false,
       cronExpression: state?.cronExpression || null,
+      autonomyLevel: state?.autonomyLevel || 'manual',
+      guardrails: state?.guardrails || { ...DEFAULT_GUARDRAILS },
     };
   });
 }
@@ -609,6 +688,8 @@ export async function updateAgentConfig(agentId: string, config: {
   enabled?: boolean;
   cronExpression?: string;
   cronDescription?: string;
+  autonomyLevel?: AutonomyLevel;
+  guardrails?: Partial<AgentGuardrails>;
 }): Promise<void> {
   const resolved = resolveAgentId(agentId);
   initAgentState(resolved);
@@ -617,8 +698,51 @@ export async function updateAgentConfig(agentId: string, config: {
   if (config.enabled !== undefined) state.enabled = config.enabled;
   if (config.cronExpression !== undefined) state.cronExpression = config.cronExpression;
   if (config.cronDescription !== undefined) state.cronDescription = config.cronDescription;
+  if (config.autonomyLevel !== undefined) state.autonomyLevel = config.autonomyLevel;
+  if (config.guardrails !== undefined) {
+    state.guardrails = { ...state.guardrails, ...config.guardrails };
+  }
 
   await persistAgentState(resolved);
+}
+
+export async function emergencyStopAllAgents(): Promise<{ stoppedAgents: string[] }> {
+  const stoppedAgents: string[] = [];
+
+  for (const [agentId, state] of agentStates.entries()) {
+    if (state.autonomyLevel !== 'manual' || state.enabled) {
+      state.autonomyLevel = 'manual';
+      state.enabled = false;
+      stoppedAgents.push(agentId);
+      await persistAgentState(agentId);
+    }
+  }
+
+  console.log(`[AgentRunner] EMERGENCY STOP: Paused ${stoppedAgents.length} agents`);
+
+  try {
+    await supabaseInsert('dm_agent_logs', {
+      agent_id: 'system',
+      action: 'EMERGENCY_STOP',
+      details: { stoppedAgents, timestamp: new Date().toISOString() },
+      status: 'warning',
+      created_at: new Date().toISOString(),
+    });
+  } catch {}
+
+  return { stoppedAgents };
+}
+
+export function getAgentAutonomyLevel(agentId: string): AutonomyLevel {
+  const resolved = resolveAgentId(agentId);
+  const state = agentStates.get(resolved);
+  return state?.autonomyLevel || 'manual';
+}
+
+export function getAgentGuardrails(agentId: string): AgentGuardrails {
+  const resolved = resolveAgentId(agentId);
+  const state = agentStates.get(resolved);
+  return state?.guardrails || { ...DEFAULT_GUARDRAILS };
 }
 
 export async function getAgentRunHistory(agentId: string, limit: number = 30): Promise<any[]> {

@@ -636,7 +636,13 @@ class ApiClient {
     return this.fetch(`/admin/agents/${agentId}/accountability`);
   }
 
-  async updateAgentConfig(agentId: string, config: { enabled?: boolean; cronExpression?: string; cronDescription?: string }) {
+  async updateAgentConfig(agentId: string, config: {
+    enabled?: boolean;
+    cronExpression?: string;
+    cronDescription?: string;
+    autonomyLevel?: string;
+    guardrails?: Record<string, any>;
+  }) {
     return this.fetch(`/admin/agents/${agentId}/config`, {
       method: 'PATCH',
       body: JSON.stringify(config),
@@ -658,6 +664,25 @@ class ApiClient {
     return this.fetch(`/admin/agents/${agentId}/memory/${memoryId}?layer=${layer}`, {
       method: 'DELETE',
     });
+  }
+
+  async emergencyStopAllAgents() {
+    return this.fetch('/admin/agents/emergency-stop', { method: 'POST' });
+  }
+
+  async publishContent(contentId: number) {
+    return this.fetch(`/admin/content/${contentId}/publish`, { method: 'POST' });
+  }
+
+  async publishAllApproved() {
+    return this.fetch('/admin/content/publish-approved', { method: 'POST' });
+  }
+
+  async getExecutionLog(agentId?: string, limit = 50) {
+    const params = new URLSearchParams();
+    if (agentId) params.set('agentId', agentId);
+    params.set('limit', String(limit));
+    return this.fetch(`/admin/execution-log?${params.toString()}`);
   }
 
   async updateUserRole(userId: string, role: string, elevatedToken: string) {
