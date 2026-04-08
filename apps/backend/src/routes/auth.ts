@@ -10,6 +10,13 @@ import { whatsappTemplates } from '../services/whatsappTemplates';
 import { gupshupService } from '../services/gupshupService';
 import { prisma } from '@cleya/db';
 import { securityLogger, checkRepeatedAuthFailures } from '../services/securityLogger';
+import {
+  verifyAccessToken,
+  rotateRefreshToken,
+  blacklistAccessToken,
+  revokeAllUserTokens,
+  cleanupExpiredTokens,
+} from '../services/tokenService';
 
 export const authRouter = Router();
 
@@ -35,6 +42,10 @@ setInterval(() => {
     if (now - val.createdAt > 10 * 60 * 1000) oauthStates.delete(key);
   }
 }, 60 * 1000);
+
+setInterval(() => {
+  cleanupExpiredTokens().catch((e) => console.error('[Auth] Token cleanup failed:', e));
+}, 60 * 60 * 1000);
 
 function stripHtmlBasic(str: string): string {
   return str.replace(/<[^>]*>/g, '').replace(/&#?[a-z0-9]+;/gi, ' ').trim();
@@ -64,14 +75,41 @@ const loginSchema = z.object({
   password: z.string().max(128),
 });
 
-function setAuthCookie(res: Response, token: string) {
-  res.cookie('cleo_auth', token, {
+const ACCESS_COOKIE_MAX_AGE = 15 * 60 * 1000;
+const REFRESH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+
+function isMobileClient(req: Request): boolean {
+  const auth = req.headers.authorization;
+  return !!(auth && auth.startsWith('Bearer '));
+}
+
+function setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
+  res.cookie('cleo_auth', accessToken, {
     httpOnly: true,
     secure: true,
     sameSite: 'lax',
     path: '/',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    maxAge: ACCESS_COOKIE_MAX_AGE,
   });
+  res.cookie('cleo_refresh', refreshToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+    path: '/api/auth',
+    maxAge: REFRESH_COOKIE_MAX_AGE,
+  });
+}
+
+function clearAuthCookies(res: Response) {
+  res.clearCookie('cleo_auth', { httpOnly: true, secure: true, sameSite: 'lax', path: '/' });
+  res.clearCookie('cleo_refresh', { httpOnly: true, secure: true, sameSite: 'lax', path: '/api/auth' });
+}
+
+function buildAuthResponse(req: Request, result: { user: any; token: string; refreshToken: string }) {
+  if (isMobileClient(req)) {
+    return { user: result.user, token: result.token, refreshToken: result.refreshToken };
+  }
+  return { user: result.user, token: result.token };
 }
 
 authRouter.post('/signup', signupLimiter, async (req: Request, res: Response, next: NextFunction) => {
@@ -89,8 +127,8 @@ authRouter.post('/signup', signupLimiter, async (req: Request, res: Response, ne
       await authService.verifyEmail(result.user.id);
       result.user.emailVerified = true;
     }
-    setAuthCookie(res, result.token);
-    res.status(201).json({ success: true, data: result });
+    setAuthCookies(res, result.token, result.refreshToken);
+    res.status(201).json({ success: true, data: buildAuthResponse(req, result) });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       res.status(400).json({
@@ -113,8 +151,8 @@ authRouter.post('/login', loginLimiter, async (req: Request, res: Response, next
     const data = loginSchema.parse(req.body);
     const result = await authService.login(data);
     securityLogger.authEvent(req, 'LOGIN_SUCCESS', 'SUCCESS', result.user.id, { email: data.email });
-    setAuthCookie(res, result.token);
-    res.json({ success: true, data: result });
+    setAuthCookies(res, result.token, result.refreshToken);
+    res.json({ success: true, data: buildAuthResponse(req, result) });
   } catch (error) {
     securityLogger.authEvent(req, 'LOGIN_FAILURE', 'FAILURE', null, { email: req.body?.email, error: (error as Error)?.message });
     const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || 'unknown';
@@ -123,9 +161,113 @@ authRouter.post('/login', loginLimiter, async (req: Request, res: Response, next
   }
 });
 
-authRouter.post('/logout', (req: Request, res: Response) => {
-  securityLogger.authEvent(req, 'LOGOUT', 'SUCCESS', req.user?.userId ?? null);
-  res.clearCookie('cleo_auth', { httpOnly: true, secure: true, sameSite: 'lax', path: '/' });
+authRouter.post('/refresh', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    let refreshTokenValue: string | undefined;
+
+    if (req.cookies?.cleo_refresh) {
+      refreshTokenValue = req.cookies.cleo_refresh;
+    }
+
+    if (!refreshTokenValue && req.body?.refreshToken) {
+      refreshTokenValue = req.body.refreshToken;
+    }
+
+    if (!refreshTokenValue) {
+      res.status(401).json({
+        success: false,
+        error: { message: 'No refresh token provided', code: 'NO_REFRESH_TOKEN' },
+      });
+      return;
+    }
+
+    const result = await rotateRefreshToken(refreshTokenValue);
+    setAuthCookies(res, result.accessToken, result.refreshToken);
+
+    const responseData: { token: string; refreshToken?: string } = { token: result.accessToken };
+    if (req.body?.refreshToken) {
+      responseData.refreshToken = result.refreshToken;
+    }
+    res.json({ success: true, data: responseData });
+  } catch (error: any) {
+    if (error.message === 'REFRESH_TOKEN_REUSE') {
+      clearAuthCookies(res);
+      res.status(401).json({
+        success: false,
+        error: { message: 'Token reuse detected. All sessions have been revoked.', code: 'TOKEN_REUSE' },
+      });
+      return;
+    }
+    if (error.message === 'INVALID_REFRESH_TOKEN' || error.message === 'REFRESH_TOKEN_EXPIRED') {
+      clearAuthCookies(res);
+      res.status(401).json({
+        success: false,
+        error: { message: 'Invalid or expired refresh token', code: 'INVALID_REFRESH_TOKEN' },
+      });
+      return;
+    }
+    if (error.message === 'ACCOUNT_DISABLED') {
+      clearAuthCookies(res);
+      res.status(403).json({
+        success: false,
+        error: { message: 'Account is disabled', code: 'ACCOUNT_DISABLED' },
+      });
+      return;
+    }
+    next(error);
+  }
+});
+
+authRouter.post('/logout', async (req: Request, res: Response) => {
+  try {
+    let userId: string | undefined;
+
+    const header = req.headers.authorization;
+    let accessToken: string | undefined;
+    if (header?.startsWith('Bearer ')) {
+      accessToken = header.split(' ')[1];
+    }
+    if (!accessToken && req.cookies?.cleo_auth) {
+      accessToken = req.cookies.cleo_auth;
+    }
+
+    if (accessToken) {
+      try {
+        const payload = verifyAccessToken(accessToken);
+        userId = payload.userId;
+        if (payload.jti && payload.exp) {
+          await blacklistAccessToken(payload.jti, payload.userId, payload.exp);
+        }
+      } catch {}
+    }
+
+    if (!userId) {
+      const refreshTokenValue = req.cookies?.cleo_refresh || req.body?.refreshToken;
+      if (refreshTokenValue) {
+        try {
+          const decoded = Buffer.from(refreshTokenValue, 'base64url').toString('utf8');
+          const parsed = JSON.parse(decoded);
+          if (parsed.t) {
+            const tokenHash = (await import('crypto')).createHash('sha256').update(parsed.t).digest('hex');
+            const rt = await prisma.refreshToken.findUnique({
+              where: { tokenHash },
+              select: { userId: true },
+            });
+            if (rt) userId = rt.userId;
+          }
+        } catch {}
+      }
+    }
+
+    if (userId) {
+      securityLogger.authEvent(req, 'LOGOUT', 'SUCCESS', userId);
+      await revokeAllUserTokens(userId);
+    } else {
+      securityLogger.authEvent(req, 'LOGOUT', 'SUCCESS', null);
+    }
+  } catch {}
+
+  clearAuthCookies(res);
   res.json({ success: true, message: 'Logged out' });
 });
 
@@ -217,7 +359,7 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
         ).catch((e) => console.error('[Auth/Google] WhatsApp welcome failed:', e));
       }
     }
-    setAuthCookie(res, result.token);
+    setAuthCookies(res, result.token, result.refreshToken);
     const profileComplete = result.user.profile?.isComplete;
     const dest = (result.user.role as string).toLowerCase() === 'admin' ? '/admin' : profileComplete ? '/dashboard' : '/chat';
     res.redirect(`${baseUrl}${dest}`);
@@ -371,7 +513,7 @@ authRouter.get('/linkedin/callback', async (req: Request, res: Response) => {
       }
     }
 
-    setAuthCookie(res, result.token);
+    setAuthCookies(res, result.token, result.refreshToken);
     const profileComplete = result.user.profile?.isComplete;
     const dest = (result.user.role as string).toLowerCase() === 'admin' ? '/admin' : profileComplete ? '/dashboard' : '/chat';
     res.redirect(`${baseUrl}${dest}`);

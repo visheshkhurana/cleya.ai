@@ -10,6 +10,7 @@ class ApiClient {
   private _authenticated = false;
   private csrfToken: string | null = null;
   private csrfFetching: Promise<void> | null = null;
+  private refreshing: Promise<boolean> | null = null;
 
   setToken(_token: string) {
     this._authenticated = true;
@@ -25,7 +26,14 @@ class ApiClient {
 
   async logout() {
     try {
-      await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
+      const csrf = await this.ensureCsrfToken();
+      const headers: Record<string, string> = {};
+      if (csrf) headers['x-csrf-token'] = csrf;
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+        headers,
+      });
     } catch {}
     this._authenticated = false;
   }
@@ -48,7 +56,6 @@ class ApiClient {
           this.csrfToken = json.data.csrfToken;
         }
       } catch {
-        // non-fatal
       } finally {
         this.csrfFetching = null;
       }
@@ -57,7 +64,36 @@ class ApiClient {
     return this.csrfToken;
   }
 
-  private async fetch<T = any>(path: string, options: RequestInit = {}): Promise<T> {
+  private async attemptTokenRefresh(): Promise<boolean> {
+    if (this.refreshing) {
+      return this.refreshing;
+    }
+    this.refreshing = (async () => {
+      try {
+        const csrf = await this.ensureCsrfToken();
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (csrf) headers['x-csrf-token'] = csrf;
+        const res = await fetch(`${API_BASE}/auth/refresh`, {
+          method: 'POST',
+          credentials: 'include',
+          headers,
+        });
+        if (res.ok) {
+          this._authenticated = true;
+          return true;
+        }
+        this._authenticated = false;
+        return false;
+      } catch {
+        return false;
+      } finally {
+        this.refreshing = null;
+      }
+    })();
+    return this.refreshing;
+  }
+
+  private async fetch<T = any>(path: string, options: RequestInit = {}, isRetry = false): Promise<T> {
     const method = (options.method || 'GET').toUpperCase();
     const needsCsrf = !['GET', 'HEAD', 'OPTIONS'].includes(method);
 
@@ -92,6 +128,14 @@ class ApiClient {
           return retryJson.data;
         }
       }
+
+      if (res.status === 401 && !isRetry && !path.includes('/auth/refresh')) {
+        const refreshed = await this.attemptTokenRefresh();
+        if (refreshed) {
+          return this.fetch<T>(path, options, true);
+        }
+      }
+
       const errMsg = json.error?.message || 'Request failed';
       const details = json.error?.details;
       if (details && Array.isArray(details) && details.length > 0) {

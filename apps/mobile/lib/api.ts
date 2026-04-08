@@ -3,6 +3,7 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 const TOKEN_KEY = 'cleya_auth_token';
+const REFRESH_TOKEN_KEY = 'cleya_refresh_token';
 
 export interface AuthUser {
   id: string;
@@ -163,6 +164,8 @@ function getApiUrl(): string {
 
 const API_BASE = getApiUrl();
 
+let refreshPromise: Promise<boolean> | null = null;
+
 async function getToken(): Promise<string | null> {
   try {
     return await SecureStore.getItemAsync(TOKEN_KEY);
@@ -180,10 +183,59 @@ async function setToken(token: string): Promise<void> {
 async function clearToken(): Promise<void> {
   try {
     await SecureStore.deleteItemAsync(TOKEN_KEY);
+    await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
   } catch {}
 }
 
-async function apiFetch<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
+async function getRefreshToken(): Promise<string | null> {
+  try {
+    return await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+async function setRefreshToken(token: string): Promise<void> {
+  try {
+    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, token);
+  } catch {}
+}
+
+async function attemptTokenRefresh(): Promise<boolean> {
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    try {
+      const rt = await getRefreshToken();
+      if (!rt) return false;
+
+      const res = await fetch(`${API_BASE}/api/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: rt }),
+      });
+
+      if (!res.ok) {
+        await clearToken();
+        return false;
+      }
+
+      const json: Record<string, unknown> = await res.json();
+      const data = json.data as { token?: string; refreshToken?: string } | undefined;
+      if (data?.token) await setToken(data.token);
+      if (data?.refreshToken) await setRefreshToken(data.refreshToken);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
+async function apiFetch<T = unknown>(path: string, options: RequestInit = {}, isRetry = false): Promise<T> {
   const token = await getToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -210,7 +262,11 @@ async function apiFetch<T = unknown>(path: string, options: RequestInit = {}): P
   }
 
   if (!res.ok) {
-    if (res.status === 401) {
+    if (res.status === 401 && !isRetry && !path.includes('/auth/refresh')) {
+      const refreshed = await attemptTokenRefresh();
+      if (refreshed) {
+        return apiFetch<T>(path, options, true);
+      }
       await clearToken();
     }
     const errObj = json?.error as Record<string, unknown> | undefined;
@@ -230,26 +286,41 @@ export const api = {
   getToken,
   setToken,
   clearToken,
+  getRefreshToken,
+  setRefreshToken,
 
   async login(email: string, password: string) {
-    const data = await apiFetch<{ user: AuthUser; token: string }>('/auth/login', {
+    const data = await apiFetch<{ user: AuthUser; token: string; refreshToken: string }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
     if (data.token) await setToken(data.token);
+    if (data.refreshToken) await setRefreshToken(data.refreshToken);
     return data;
   },
 
   async signup(email: string, password: string, name?: string, persona?: string) {
-    const data = await apiFetch<{ user: AuthUser; token: string }>('/auth/signup', {
+    const data = await apiFetch<{ user: AuthUser; token: string; refreshToken: string }>('/auth/signup', {
       method: 'POST',
       body: JSON.stringify({ email, password, name, persona }),
     });
     if (data.token) await setToken(data.token);
+    if (data.refreshToken) await setRefreshToken(data.refreshToken);
     return data;
   },
 
   async logout() {
+    try {
+      const token = await getToken();
+      const rt = await getRefreshToken();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+      await fetch(`${API_BASE}/api/auth/logout`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(rt ? { refreshToken: rt } : {}),
+      });
+    } catch {}
     await clearToken();
   },
 

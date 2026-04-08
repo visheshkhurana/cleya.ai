@@ -8,7 +8,11 @@ const envSchema = z.object({
   REDIS_URL: z.string().default('redis://localhost:6379'),
 
   JWT_SECRET: z.string().min(32),
-  JWT_EXPIRES_IN: z.string().default('7d'),
+  JWT_EXPIRES_IN: z.string().default('15m'),
+  JWT_PRIVATE_KEY: z.string().optional(),
+  JWT_PUBLIC_KEY: z.string().optional(),
+  REFRESH_TOKEN_EXPIRES_IN: z.string().default('7d'),
+  SESSION_INACTIVITY_TIMEOUT: z.coerce.number().default(30 * 60 * 1000),
 
   OPENAI_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),

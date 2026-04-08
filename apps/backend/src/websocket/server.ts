@@ -1,8 +1,7 @@
 import { Server as HttpServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
-import jwt from 'jsonwebtoken';
-import { env } from '../config/env';
 import { AuthPayload } from '../middleware/auth';
+import { verifyAccessToken, isTokenBlacklisted, checkSessionActivity } from '../services/tokenService';
 
 interface AuthenticatedSocket extends WebSocket {
   userId?: string;
@@ -46,12 +45,27 @@ export function setupWebSocket(server: HttpServer) {
     }
 
     try {
-      const payload = jwt.verify(token, env.JWT_SECRET) as AuthPayload;
-      ws.userId = payload.userId;
-      ws.isAlive = true;
-      clients.set(payload.userId, ws);
+      const payload = verifyAccessToken(token);
 
-      console.log(`🔌 WS connected: ${payload.userId}`);
+      (async () => {
+        try {
+          if (payload.jti && await isTokenBlacklisted(payload.jti)) {
+            ws.close(4001, 'Token revoked');
+            return;
+          }
+          const sessionActive = await checkSessionActivity(payload.userId);
+          if (!sessionActive) {
+            ws.close(4001, 'Session expired');
+            return;
+          }
+          ws.userId = payload.userId;
+          ws.isAlive = true;
+          clients.set(payload.userId, ws);
+          console.log(`🔌 WS connected: ${payload.userId}`);
+        } catch {
+          ws.close(4001, 'Authentication failed');
+        }
+      })();
     } catch {
       ws.close(4001, 'Invalid token');
       return;

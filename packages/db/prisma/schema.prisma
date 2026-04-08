@@ -75,6 +75,9 @@ model User {
   whatsappOptedIn        Boolean  @default(false)
   whatsappPhone          String?
 
+  refreshTokens          RefreshToken[]
+  lastActiveAt           DateTime?
+
   @@index([email])
   @@index([phone])
   @@map("users")
@@ -948,6 +951,43 @@ enum SecuritySeverity {
   INFO
   WARNING
   CRITICAL
+}
+
+// ─────────────────────────────────────────────
+// REFRESH TOKENS
+// ─────────────────────────────────────────────
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  familyId  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+// ─────────────────────────────────────────────
+// TOKEN BLACKLIST
+// ─────────────────────────────────────────────
+
+model TokenBlacklist {
+  id        String   @id @default(cuid())
+  jti       String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([jti])
+  @@index([expiresAt])
+  @@map("token_blacklist")
 }
 
 // ─────────────────────────────────────────────
