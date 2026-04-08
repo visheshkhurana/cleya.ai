@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Brain, Lightbulb, Share2, Mail, Target, Globe, Zap, BarChart3,
   Clock, AlertCircle, CheckCircle, ChevronRight, X, Send, Plus,
-  Filter, Download, Eye, Check, XCircle, Loader
+  Filter, Download, Eye, Check, XCircle, Loader, Database, Trash2
 } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -979,13 +979,327 @@ function ScheduleConfigTab({ agentId, liveStatus, onConfigChange }: {
   );
 }
 
+interface AgentMemoryData {
+  working: any | null;
+  shortTerm: Array<{ id: string; category: string; content: string; expiresAt: string; createdAt: string }>;
+  longTerm: Array<{ id: string; category: string; pattern: string; confidence: number; occurrenceCount: number; createdAt: string }>;
+  episodic: Array<{ id: string; eventType: string; title: string; description: string; impact?: string; tags: string[]; occurredAt: string }>;
+  semantic: Array<{ id: string; content: string; category: string; createdAt: string }>;
+}
+
+function MemoryTab({ agentId }: { agentId: string }) {
+  const [memory, setMemory] = useState<AgentMemoryData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeLayer, setActiveLayer] = useState<'short_term' | 'long_term' | 'episodic' | 'semantic' | 'working'>('short_term');
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addContent, setAddContent] = useState('');
+  const [addCategory, setAddCategory] = useState('general');
+  const [addTitle, setAddTitle] = useState('');
+  const [addDescription, setAddDescription] = useState('');
+  const [addEventType, setAddEventType] = useState('manual');
+  const [saving, setSaving] = useState(false);
+
+  const loadMemory = useCallback(async () => {
+    try {
+      const resp = await api.getAgentMemory(agentId);
+      setMemory(resp?.data || resp);
+    } catch (error) {
+      console.error('Failed to load memory:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [agentId]);
+
+  useEffect(() => { loadMemory(); }, [loadMemory]);
+
+  const handleAdd = async () => {
+    if (!addContent.trim() && activeLayer !== 'episodic') return;
+    setSaving(true);
+    try {
+      const payload: Record<string, any> = { layer: activeLayer };
+      if (activeLayer === 'short_term') {
+        payload.content = addContent;
+        payload.category = addCategory;
+      } else if (activeLayer === 'long_term') {
+        payload.pattern = addContent;
+        payload.category = addCategory;
+      } else if (activeLayer === 'episodic') {
+        payload.title = addTitle;
+        payload.description = addDescription || addContent;
+        payload.eventType = addEventType;
+        payload.content = addContent;
+      } else if (activeLayer === 'semantic') {
+        payload.content = addContent;
+        payload.category = addCategory;
+      } else if (activeLayer === 'working') {
+        try { payload.data = JSON.parse(addContent); } catch { payload.data = { note: addContent }; }
+      }
+      await api.addAgentMemory(agentId, payload);
+      setAddContent(''); setAddTitle(''); setAddDescription('');
+      setShowAddForm(false);
+      await loadMemory();
+    } catch (error) {
+      console.error('Failed to add memory:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (memoryId: string, layer: string) => {
+    try {
+      await api.deleteAgentMemory(agentId, memoryId, layer);
+      await loadMemory();
+    } catch (error) {
+      console.error('Failed to delete memory:', error);
+    }
+  };
+
+  if (loading) return <LoadingSpinner />;
+  if (!memory) return <ErrorState message="Failed to load memory data" />;
+
+  const layers = [
+    { id: 'short_term' as const, label: 'Short-Term', count: memory.shortTerm.length },
+    { id: 'long_term' as const, label: 'Long-Term', count: memory.longTerm.length },
+    { id: 'episodic' as const, label: 'Episodic', count: memory.episodic.length },
+    { id: 'semantic' as const, label: 'Semantic', count: memory.semantic.length },
+    { id: 'working' as const, label: 'Working', count: memory.working ? 1 : 0 },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex gap-2 overflow-x-auto">
+          {layers.map(layer => (
+            <button
+              key={layer.id}
+              onClick={() => { setActiveLayer(layer.id); setShowAddForm(false); }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                activeLayer === layer.id
+                  ? 'bg-brand-violet text-white'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              {layer.label} ({layer.count})
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-500/20 text-green-300 hover:bg-green-500/30 border border-green-500/30"
+        >
+          <Plus size={14} /> Add
+        </button>
+      </div>
+
+      {showAddForm && (
+        <div className="border border-brand-violet/20 rounded-lg p-4 bg-brand-violet-pressed/10 space-y-3">
+          <div className="text-sm font-medium text-white">Add {layers.find(l => l.id === activeLayer)?.label} Memory</div>
+
+          {(activeLayer === 'short_term' || activeLayer === 'long_term' || activeLayer === 'semantic') && (
+            <input
+              type="text"
+              value={addCategory}
+              onChange={e => setAddCategory(e.target.value)}
+              placeholder="Category"
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-violet"
+            />
+          )}
+
+          {activeLayer === 'episodic' && (
+            <>
+              <input
+                type="text"
+                value={addEventType}
+                onChange={e => setAddEventType(e.target.value)}
+                placeholder="Event type (e.g., success, failure, milestone)"
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-violet"
+              />
+              <input
+                type="text"
+                value={addTitle}
+                onChange={e => setAddTitle(e.target.value)}
+                placeholder="Event title"
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-violet"
+              />
+              <textarea
+                value={addDescription}
+                onChange={e => setAddDescription(e.target.value)}
+                placeholder="Event description"
+                rows={2}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-violet resize-none"
+              />
+            </>
+          )}
+
+          <textarea
+            value={addContent}
+            onChange={e => setAddContent(e.target.value)}
+            placeholder={activeLayer === 'working' ? 'JSON data or plain text' : 'Memory content'}
+            rows={3}
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-violet resize-none"
+          />
+
+          <div className="flex gap-2 justify-end">
+            <button
+              onClick={() => setShowAddForm(false)}
+              className="px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAdd}
+              disabled={saving || (!addContent.trim() && activeLayer !== 'episodic')}
+              className="px-4 py-1.5 rounded-lg text-xs font-medium bg-brand-violet text-white hover:bg-brand-violet/80 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-2">
+        {activeLayer === 'working' && (
+          memory.working ? (
+            <div className="border border-brand-violet/10 rounded-lg p-4 bg-brand-violet-pressed/5">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-brand-violet-hover uppercase">Working Memory</span>
+                <button onClick={() => handleDelete('working', 'working')} className="text-red-400 hover:text-red-300">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+              <pre className="text-xs text-slate-300 bg-black/20 p-2 rounded overflow-auto max-h-48">
+                {JSON.stringify(memory.working, null, 2)}
+              </pre>
+            </div>
+          ) : (
+            <p className="text-slate-400 text-center py-6">No working memory set</p>
+          )
+        )}
+
+        {activeLayer === 'short_term' && (
+          memory.shortTerm.length === 0 ? (
+            <p className="text-slate-400 text-center py-6">No short-term memories</p>
+          ) : (
+            memory.shortTerm.map(mem => (
+              <div key={mem.id} className="border border-brand-violet/10 rounded-lg p-4 bg-brand-violet-pressed/5">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <span className="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-300">{mem.category}</span>
+                    <p className="text-sm text-slate-200 mt-2">{mem.content}</p>
+                    <div className="flex gap-3 mt-2 text-xs text-slate-500">
+                      <span>Created: {new Date(mem.createdAt).toLocaleString()}</span>
+                      <span>Expires: {new Date(mem.expiresAt).toLocaleString()}</span>
+                    </div>
+                  </div>
+                  <button onClick={() => handleDelete(mem.id, 'short_term')} className="text-red-400 hover:text-red-300 ml-2">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))
+          )
+        )}
+
+        {activeLayer === 'long_term' && (
+          memory.longTerm.length === 0 ? (
+            <p className="text-slate-400 text-center py-6">No long-term memories</p>
+          ) : (
+            memory.longTerm.map(mem => (
+              <div key={mem.id} className="border border-brand-violet/10 rounded-lg p-4 bg-brand-violet-pressed/5">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-300">{mem.category}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded font-medium ${
+                        mem.confidence >= 0.8 ? 'bg-green-500/20 text-green-300' :
+                        mem.confidence >= 0.5 ? 'bg-yellow-500/20 text-yellow-300' :
+                        'bg-slate-500/20 text-slate-300'
+                      }`}>
+                        {(mem.confidence * 100).toFixed(0)}% confidence
+                      </span>
+                      <span className="text-xs text-slate-500">{mem.occurrenceCount}x observed</span>
+                    </div>
+                    <p className="text-sm text-slate-200">{mem.pattern}</p>
+                  </div>
+                  <button onClick={() => handleDelete(mem.id, 'long_term')} className="text-red-400 hover:text-red-300 ml-2">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))
+          )
+        )}
+
+        {activeLayer === 'episodic' && (
+          memory.episodic.length === 0 ? (
+            <p className="text-slate-400 text-center py-6">No episodic memories</p>
+          ) : (
+            memory.episodic.map(mem => (
+              <div key={mem.id} className="border border-brand-violet/10 rounded-lg p-4 bg-brand-violet-pressed/5">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-300">{mem.eventType}</span>
+                      {mem.impact && (
+                        <span className={`text-xs px-2 py-0.5 rounded font-medium ${
+                          mem.impact === 'positive' ? 'bg-green-500/20 text-green-300' :
+                          mem.impact === 'negative' ? 'bg-red-500/20 text-red-300' :
+                          'bg-slate-500/20 text-slate-300'
+                        }`}>{mem.impact}</span>
+                      )}
+                    </div>
+                    <h4 className="text-sm font-medium text-white">{mem.title}</h4>
+                    <p className="text-sm text-slate-300 mt-1">{mem.description}</p>
+                    {mem.tags.length > 0 && (
+                      <div className="flex gap-1 mt-2 flex-wrap">
+                        {mem.tags.map((tag, i) => (
+                          <span key={i} className="text-xs px-2 py-0.5 rounded bg-brand-violet/20 text-brand-violet-hover">{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                    <span className="text-xs text-slate-500 mt-2 block">{new Date(mem.occurredAt).toLocaleString()}</span>
+                  </div>
+                  <button onClick={() => handleDelete(mem.id, 'episodic')} className="text-red-400 hover:text-red-300 ml-2">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))
+          )
+        )}
+
+        {activeLayer === 'semantic' && (
+          memory.semantic.length === 0 ? (
+            <p className="text-slate-400 text-center py-6">No semantic memories</p>
+          ) : (
+            memory.semantic.map(mem => (
+              <div key={mem.id} className="border border-brand-violet/10 rounded-lg p-4 bg-brand-violet-pressed/5">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <span className="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-300">{mem.category}</span>
+                    <p className="text-sm text-slate-200 mt-2">{mem.content}</p>
+                    <span className="text-xs text-slate-500 mt-2 block">{new Date(mem.createdAt).toLocaleString()}</span>
+                  </div>
+                  <button onClick={() => handleDelete(mem.id, 'semantic')} className="text-red-400 hover:text-red-300 ml-2">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))
+          )
+        )}
+      </div>
+    </div>
+  );
+}
+
 function DetailPanel({ agent, onClose, liveStatus, onConfigChange }: {
   agent: Agent;
   onClose: () => void;
   liveStatus?: AgentStatusInfo;
   onConfigChange: () => void;
 }) {
-  const [activeTab, setActiveTab] = useState<'activity' | 'history' | 'accountability' | 'tasks' | 'content' | 'chat' | 'schedule' | 'code'>('accountability');
+  const [activeTab, setActiveTab] = useState<'activity' | 'history' | 'accountability' | 'tasks' | 'content' | 'chat' | 'schedule' | 'code' | 'memory'>('accountability');
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -1022,6 +1336,7 @@ function DetailPanel({ agent, onClose, liveStatus, onConfigChange }: {
             { id: 'activity', label: 'Activity Log' },
             { id: 'tasks', label: 'Tasks' },
             { id: 'content', label: 'Content Queue' },
+            { id: 'memory', label: 'Memory' },
             { id: 'chat', label: 'Chat' },
             { id: 'code', label: 'Code Changes' },
           ].map((tab) => (
@@ -1046,6 +1361,7 @@ function DetailPanel({ agent, onClose, liveStatus, onConfigChange }: {
           {activeTab === 'activity' && <ActivityLogTab agentId={agent.id} />}
           {activeTab === 'tasks' && <TasksTab agentId={agent.id} />}
           {activeTab === 'content' && <ContentQueueTab agentId={agent.id} />}
+          {activeTab === 'memory' && <MemoryTab agentId={agent.id} />}
           {activeTab === 'chat' && <ChatTab agentId={agent.id} />}
           {activeTab === 'code' && <CodeChangesTab agentId={agent.id} />}
         </div>

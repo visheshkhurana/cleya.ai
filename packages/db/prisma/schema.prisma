@@ -1053,3 +1053,93 @@ model Waitlist {
   @@index([approved])
   @@map("waitlist")
 }
+
+// ─────────────────────────────────────────────
+// AGENT MEMORY SYSTEM (5-Layer)
+// ─────────────────────────────────────────────
+
+model AgentWorkingMemory {
+  id        String   @id @default(cuid())
+  agentId   String
+  sessionId String?
+  data      Json     @db.JsonB
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([agentId])
+  @@index([agentId])
+  @@map("agent_working_memory")
+}
+
+model AgentShortTermMemory {
+  id        String   @id @default(cuid())
+  agentId   String
+  category  String
+  content   String
+  metadata  Json?    @db.JsonB
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([agentId])
+  @@index([agentId, category])
+  @@index([expiresAt])
+  @@map("agent_short_term_memory")
+}
+
+model AgentLongTermMemory {
+  id             String   @id @default(cuid())
+  agentId        String
+  category       String
+  pattern        String
+  evidence       String[]  @default([])
+  confidence     Float     @default(0.5)
+  occurrenceCount Int      @default(1)
+  metadata       Json?    @db.JsonB
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([agentId])
+  @@index([agentId, category])
+  @@map("agent_long_term_memory")
+}
+
+model AgentEpisodicMemory {
+  id          String   @id @default(cuid())
+  agentId     String
+  eventType   String
+  title       String
+  description String
+  impact      String?
+  tags        String[] @default([])
+  metadata    Json?    @db.JsonB
+  occurredAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([agentId])
+  @@index([agentId, eventType])
+  @@index([occurredAt])
+  @@map("agent_episodic_memory")
+}
+
+model AgentSemanticMemory {
+  id        String                        @id @default(cuid())
+  agentId   String
+  content   String
+  category  String
+  embedding Unsupported("vector(1536)")
+  metadata  Json?                         @db.JsonB
+  createdAt DateTime                      @default(now())
+  updatedAt DateTime                      @updatedAt
+
+  @@index([agentId])
+  @@index([agentId, category])
+  @@map("agent_semantic_memory")
+}
+
+enum AgentMemoryLayer {
+  WORKING
+  SHORT_TERM
+  LONG_TERM
+  EPISODIC
+  SEMANTIC
+}

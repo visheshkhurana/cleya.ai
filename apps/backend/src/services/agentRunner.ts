@@ -2,6 +2,7 @@ import { createAIService } from '@cleya/ai';
 import { prisma } from '@cleya/db';
 import { supabaseInsert, supabaseSelect, supabaseUpdate, supabaseUpsert } from './supabaseClient';
 import { notifyAgentCompletion } from './agentNotifier';
+import { assembleMemoryContext, formatMemoryForPrompt, storeRunMemories, setWorkingMemory, clearWorkingMemory } from './agentMemoryService';
 
 const AGENT_PROMPTS: Record<string, { name: string; codename: string; systemPrompt: string; contentType: string; channel: string }> = {
   'nexus': {
@@ -354,14 +355,28 @@ async function executeAgentOnce(agentId: string, taskContext?: string): Promise<
     throw new Error('AI service not configured. Set OPENAI_API_KEY.');
   }
 
+  let memoryPromptSection = '';
+  try {
+    const memoryCtx = await assembleMemoryContext(agentId, taskContext);
+    memoryPromptSection = formatMemoryForPrompt(memoryCtx);
+    await setWorkingMemory(agentId, {
+      currentTask: taskContext || 'scheduled_run',
+      startedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.log(`[AgentRunner] Memory retrieval skipped for ${agentId}:`, (err as Error).message);
+  }
+
   let userPrompt = `Today is ${new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.`;
   if (taskContext) {
     userPrompt += `\n\nTask context: ${taskContext}`;
   }
   userPrompt += '\n\nGenerate content now.';
 
+  const systemPrompt = config.systemPrompt + memoryPromptSection;
+
   const messages = [
-    { role: 'system' as const, content: config.systemPrompt },
+    { role: 'system' as const, content: systemPrompt },
     { role: 'user' as const, content: userPrompt },
   ];
 
@@ -432,6 +447,22 @@ export async function runAgent(agentId: string, taskContext?: string): Promise<A
     state.lastRunDuration = duration;
     state.lastRunStatus = result.status;
     await persistAgentState(resolved);
+
+    try {
+      await storeRunMemories(resolved, {
+        status: result.status,
+        outputSummary: result.outputSummary,
+        duration,
+        error: result.error,
+      });
+    } catch (memErr) {
+      console.log(`[AgentRunner] Memory storage skipped for ${resolved}:`, (memErr as Error).message);
+    }
+    try {
+      await clearWorkingMemory(resolved);
+    } catch (memErr) {
+      console.log(`[AgentRunner] Working memory cleanup skipped for ${resolved}:`, (memErr as Error).message);
+    }
 
     console.log(`[AgentRunner] ${config.name} ${result.status} in ${(duration / 1000).toFixed(1)}s`);
 

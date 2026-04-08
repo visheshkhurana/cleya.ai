@@ -15,6 +15,7 @@ import { analyticsAggregatorService } from '../services/analyticsAggregatorServi
 import { agentScheduler } from '../services/agentScheduler';
 import cronValidator from 'node-cron';
 import { runAgent, getAgentStatuses, KNOWN_AGENT_IDS, getAgentRunHistory, getAgentAccountability, updateAgentConfig, resolveAgentId } from '../services/agentRunner';
+import { getAllMemories, addShortTermMemory, addLongTermMemory, addEpisodicMemory, addSemanticMemory, deleteShortTermMemory, deleteLongTermMemory, deleteEpisodicMemory, deleteSemanticMemory, setWorkingMemory, clearWorkingMemory } from '../services/agentMemoryService';
 import { securityLogger } from '../services/securityLogger';
 import { logAdminAction, getAuditLogs } from '../services/auditLogger';
 
@@ -840,6 +841,116 @@ adminRouter.patch('/agents/:id/config', async (req: Request, res: Response, next
     next(error);
   }
 });
+
+adminRouter.get('/agents/:id/memory', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const resolved = resolveAgentId(id);
+    const memories = await getAllMemories(resolved);
+    res.json({ success: true, data: memories });
+  } catch (error) {
+    next(error);
+  }
+});
+
+const memoryAddSchema = z.object({
+  layer: z.enum(['working', 'short_term', 'long_term', 'episodic', 'semantic']),
+  content: z.string().max(10000).optional(),
+  category: z.string().max(200).optional(),
+  pattern: z.string().max(10000).optional(),
+  eventType: z.string().max(200).optional(),
+  title: z.string().max(500).optional(),
+  description: z.string().max(10000).optional(),
+  impact: z.string().max(200).optional(),
+  tags: z.array(z.string().max(100)).max(20).optional(),
+  data: z.any().optional(),
+});
+
+adminRouter.post('/agents/:id/memory', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const resolved = resolveAgentId(id);
+
+    const parsed = memoryAddSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ success: false, error: { message: 'Invalid input', details: parsed.error.flatten() } });
+      return;
+    }
+
+    const { layer, content, category, pattern, eventType, title, description, impact, tags, data } = parsed.data;
+
+    if (layer === 'semantic' && !content) {
+      res.status(400).json({ success: false, error: { message: 'Content is required for semantic memory' } });
+      return;
+    }
+    if (['short_term', 'long_term'].includes(layer) && !content && !pattern) {
+      res.status(400).json({ success: false, error: { message: 'Content or pattern is required' } });
+      return;
+    }
+
+    let memoryId: string | null = null;
+
+    switch (layer) {
+      case 'working':
+        await setWorkingMemory(resolved, data || {});
+        res.json({ success: true, data: { layer: 'working' } });
+        return;
+      case 'short_term':
+        memoryId = await addShortTermMemory(resolved, category || 'general', content!);
+        break;
+      case 'long_term':
+        memoryId = await addLongTermMemory(resolved, category || 'general', pattern || content!);
+        break;
+      case 'episodic':
+        memoryId = await addEpisodicMemory(
+          resolved, eventType || 'manual', title || 'Manual entry',
+          description || content || '', impact, tags || []
+        );
+        break;
+      case 'semantic':
+        memoryId = await addSemanticMemory(resolved, content!, category || 'general');
+        break;
+    }
+
+    res.json({ success: true, data: { id: memoryId, layer } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.delete('/agents/:id/memory/:memoryId', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id, memoryId } = req.params;
+    const { layer } = req.query;
+    const resolved = resolveAgentId(id);
+
+    switch (layer) {
+      case 'working':
+        await clearWorkingMemory(resolved);
+        break;
+      case 'short_term':
+        await deleteShortTermMemory(memoryId, resolved);
+        break;
+      case 'long_term':
+        await deleteLongTermMemory(memoryId, resolved);
+        break;
+      case 'episodic':
+        await deleteEpisodicMemory(memoryId, resolved);
+        break;
+      case 'semantic':
+        await deleteSemanticMemory(memoryId, resolved);
+        break;
+      default:
+        res.status(400).json({ success: false, error: { message: `Invalid memory layer: ${layer}` } });
+        return;
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
 const securityLogQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(200).default(50),

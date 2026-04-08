@@ -643,6 +643,23 @@ class ApiClient {
     });
   }
 
+  async getAgentMemory(agentId: string) {
+    return this.fetch(`/admin/agents/${agentId}/memory`);
+  }
+
+  async addAgentMemory(agentId: string, memoryData: Record<string, any>) {
+    return this.fetch(`/admin/agents/${agentId}/memory`, {
+      method: 'POST',
+      body: JSON.stringify(memoryData),
+    });
+  }
+
+  async deleteAgentMemory(agentId: string, memoryId: string, layer: string) {
+    return this.fetch(`/admin/agents/${agentId}/memory/${memoryId}?layer=${layer}`, {
+      method: 'DELETE',
+    });
+  }
+
   async updateUserRole(userId: string, role: string, elevatedToken: string) {
     return this.fetch(`/admin/users/${userId}/role`, {
       method: 'PUT',

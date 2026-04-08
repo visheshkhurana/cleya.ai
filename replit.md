@@ -76,7 +76,15 @@ The backend handles `SIGTERM`/`SIGINT` for graceful shutdown: stops cron jobs, c
 
 Backward-compatible agent ID aliases: `orchestrator→nexus`, `content-strategist→maven`, `social-media→maven`, `email-marketing→maven`, `cold-outreach→closer`.
 
-**AgentRunner** (`apps/backend/src/services/agentRunner.ts`): Executes agents via OpenAI (gpt-4o-mini), writes generated content to `dm_content_queue` (Supabase REST) with status PENDING for human review, logs execution metadata to `dm_agent_logs`. Retry logic with exponential backoff (max 2 retries, 2s base delay). Agent state persisted to `dm_agent_state` table via Prisma raw SQL (not Supabase REST, due to PostgREST schema cache delays). State hydrated on boot. Enable/disable toggles per agent.
+**AgentRunner** (`apps/backend/src/services/agentRunner.ts`): Executes agents via OpenAI (gpt-4o-mini), writes generated content to `dm_content_queue` (Supabase REST) with status PENDING for human review, logs execution metadata to `dm_agent_logs`. Retry logic with exponential backoff (max 2 retries, 2s base delay). Agent state persisted to `dm_agent_state` table via Prisma raw SQL (not Supabase REST, due to PostgREST schema cache delays). State hydrated on boot. Enable/disable toggles per agent. Memory context injected into system prompts before each run; run results stored as short-term memories after completion.
+
+**Agent Memory System** (`apps/backend/src/services/agentMemoryService.ts`): 5-layer persistent memory for agents:
+- **Working Memory** (`agent_working_memory`): Session-scoped JSON, one per agent, tracks current active task context. Cleared after each run.
+- **Short-Term Memory** (`agent_short_term_memory`): Time-decaying entries (48h TTL), stores recent run outputs, decisions, context.
+- **Long-Term Memory** (`agent_long_term_memory`): Durable patterns with confidence scores. Auto-promoted from short-term when a pattern appears 3+ times (keyword overlap detection).
+- **Episodic Memory** (`agent_episodic_memory`): Tagged notable events (successes, failures, milestones) with impact assessment.
+- **Semantic Memory** (`agent_semantic_memory`): Vector embeddings (pgvector 1536-dim) for domain knowledge retrieval via cosine similarity search.
+Memory is assembled and injected into agent system prompts automatically before each run. Admin UI "Memory" tab per agent shows all layers with add/delete capabilities. API routes: `GET/POST /admin/agents/:id/memory`, `DELETE /admin/agents/:id/memory/:memoryId?layer=...`.
 
 **AgentNotifier** (`apps/backend/src/services/agentNotifier.ts`): Sends Slack alerts to `#all-cleya` on agent success/failure. Sends email via Resend to admin on agent failure. Non-blocking, errors logged silently.
 
