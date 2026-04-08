@@ -11,25 +11,113 @@ import {
   Layout, ListTodo, RefreshCw
 } from 'lucide-react';
 
+// === TYPES ===
 interface Agent {
-  id: string; name: string; role: string; description: string;
+  id: string;
+  name: string;
+  role: string;
+  description: string;
   status: 'active' | 'idle' | 'error' | 'running';
-  color: string; icon: string; tools: string[];
-  schedule?: string; last_run_at?: string;
+  color: string;
+  icon: string;
+  tools: string[];
+  schedule?: string;
+  last_run_at?: string;
 }
-interface AgentLog { id: number; agent_id: string; action: string; details: Record<string, any>; status: string; created_at: string; }
-interface AgentTask { id: number; agent_id: string; title: string; description: string; status: string; priority: string; created_at: string; }
-interface Channel { id: string; name: string; icon: React.ReactNode; description: string; unread: number; type: 'channel' | 'agent' | 'system'; agentId?: string; }
-interface ChatMessage { id: string; sender: string; senderType: 'agent' | 'system' | 'user'; avatar: string; content: string; timestamp: string; channel: string; details?: Record<string, any>; alerts?: string[]; tasks?: string[]; }
 
+interface AgentLog {
+  id: number;
+  agent_id: string;
+  action: string;
+  details: Record<string, any>;
+  status: string;
+  created_at: string;
+}
+
+interface AgentTask {
+  id: number;
+  agent_id: string;
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  created_at: string;
+}
+
+interface Channel {
+  id: string;
+  name: string;
+  icon: React.ReactNode;
+  description: string;
+  unread: number;
+  type: 'channel' | 'agent' | 'system';
+  agentId?: string;
+}
+
+interface ChatMessage {
+  id: string;
+  sender: string;
+  senderType: 'agent' | 'system' | 'user';
+  avatar: string;
+  content: string;
+  timestamp: string;
+  channel: string;
+  details?: Record<string, any>;
+  alerts?: string[];
+  tasks?: string[];
+}
+
+// === CONFIG ===
 const SUPABASE_URL = 'https://kocvqzcxycwzoftcsxch.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtvY3ZxemN4eWN3em9mdGNzeGNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2MjU1MTksImV4cCI6MjA5MTIwMTUxOX0.a5RQvI1rCQQI7mO8jyxWzn7yhZ49ZCbeTGlLcVWTfQ0';
 
+const supabaseHeaders = {
+  'apikey': SUPABASE_ANON_KEY,
+  'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+  'Content-Type': 'application/json',
+};
+
+const AGENT_EMOJIS: Record<string, string> = {
+  'orchestrator': '🧠',
+  'content-strategist': '💡',
+  'social-media': '📱',
+  'email-marketing': '✉️',
+  'cold-outreach': '🎯',
+  'seo-geo': '🌐',
+  'paid-ads': '⚡',
+  'analytics': '📊',
+  'cleya-marketing': '🎨',
+  'cleya-growth': '🚀',
+  'cleya-finance': '💰',
+  'cleya-sales': '🤝',
+};
+
+const AGENT_DISPLAY_NAMES: Record<string, string> = {
+  'orchestrator': 'Nexus',
+  'content-strategist': 'Content Strategist',
+  'social-media': 'Social Media',
+  'email-marketing': 'Email Marketing',
+  'cold-outreach': 'Cold Outreach',
+  'seo-geo': 'SEO/GEO',
+  'paid-ads': 'Paid Ads',
+  'analytics': 'Analytics',
+  'cleya-marketing': 'Mira',
+  'cleya-growth': 'Vega',
+  'cleya-finance': 'Arjun',
+  'cleya-sales': 'Kavi',
+};
+
+const STATUS_DOT: Record<string, string> = {
+  'idle': 'bg-green-400',
+  'running': 'bg-yellow-400 animate-pulse',
+  'error': 'bg-red-400',
+  'active': 'bg-green-400',
+};
+
+// === HELPER ===
 function timeAgo(dateStr: string): string {
-  const now = Date.now();
-  const then = new Date(dateStr).getTime();
-  const diffMs = now - then;
-  const mins = Math.floor(diffMs / 60000);
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
   if (mins < 1) return 'just now';
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
@@ -39,31 +127,24 @@ function timeAgo(dateStr: string): string {
 }
 
 function formatTime(dateStr: string): string {
-  try {
-    return new Date(dateStr).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-  } catch {
-    return '';
-  }
+  return new Date(dateStr).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 }
+
+// === SUB-COMPONENTS ===
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
-    success: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-    completed: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-    error: 'bg-red-500/20 text-red-400 border-red-500/30',
-    failed: 'bg-red-500/20 text-red-400 border-red-500/30',
-    warning: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-    pending: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-    in_progress: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-    critical: 'bg-red-500/20 text-red-400 border-red-500/30',
-    high: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-    running: 'bg-violet-500/20 text-violet-400 border-violet-500/30',
-    active: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-    idle: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
+    'success': 'bg-green-500/20 text-green-300 border-green-500/30',
+    'error': 'bg-red-500/20 text-red-300 border-red-500/30',
+    'warning': 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+    'pending': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+    'critical': 'bg-red-500/20 text-red-300 border-red-500/30',
+    'high': 'bg-orange-500/20 text-orange-300 border-orange-500/30',
+    'medium': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+    'low': 'bg-slate-500/20 text-slate-300 border-slate-500/30',
   };
-  const cls = colors[status?.toLowerCase()] || 'bg-slate-500/20 text-slate-400 border-slate-500/30';
   return (
-    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${cls}`}>
+    <span className={`text-[10px] px-1.5 py-0.5 rounded border font-medium ${colors[status] || colors['pending']}`}>
       {status}
     </span>
   );
@@ -74,8 +155,8 @@ function AlertBanner({ alerts }: { alerts: string[] }) {
   return (
     <div className="mt-2 space-y-1">
       {alerts.map((alert, i) => (
-        <div key={i} className="flex items-start gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 text-red-400 text-xs">
-          <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
+        <div key={i} className="flex items-start gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 text-xs text-red-300">
+          <AlertTriangle size={12} className="mt-0.5 shrink-0 text-red-400" />
           <span>{alert}</span>
         </div>
       ))}
@@ -88,9 +169,9 @@ function TaskList({ tasks }: { tasks: string[] }) {
   return (
     <div className="mt-2 space-y-1">
       {tasks.map((task, i) => (
-        <div key={i} className="flex items-center gap-2 text-xs text-slate-400">
-          <div className="w-3.5 h-3.5 rounded border border-slate-600 flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-2.5 h-2.5 text-slate-500" />
+        <div key={i} className="flex items-center gap-2 text-xs text-slate-300">
+          <div className="w-3.5 h-3.5 rounded border border-slate-500 flex items-center justify-center shrink-0">
+            <CheckCircle2 size={8} className="text-slate-500" />
           </div>
           <span>{task}</span>
         </div>
@@ -101,640 +182,621 @@ function TaskList({ tasks }: { tasks: string[] }) {
 
 function MetricCard({ label, value, change }: { label: string; value: string | number; change?: string }) {
   return (
-    <div className="bg-slate-800/60 border border-slate-700/50 rounded-lg p-3">
-      <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">{label}</div>
-      <div className="text-lg font-semibold text-white">{value}</div>
+    <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+      <div className="text-[10px] text-slate-500 uppercase tracking-wider">{label}</div>
+      <div className="text-lg font-semibold text-white mt-0.5">{value}</div>
       {change && <div className="text-[10px] text-emerald-400 mt-0.5">{change}</div>}
     </div>
   );
 }
 
+// === INSIGHTS PANEL ===
 function InsightsPanel({ agents, tasks, logs }: { agents: Agent[]; tasks: AgentTask[]; logs: AgentLog[] }) {
-  const activeAgents = agents.filter(a => a.status === 'active' || a.status === 'running').length;
-  const pendingTasks = tasks.filter(t => t.status === 'pending' || t.status === 'in_progress').length;
-  const criticalCount = tasks.filter(t => t.priority === 'critical').length;
-  const today = new Date().toISOString().split('T')[0];
-  const runsToday = logs.filter(l => l.created_at && l.created_at.startsWith(today)).length;
-  const criticalTasks = tasks.filter(t => t.priority === 'critical' && t.status !== 'completed');
-  const highTasks = tasks.filter(t => t.priority === 'high' && t.status !== 'completed');
-  const recentErrors = logs.filter(l => l.status === 'error' || l.status === 'failed').slice(0, 5);
+  const criticalTasks = tasks.filter(t => t.priority === 'critical' && t.status === 'pending');
+  const highTasks = tasks.filter(t => t.priority === 'high' && t.status === 'pending');
+  const recentErrors = logs.filter(l => l.status === 'error').slice(0, 3);
+  const activeAgents = agents.filter(a => a.status === 'running' || a.status === 'active');
 
   return (
-    <div className="w-80 border-l border-slate-700/50 bg-[#0c1121] flex flex-col overflow-y-auto">
-      <div className="p-4 border-b border-slate-700/50">
-        <div className="flex items-center gap-2 text-sm font-medium text-white mb-3">
-          <Activity className="w-4 h-4 text-violet-400" />
-          System Health
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <MetricCard label="Agents Active" value={`${activeAgents}/${agents.length}`} />
-          <MetricCard label="Pending Tasks" value={pendingTasks} />
-          <MetricCard label="Critical" value={criticalCount} change={criticalCount === 0 ? 'All clear' : undefined} />
-          <MetricCard label="Runs Today" value={runsToday} />
-        </div>
+    <div className="w-80 border-l border-slate-700/50 bg-[#0a0f1e] flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-slate-700/50">
+        <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+          <Activity size={14} className="text-brand-violet" />
+          Insights
+        </h3>
       </div>
 
-      {criticalTasks.length > 0 && (
-        <div className="p-4 border-b border-slate-700/50">
-          <div className="flex items-center gap-2 text-xs font-medium text-red-400 mb-2">
-            <AlertTriangle className="w-3 h-3" />
-            Critical Tasks
-          </div>
-          <div className="space-y-2">
-            {criticalTasks.slice(0, 5).map(t => (
-              <div key={t.id} className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
-                <div className="text-xs text-red-300 font-medium">{t.title}</div>
-                <div className="text-[10px] text-red-400/60 mt-0.5">{t.agent_id} · {timeAgo(t.created_at)}</div>
-              </div>
-            ))}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Quick Metrics */}
+        <div>
+          <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-2 font-medium">System Health</div>
+          <div className="grid grid-cols-2 gap-2">
+            <MetricCard label="Agents" value={`${activeAgents.length}/${agents.length}`} />
+            <MetricCard label="Tasks" value={tasks.filter(t => t.status === 'pending').length} />
+            <MetricCard label="Critical" value={criticalTasks.length} change={criticalTasks.length > 0 ? 'needs attention' : undefined} />
+            <MetricCard label="Runs Today" value={logs.filter(l => {
+              const today = new Date().toDateString();
+              return new Date(l.created_at).toDateString() === today;
+            }).length} />
           </div>
         </div>
-      )}
 
-      {highTasks.length > 0 && (
-        <div className="p-4 border-b border-slate-700/50">
-          <div className="flex items-center gap-2 text-xs font-medium text-orange-400 mb-2">
-            <Star className="w-3 h-3" />
-            High Priority Tasks
-          </div>
-          <div className="space-y-2">
-            {highTasks.slice(0, 5).map(t => (
-              <div key={t.id} className="bg-orange-500/10 border border-orange-500/20 rounded-lg px-3 py-2">
-                <div className="text-xs text-orange-300 font-medium">{t.title}</div>
-                <div className="text-[10px] text-orange-400/60 mt-0.5">{t.agent_id} · {timeAgo(t.created_at)}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {recentErrors.length > 0 && (
-        <div className="p-4 border-b border-slate-700/50">
-          <div className="flex items-center gap-2 text-xs font-medium text-red-400 mb-2">
-            <AlertTriangle className="w-3 h-3" />
-            Recent Errors
-          </div>
-          <div className="space-y-2">
-            {recentErrors.map(e => (
-              <div key={e.id} className="bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2">
-                <div className="text-xs text-slate-300">{e.action}</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">{e.agent_id} · {timeAgo(e.created_at)}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="p-4">
-        <div className="flex items-center gap-2 text-xs font-medium text-slate-400 mb-2">
-          <Bot className="w-3 h-3" />
-          Agent Status
-        </div>
-        <div className="space-y-1.5">
-          {agents.map(a => (
-            <div key={a.id} className="flex items-center justify-between px-2 py-1.5 rounded bg-slate-800/40">
-              <div className="flex items-center gap-2">
-                <span className="text-sm">{a.icon}</span>
-                <span className="text-xs text-slate-300">{a.name}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Circle className={`w-2 h-2 fill-current ${
-                  a.status === 'active' || a.status === 'running' ? 'text-emerald-400' :
-                  a.status === 'error' ? 'text-red-400' : 'text-slate-500'
-                }`} />
-                <span className="text-[10px] text-slate-500">{a.status}</span>
-              </div>
+        {/* Critical Tasks */}
+        {criticalTasks.length > 0 && (
+          <div>
+            <div className="text-[10px] text-red-400 uppercase tracking-wider mb-2 font-medium flex items-center gap-1">
+              <AlertTriangle size={10} /> Critical Tasks
             </div>
-          ))}
+            <div className="space-y-2">
+              {criticalTasks.map(task => (
+                <div key={task.id} className="bg-red-500/10 border border-red-500/20 rounded-lg p-2.5">
+                  <div className="text-xs font-medium text-red-300">{task.title}</div>
+                  <div className="text-[10px] text-red-400/70 mt-1">{AGENT_DISPLAY_NAMES[task.agent_id] || task.agent_id}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* High Priority Tasks */}
+        {highTasks.length > 0 && (
+          <div>
+            <div className="text-[10px] text-orange-400 uppercase tracking-wider mb-2 font-medium flex items-center gap-1">
+              <Clock size={10} /> High Priority
+            </div>
+            <div className="space-y-2">
+              {highTasks.slice(0, 5).map(task => (
+                <div key={task.id} className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-2.5">
+                  <div className="text-xs font-medium text-orange-300">{task.title}</div>
+                  <div className="text-[10px] text-orange-400/70 mt-1">{AGENT_DISPLAY_NAMES[task.agent_id] || task.agent_id}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Agent Status */}
+        <div>
+          <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-2 font-medium">Agent Status</div>
+          <div className="space-y-1.5">
+            {agents.map(agent => (
+              <div key={agent.id} className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-slate-800/50">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">{AGENT_EMOJIS[agent.id] || '🤖'}</span>
+                  <span className="text-xs text-slate-300">{AGENT_DISPLAY_NAMES[agent.id] || agent.name}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-slate-500">{agent.last_run_at ? timeAgo(agent.last_run_at) : 'never'}</span>
+                  <div className={`w-2 h-2 rounded-full ${STATUS_DOT[agent.status] || 'bg-slate-500'}`} />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-async function fetchSupabase<T>(table: string, select = '*', filters?: Record<string, string>, orderBy?: string, limit?: number): Promise<T[]> {
-  let url = `${SUPABASE_URL}/rest/v1/${table}?select=${encodeURIComponent(select)}`;
-  if (filters) {
-    for (const [key, value] of Object.entries(filters)) {
-      url += `&${key}=eq.${encodeURIComponent(value)}`;
-    }
-  }
-  if (orderBy) url += `&order=${orderBy}`;
-  if (limit) url += `&limit=${limit}`;
-  const res = await fetch(url, {
-    headers: {
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-      'Content-Type': 'application/json',
-    },
-  });
-  if (!res.ok) return [];
-  return res.json();
-}
-
+// === MAIN COMPONENT ===
 export function CommandCenter() {
+  // State
   const [agents, setAgents] = useState<Agent[]>([]);
   const [logs, setLogs] = useState<AgentLog[]>([]);
   const [tasks, setTasks] = useState<AgentTask[]>([]);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [activeChannel, setActiveChannel] = useState('founder-room');
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [activeChannel, setActiveChannel] = useState<string>('founder-room');
+  const [commandInput, setCommandInput] = useState('');
   const [showCommandPalette, setShowCommandPalette] = useState(false);
-  const [commandSearch, setCommandSearch] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [showInsights, setShowInsights] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const commandInputRef = useRef<HTMLInputElement>(null);
 
-  const systemChannels: Channel[] = [
-    { id: 'founder-room', name: 'founder-room', icon: <Hash className="w-4 h-4" />, description: 'Strategic overview & decisions', unread: 0, type: 'system' },
-    { id: 'alerts', name: 'alerts', icon: <Bell className="w-4 h-4" />, description: 'System alerts & notifications', unread: 0, type: 'system' },
-    { id: 'tasks', name: 'tasks', icon: <ListTodo className="w-4 h-4" />, description: 'All agent tasks & assignments', unread: 0, type: 'system' },
-  ];
-
-  const agentChannels: Channel[] = agents.map(a => ({
-    id: a.id,
-    name: a.name.toLowerCase().replace(/\s+/g, '-'),
-    icon: <span className="text-sm">{a.icon}</span>,
-    description: a.description,
-    unread: logs.filter(l => l.agent_id === a.id && l.status === 'error').length,
-    type: 'agent' as const,
-    agentId: a.id,
-  }));
-
-  const allChannels = [...systemChannels, ...agentChannels];
-
-  const buildMessages = useCallback((agentsData: Agent[], logsData: AgentLog[], tasksData: AgentTask[]) => {
-    const msgs: ChatMessage[] = [];
-    const agentMap = new Map(agentsData.map(a => [a.id, a]));
-
-    for (const log of logsData) {
-      const agent = agentMap.get(log.agent_id);
-      const agentName = agent?.name || log.agent_id;
-      const agentIcon = agent?.icon || '🤖';
-
-      msgs.push({
-        id: `log-${log.id}`,
-        sender: agentName,
-        senderType: 'agent',
-        avatar: agentIcon,
-        content: `**${log.action}** ${log.details?.summary || log.details?.message || ''}`.trim(),
-        timestamp: log.created_at,
-        channel: log.agent_id,
-        details: log.details,
-        alerts: log.status === 'error' ? [log.details?.error || log.details?.message || 'An error occurred'] : undefined,
-      });
-
-      if (log.status === 'error' || log.status === 'failed') {
-        msgs.push({
-          id: `alert-${log.id}`,
-          sender: 'System',
-          senderType: 'system',
-          avatar: '🚨',
-          content: `Alert from **${agentName}**: ${log.action} failed — ${log.details?.error || log.details?.message || 'Unknown error'}`,
-          timestamp: log.created_at,
-          channel: 'alerts',
-          alerts: [log.details?.error || log.details?.message || 'Task failed'],
-        });
-      }
-
-      msgs.push({
-        id: `fr-${log.id}`,
-        sender: agentName,
-        senderType: 'agent',
-        avatar: agentIcon,
-        content: `${log.action}: ${log.details?.summary || log.details?.message || log.status}`,
-        timestamp: log.created_at,
-        channel: 'founder-room',
-      });
-    }
-
-    for (const task of tasksData) {
-      const agent = agentMap.get(task.agent_id);
-      msgs.push({
-        id: `task-${task.id}`,
-        sender: agent?.name || task.agent_id,
-        senderType: 'agent',
-        avatar: agent?.icon || '📋',
-        content: `**Task:** ${task.title}\n${task.description || ''}`,
-        timestamp: task.created_at,
-        channel: 'tasks',
-        tasks: [task.title],
-      });
-    }
-
-    msgs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-    return msgs;
-  }, []);
-
+  // Fetch data
   const fetchData = useCallback(async () => {
-    setLoading(true);
     try {
+      const [agentsRes, logsRes, tasksRes] = await Promise.all([
+        fetch(`${SUPABASE_URL}/rest/v1/dm_agents?select=*&order=name`, { headers: supabaseHeaders }),
+        fetch(`${SUPABASE_URL}/rest/v1/dm_agent_logs?select=*&order=created_at.desc&limit=100`, { headers: supabaseHeaders }),
+        fetch(`${SUPABASE_URL}/rest/v1/dm_agent_tasks?select=*&order=created_at.desc`, { headers: supabaseHeaders }),
+      ]);
       const [agentsData, logsData, tasksData] = await Promise.all([
-        fetchSupabase<Agent>('dm_agents'),
-        fetchSupabase<AgentLog>('dm_agent_logs', '*', undefined, 'created_at.desc', 100),
-        fetchSupabase<AgentTask>('dm_agent_tasks'),
+        agentsRes.json(), logsRes.json(), tasksRes.json()
       ]);
       setAgents(agentsData);
       setLogs(logsData);
       setTasks(tasksData);
-      setMessages(buildMessages(agentsData, logsData, tasksData));
+      setLoading(false);
     } catch (err) {
-      console.error('CommandCenter fetch error:', err);
-    } finally {
+      console.error('Failed to fetch:', err);
       setLoading(false);
     }
-  }, [buildMessages]);
+  }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    // Trigger all agents to run
+    try {
+      await fetch(`${SUPABASE_URL}/functions/v1/agent-scheduler?run_all=true`);
+      await new Promise(r => setTimeout(r, 2000));
+      await fetchData();
+    } catch (err) { console.error(err); }
+    setRefreshing(false);
+  };
+
+  // Build channels from agents
+  const channels: Channel[] = [
+    { id: 'founder-room', name: 'founder-room', icon: <Star size={14} />, description: 'CEO Daily Dashboard', unread: 0, type: 'system' },
+    { id: 'alerts', name: 'alerts', icon: <AlertTriangle size={14} />, description: 'Critical Alerts', unread: logs.filter(l => l.status === 'error' || (l.details?.alerts && l.details.alerts.length > 0)).length, type: 'system' },
+    { id: 'tasks', name: 'tasks', icon: <ListTodo size={14} />, description: 'All Agent Tasks', unread: tasks.filter(t => t.status === 'pending').length, type: 'system' },
+    ...agents.map(a => ({
+      id: a.id,
+      name: AGENT_DISPLAY_NAMES[a.id]?.toLowerCase().replace(/\s+/g, '-') || a.id,
+      icon: <span className="text-xs">{AGENT_EMOJIS[a.id] || '🤖'}</span>,
+      description: a.role,
+      unread: 0,
+      type: 'agent' as const,
+      agentId: a.id,
+    })),
+  ];
+
+  // Build messages for current channel
+  const buildMessages = (): ChatMessage[] => {
+    if (activeChannel === 'founder-room') {
+      // Show orchestrator brief + all agent summaries
+      return logs
+        .filter(l => l.action.includes('orchestration') || l.action.includes('weekly'))
+        .slice(0, 10)
+        .map(l => ({
+          id: `log-${l.id}`,
+          sender: AGENT_DISPLAY_NAMES[l.agent_id] || l.agent_id,
+          senderType: 'agent' as const,
+          avatar: AGENT_EMOJIS[l.agent_id] || '🤖',
+          content: formatLogMessage(l),
+          timestamp: l.created_at,
+          channel: 'founder-room',
+          details: l.details,
+          alerts: l.details?.alerts || l.details?.weekly_brief,
+          tasks: l.details?.recommended_actions || l.details?.priority_actions,
+        }));
+    }
+
+    if (activeChannel === 'alerts') {
+      return logs
+        .filter(l => l.status === 'error' || (l.details?.alerts && l.details.alerts.length > 0))
+        .slice(0, 20)
+        .map(l => ({
+          id: `alert-${l.id}`,
+          sender: AGENT_DISPLAY_NAMES[l.agent_id] || l.agent_id,
+          senderType: 'agent' as const,
+          avatar: AGENT_EMOJIS[l.agent_id] || '🤖',
+          content: l.details?.alerts?.[0] || l.details?.error || `Error in ${l.action}`,
+          timestamp: l.created_at,
+          channel: 'alerts',
+          alerts: l.details?.alerts,
+        }));
+    }
+
+    if (activeChannel === 'tasks') {
+      return tasks.map(t => ({
+        id: `task-${t.id}`,
+        sender: AGENT_DISPLAY_NAMES[t.agent_id] || t.agent_id,
+        senderType: 'agent' as const,
+        avatar: AGENT_EMOJIS[t.agent_id] || '🤖',
+        content: `**${t.title}** — ${t.description}`,
+        timestamp: t.created_at,
+        channel: 'tasks',
+        details: { priority: t.priority, status: t.status },
+      }));
+    }
+
+    // Agent-specific channel
+    const agentLogs = logs.filter(l => l.agent_id === activeChannel).slice(0, 20);
+    const agentTasks = tasks.filter(t => t.agent_id === activeChannel);
+
+    const messages: ChatMessage[] = [];
+
+    agentLogs.forEach(l => {
+      messages.push({
+        id: `log-${l.id}`,
+        sender: AGENT_DISPLAY_NAMES[l.agent_id] || l.agent_id,
+        senderType: 'agent',
+        avatar: AGENT_EMOJIS[l.agent_id] || '🤖',
+        content: formatLogMessage(l),
+        timestamp: l.created_at,
+        channel: activeChannel,
+        details: l.details,
+        alerts: l.details?.alerts,
+        tasks: l.details?.recommended_actions || l.details?.actions_needed || l.details?.priority_actions,
+      });
+    });
+
+    if (agentTasks.length > 0) {
+      messages.unshift({
+        id: `tasks-header-${activeChannel}`,
+        sender: 'System',
+        senderType: 'system',
+        avatar: '📋',
+        content: `**${agentTasks.length} tasks** assigned to this agent (${agentTasks.filter(t => t.status === 'pending').length} pending)`,
+        timestamp: new Date().toISOString(),
+        channel: activeChannel,
+        tasks: agentTasks.filter(t => t.status === 'pending').map(t => `[${t.priority.toUpperCase()}] ${t.title}`),
+      });
+    }
+
+    return messages;
+  };
+
+  function formatLogMessage(log: AgentLog): string {
+    const d = log.details;
+    switch (log.action) {
+      case 'weekly_orchestration':
+        return `**Weekly Orchestration Report**\n${d.total_agents} agents monitored • ${d.overdue_agents?.length || 0} overdue • ${d.pending_tasks} pending tasks\nOutreach: ${d.outreach_health?.lemlist_sent || 0} sent, ${d.outreach_health?.lemlist_replied || 0} replies • MailerLite: ${d.outreach_health?.mailerlite_subscribers || 0} subscribers`;
+      case 'outreach_daily_review':
+        return `**Outreach Daily Review**\nLemlist: ${d.performance?.total_sent || 0} sent • ${d.performance?.avg_open_rate || '0%'} open rate • ${d.performance?.total_replied || 0} replies\nActive campaigns: ${d.lemlist_overview?.running || 0}`;
+      case 'email_campaign_review':
+        return `**Email Marketing Review**\nMailerLite: ${d.mailerlite?.subscribers || 0} subscribers • ${d.mailerlite?.campaigns_sent || 0} campaigns sent\nStatus: ${d.mailerlite?.status || 'Unknown'}`;
+      case 'marketing_daily_review':
+        return `**Marketing Daily Review** (${d.agent_name})\nEmail: ${d.channels?.email?.subscribers || 0} subscribers • LinkedIn: target ${d.channels?.linkedin?.target || 0} posts/week`;
+      case 'growth_daily_review':
+        return `**Growth Review** (${d.agent_name})\nUsers: ${d.key_metrics?.total_users || 0} • Match acceptance: ${d.key_metrics?.match_acceptance_rate || 'N/A'}\nPipeline: ${d.key_metrics?.outreach_pipeline || 0} leads`;
+      case 'sales_daily_review':
+        return `**Sales Pipeline** (${d.agent_name})\nLeads: ${d.pipeline?.total_leads_in_outreach || 0} • Sent: ${d.pipeline?.emails_sent || 0} • Opens: ${d.pipeline?.opened || 0} • Replies: ${d.pipeline?.replied || 0}`;
+      case 'finance_weekly_review':
+        return `**Finance Review** (${d.agent_name})\nCurrent cost: ${d.infrastructure_costs?.current?.total || 'N/A'} • Recommended: ${d.infrastructure_costs?.recommended?.total || 'N/A'}\nMRR: ${d.key_financial_metrics?.mrr || 0}`;
+      case 'content_planning':
+        return `**Content Planning**\nBest outreach: ${d.content_insights?.best_performing_outreach || 'N/A'}\n${d.tasks_created > 0 ? `Created ${d.tasks_created} new tasks` : `${d.pending_tasks} tasks pending`}`;
+      case 'social_media_daily':
+        return `**Social Media Daily**\nLinkedIn: ${d.platforms?.linkedin?.posts_this_week || 0}/${d.platforms?.linkedin?.target || 0} posts • Instagram: ${d.platforms?.instagram?.posts_this_week || 0}/${d.platforms?.instagram?.target || 0} posts`;
+      case 'seo_biweekly_audit':
+        return `**SEO/GEO Audit** — ${d.domain}\nChecks: ${d.checks_performed?.join(', ')}`;
+      case 'ads_daily_review':
+        return `**Paid Ads Review**\nLinkedIn Ads: ${d.platforms?.linkedin_ads?.active || 0} active • Meta Ads: ${d.platforms?.meta_ads?.active || 0} active`;
+      case 'weekly_analytics_report':
+        return `**Weekly Analytics**\nAgent runs: ${d.agent_health?.total_runs_last_50 || 0} • Errors: ${d.agent_health?.error_count || 0}\nLemlist: ${d.outreach_metrics?.lemlist?.campaigns?.sent || 0} sent, ${d.outreach_metrics?.lemlist?.campaigns?.open_rate || 'N/A'}`;
+      default:
+        return `**${log.action.replace(/_/g, ' ')}** completed`;
+    }
+  }
+
+  // Command execution
+  const handleCommand = async () => {
+    if (!commandInput.trim()) return;
+    const cmd = commandInput.trim();
+    setCommandInput('');
+
+    if (cmd.startsWith('/run ')) {
+      const agentId = cmd.replace('/run ', '').trim();
+      try {
+        await fetch(`${SUPABASE_URL}/functions/v1/agent-scheduler?agent_id=${agentId}`);
+        setTimeout(fetchData, 2000);
+      } catch (err) { console.error(err); }
+    } else if (cmd === '/run-all') {
+      handleRefresh();
+    }
+  };
+
+  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, activeChannel]);
+  }, [activeChannel, logs]);
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setShowCommandPalette(prev => !prev);
-        setCommandSearch('');
-      }
-      if (e.key === 'Escape') setShowCommandPalette(false);
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, []);
+  const messages = buildMessages();
+  const currentChannel = channels.find(c => c.id === activeChannel);
+  const currentAgent = agents.find(a => a.id === activeChannel);
 
-  useEffect(() => {
-    if (showCommandPalette) commandInputRef.current?.focus();
-  }, [showCommandPalette]);
+  // Filter channels by search
+  const filteredChannels = channels.filter(c =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  const handleSend = async () => {
-    const trimmed = input.trim();
-    if (!trimmed) return;
-    setInput('');
-
-    if (trimmed.startsWith('/run-all')) {
-      setMessages(prev => [...prev, {
-        id: `user-${Date.now()}`,
-        sender: 'You',
-        senderType: 'user',
-        avatar: '👤',
-        content: 'Running all agents...',
-        timestamp: new Date().toISOString(),
-        channel: activeChannel,
-      }]);
-      try {
-        await fetch(`${SUPABASE_URL}/functions/v1/agent-scheduler?run_all=true`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
-        });
-        setMessages(prev => [...prev, {
-          id: `sys-${Date.now()}`,
-          sender: 'System',
-          senderType: 'system',
-          avatar: '✅',
-          content: 'All agents triggered successfully.',
-          timestamp: new Date().toISOString(),
-          channel: activeChannel,
-        }]);
-      } catch {
-        setMessages(prev => [...prev, {
-          id: `err-${Date.now()}`,
-          sender: 'System',
-          senderType: 'system',
-          avatar: '❌',
-          content: 'Failed to trigger agents.',
-          timestamp: new Date().toISOString(),
-          channel: activeChannel,
-        }]);
-      }
-      return;
-    }
-
-    if (trimmed.startsWith('/run ')) {
-      const agentId = trimmed.replace('/run ', '').trim();
-      setMessages(prev => [...prev, {
-        id: `user-${Date.now()}`,
-        sender: 'You',
-        senderType: 'user',
-        avatar: '👤',
-        content: `Running agent: ${agentId}`,
-        timestamp: new Date().toISOString(),
-        channel: activeChannel,
-      }]);
-      try {
-        await fetch(`${SUPABASE_URL}/functions/v1/agent-scheduler?agent_id=${encodeURIComponent(agentId)}`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
-        });
-        setMessages(prev => [...prev, {
-          id: `sys-${Date.now()}`,
-          sender: 'System',
-          senderType: 'system',
-          avatar: '✅',
-          content: `Agent **${agentId}** triggered successfully.`,
-          timestamp: new Date().toISOString(),
-          channel: activeChannel,
-        }]);
-      } catch {
-        setMessages(prev => [...prev, {
-          id: `err-${Date.now()}`,
-          sender: 'System',
-          senderType: 'system',
-          avatar: '❌',
-          content: `Failed to trigger agent ${agentId}.`,
-          timestamp: new Date().toISOString(),
-          channel: activeChannel,
-        }]);
-      }
-      return;
-    }
-
-    setMessages(prev => [...prev, {
-      id: `user-${Date.now()}`,
-      sender: 'You',
-      senderType: 'user',
-      avatar: '👤',
-      content: trimmed,
-      timestamp: new Date().toISOString(),
-      channel: activeChannel,
-    }]);
-  };
-
-  const handleRunAll = async () => {
-    setMessages(prev => [...prev, {
-      id: `user-${Date.now()}`,
-      sender: 'You',
-      senderType: 'user',
-      avatar: '👤',
-      content: 'Running all agents...',
-      timestamp: new Date().toISOString(),
-      channel: activeChannel,
-    }]);
-    try {
-      await fetch(`${SUPABASE_URL}/functions/v1/agent-scheduler?run_all=true`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
-      });
-      setMessages(prev => [...prev, {
-        id: `sys-${Date.now()}`,
-        sender: 'System',
-        senderType: 'system',
-        avatar: '✅',
-        content: 'All agents triggered successfully.',
-        timestamp: new Date().toISOString(),
-        channel: activeChannel,
-      }]);
-    } catch {
-      setMessages(prev => [...prev, {
-        id: `err-${Date.now()}`,
-        sender: 'System',
-        senderType: 'system',
-        avatar: '❌',
-        content: 'Failed to trigger agents.',
-        timestamp: new Date().toISOString(),
-        channel: activeChannel,
-      }]);
-    }
-  };
-
-  const channelMessages = messages.filter(m => m.channel === activeChannel);
-  const currentChannel = allChannels.find(c => c.id === activeChannel);
-  const filteredChannels = commandSearch
-    ? allChannels.filter(c => c.name.toLowerCase().includes(commandSearch.toLowerCase()))
-    : allChannels;
+  const systemChannels = filteredChannels.filter(c => c.type === 'system');
+  const agentChannels = filteredChannels.filter(c => c.type === 'agent');
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full bg-[#0a0f1e] text-slate-400">
-        <RefreshCw className="w-5 h-5 animate-spin mr-2" />
-        Loading Command Center...
+      <div className="flex items-center justify-center h-[calc(100vh-200px)] text-slate-400">
+        <RefreshCw size={20} className="animate-spin mr-2" /> Loading Command Center...
       </div>
     );
   }
 
   return (
-    <div className="flex h-full bg-[#0a0f1e] text-white overflow-hidden relative">
-      {/* Sidebar */}
-      <div className="w-64 border-r border-slate-700/50 bg-[#080d1a] flex flex-col shrink-0">
-        <div className="p-4 border-b border-slate-700/50">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-cyan-400 flex items-center justify-center text-xs font-bold">C</div>
-              <span className="text-sm font-semibold text-white">Cleya Command</span>
-            </div>
-            <button
-              onClick={() => setShowCommandPalette(true)}
-              className="p-1 rounded hover:bg-slate-700/50 text-slate-500 hover:text-slate-300 transition-colors"
-              title="Cmd+K"
-            >
-              <Search className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+    <div className="flex h-[calc(100vh-180px)] bg-[#060b18] rounded-xl border border-slate-700/50 overflow-hidden">
 
-        <div className="flex-1 overflow-y-auto py-2">
-          <div className="px-3 mb-1">
-            <div className="text-[10px] uppercase tracking-wider text-slate-500 font-medium px-2 py-1">System</div>
+      {/* === SIDEBAR === */}
+      <div className="w-60 bg-[#080d1a] border-r border-slate-700/50 flex flex-col">
+        {/* Workspace Header */}
+        <div className="px-4 py-3 border-b border-slate-700/50 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-md bg-brand-violet flex items-center justify-center text-white text-xs font-bold">C</div>
+            <span className="text-sm font-semibold text-white">Cleya HQ</span>
           </div>
-          {systemChannels.map(ch => (
-            <button
-              key={ch.id}
-              onClick={() => setActiveChannel(ch.id)}
-              className={`w-full flex items-center gap-2 px-4 py-1.5 text-sm transition-colors ${
-                activeChannel === ch.id
-                  ? 'bg-violet-500/20 text-white border-l-2 border-violet-400'
-                  : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-300 border-l-2 border-transparent'
-              }`}
-            >
-              <span className="text-slate-500">{ch.icon}</span>
-              <span className="truncate">{ch.name}</span>
-              {ch.unread > 0 && (
-                <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{ch.unread}</span>
-              )}
-            </button>
-          ))}
-
-          <div className="px-3 mt-4 mb-1">
-            <div className="text-[10px] uppercase tracking-wider text-slate-500 font-medium px-2 py-1">Agents</div>
-          </div>
-          {agentChannels.map(ch => (
-            <button
-              key={ch.id}
-              onClick={() => setActiveChannel(ch.id)}
-              className={`w-full flex items-center gap-2 px-4 py-1.5 text-sm transition-colors ${
-                activeChannel === ch.id
-                  ? 'bg-violet-500/20 text-white border-l-2 border-violet-400'
-                  : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-300 border-l-2 border-transparent'
-              }`}
-            >
-              {ch.icon}
-              <span className="truncate">{ch.name}</span>
-              {ch.unread > 0 && (
-                <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{ch.unread}</span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        <div className="p-3 border-t border-slate-700/50">
           <button
-            onClick={fetchData}
-            className="w-full flex items-center justify-center gap-2 py-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700/60 text-slate-400 hover:text-white text-xs transition-colors"
+            onClick={() => setShowCommandPalette(true)}
+            className="text-slate-400 hover:text-white transition-colors"
+            title="Command Palette (⌘K)"
           >
-            <RefreshCw className="w-3 h-3" />
-            Refresh Data
+            <Command size={14} />
+          </button>
+        </div>
+
+        {/* Search */}
+        <div className="px-3 py-2">
+          <div className="flex items-center gap-2 bg-slate-800/50 rounded-md px-2.5 py-1.5 border border-slate-700/30">
+            <Search size={13} className="text-slate-500" />
+            <input
+              type="text"
+              placeholder="Search channels..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="bg-transparent text-xs text-white placeholder-slate-500 outline-none flex-1"
+            />
+          </div>
+        </div>
+
+        {/* Channel List */}
+        <div className="flex-1 overflow-y-auto px-2 py-1">
+          {/* System Channels */}
+          <div className="mb-3">
+            <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Channels</div>
+            {systemChannels.map(channel => (
+              <button
+                key={channel.id}
+                onClick={() => setActiveChannel(channel.id)}
+                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-all ${
+                  activeChannel === channel.id
+                    ? 'bg-brand-violet/20 text-white'
+                    : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+                }`}
+              >
+                <span className="text-slate-500">{channel.icon}</span>
+                <span className="flex-1 text-left">{channel.name}</span>
+                {channel.unread > 0 && (
+                  <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-medium min-w-[18px] text-center">
+                    {channel.unread}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Agent Channels */}
+          <div>
+            <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Agents</div>
+            {agentChannels.map(channel => {
+              const agent = agents.find(a => a.id === channel.agentId);
+              return (
+                <button
+                  key={channel.id}
+                  onClick={() => setActiveChannel(channel.id)}
+                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-all ${
+                    activeChannel === channel.id
+                      ? 'bg-brand-violet/20 text-white'
+                      : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+                  }`}
+                >
+                  <span>{channel.icon}</span>
+                  <span className="flex-1 text-left truncate">{channel.name}</span>
+                  {agent && <div className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[agent.status] || 'bg-slate-500'}`} />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Sidebar Footer */}
+        <div className="px-3 py-2 border-t border-slate-700/50">
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-brand-violet/20 text-brand-violet hover:bg-brand-violet/30 transition-colors text-xs font-medium disabled:opacity-50"
+          >
+            <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
+            {refreshing ? 'Running...' : 'Run All Agents'}
           </button>
         </div>
       </div>
 
-      {/* Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <div className="h-12 border-b border-slate-700/50 flex items-center justify-between px-4 shrink-0 bg-[#0a0f1e]">
-          <div className="flex items-center gap-2 min-w-0">
-            {currentChannel?.icon}
-            <span className="font-medium text-sm text-white truncate">{currentChannel?.name || activeChannel}</span>
-            <span className="text-xs text-slate-500 hidden sm:inline truncate">{currentChannel?.description}</span>
+      {/* === MAIN CHAT AREA === */}
+      <div className="flex-1 flex flex-col">
+        {/* Channel Header */}
+        <div className="px-4 py-2.5 border-b border-slate-700/50 flex items-center justify-between bg-[#080d1a]/80">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              {currentChannel?.type === 'agent' && <span className="text-base">{AGENT_EMOJIS[activeChannel] || '🤖'}</span>}
+              {currentChannel?.type === 'system' && <Hash size={16} className="text-slate-400" />}
+              <h2 className="text-sm font-semibold text-white">{currentChannel?.name || activeChannel}</h2>
+            </div>
+            {currentAgent && (
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <div className={`w-2 h-2 rounded-full ${STATUS_DOT[currentAgent.status]}`} />
+                <span>{currentAgent.role}</span>
+                <span className="text-slate-600">•</span>
+                <span>{currentAgent.last_run_at ? timeAgo(currentAgent.last_run_at) : 'never run'}</span>
+              </div>
+            )}
+            {currentChannel?.type === 'system' && (
+              <span className="text-xs text-slate-500">{currentChannel.description}</span>
+            )}
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2">
             <button
-              onClick={handleRunAll}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-violet-600/20 hover:bg-violet-600/30 text-violet-400 hover:text-violet-300 text-xs font-medium transition-colors border border-violet-500/20"
+              onClick={() => setShowInsights(!showInsights)}
+              className={`p-1.5 rounded-md transition-colors ${showInsights ? 'bg-brand-violet/20 text-brand-violet' : 'text-slate-400 hover:text-white'}`}
+              title="Toggle Insights"
             >
-              <Zap className="w-3 h-3" />
-              Run All Agents
-            </button>
-            <button
-              onClick={() => setShowCommandPalette(true)}
-              className="p-1.5 rounded hover:bg-slate-700/50 text-slate-500 hover:text-slate-300 transition-colors"
-            >
-              <Search className="w-4 h-4" />
+              <Layout size={14} />
             </button>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-          {channelMessages.length === 0 && (
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+          {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-slate-500">
-              <MessageSquare className="w-8 h-8 mb-2 text-slate-600" />
-              <div className="text-sm">No messages in #{currentChannel?.name || activeChannel}</div>
-              <div className="text-xs text-slate-600 mt-1">Agent activity will appear here</div>
+              <MessageSquare size={32} className="mb-2 opacity-50" />
+              <p className="text-sm">No messages in this channel yet</p>
+              <p className="text-xs mt-1">Agent data will appear here after runs</p>
             </div>
-          )}
-          {channelMessages.map(msg => (
-            <div key={msg.id} className={`flex gap-3 group ${msg.senderType === 'user' ? 'justify-end' : ''}`}>
-              {msg.senderType !== 'user' && (
-                <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-sm shrink-0 border border-slate-700/50">
+          ) : (
+            messages.map(msg => (
+              <div key={msg.id} className="flex gap-3 group hover:bg-slate-800/20 -mx-2 px-2 py-1 rounded-lg transition-colors">
+                {/* Avatar */}
+                <div className="w-9 h-9 rounded-lg bg-slate-800 border border-slate-700/50 flex items-center justify-center text-base shrink-0">
                   {msg.avatar}
                 </div>
-              )}
-              <div className={`flex-1 min-w-0 ${msg.senderType === 'user' ? 'max-w-[70%]' : ''}`}>
-                <div className="flex items-baseline gap-2 mb-0.5">
-                  <span className={`text-xs font-medium ${
-                    msg.senderType === 'system' ? 'text-yellow-400' :
-                    msg.senderType === 'user' ? 'text-violet-400' : 'text-slate-300'
-                  }`}>{msg.sender}</span>
-                  <span className="text-[10px] text-slate-600">{formatTime(msg.timestamp)}</span>
-                  {msg.details?.status && <StatusBadge status={msg.details.status} />}
-                </div>
-                <div className={`text-sm leading-relaxed ${
-                  msg.senderType === 'user'
-                    ? 'bg-violet-600/20 border border-violet-500/20 rounded-lg px-3 py-2 text-violet-100'
-                    : 'text-slate-400'
-                }`}>
-                  {msg.content.split('**').map((part, i) =>
-                    i % 2 === 1 ? <strong key={i} className="text-slate-200 font-medium">{part}</strong> : <span key={i}>{part}</span>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-sm font-semibold text-white">{msg.sender}</span>
+                    {msg.details?.priority && <StatusBadge status={msg.details.priority} />}
+                    <span className="text-[10px] text-slate-500">{formatTime(msg.timestamp)}</span>
+                  </div>
+                  <div className="text-sm text-slate-300 mt-0.5 whitespace-pre-line leading-relaxed">
+                    {msg.content.split('**').map((part, i) =>
+                      i % 2 === 1
+                        ? <strong key={i} className="text-white font-semibold">{part}</strong>
+                        : <span key={i}>{part}</span>
+                    )}
+                  </div>
+
+                  {/* Alerts */}
+                  <AlertBanner alerts={msg.alerts || []} />
+
+                  {/* Tasks */}
+                  <TaskList tasks={msg.tasks || []} />
+
+                  {/* Metric details for specific agents */}
+                  {msg.details?.performance && activeChannel !== 'founder-room' && (
+                    <div className="mt-2 grid grid-cols-4 gap-2">
+                      <MetricCard label="Sent" value={msg.details.performance.total_sent || 0} />
+                      <MetricCard label="Opened" value={msg.details.performance.total_opened || 0} />
+                      <MetricCard label="Clicked" value={msg.details.performance.total_clicked || 0} />
+                      <MetricCard label="Replied" value={msg.details.performance.total_replied || 0} />
+                    </div>
+                  )}
+
+                  {msg.details?.campaign_breakdown && activeChannel !== 'founder-room' && (
+                    <div className="mt-2 bg-slate-800/30 rounded-lg border border-slate-700/30 overflow-hidden">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="border-b border-slate-700/30">
+                            <th className="text-left px-3 py-1.5 text-slate-500 font-medium">Campaign</th>
+                            <th className="text-right px-3 py-1.5 text-slate-500 font-medium">Sent</th>
+                            <th className="text-right px-3 py-1.5 text-slate-500 font-medium">Open %</th>
+                            <th className="text-right px-3 py-1.5 text-slate-500 font-medium">Replied</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {msg.details.campaign_breakdown.map((c: any, i: number) => (
+                            <tr key={i} className="border-b border-slate-700/20">
+                              <td className="px-3 py-1.5 text-slate-300">{c.name}</td>
+                              <td className="text-right px-3 py-1.5 text-slate-400">{c.sent}</td>
+                              <td className="text-right px-3 py-1.5 text-slate-400">{c.open_rate}</td>
+                              <td className="text-right px-3 py-1.5 text-slate-400">{c.replied}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   )}
                 </div>
-                <AlertBanner alerts={msg.alerts || []} />
-                <TaskList tasks={msg.tasks || []} />
               </div>
-              {msg.senderType === 'user' && (
-                <div className="w-8 h-8 rounded-lg bg-violet-600/30 flex items-center justify-center text-sm shrink-0 border border-violet-500/30">
-                  {msg.avatar}
-                </div>
-              )}
-            </div>
-          ))}
+            ))
+          )}
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="border-t border-slate-700/50 p-3 bg-[#0a0f1e]">
-          <div className="flex items-center gap-2 bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-2">
+        {/* Command Input */}
+        <div className="px-4 py-3 border-t border-slate-700/50">
+          <div className="flex items-center gap-2 bg-slate-800/50 rounded-lg px-3 py-2.5 border border-slate-700/30 focus-within:border-brand-violet/50 transition-colors">
+            <span className="text-slate-500 text-xs">/</span>
             <input
-              ref={inputRef}
               type="text"
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-              placeholder={`Message #${currentChannel?.name || activeChannel}  ·  /run <agent-id>  ·  /run-all`}
+              value={commandInput}
+              onChange={e => setCommandInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleCommand()}
+              placeholder={`Message #${currentChannel?.name || activeChannel}   •   /run <agent-id>   •   /run-all`}
               className="flex-1 bg-transparent text-sm text-white placeholder-slate-500 outline-none"
             />
             <button
-              onClick={handleSend}
-              disabled={!input.trim()}
-              className="p-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 disabled:bg-slate-700 disabled:text-slate-500 text-white transition-colors"
+              onClick={handleCommand}
+              disabled={!commandInput.trim()}
+              className="text-slate-400 hover:text-brand-violet disabled:opacity-30 transition-colors"
             >
-              <Send className="w-4 h-4" />
+              <Send size={16} />
             </button>
           </div>
           <div className="flex items-center gap-3 mt-1.5 px-1">
-            <span className="text-[10px] text-slate-600 flex items-center gap-1">
-              <Command className="w-2.5 h-2.5" />K to search
+            <span className="text-[10px] text-slate-600">
+              <kbd className="px-1 py-0.5 bg-slate-800 rounded text-slate-500 font-mono">⌘K</kbd> commands
             </span>
-            <span className="text-[10px] text-slate-600">/run &lt;agent&gt; to trigger</span>
-            <span className="text-[10px] text-slate-600">/run-all to trigger all</span>
+            <span className="text-[10px] text-slate-600">
+              <kbd className="px-1 py-0.5 bg-slate-800 rounded text-slate-500 font-mono">/run</kbd> agent-id
+            </span>
+            <span className="text-[10px] text-slate-600">
+              <kbd className="px-1 py-0.5 bg-slate-800 rounded text-slate-500 font-mono">/run-all</kbd> trigger all
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Insights Panel */}
-      <InsightsPanel agents={agents} tasks={tasks} logs={logs} />
+      {/* === INSIGHTS PANEL === */}
+      {showInsights && <InsightsPanel agents={agents} tasks={tasks} logs={logs} />}
 
-      {/* Command Palette */}
+      {/* === COMMAND PALETTE === */}
       {showCommandPalette && (
-        <div className="absolute inset-0 z-50 flex items-start justify-center pt-[15%] bg-black/60 backdrop-blur-sm" onClick={() => setShowCommandPalette(false)}>
-          <div className="w-[500px] bg-[#0f1629] border border-slate-700/50 rounded-xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh] bg-black/60 backdrop-blur-sm" onClick={() => setShowCommandPalette(false)}>
+          <div className="w-full max-w-lg bg-[#0a0f1e] border border-slate-700/50 rounded-xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-700/50">
-              <Search className="w-4 h-4 text-slate-500" />
+              <Search size={16} className="text-slate-400" />
               <input
-                ref={commandInputRef}
+                autoFocus
                 type="text"
-                value={commandSearch}
-                onChange={e => setCommandSearch(e.target.value)}
-                placeholder="Jump to channel..."
+                placeholder="Type a command or search..."
                 className="flex-1 bg-transparent text-sm text-white placeholder-slate-500 outline-none"
                 onKeyDown={e => {
                   if (e.key === 'Escape') setShowCommandPalette(false);
-                  if (e.key === 'Enter' && filteredChannels.length > 0) {
-                    setActiveChannel(filteredChannels[0].id);
-                    setShowCommandPalette(false);
-                  }
                 }}
               />
-              <kbd className="text-[10px] text-slate-500 bg-slate-800 rounded px-1.5 py-0.5 border border-slate-700">esc</kbd>
             </div>
-            <div className="max-h-64 overflow-y-auto py-1">
-              {filteredChannels.map(ch => (
+            <div className="p-2 max-h-80 overflow-y-auto">
+              <div className="px-2 py-1 text-[10px] text-slate-500 uppercase tracking-wider">Quick Actions</div>
+              {[
+                { label: 'Run All Agents', icon: <Zap size={14} />, action: () => { handleRefresh(); setShowCommandPalette(false); } },
+                { label: 'View Founder Room', icon: <Star size={14} />, action: () => { setActiveChannel('founder-room'); setShowCommandPalette(false); } },
+                { label: 'View Alerts', icon: <AlertTriangle size={14} />, action: () => { setActiveChannel('alerts'); setShowCommandPalette(false); } },
+                { label: 'View Tasks', icon: <ListTodo size={14} />, action: () => { setActiveChannel('tasks'); setShowCommandPalette(false); } },
+                { label: 'Toggle Insights', icon: <Layout size={14} />, action: () => { setShowInsights(!showInsights); setShowCommandPalette(false); } },
+              ].map((cmd, i) => (
                 <button
-                  key={ch.id}
-                  onClick={() => { setActiveChannel(ch.id); setShowCommandPalette(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-2 hover:bg-slate-800/60 text-left transition-colors"
+                  key={i}
+                  onClick={cmd.action}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-slate-300 hover:bg-brand-violet/20 hover:text-white transition-colors"
                 >
-                  <span className="text-slate-500">{ch.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm text-slate-300">{ch.name}</div>
-                    <div className="text-[10px] text-slate-600 truncate">{ch.description}</div>
-                  </div>
-                  {ch.unread > 0 && (
-                    <span className="bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{ch.unread}</span>
-                  )}
+                  <span className="text-slate-500">{cmd.icon}</span>
+                  {cmd.label}
                 </button>
               ))}
-              {filteredChannels.length === 0 && (
-                <div className="text-center text-sm text-slate-500 py-6">No channels found</div>
-              )}
+              <div className="px-2 py-1 mt-2 text-[10px] text-slate-500 uppercase tracking-wider">Agents</div>
+              {agents.map(agent => (
+                <button
+                  key={agent.id}
+                  onClick={() => { setActiveChannel(agent.id); setShowCommandPalette(false); }}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-slate-300 hover:bg-brand-violet/20 hover:text-white transition-colors"
+                >
+                  <span>{AGENT_EMOJIS[agent.id] || '🤖'}</span>
+                  <span className="flex-1 text-left">{AGENT_DISPLAY_NAMES[agent.id] || agent.name}</span>
+                  <span className="text-[10px] text-slate-500">{agent.role}</span>
+                </button>
+              ))}
             </div>
           </div>
         </div>
