@@ -24,7 +24,7 @@ model User {
   phone         String?  @unique
   name          String?
   passwordHash  String
-  role          Role     @default(VIEWER)
+  role          Role     @default(USER)
   tier          UserTier @default(FREE)
   isActive      Boolean  @default(true)
   emailVerified Boolean  @default(false)
