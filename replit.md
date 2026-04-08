@@ -112,7 +112,15 @@ Memory is assembled and injected into agent system prompts automatically before 
 - `POST /api/admin/content/publish-approved` — batch publish all approved content
 - `GET /api/admin/execution-log` — query execution audit log with optional agent_id filter
 
-**Frontend:** `AgentsManagement.tsx` shows live agent status (polled every 10s) with "Run Now" button per agent card, autonomy level badge per agent, emergency stop button in header. Tabbed detail panel with Run History timeline, Accountability stats, Schedule Configuration, Autonomy & Guardrails config, and Execution Log viewer. Content queue cards show Publish button for approved items.
+**Frontend — Control Tower (Slack-style 3-panel layout):**
+The admin Control Tower (`apps/frontend/src/app/controltower/PageClient.tsx`) uses a three-panel Slack-style layout:
+- **Left panel (240px):** Channel sidebar (`ChannelSidebar.tsx`) — lists #founder-room (default), #all-agents (broadcast), and per-agent channels (#nexus, #maven, #ledger, #sentinel, #ally, #catalyst, #closer) with real-time presence indicators and unread counts.
+- **Center panel (flexible):** Chat feed (`ChatPanel.tsx`) — Slack-style message timeline where admin can chat with agents inline. Supports @mentions routing (e.g., @maven in #founder-room routes to Marketing agent), threaded conversations, and expandable message content. Agent run outputs and system events render as styled messages.
+- **Right panel (320px, collapsible):** Insights panel (`InsightsPanel.tsx`) — shows contextual data per channel: agent stats, run history, quick actions for agent channels; Overview stats, Comms, Deals, Events, Analytics, WhatsApp data for #founder-room.
+- **Command palette (Cmd+K):** `CommandPalette.tsx` — fuzzy search overlay for /ask, /run, /report, /schedule, /approve commands and channel navigation.
+- **Shared types/data:** `control-tower/types.ts` — Channel, ChatMessage, Thread, AgentInfo types plus AGENT_CHANNELS and AGENT_MAP constants.
+
+Legacy components `AgentsManagement.tsx` and `AgentArchitecture.tsx` are preserved but no longer directly rendered in the main layout (functionality migrated to insights panel and chat system).
 
 ## Slack Notifications
 `apps/backend/src/services/slackService.ts` uses `@slack/web-api@7.10.0` via Replit's Slack connector (OAuth token auto-managed). Posts to `#all-cleya` channel (fallback: `#new-signups`, `#general`). Bot name in Slack: `replit`.
