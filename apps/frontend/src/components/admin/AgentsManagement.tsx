@@ -1995,21 +1995,21 @@ export function AgentsManagement() {
 
           const tasks = await fetchSupabase<AgentTask>(
             'dm_agent_tasks',
-            'id',
+            '*',
             { agent_id: agent.id }
           );
           const tasksToday = tasks.filter(t => t.created_at && t.created_at.startsWith(today) && t.status === 'completed').length;
 
           const content = await fetchSupabase<ContentQueueItem>(
             'dm_content_queue',
-            'id',
+            '*',
             { agent_id: agent.id }
           );
           const contentPending = content.filter(c => c.status === 'pending').length;
 
           const messages = await fetchSupabase<AgentMessage>(
             'dm_agent_messages',
-            'id',
+            '*',
             { agent_id: agent.id }
           );
           const messagesUnread = messages.filter(m => !m.read && m.direction === 'outbound').length;
