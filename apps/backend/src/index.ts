@@ -46,6 +46,7 @@ import { metricsMiddleware } from './middleware/metricsMiddleware';
 import { logger } from './lib/logger';
 import { agentScheduler } from './services/agentScheduler';
 import { startLogRetentionJob } from './services/securityLogger';
+import { ensureAgentTables } from './services/agentMigration';
 
 const app = express();
 
@@ -126,7 +127,9 @@ const server = app.listen(PORT, '0.0.0.0', () => {
     environment: env.NODE_ENV,
   });
   matchScheduler.start();
-  agentScheduler.start();
+  ensureAgentTables()
+    .then(() => agentScheduler.start())
+    .catch(err => logger.error('Failed to start agent scheduler:', err));
   startLogRetentionJob();
 });
 

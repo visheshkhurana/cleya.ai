@@ -592,6 +592,29 @@ class ApiClient {
       body: JSON.stringify({ agentId, message, history }),
     });
   }
+
+  async getAgentStatuses() {
+    return this.fetch('/admin/agents/status');
+  }
+
+  async runAgent(agentId: string) {
+    return this.fetch(`/admin/agents/${agentId}/run`, { method: 'POST' });
+  }
+
+  async getAgentRunHistory(agentId: string, limit: number = 30) {
+    return this.fetch(`/admin/agents/${agentId}/history?limit=${limit}`);
+  }
+
+  async getAgentAccountability(agentId: string) {
+    return this.fetch(`/admin/agents/${agentId}/accountability`);
+  }
+
+  async updateAgentConfig(agentId: string, config: { enabled?: boolean; cronExpression?: string; cronDescription?: string }) {
+    return this.fetch(`/admin/agents/${agentId}/config`, {
+      method: 'PATCH',
+      body: JSON.stringify(config),
+    });
+  }
 }
 
 export const api = new ApiClient();

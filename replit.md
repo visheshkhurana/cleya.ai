@@ -54,6 +54,44 @@ New profile fields stored in `extraData` JSON: `portfolioCompanies`, `openToMeet
 ## Match Scheduler
 Automatic batch matching runs 3 times daily at **8:00 AM, 2:00 PM, and 8:00 PM IST** via `node-cron` in `apps/backend/src/services/matchScheduler.ts`. Each run: (1) finds all complete profiles, (2) backfills any missing embeddings, (3) runs `findAndAutoPropose` for each user (up to 3 matches per user per run). Skips already-existing match pairs. Admin can trigger manually via `POST /api/admin/batch-matching`. LinkedIn enrichment batch runs daily at **3:00 AM IST**.
 
+Additional scheduled jobs:
+- **Self-ping health check** — every 5 minutes, pings `/api/health` and logs warnings on failure
+- **Weekly analytics summary** — Monday 10:00 AM IST, logs key platform metrics (new users, matches, calls, messages) for the past week
+- **Old data cleanup** — daily 2:00 AM IST, prunes read notifications (>30 days) and old activity records (>90 days)
+
+The backend handles `SIGTERM`/`SIGINT` for graceful shutdown: stops cron jobs, closes HTTP server, disconnects database (10s safety timeout). Health endpoint (`/api/health`) reports database connectivity, scheduler state, uptime, and memory usage (returns 503 when degraded).
+
+## Agent Scheduler (Autonomous AI Workforce — 7 Agents)
+`apps/backend/src/services/agentScheduler.ts` starts alongside `MatchScheduler` on server boot. Uses `node-cron` to autonomously run 7 AI agents:
+- **Nexus** (Orchestrator): Daily at 7:00 AM IST — generates daily ops plan, delegates to sub-agents via JSON output
+- **Maven** (Content Strategist): Mondays at 7:30 AM IST — weekly topic research & content calendar
+- **Ledger** (Finance): Mondays at 8:00 AM IST — revenue tracking, burn rate analysis, financial summaries
+- **Sentinel** (CTO): Mon/Thu at 9:00 AM IST — tech debt review, deployment health, architecture recommendations
+- **Ally** (Support): Mon/Wed/Fri at 10:00 AM IST — ticket summaries, NPS analysis, help-desk automation
+- **Catalyst** (Growth): Tuesdays at 11:00 AM IST — funnel analysis, A/B test proposals, growth experiments
+- **Closer** (Sales): Thursdays at 11:00 AM IST — lead sourcing, outreach sequences, pipeline analysis
+
+Backward-compatible agent ID aliases: `orchestrator→nexus`, `content-strategist→maven`, `social-media→maven`, `email-marketing→maven`, `cold-outreach→closer`.
+
+**AgentRunner** (`apps/backend/src/services/agentRunner.ts`): Executes agents via OpenAI (gpt-4o-mini), writes generated content to `dm_content_queue` (Supabase REST) with status PENDING for human review, logs execution metadata to `dm_agent_logs`. Retry logic with exponential backoff (max 2 retries, 2s base delay). Agent state persisted to `dm_agent_state` table via Prisma raw SQL (not Supabase REST, due to PostgREST schema cache delays). State hydrated on boot. Enable/disable toggles per agent.
+
+**AgentNotifier** (`apps/backend/src/services/agentNotifier.ts`): Sends Slack alerts to `#all-cleya` on agent success/failure. Sends email via Resend to admin on agent failure. Non-blocking, errors logged silently.
+
+**AgentMigration** (`apps/backend/src/services/agentMigration.ts`): Auto-creates `dm_agent_state` table via Prisma `$executeRawUnsafe` on startup. Sends `NOTIFY pgrst, 'reload schema'` to refresh Supabase PostgREST cache.
+
+**Smart Orchestrator Delegation**: When Nexus completes, scheduler parses its full JSON output for task keys (`mavenTasks`, `ledgerTasks`, `sentinelTasks`, `allyTasks`, `catalystTasks`, `closerTasks`), creates `dm_agent_tasks` entries for each sub-agent. Falls back to triggering all sub-agents if JSON parsing fails.
+
+**Supabase client** (`apps/backend/src/services/supabaseClient.ts`): Lightweight REST client for backend to read/write Supabase `dm_*` tables (content queue, logs, tasks).
+
+**Admin API endpoints:**
+- `GET /api/admin/agents/status` — returns real-time agent statuses (running/completed/failed/scheduled), last run times, durations, enabled state, cron schedules
+- `POST /api/admin/agents/:id/run` — manually trigger any agent immediately
+- `GET /api/admin/agents/:id/run-history?limit=30` — paginated run history logs
+- `GET /api/admin/agents/:id/accountability` — accountability stats (success rate, total runs, avg duration, generated content)
+- `PATCH /api/admin/agents/:id/config` — update enabled state, cron expression (validated), cron description; triggers schedule reload
+
+**Frontend:** `AgentsManagement.tsx` shows live agent status (polled every 10s) with "Run Now" button per agent card, plus tabbed detail panel with Run History timeline, Accountability stats, and Schedule Configuration with enable/disable toggles and cron editor.
+
 ## Slack Notifications
 `apps/backend/src/services/slackService.ts` uses `@slack/web-api@7.10.0` via Replit's Slack connector (OAuth token auto-managed). Posts to `#all-cleya` channel (fallback: `#new-signups`, `#general`). Bot name in Slack: `replit`.
 - **User registration**: Fires on every signup (async, non-blocking) — shows email, name, total user count.

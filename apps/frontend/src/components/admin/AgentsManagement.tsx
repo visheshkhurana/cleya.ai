@@ -92,6 +92,28 @@ interface CampaignMetric {
   created_at: string;
 }
 
+interface AgentStatusInfo {
+  agentId: string;
+  name: string;
+  codename: string;
+  status: 'idle' | 'running' | 'completed' | 'failed' | 'scheduled';
+  lastRunAt: string | null;
+  lastRunDuration: number | null;
+  lastRunStatus: string | null;
+  nextRunAt: string | null;
+  enabled: boolean;
+  cronExpression: string | null;
+}
+
+interface AccountabilityStats {
+  totalRuns: number;
+  successCount: number;
+  failureCount: number;
+  successRate: number;
+  avgDuration: number;
+  contentItemsGenerated: number;
+}
+
 const SUPABASE_URL = 'https://lyuiazskqubmlzwuokzm.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5dWlhenNrcXVibWx6d3Vva3ptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1MjIyNzQsImV4cCI6MjA5MDA5ODI3NH0.R-8NDZHFpmfqt0Lw0QhdZtNvaXY28NzLKFSEyFpb6g4';
 
@@ -712,8 +734,252 @@ function CodeChangesTab({ agentId }: { agentId: string }) {
   );
 }
 
-function DetailPanel({ agent, onClose }: { agent: Agent; onClose: () => void }) {
-  const [activeTab, setActiveTab] = useState<'activity' | 'tasks' | 'content' | 'chat' | 'code'>('activity');
+function RunHistoryTab({ agentId }: { agentId: string }) {
+  const [history, setHistory] = useState<AgentLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        const resp = await api.getAgentRunHistory(agentId, 30);
+        const data = Array.isArray(resp) ? resp : resp?.data || [];
+        setHistory(data);
+      } catch (error) {
+        console.error('Failed to load run history:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadHistory();
+  }, [agentId]);
+
+  if (loading) return <LoadingSpinner />;
+
+  const runs = history.filter(h => h.action.startsWith('Autonomous run'));
+
+  return (
+    <div className="space-y-3">
+      {runs.length === 0 ? (
+        <p className="text-slate-400 text-center py-6">No run history yet</p>
+      ) : (
+        runs.map((run) => {
+          const duration = run.details?.duration_ms;
+          const isExpanded = expandedId === run.id;
+          return (
+            <div key={run.id} className="border border-brand-violet/10 rounded-lg bg-brand-violet-pressed/5 overflow-hidden">
+              <button
+                onClick={() => setExpandedId(isExpanded ? null : run.id)}
+                className="w-full p-4 text-left"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-3 h-3 rounded-full ${run.status === 'success' ? 'bg-green-400' : run.status === 'warning' ? 'bg-yellow-400' : 'bg-red-400'}`} />
+                    <div>
+                      <span className="text-sm font-medium text-white">{run.action}</span>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-slate-400">
+                        <span>{new Date(run.created_at).toLocaleString()}</span>
+                        {duration && <span>{(duration / 1000).toFixed(1)}s</span>}
+                        {run.details?.retry_count > 0 && (
+                          <span className="text-yellow-400">Retries: {run.details.retry_count}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight size={16} className={`text-slate-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                </div>
+              </button>
+              {isExpanded && run.details && (
+                <div className="px-4 pb-4 border-t border-brand-violet/10">
+                  {run.details.output_summary && (
+                    <p className="text-sm text-slate-300 mt-3">{run.details.output_summary}</p>
+                  )}
+                  {run.details.error && (
+                    <p className="text-sm text-red-300 mt-3">{run.details.error}</p>
+                  )}
+                  <div className="flex gap-4 mt-2 text-xs text-slate-500">
+                    {run.details.content_type && <span>Type: {run.details.content_type}</span>}
+                    {run.details.channel && <span>Channel: {run.details.channel}</span>}
+                    {run.details.output_length && <span>Output: {run.details.output_length} chars</span>}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })
+      )}
+    </div>
+  );
+}
+
+function AccountabilityTab({ agentId }: { agentId: string }) {
+  const [stats, setStats] = useState<AccountabilityStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const resp = await api.getAgentAccountability(agentId);
+        setStats(resp?.data || resp);
+      } catch (error) {
+        console.error('Failed to load accountability:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadStats();
+  }, [agentId]);
+
+  if (loading) return <LoadingSpinner />;
+  if (!stats) return <ErrorState message="Failed to load accountability data" />;
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="bg-slate-800/50 rounded-xl p-4">
+          <div className="text-xs text-slate-400 uppercase tracking-wider">Total Runs</div>
+          <div className="text-2xl font-bold text-white mt-1">{stats.totalRuns}</div>
+        </div>
+        <div className="bg-slate-800/50 rounded-xl p-4">
+          <div className="text-xs text-slate-400 uppercase tracking-wider">Success Rate</div>
+          <div className={`text-2xl font-bold mt-1 ${stats.successRate >= 80 ? 'text-green-400' : stats.successRate >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+            {stats.successRate.toFixed(1)}%
+          </div>
+        </div>
+        <div className="bg-slate-800/50 rounded-xl p-4">
+          <div className="text-xs text-slate-400 uppercase tracking-wider">Avg Duration</div>
+          <div className="text-2xl font-bold text-white mt-1">{(stats.avgDuration / 1000).toFixed(1)}s</div>
+        </div>
+        <div className="bg-slate-800/50 rounded-xl p-4">
+          <div className="text-xs text-slate-400 uppercase tracking-wider">Successful</div>
+          <div className="text-2xl font-bold text-green-400 mt-1">{stats.successCount}</div>
+        </div>
+        <div className="bg-slate-800/50 rounded-xl p-4">
+          <div className="text-xs text-slate-400 uppercase tracking-wider">Failed</div>
+          <div className="text-2xl font-bold text-red-400 mt-1">{stats.failureCount}</div>
+        </div>
+        <div className="bg-slate-800/50 rounded-xl p-4">
+          <div className="text-xs text-slate-400 uppercase tracking-wider">Content Generated</div>
+          <div className="text-2xl font-bold text-brand-violet-hover mt-1">{stats.contentItemsGenerated}</div>
+        </div>
+      </div>
+
+      {stats.totalRuns > 0 && (
+        <div className="bg-slate-800/50 rounded-xl p-4">
+          <div className="text-xs text-slate-400 uppercase tracking-wider mb-3">Success/Failure Ratio</div>
+          <div className="w-full bg-slate-700 rounded-full h-3 overflow-hidden">
+            <div
+              className="bg-green-500 h-full rounded-full transition-all"
+              style={{ width: `${stats.successRate}%` }}
+            />
+          </div>
+          <div className="flex justify-between mt-2 text-xs text-slate-500">
+            <span>{stats.successCount} succeeded</span>
+            <span>{stats.failureCount} failed</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ScheduleConfigTab({ agentId, liveStatus, onConfigChange }: {
+  agentId: string;
+  liveStatus?: AgentStatusInfo;
+  onConfigChange: () => void;
+}) {
+  const [enabled, setEnabled] = useState(liveStatus?.enabled ?? true);
+  const [cronExpression, setCronExpression] = useState(liveStatus?.cronExpression || '');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setEnabled(liveStatus?.enabled ?? true);
+    setCronExpression(liveStatus?.cronExpression || '');
+  }, [liveStatus]);
+
+  const handleToggle = async () => {
+    setSaving(true);
+    try {
+      await api.updateAgentConfig(agentId, { enabled: !enabled });
+      setEnabled(!enabled);
+      onConfigChange();
+    } catch (error) {
+      console.error('Failed to toggle agent:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveCron = async () => {
+    if (!cronExpression.trim()) return;
+    setSaving(true);
+    try {
+      await api.updateAgentConfig(agentId, { cronExpression: cronExpression.trim() });
+      onConfigChange();
+    } catch (error) {
+      console.error('Failed to update schedule:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-slate-800/50 rounded-xl p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h4 className="text-white font-medium">Agent Enabled</h4>
+            <p className="text-sm text-slate-400 mt-1">When disabled, scheduled runs will be skipped</p>
+          </div>
+          <button
+            onClick={handleToggle}
+            disabled={saving}
+            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+              enabled ? 'bg-green-500' : 'bg-slate-600'
+            } ${saving ? 'opacity-50' : ''}`}
+          >
+            <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+              enabled ? 'translate-x-6' : 'translate-x-1'
+            }`} />
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-slate-800/50 rounded-xl p-6">
+        <h4 className="text-white font-medium mb-3">Schedule (Cron Expression)</h4>
+        <p className="text-sm text-slate-400 mb-4">Current: {liveStatus?.nextRunAt || 'Not scheduled'}</p>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={cronExpression}
+            onChange={(e) => setCronExpression(e.target.value)}
+            placeholder="e.g., 0 9 * * 1 (Mondays at 9 AM)"
+            className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-violet font-mono"
+          />
+          <button
+            onClick={handleSaveCron}
+            disabled={saving || !cronExpression.trim()}
+            className="px-4 py-2 rounded-lg bg-brand-violet text-white text-sm font-medium hover:bg-brand-violet/80 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Save
+          </button>
+        </div>
+        <div className="mt-3 text-xs text-slate-500 space-y-1">
+          <p>Format: minute hour day-of-month month day-of-week (IST timezone)</p>
+          <p>Examples: <code className="text-slate-400">0 7 * * *</code> = Daily 7 AM | <code className="text-slate-400">0 9 * * 1,3,5</code> = Mon/Wed/Fri 9 AM</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailPanel({ agent, onClose, liveStatus, onConfigChange }: {
+  agent: Agent;
+  onClose: () => void;
+  liveStatus?: AgentStatusInfo;
+  onConfigChange: () => void;
+}) {
+  const [activeTab, setActiveTab] = useState<'activity' | 'history' | 'accountability' | 'tasks' | 'content' | 'chat' | 'schedule' | 'code'>('accountability');
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -724,6 +990,14 @@ function DetailPanel({ agent, onClose }: { agent: Agent; onClose: () => void }) 
             <div>
               <h2 className="text-xl font-bold text-white">{agent.name}</h2>
               <p className="text-sm text-slate-400">{agent.role}</p>
+              {liveStatus && (
+                <div className="flex items-center gap-2 mt-1">
+                  <StatusBadge status={liveStatus.status} />
+                  {!liveStatus.enabled && (
+                    <span className="text-xs px-2 py-0.5 rounded bg-slate-700 text-slate-400">Disabled</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
           <button
@@ -736,6 +1010,9 @@ function DetailPanel({ agent, onClose }: { agent: Agent; onClose: () => void }) 
 
         <div className="flex gap-2 px-6 pt-4 border-b border-slate-700 overflow-x-auto">
           {[
+            { id: 'accountability', label: 'Accountability' },
+            { id: 'history', label: 'Run History' },
+            { id: 'schedule', label: 'Schedule' },
             { id: 'activity', label: 'Activity Log' },
             { id: 'tasks', label: 'Tasks' },
             { id: 'content', label: 'Content Queue' },
@@ -757,6 +1034,9 @@ function DetailPanel({ agent, onClose }: { agent: Agent; onClose: () => void }) 
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">
+          {activeTab === 'accountability' && <AccountabilityTab agentId={agent.id} />}
+          {activeTab === 'history' && <RunHistoryTab agentId={agent.id} />}
+          {activeTab === 'schedule' && <ScheduleConfigTab agentId={agent.id} liveStatus={liveStatus} onConfigChange={onConfigChange} />}
           {activeTab === 'activity' && <ActivityLogTab agentId={agent.id} />}
           {activeTab === 'tasks' && <TasksTab agentId={agent.id} />}
           {activeTab === 'content' && <ContentQueueTab agentId={agent.id} />}
@@ -1069,7 +1349,7 @@ export function AgentsManagement() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-white">Digital Marketing Agents</h2>
+        <h2 className="text-2xl font-bold text-white">AI Agent Workforce</h2>
         <div className="flex gap-2">
           {[
             { id: 'overview', label: 'Overview' },
@@ -1143,7 +1423,12 @@ export function AgentsManagement() {
       {view === 'approval' && <ContentApprovalView />}
 
       {selectedAgent && (
-        <DetailPanel agent={selectedAgent} onClose={() => setSelectedAgent(null)} />
+        <DetailPanel
+          agent={selectedAgent}
+          onClose={() => setSelectedAgent(null)}
+          liveStatus={agentStatuses.find(s => s.agentId === selectedAgent.id)}
+          onConfigChange={loadStatuses}
+        />
       )}
     </div>
   );

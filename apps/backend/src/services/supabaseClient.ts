@@ -63,3 +63,36 @@ export async function supabaseUpdate(
     throw new Error(`Supabase update on ${table} failed: ${res.status} ${text}`);
   }
 }
+
+export async function supabaseUpsert<T = any>(
+  table: string,
+  data: Record<string, any>,
+  onConflict: string
+): Promise<T[]> {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: {
+      ...headers,
+      'Prefer': 'return=representation,resolution=merge-duplicates',
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Supabase upsert to ${table} failed: ${res.status} ${text}`);
+  }
+  return res.json() as Promise<T[]>;
+}
+
+export async function supabaseRpc(functionName: string, params?: Record<string, any>): Promise<any> {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${functionName}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(params || {}),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Supabase RPC ${functionName} failed: ${res.status} ${text}`);
+  }
+  return res.json();
+}
