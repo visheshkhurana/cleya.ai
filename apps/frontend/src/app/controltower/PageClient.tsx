@@ -8,8 +8,9 @@ import { CommandPalette } from '@/components/admin/control-tower/CommandPalette'
 import { Channel, ChatMessage, Thread, AGENT_CHANNELS, AGENT_MAP } from '@/components/admin/control-tower/types';
 import { ClassicDashboard } from '@/components/admin/ClassicDashboard';
 import { FounderMode } from '@/components/admin/FounderMode';
+import { CommandCenter } from '@/components/admin/CommandCenter';
 
-type ViewMode = 'dashboard' | 'command-center';
+type ViewMode = 'dashboard' | 'command-center' | 'command';
 
 interface Stats {
   totalUsers: number;
@@ -675,6 +676,16 @@ export default function AdminDashboard() {
           >
             Command Center
           </button>
+          <button
+            onClick={() => setViewMode('command')}
+            className={`px-3 py-1 rounded-md text-[11px] font-medium transition-all ${
+              viewMode === 'command'
+                ? 'bg-indigo-500/20 text-indigo-300 shadow-sm'
+                : 'text-white/40 hover:text-white/60'
+            }`}
+          >
+            💬 Command
+          </button>
         </div>
         {viewMode === 'command-center' && activeChannelId === 'founder-room' && (
           <button
@@ -694,6 +705,10 @@ export default function AdminDashboard() {
 
       {viewMode === 'dashboard' ? (
         <ClassicDashboard />
+      ) : viewMode === 'command' ? (
+        <div className="flex-1 overflow-hidden">
+          <CommandCenter />
+        </div>
       ) : (
         <>
           <div className="flex-1 flex overflow-hidden">
