@@ -73,6 +73,24 @@ Additional scheduled jobs:
 
 The backend handles `SIGTERM`/`SIGINT` for graceful shutdown: stops cron jobs, closes HTTP server, disconnects database (10s safety timeout). Health endpoint (`/api/health`) reports database connectivity, scheduler state, uptime, and memory usage (returns 503 when degraded).
 
+## Agent Scheduler (Autonomous AI Agents)
+`apps/backend/src/services/agentScheduler.ts` starts alongside `MatchScheduler` on server boot. Uses `node-cron` to autonomously run AI marketing agents:
+- **Orchestrator**: Daily at 7:00 AM IST — generates content plans, triggers sub-agents
+- **Content Strategist**: Mondays at 7:30 AM IST — weekly topic research & calendar
+- **Social Media Manager**: Mon/Wed/Fri at 9:00 AM IST — LinkedIn & Instagram posts
+- **Email Marketing**: Tuesdays at 10:00 AM IST — newsletters & drip sequences
+- **Cold Outreach**: Thursdays at 11:00 AM IST — lead sourcing & outreach sequences
+
+**AgentRunner** (`apps/backend/src/services/agentRunner.ts`): Executes agents by calling OpenAI (gpt-4o-mini), writes generated content to `dm_content_queue` (Supabase) with status PENDING for human review, and logs execution metadata to `dm_agent_logs`. Also processes pending tasks from `dm_agent_tasks` in priority order.
+
+**Supabase client** (`apps/backend/src/services/supabaseClient.ts`): Lightweight REST client for backend to read/write Supabase `dm_*` tables.
+
+**Admin API endpoints:**
+- `GET /api/admin/agents/status` — returns real-time agent statuses (running/completed/failed/scheduled), last run times, durations
+- `POST /api/admin/agents/:id/run` — manually trigger any agent immediately
+
+**Frontend:** `AgentsManagement.tsx` shows live agent status (polled every 10s) with "Run Now" button per agent card.
+
 ## Slack Notifications
 `apps/backend/src/services/slackService.ts` uses `@slack/web-api@7.10.0` via Replit's Slack connector (OAuth token auto-managed). Posts to `#all-cleya` channel (fallback: `#new-signups`, `#general`). Bot name in Slack: `replit`.
 - **User registration**: Fires on every signup (async, non-blocking) — shows email, name, total user count.

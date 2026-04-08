@@ -600,6 +600,14 @@ class ApiClient {
       body: JSON.stringify({ agentId, message, history }),
     });
   }
+
+  async getAgentStatuses() {
+    return this.fetch('/admin/agents/status');
+  }
+
+  async runAgent(agentId: string) {
+    return this.fetch(`/admin/agents/${agentId}/run`, { method: 'POST' });
+  }
 }
 
 export const api = new ApiClient();

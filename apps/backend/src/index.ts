@@ -43,13 +43,14 @@ import { closeAllWebSocketConnections } from './websocket/server';
 import { healthRouter } from './routes/health';
 import { metricsMiddleware } from './middleware/metricsMiddleware';
 import { logger } from './lib/logger';
+import { agentScheduler } from './services/agentScheduler';
 
 const app = express();
 
 app.set('trust proxy', 1);
 
 const allowedOrigins = new Set(
-  [env.FRONTEND_URL, env.CORS_ORIGIN].filter(Boolean)
+  [env.FRONTEND_URL, env.CORS_ORIGIN].filter(Boolean) as string[]
 );
 const REPLIT_DEV_DOMAIN = process.env.REPLIT_DEV_DOMAIN;
 if (REPLIT_DEV_DOMAIN) {
@@ -89,7 +90,6 @@ app.use((_req, res, next) => {
   }
   next();
 });
-
 app.use(compression());
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json({ limit: '10mb' }));
@@ -138,12 +138,14 @@ const server = app.listen(PORT, '0.0.0.0', () => {
     environment: env.NODE_ENV,
   });
   matchScheduler.start();
+  agentScheduler.start();
 });
 
 async function gracefulShutdown(signal: string) {
   logger.info(`Received ${signal}, shutting down gracefully...`);
 
   matchScheduler.stop();
+  agentScheduler.stop();
   logger.info('Cron jobs stopped');
 
   const forceExitTimer = setTimeout(() => {
@@ -184,5 +186,4 @@ async function gracefulShutdown(signal: string) {
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-
 export default app;

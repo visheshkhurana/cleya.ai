@@ -11,6 +11,8 @@ import { whatsappTemplates } from '../services/whatsappTemplates';
 import { gupshupService } from '../services/gupshupService';
 import { whatsappBotService } from '../services/whatsappBotService';
 import { analyticsAggregatorService } from '../services/analyticsAggregatorService';
+import { agentScheduler } from '../services/agentScheduler';
+import { runAgent, getAgentStatuses, KNOWN_AGENT_IDS } from '../services/agentRunner';
 
 export const adminRouter = Router();
 
@@ -847,6 +849,34 @@ adminRouter.get('/whatsapp/users', async (_req: Request, res: Response, next: Ne
     const users = await whatsappBotService.getWhatsAppUsers();
 
     res.json({ success: true, data: users });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/agents/:id/run', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    if (!KNOWN_AGENT_IDS.includes(id)) {
+      res.status(400).json({ success: false, error: { message: `Unknown agent: ${id}` } });
+      return;
+    }
+    const result = await agentScheduler.executeAgent(id);
+    if (result && result.status === 'error') {
+      res.status(500).json({ success: false, error: { message: result.error || 'Agent execution failed' }, data: result });
+      return;
+    }
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/agents/status', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const scheduleInfo = agentScheduler.getScheduleInfo();
+    const statuses = getAgentStatuses(scheduleInfo);
+    res.json({ success: true, data: statuses });
   } catch (error) {
     next(error);
   }
