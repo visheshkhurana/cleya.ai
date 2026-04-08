@@ -16,6 +16,8 @@ export const authRouter = Router();
 const ALLOWED_HOSTS = [
   env.FRONTEND_URL ? new URL(env.FRONTEND_URL).host : '',
   process.env.REPLIT_DEV_DOMAIN || '',
+  ...(process.env.REPLIT_DOMAINS || '').split(',').map(d => d.trim()),
+  env.BACKEND_URL ? new URL(env.BACKEND_URL).host : '',
 ].filter(Boolean);
 
 function getBaseUrl(req: Request): string {
@@ -28,7 +30,11 @@ function getBaseUrl(req: Request): string {
   return env.FRONTEND_URL;
 }
 
-const oauthStates = new Map<string, { createdAt: number; baseUrl: string }>();
+function getOAuthRedirectBase(_req: Request): string {
+  return env.FRONTEND_URL;
+}
+
+const oauthStates = new Map<string, { createdAt: number; baseUrl: string; oauthBase: string }>();
 setInterval(() => {
   const now = Date.now();
   for (const [key, val] of oauthStates) {
@@ -131,10 +137,11 @@ authRouter.get('/google', (req: Request, res: Response) => {
     res.status(501).json({ success: false, error: { message: 'Google OAuth not configured' } });
     return;
   }
+  const oauthBase = getOAuthRedirectBase(req);
   const baseUrl = getBaseUrl(req);
   const state = crypto.randomBytes(32).toString('hex');
-  oauthStates.set(state, { createdAt: Date.now(), baseUrl });
-  const redirectUri = `${baseUrl}/api/auth/google/callback`;
+  oauthStates.set(state, { createdAt: Date.now(), baseUrl, oauthBase });
+  const redirectUri = `${oauthBase}/api/auth/google/callback`;
   const params = new URLSearchParams({
     client_id: env.GOOGLE_CLIENT_ID,
     redirect_uri: redirectUri,
@@ -161,8 +168,9 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
       return;
     }
     const baseUrl = stateData.baseUrl;
+    const oauthBase = stateData.oauthBase || baseUrl;
     oauthStates.delete(state);
-    const redirectUri = `${baseUrl}/api/auth/google/callback`;
+    const redirectUri = `${oauthBase}/api/auth/google/callback`;
     const tokenBody = new URLSearchParams({
       code,
       client_id: env.GOOGLE_CLIENT_ID,
@@ -227,10 +235,11 @@ authRouter.get('/linkedin', (req: Request, res: Response) => {
     res.status(501).json({ success: false, error: { message: 'LinkedIn OAuth not configured' } });
     return;
   }
+  const oauthBase = getOAuthRedirectBase(req);
   const baseUrl = getBaseUrl(req);
   const state = crypto.randomBytes(32).toString('hex');
-  oauthStates.set(state, { createdAt: Date.now(), baseUrl });
-  const redirectUri = `${baseUrl}/api/auth/linkedin/callback`;
+  oauthStates.set(state, { createdAt: Date.now(), baseUrl, oauthBase });
+  const redirectUri = `${oauthBase}/api/auth/linkedin/callback`;
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: env.LINKEDIN_CLIENT_ID,
@@ -255,8 +264,9 @@ authRouter.get('/linkedin/callback', async (req: Request, res: Response) => {
       return;
     }
     const baseUrl = stateData.baseUrl;
+    const oauthBase = stateData.oauthBase || baseUrl;
     oauthStates.delete(state);
-    const redirectUri = `${baseUrl}/api/auth/linkedin/callback`;
+    const redirectUri = `${oauthBase}/api/auth/linkedin/callback`;
     const tokenRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
