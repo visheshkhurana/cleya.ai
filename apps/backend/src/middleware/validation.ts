@@ -202,10 +202,12 @@ export const profileUpdateSchema = z.object({
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),
   newPassword: z.string()
-    .min(8, 'Password must be at least 8 characters')
+    .min(12, 'Password must be at least 12 characters')
     .max(128, 'Password must be less than 128 characters')
-    .regex(/[A-Za-z]/, 'Password must contain at least one letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number')
+    .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
 });
 
 export const matchResponseSchema = z.object({

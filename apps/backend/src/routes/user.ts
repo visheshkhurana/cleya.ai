@@ -70,7 +70,17 @@ userRouter.post('/change-password', authenticate, validate(changePasswordSchema)
     const hashed = await bcrypt.hash(newPassword, 12);
     await prisma.user.update({ where: { id: user.id }, data: { passwordHash: hashed } });
     securityLogger.authEvent(req, 'PASSWORD_CHANGE', 'SUCCESS', req.user!.userId);
-    res.json({ success: true });
+
+    const { authService } = await import('../services/authService');
+    const newToken = authService.generateToken({ id: user.id, email: user.email, role: user.role });
+    res.cookie('cleo_auth', newToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+    res.json({ success: true, token: newToken });
   } catch (error) {
     next(error);
   }

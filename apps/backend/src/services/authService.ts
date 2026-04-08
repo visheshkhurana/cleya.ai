@@ -344,7 +344,7 @@ export class AuthService {
     });
   }
 
-  private generateToken(user: { id: string; email: string; role: string }): string {
+  generateToken(user: { id: string; email: string; role: string }): string {
     const payload: AuthPayload = {
       userId: user.id,
       email: user.email,

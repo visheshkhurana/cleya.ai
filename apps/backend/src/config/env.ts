@@ -49,6 +49,9 @@ const envSchema = z.object({
   ZOOM_CLIENT_ID: z.string().optional(),
   ZOOM_CLIENT_SECRET: z.string().optional(),
   ZOOM_REDIRECT_URI: z.string().optional(),
+  ZOOM_WEBHOOK_SECRET: z.string().optional(),
+
+  TWILIO_AUTH_TOKEN: z.string().optional(),
 
   SENTRY_DSN: z.string().optional(),
   SENTRY_AUTH_TOKEN: z.string().optional(),

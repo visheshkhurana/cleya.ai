@@ -1,11 +1,67 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import twilio from 'twilio';
 import { callService } from '../services/voice/callService';
 import { env } from '../config/env';
 import { prisma } from '@cleya/db';
+import { webhookPayloadSizeLimit } from '../middleware/webhookSecurity';
 
 export const twilioRouter = Router();
 
-twilioRouter.post('/voice', (req: Request, res: Response) => {
+const TWILIO_TIMESTAMP_TOLERANCE_MS = 5 * 60 * 1000;
+const recentTwilioCallSids = new Map<string, number>();
+setInterval(() => {
+  const cutoff = Date.now() - TWILIO_TIMESTAMP_TOLERANCE_MS;
+  for (const [key, ts] of recentTwilioCallSids) {
+    if (ts < cutoff) recentTwilioCallSids.delete(key);
+  }
+}, 60 * 1000);
+
+function twilioWebhookAuth(req: Request, res: Response, next: NextFunction) {
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  if (!authToken) {
+    if (env.NODE_ENV === 'production') {
+      console.warn('[Twilio Webhook] Rejected: TWILIO_AUTH_TOKEN not configured in production');
+      res.sendStatus(403);
+      return;
+    }
+    next();
+    return;
+  }
+
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+  const host = req.headers['x-forwarded-host'] || req.headers['host'] || '';
+  const fullUrl = `${protocol}://${host}${req.originalUrl}`;
+
+  const twilioSignature = req.headers['x-twilio-signature'] as string || '';
+  const isValid = twilio.validateRequest(
+    authToken,
+    twilioSignature,
+    fullUrl,
+    req.body || {}
+  );
+
+  if (!isValid) {
+    console.warn('[Twilio Webhook] Rejected: invalid signature');
+    res.sendStatus(403);
+    return;
+  }
+
+  const callSid = req.body?.CallSid;
+  if (callSid) {
+    const now = Date.now();
+    const lastSeen = recentTwilioCallSids.get(callSid);
+    if (lastSeen && (now - lastSeen) < 1000) {
+      console.warn(`[Twilio Webhook] Rejected: duplicate CallSid ${callSid}`);
+      res.sendStatus(200);
+      return;
+    }
+    recentTwilioCallSids.set(callSid, now);
+  }
+
+  next();
+}
+
+twilioRouter.post('/voice', webhookPayloadSizeLimit(256 * 1024), twilioWebhookAuth, (req: Request, res: Response) => {
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Amy">
@@ -27,7 +83,7 @@ twilioRouter.post('/voice', (req: Request, res: Response) => {
   res.type('text/xml').send(twiml);
 });
 
-twilioRouter.post('/gather', async (req: Request, res: Response, next: NextFunction) => {
+twilioRouter.post('/gather', webhookPayloadSizeLimit(256 * 1024), twilioWebhookAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const speechResult = req.body.SpeechResult || '';
     const callSid = req.body.CallSid || '';
@@ -45,10 +101,11 @@ twilioRouter.post('/gather', async (req: Request, res: Response, next: NextFunct
   }
 });
 
-twilioRouter.post('/status', async (req: Request, res: Response, next: NextFunction) => {
+twilioRouter.post('/status', webhookPayloadSizeLimit(256 * 1024), twilioWebhookAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { CallSid, CallStatus, CallDuration } = req.body;
     console.log(`Twilio status update: ${CallSid} -> ${CallStatus} (${CallDuration || 0}s)`);
+
     if (CallSid) {
       const call = await prisma.call.findFirst({
         where: { twilioCallSid: CallSid },
@@ -57,6 +114,7 @@ twilioRouter.post('/status', async (req: Request, res: Response, next: NextFunct
         await callService.updateCallStatus(call.id, CallStatus, CallDuration ? parseInt(CallDuration) : undefined);
       }
     }
+
     res.sendStatus(200);
   } catch (error) {
     next(error);

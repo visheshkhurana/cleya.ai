@@ -3,13 +3,13 @@ initSentry();
 
 import express from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import compression from 'compression';
 import * as Sentry from '@sentry/node';
 import { env } from './config/env';
 import { prisma } from '@cleya/db';
+import { configureSecurityHeaders } from './middleware/securityHeaders';
 import { errorHandler } from './middleware/errorHandler';
 import { sanitizeInput } from './middleware/sanitize';
 import { authRouter } from './routes/auth';
@@ -70,31 +70,16 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(helmet({
-  contentSecurityPolicy: false,
-  crossOriginEmbedderPolicy: false,
-  xContentTypeOptions: true,
-  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-  xXssProtection: true,
-  hsts: {
-    maxAge: 63072000,
-    includeSubDomains: true,
-    preload: true,
-  },
-  permittedCrossDomainPolicies: { permittedPolicies: 'none' },
-}));
-
-app.use((_req, res, next) => {
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-  if (_req.path.startsWith('/api/')) {
-    res.setHeader('Content-Security-Policy', "frame-ancestors 'none'");
-  }
-  next();
-});
+const securityMiddlewares = configureSecurityHeaders();
+securityMiddlewares.forEach(mw => app.use(mw));
 app.use(compression());
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({
+  limit: '10mb',
+  verify: (req: any, _res, buf) => {
+    req.rawBody = buf;
+  },
+}));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(metricsMiddleware);
