@@ -117,21 +117,49 @@ npm run db:seed
 The backend exposes a health endpoint for uptime monitoring:
 
 ```
-GET /health
+GET /api/health
 ```
 
-Response:
+Response (HTTP 200 when healthy, HTTP 503 when degraded):
 ```json
 {
   "status": "ok",
   "timestamp": "2026-03-18T12:00:00.000Z",
   "version": "1.0.0",
   "uptime": 3600,
-  "env": "production"
+  "env": "production",
+  "database": "connected",
+  "scheduler": "running",
+  "memory": {
+    "rss": 120,
+    "heapUsed": 45,
+    "heapTotal": 60
+  }
 }
 ```
 
-Set up [UptimeRobot](https://uptimerobot.com) or [Better Uptime](https://betteruptime.com) to ping `/health` every 5 minutes. Alert on any non-200 response or timeout.
+A self-ping cron job runs every 5 minutes internally to log warnings if the health endpoint fails. External monitoring via [UptimeRobot](https://uptimerobot.com) or [Better Uptime](https://betteruptime.com) is still recommended — ping `/api/health` every 5 minutes and alert on any non-200 response.
+
+## Scheduled Jobs
+
+The backend runs the following cron jobs (all managed by `node-cron`):
+
+| Job | Schedule | Description |
+|-----|----------|-------------|
+| Batch matching | 8:00, 14:00, 20:00 IST | Runs AI-powered matching for all complete profiles |
+| Daily Slack report | 21:00 IST | Sends platform metrics to the configured Slack channel |
+| LinkedIn enrichment | 3:00 IST | Enriches profiles with LinkedIn data |
+| Self-ping health check | Every 5 minutes | Pings `/api/health` and logs warnings on failure |
+| Weekly analytics summary | Monday 10:00 IST | Logs key platform metrics for the past week |
+| Old data cleanup | Daily 2:00 AM IST | Prunes read notifications (>30 days) and old activity records (>90 days) |
+
+## Graceful Shutdown
+
+The backend listens for `SIGTERM` and `SIGINT` signals to perform a clean shutdown during Replit redeploys:
+1. Stops all cron jobs
+2. Closes the HTTP server (stops accepting new connections)
+3. Disconnects from the database
+4. Exits with a 10-second safety timeout
 
 ## Backup & Recovery
 

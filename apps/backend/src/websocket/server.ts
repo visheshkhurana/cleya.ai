@@ -129,3 +129,17 @@ export function broadcastToUsers(userIds: string[], type: string, payload: any) 
     }
   });
 }
+
+export function closeAllWebSocketConnections(): Promise<void> {
+  return new Promise((resolve) => {
+    clients.forEach((ws, userId) => {
+      try {
+        ws.close(1001, 'Server shutting down');
+      } catch {
+        ws.terminate();
+      }
+    });
+    clients.clear();
+    resolve();
+  });
+}

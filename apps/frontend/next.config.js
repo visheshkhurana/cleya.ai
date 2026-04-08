@@ -37,18 +37,39 @@ const nextConfig = {
           { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate' },
           { key: 'Pragma', value: 'no-cache' },
         ],
-      }] : [{
-        source: '/(.*)',
-        headers: [
-          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
-          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          { key: 'X-DNS-Prefetch-Control', value: 'on' },
-          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
-          { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://browser.sentry-cdn.com https://www.googletagmanager.com https://*.posthog.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://*.sentry.io https://*.posthog.com https://www.google-analytics.com https://region1.google-analytics.com https://*.replit.dev https://*.replit.app wss://*.replit.dev wss://*.replit.app https://*.supabase.co; frame-ancestors 'self'; base-uri 'self'; form-action 'self'" },
-        ],
-      }]),
+      }] : [
+        {
+          source: '/_next/static/(.*)',
+          headers: [
+            { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+          ],
+        },
+        {
+          source: '/api/(.*)',
+          headers: [
+            { key: 'Cache-Control', value: 'no-store' },
+            { key: 'X-Content-Type-Options', value: 'nosniff' },
+            { key: 'X-XSS-Protection', value: '1; mode=block' },
+            { key: 'X-Frame-Options', value: 'DENY' },
+            { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+            { key: 'Content-Security-Policy', value: "frame-ancestors 'none'" },
+            { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          ],
+        },
+        {
+          source: '/(.*)',
+          headers: [
+            { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+            { key: 'X-Content-Type-Options', value: 'nosniff' },
+            { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+            { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+            { key: 'X-DNS-Prefetch-Control', value: 'on' },
+            { key: 'X-XSS-Protection', value: '1; mode=block' },
+            { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+            { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://browser.sentry-cdn.com https://www.googletagmanager.com https://*.posthog.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://*.sentry.io https://*.posthog.com https://www.google-analytics.com https://region1.google-analytics.com https://*.replit.dev https://*.replit.app wss://*.replit.dev wss://*.replit.app https://*.supabase.co; frame-ancestors 'self'; base-uri 'self'; form-action 'self'" },
+          ],
+        },
+      ]),
     ];
   },
 };

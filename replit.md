@@ -54,6 +54,13 @@ New profile fields stored in `extraData` JSON: `portfolioCompanies`, `openToMeet
 ## Match Scheduler
 Automatic batch matching runs 3 times daily at **8:00 AM, 2:00 PM, and 8:00 PM IST** via `node-cron` in `apps/backend/src/services/matchScheduler.ts`. Each run: (1) finds all complete profiles, (2) backfills any missing embeddings, (3) runs `findAndAutoPropose` for each user (up to 3 matches per user per run). Skips already-existing match pairs. Admin can trigger manually via `POST /api/admin/batch-matching`. LinkedIn enrichment batch runs daily at **3:00 AM IST**.
 
+Additional scheduled jobs:
+- **Self-ping health check** — every 5 minutes, pings `/api/health` and logs warnings on failure
+- **Weekly analytics summary** — Monday 10:00 AM IST, logs key platform metrics (new users, matches, calls, messages) for the past week
+- **Old data cleanup** — daily 2:00 AM IST, prunes read notifications (>30 days) and old activity records (>90 days)
+
+The backend handles `SIGTERM`/`SIGINT` for graceful shutdown: stops cron jobs, closes HTTP server, disconnects database (10s safety timeout). Health endpoint (`/api/health`) reports database connectivity, scheduler state, uptime, and memory usage (returns 503 when degraded).
+
 ## Slack Notifications
 `apps/backend/src/services/slackService.ts` uses `@slack/web-api@7.10.0` via Replit's Slack connector (OAuth token auto-managed). Posts to `#all-cleya` channel (fallback: `#new-signups`, `#general`). Bot name in Slack: `replit`.
 - **User registration**: Fires on every signup (async, non-blocking) — shows email, name, total user count.
