@@ -6,6 +6,9 @@ import { ChatPanel } from '@/components/admin/control-tower/ChatPanel';
 import { InsightsPanel } from '@/components/admin/control-tower/InsightsPanel';
 import { CommandPalette } from '@/components/admin/control-tower/CommandPalette';
 import { Channel, ChatMessage, Thread, AGENT_CHANNELS, AGENT_MAP } from '@/components/admin/control-tower/types';
+import { ClassicDashboard } from '@/components/admin/ClassicDashboard';
+
+type ViewMode = 'dashboard' | 'command-center';
 
 interface Stats {
   totalUsers: number;
@@ -36,6 +39,7 @@ export default function AdminDashboard() {
   const [mfaCode, setMfaCode] = useState('');
   const [mfaError, setMfaError] = useState('');
   const [userRole, setUserRole] = useState('');
+  const [viewMode, setViewMode] = useState<ViewMode>('dashboard');
 
   const [stats, setStats] = useState<Stats | null>(null);
   const [commData, setCommData] = useState<CommData | null>(null);
@@ -648,58 +652,86 @@ export default function AdminDashboard() {
           <span className="text-xs font-semibold text-white/70">Control Tower</span>
           <span className="text-[10px] text-white/20 ml-1">Cleya.ai</span>
         </div>
+        <div className="flex items-center gap-1 bg-white/[0.04] rounded-lg p-0.5 border border-white/[0.06]">
+          <button
+            onClick={() => setViewMode('dashboard')}
+            className={`px-3 py-1 rounded-md text-[11px] font-medium transition-all ${
+              viewMode === 'dashboard'
+                ? 'bg-indigo-500/20 text-indigo-300 shadow-sm'
+                : 'text-white/40 hover:text-white/60'
+            }`}
+          >
+            Dashboard
+          </button>
+          <button
+            onClick={() => setViewMode('command-center')}
+            className={`px-3 py-1 rounded-md text-[11px] font-medium transition-all ${
+              viewMode === 'command-center'
+                ? 'bg-indigo-500/20 text-indigo-300 shadow-sm'
+                : 'text-white/40 hover:text-white/60'
+            }`}
+          >
+            Command Center
+          </button>
+        </div>
         <button
           onClick={() => { api.logout().then(() => { setAuthenticated(false); setLoading(true); }); }}
-          className="text-[11px] text-white/30 hover:text-red-300 transition px-2 py-1"
+          className="text-[11px] text-white/30 hover:text-red-300 transition px-2 py-1 ml-3"
         >
           Sign out
         </button>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
-        <ChannelSidebar
-          channels={channels}
-          activeChannelId={activeChannelId}
-          onSelectChannel={handleSelectChannel}
-          onOpenCommandPalette={() => setCommandPaletteOpen(true)}
-        />
+      {viewMode === 'dashboard' ? (
+        <ClassicDashboard />
+      ) : (
+        <>
+          <div className="flex-1 flex overflow-hidden">
+            <ChannelSidebar
+              channels={channels}
+              activeChannelId={activeChannelId}
+              onSelectChannel={handleSelectChannel}
+              onOpenCommandPalette={() => setCommandPaletteOpen(true)}
+            />
 
-        <ChatPanel
-          channel={activeChannel}
-          messages={channelMessages}
-          onSendMessage={handleSendMessage}
-          isLoading={agentLoading}
-          thread={activeThread}
-          onOpenThread={handleOpenThread}
-          onCloseThread={handleCloseThread}
-          onSendThreadReply={handleSendThreadReply}
-        />
+            <ChatPanel
+              channel={activeChannel}
+              messages={channelMessages}
+              onSendMessage={handleSendMessage}
+              isLoading={agentLoading}
+              thread={activeThread}
+              onOpenThread={handleOpenThread}
+              onCloseThread={handleCloseThread}
+              onSendThreadReply={handleSendThreadReply}
+            />
 
-        <InsightsPanel
-          channel={activeChannel}
-          collapsed={insightsCollapsed}
-          onToggle={() => setInsightsCollapsed(!insightsCollapsed)}
-          stats={stats}
-          commData={commData}
-          dealData={dealData}
-          eventData={eventData}
-          analyticsData={analyticsData}
-          whatsappData={whatsappData}
-          onLoadComms={loadComms}
-          onLoadDeals={loadDeals}
-          onLoadEvents={loadEvents}
-          onLoadAnalytics={loadAnalytics}
-          onLoadWhatsApp={loadWhatsApp}
-        />
-      </div>
+            <InsightsPanel
+              channel={activeChannel}
+              collapsed={insightsCollapsed}
+              onToggle={() => setInsightsCollapsed(!insightsCollapsed)}
+              stats={stats}
+              commData={commData}
+              dealData={dealData}
+              eventData={eventData}
+              analyticsData={analyticsData}
+              whatsappData={whatsappData}
+              onLoadComms={loadComms}
+              onLoadDeals={loadDeals}
+              onLoadEvents={loadEvents}
+              onLoadAnalytics={loadAnalytics}
+              onLoadWhatsApp={loadWhatsApp}
+            />
+          </div>
 
-      <CommandPalette
-        isOpen={commandPaletteOpen}
-        onClose={() => setCommandPaletteOpen(false)}
-        onSelectChannel={handleSelectChannel}
-        onRunAgent={handleRunAgent}
-        onAskAgent={handleAskAgent}
-      />
+          <CommandPalette
+            isOpen={commandPaletteOpen}
+            onClose={() => setCommandPaletteOpen(false)}
+            onSelectChannel={handleSelectChannel}
+            onRunAgent={handleRunAgent}
+            onAskAgent={handleAskAgent}
+          />
+        </>
+      )}
     </div>
   );
 }
