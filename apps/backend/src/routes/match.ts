@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { authenticate } from '../middleware/auth';
+import { authenticate, requireRole } from '../middleware/auth';
 import { matchingService } from '../services/matchingService';
 import { vectorMatchingService } from '../services/vectorMatchingService';
 import { prisma } from '@cleya/db';
@@ -210,11 +210,8 @@ matchRouter.get('/embeddings/stats', authenticate, async (req: Request, res: Res
   }
 });
 
-matchRouter.post('/embeddings/backfill', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+matchRouter.post('/embeddings/backfill', authenticate, requireRole('ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (req.user!.role !== 'admin') {
-      return res.status(403).json({ success: false, error: 'Admin access required' });
-    }
     const batchSize = Math.min(Math.max(parseInt(req.body.batchSize) || 10, 1), 50);
     const result = await vectorMatchingService.backfillEmbeddings(batchSize);
     res.json({ success: true, data: result });

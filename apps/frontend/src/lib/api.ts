@@ -121,9 +121,36 @@ class ApiClient {
   }
 
   async login(email: string, password: string) {
-    return this.fetch<{ user: any; token: string }>('/auth/login', {
+    return this.fetch<{ user: any; token: string; mfaRequired?: boolean }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
+    });
+  }
+
+  async mfaValidate(code: string) {
+    return this.fetch<{ user: any; token: string }>('/auth/mfa/validate', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    });
+  }
+
+  async mfaSetup() {
+    return this.fetch<{ secret: string; otpauthUrl: string; qrCode: string }>('/auth/mfa/setup', {
+      method: 'POST',
+    });
+  }
+
+  async mfaVerify(code: string) {
+    return this.fetch<{ mfaEnabled: boolean }>('/auth/mfa/verify', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    });
+  }
+
+  async reauth(password: string) {
+    return this.fetch<{ elevatedToken: string }>('/auth/reauth', {
+      method: 'POST',
+      body: JSON.stringify({ password }),
     });
   }
 
@@ -614,6 +641,32 @@ class ApiClient {
       method: 'PATCH',
       body: JSON.stringify(config),
     });
+  }
+
+  async updateUserRole(userId: string, role: string, elevatedToken: string) {
+    return this.fetch(`/admin/users/${userId}/role`, {
+      method: 'PUT',
+      body: JSON.stringify({ role }),
+      headers: { 'x-elevated-token': elevatedToken },
+    });
+  }
+
+  async deleteUser(userId: string, elevatedToken: string) {
+    return this.fetch(`/admin/users/${userId}`, {
+      method: 'DELETE',
+      headers: { 'x-elevated-token': elevatedToken },
+    });
+  }
+
+  async updateUserStatus(userId: string, isActive: boolean) {
+    return this.fetch(`/admin/users/${userId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ isActive }),
+    });
+  }
+
+  async getAuditLogs(page = 1, limit = 50) {
+    return this.fetch(`/admin/audit-logs?page=${page}&limit=${limit}`);
   }
 }
 

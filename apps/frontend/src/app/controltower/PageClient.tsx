@@ -99,11 +99,17 @@ export default function AdminDashboard() {
   const [agentLoading, setAgentLoading] = useState(false);
   const router = useRouter();
 
+  const [userRole, setUserRole] = useState<string>('');
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaError, setMfaError] = useState('');
+
   useEffect(() => {
     api.getMe().then((user) => {
-      if (user?.role === 'ADMIN') {
+      if (user?.role === 'ADMIN' || user?.role === 'MANAGER') {
         api.setToken('authenticated');
         setAuthenticated(true);
+        setUserRole(user.role);
         loadDashboard();
       }
     }).catch(() => {}).finally(() => setCheckingAuth(false));
@@ -115,16 +121,45 @@ export default function AdminDashboard() {
     setLoginLoading(true);
     try {
       const data = await api.login(loginEmail, loginPassword);
-      if (data.user?.role !== 'ADMIN') {
-        setLoginError('Access denied. Admin credentials required.');
+      if (data.mfaRequired) {
+        setMfaRequired(true);
+        setLoginLoading(false);
+        return;
+      }
+      if (data.user?.role !== 'ADMIN' && data.user?.role !== 'MANAGER') {
+        setLoginError('Access denied. Admin or manager credentials required.');
         api.logout();
         return;
       }
       api.setToken('authenticated');
       setAuthenticated(true);
+      setUserRole(data.user.role);
       loadDashboard();
     } catch (err: any) {
       setLoginError(err.message || 'Invalid credentials');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleMfaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMfaError('');
+    setLoginLoading(true);
+    try {
+      const data = await api.mfaValidate(mfaCode);
+      if (data.user?.role !== 'ADMIN' && data.user?.role !== 'MANAGER') {
+        setMfaError('Access denied. Admin or manager credentials required.');
+        api.logout();
+        return;
+      }
+      api.setToken('authenticated');
+      setAuthenticated(true);
+      setUserRole(data.user.role);
+      setMfaRequired(false);
+      loadDashboard();
+    } catch (err: any) {
+      setMfaError(err.message || 'Invalid MFA code');
     } finally {
       setLoginLoading(false);
     }
@@ -363,45 +398,86 @@ export default function AdminDashboard() {
             <h1 className="text-xl font-bold text-white mb-1">Control Tower</h1>
             <p className="text-sm text-white/40">Cleya.ai Administration</p>
           </div>
-          <form onSubmit={handleAdminLogin} className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-white/50 uppercase tracking-wider mb-1.5">Email</label>
-              <input
-                type="email"
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                required
-                className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-white/30 outline-none focus:ring-2 focus:ring-brand-violet/50 transition"
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
-                placeholder="admin@cleya.ai"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-white/50 uppercase tracking-wider mb-1.5">Password</label>
-              <input
-                type="password"
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                required
-                className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-white/30 outline-none focus:ring-2 focus:ring-brand-violet/50 transition"
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
-                placeholder="Password"
-              />
-            </div>
-            {loginError && (
-              <div className="text-sm text-red-400 text-center py-2 rounded-lg" style={{ background: 'rgba(239,68,68,0.08)' }}>
-                {loginError}
+          {mfaRequired ? (
+            <form onSubmit={handleMfaSubmit} className="space-y-4">
+              <p className="text-sm text-white/60 text-center">Enter the 6-digit code from your authenticator app</p>
+              <div>
+                <label className="block text-xs font-medium text-white/50 uppercase tracking-wider mb-1.5">MFA Code</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={mfaCode}
+                  onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
+                  required
+                  className="w-full px-4 py-3 rounded-xl text-sm text-white text-center tracking-[0.5em] placeholder-white/30 outline-none focus:ring-2 focus:ring-brand-violet/50 transition"
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
+                  placeholder="000000"
+                  autoFocus
+                />
               </div>
-            )}
-            <button
-              type="submit"
-              disabled={loginLoading}
-              className="w-full py-3 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}
-            >
-              {loginLoading ? 'Signing in...' : 'Sign In'}
-            </button>
-          </form>
+              {mfaError && (
+                <div className="text-sm text-red-400 text-center py-2 rounded-lg" style={{ background: 'rgba(239,68,68,0.08)' }}>
+                  {mfaError}
+                </div>
+              )}
+              <button
+                type="submit"
+                disabled={loginLoading || mfaCode.length !== 6}
+                className="w-full py-3 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}
+              >
+                {loginLoading ? 'Verifying...' : 'Verify'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMfaRequired(false); setMfaCode(''); setMfaError(''); }}
+                className="w-full text-sm text-white/40 hover:text-white/60 transition"
+              >
+                Back to login
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleAdminLogin} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-white/50 uppercase tracking-wider mb-1.5">Email</label>
+                <input
+                  type="email"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-white/30 outline-none focus:ring-2 focus:ring-brand-violet/50 transition"
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
+                  placeholder="admin@cleya.ai"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-white/50 uppercase tracking-wider mb-1.5">Password</label>
+                <input
+                  type="password"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-white/30 outline-none focus:ring-2 focus:ring-brand-violet/50 transition"
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
+                  placeholder="Password"
+                />
+              </div>
+              {loginError && (
+                <div className="text-sm text-red-400 text-center py-2 rounded-lg" style={{ background: 'rgba(239,68,68,0.08)' }}>
+                  {loginError}
+                </div>
+              )}
+              <button
+                type="submit"
+                disabled={loginLoading}
+                className="w-full py-3 rounded-xl text-sm font-semibold text-white transition disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}
+              >
+                {loginLoading ? 'Signing in...' : 'Sign In'}
+              </button>
+            </form>
+          )}
         </div>
       </div>
     );

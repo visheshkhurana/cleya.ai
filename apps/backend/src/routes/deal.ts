@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { authenticate } from '../middleware/auth';
+import { authenticate, requireRole } from '../middleware/auth';
 import { prisma } from '@cleya/db';
 import { matchingService } from '../services/matchingService';
 
@@ -24,11 +24,8 @@ dealRouter.post('/scout', authenticate, async (req: Request, res: Response, next
   }
 });
 
-dealRouter.get('/admin/all', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+dealRouter.get('/admin/all', authenticate, requireRole('MANAGER'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (req.user!.role !== 'admin') {
-      return res.status(403).json({ success: false, error: 'Admin access required' });
-    }
 
     const deals = await prisma.dealTracking.findMany({
       include: {
@@ -113,7 +110,8 @@ dealRouter.patch('/:id', authenticate, async (req: Request, res: Response, next:
     if (!deal) {
       return res.status(404).json({ success: false, error: 'Deal not found' });
     }
-    if (deal.dealPartnerId !== req.user!.userId && req.user!.role !== 'admin') {
+    const isManagerOrAbove = ['ADMIN', 'MANAGER'].includes(req.user!.role);
+    if (deal.dealPartnerId !== req.user!.userId && !isManagerOrAbove) {
       return res.status(403).json({ success: false, error: 'Not authorized' });
     }
 
@@ -159,7 +157,8 @@ dealRouter.delete('/:id', authenticate, async (req: Request, res: Response, next
     if (!deal) {
       return res.status(404).json({ success: false, error: 'Deal not found' });
     }
-    if (deal.dealPartnerId !== req.user!.userId && req.user!.role !== 'admin') {
+    const isManagerOrAbove = ['ADMIN', 'MANAGER'].includes(req.user!.role);
+    if (deal.dealPartnerId !== req.user!.userId && !isManagerOrAbove) {
       return res.status(403).json({ success: false, error: 'Not authorized' });
     }
 

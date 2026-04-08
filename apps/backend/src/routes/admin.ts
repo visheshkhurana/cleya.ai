@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { prisma } from '@cleya/db';
-import { authenticate, requireAdmin } from '../middleware/auth';
+import { z } from 'zod';
+import { prisma, Prisma } from '@cleya/db';
+import { authenticate, requireRole, requireReauth } from '../middleware/auth';
 import { matchingService } from '../services/matchingService';
 import { matchScheduler } from '../services/matchScheduler';
 import { slackService } from '../services/slackService';
@@ -15,10 +16,11 @@ import { agentScheduler } from '../services/agentScheduler';
 import cronValidator from 'node-cron';
 import { runAgent, getAgentStatuses, KNOWN_AGENT_IDS, getAgentRunHistory, getAgentAccountability, updateAgentConfig, resolveAgentId } from '../services/agentRunner';
 import { securityLogger } from '../services/securityLogger';
+import { logAdminAction, getAuditLogs } from '../services/auditLogger';
 
 export const adminRouter = Router();
 
-adminRouter.use(authenticate, requireAdmin);
+adminRouter.use(authenticate, requireRole('MANAGER'));
 
 adminRouter.get('/stats', async (_req: Request, res: Response, next: NextFunction) => {
   try {
@@ -237,8 +239,8 @@ adminRouter.get('/analytics', async (req: Request, res: Response, next: NextFunc
       totalUsers, completedProfiles, totalMatches, acceptedMatches,
       rejectedMatches, totalCalls, totalMessages, totalFeedbacks,
     ] = await Promise.all([
-      prisma.user.count({ where: { role: 'USER' } }),
-      prisma.profile.count({ where: { isComplete: true, user: { role: 'USER' } } }),
+      prisma.user.count({ where: { role: { in: ['USER', 'VIEWER'] } } }),
+      prisma.profile.count({ where: { isComplete: true, user: { role: { in: ['USER', 'VIEWER'] } } } }),
       prisma.match.count({ where: { createdAt: { gte: rangeStart } } }),
       prisma.match.count({ where: { status: 'ACCEPTED', createdAt: { gte: rangeStart } } }),
       prisma.match.count({ where: { status: 'REJECTED', createdAt: { gte: rangeStart } } }),
@@ -270,7 +272,7 @@ adminRouter.get('/analytics', async (req: Request, res: Response, next: NextFunc
     });
 
     const recentSignups = await prisma.user.count({
-      where: { createdAt: { gte: rangeStart }, role: 'USER' },
+      where: { createdAt: { gte: rangeStart }, role: { in: ['USER', 'VIEWER'] } },
     });
 
     const dailySignups: { date: string; count: number }[] = [];
@@ -282,7 +284,7 @@ adminRouter.get('/analytics', async (req: Request, res: Response, next: NextFunc
       const end = new Date(start);
       end.setDate(end.getDate() + 1);
       const count = await prisma.user.count({
-        where: { createdAt: { gte: start, lt: end }, role: 'USER' },
+        where: { createdAt: { gte: start, lt: end }, role: { in: ['USER', 'VIEWER'] } },
       });
       dailySignups.push({ date: start.toISOString().split('T')[0], count });
     }
@@ -838,7 +840,6 @@ adminRouter.patch('/agents/:id/config', async (req: Request, res: Response, next
     next(error);
   }
 });
-
 const securityLogQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(200).default(50),
@@ -914,6 +915,141 @@ adminRouter.get('/security-logs', async (req: Request, res: Response, next: Next
         totalPages: Math.ceil(total / limit),
       },
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.put('/users/:userId/role', requireRole('ADMIN'), requireReauth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { role } = z.object({ role: z.enum(['VIEWER', 'USER', 'MANAGER', 'ADMIN']) }).parse(req.body);
+    const targetUserId = req.params.userId;
+
+    if (targetUserId === req.user!.userId) {
+      res.status(400).json({ success: false, error: { message: 'Cannot change your own role' } });
+      return;
+    }
+
+    const targetUser = await prisma.user.findUnique({ where: { id: targetUserId } });
+    if (!targetUser) {
+      res.status(404).json({ success: false, error: { message: 'User not found' } });
+      return;
+    }
+
+    const previousRole = targetUser.role;
+    const updated = await prisma.user.update({
+      where: { id: targetUserId },
+      data: { role },
+      select: { id: true, email: true, role: true },
+    });
+
+    securityLogger.configEvent(req, 'ROLE_CHANGE', req.user!.userId, {
+      targetUserId,
+      previousRole,
+      newRole: role,
+    });
+
+    await logAdminAction(req, 'ROLE_CHANGE', {
+      targetId: targetUserId,
+      metadata: { previousRole, newRole: role, targetEmail: targetUser.email },
+    });
+
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.delete('/users/:userId', requireRole('ADMIN'), requireReauth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const targetUserId = req.params.userId;
+
+    if (targetUserId === req.user!.userId) {
+      res.status(400).json({ success: false, error: { message: 'Cannot delete your own account' } });
+      return;
+    }
+
+    const targetUser = await prisma.user.findUnique({ where: { id: targetUserId } });
+    if (!targetUser) {
+      res.status(404).json({ success: false, error: { message: 'User not found' } });
+      return;
+    }
+
+    await logAdminAction(req, 'USER_DELETION', {
+      targetId: targetUserId,
+      metadata: { targetEmail: targetUser.email, targetRole: targetUser.role },
+    });
+
+    securityLogger.configEvent(req, 'USER_MANAGEMENT', req.user!.userId, {
+      action: 'DELETE',
+      targetUserId,
+      targetEmail: targetUser.email,
+    });
+
+    await prisma.$transaction(async (tx) => {
+      await tx.adminAuditLog.deleteMany({ where: { OR: [{ actorId: targetUserId }, { targetId: targetUserId }] } });
+      await tx.activity.deleteMany({ where: { userId: targetUserId } });
+      await tx.notification.deleteMany({ where: { userId: targetUserId } });
+      await tx.matchFeedback.deleteMany({ where: { userId: targetUserId } });
+      await tx.messageRecord.deleteMany({ where: { userId: targetUserId } });
+      await tx.communicationPreference.deleteMany({ where: { userId: targetUserId } });
+      await tx.eventParticipant.deleteMany({ where: { userId: targetUserId } });
+      await tx.introductionRecord.deleteMany({ where: { OR: [{ userAId: targetUserId }, { userBId: targetUserId }] } });
+      await tx.match.deleteMany({ where: { OR: [{ userAId: targetUserId }, { userBId: targetUserId }] } });
+      await tx.dealTracking.deleteMany({ where: { OR: [{ dealPartnerId: targetUserId }, { founderId: targetUserId }] } });
+      await tx.conversation.deleteMany({ where: { userId: targetUserId } });
+      await tx.call.deleteMany({ where: { userId: targetUserId } });
+      await tx.userEmbedding.deleteMany({ where: { userId: targetUserId } });
+      await tx.inviteCode.updateMany({ where: { usedById: targetUserId }, data: { usedById: null, usedAt: null } });
+      await tx.inviteCode.deleteMany({ where: { createdById: targetUserId } });
+      await tx.profile.deleteMany({ where: { userId: targetUserId } });
+      await tx.user.delete({ where: { id: targetUserId } });
+    });
+
+    res.json({ success: true, message: 'User deleted' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.put('/users/:userId/status', requireRole('ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { isActive } = z.object({ isActive: z.boolean() }).parse(req.body);
+    const targetUserId = req.params.userId;
+
+    const targetUser = await prisma.user.findUnique({ where: { id: targetUserId } });
+    if (!targetUser) {
+      res.status(404).json({ success: false, error: { message: 'User not found' } });
+      return;
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: targetUserId },
+      data: { isActive },
+      select: { id: true, email: true, isActive: true },
+    });
+
+    await logAdminAction(req, 'USER_STATUS_CHANGE', {
+      targetId: targetUserId,
+      metadata: { previousStatus: targetUser.isActive, newStatus: isActive, targetEmail: targetUser.email },
+    });
+
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/audit-logs', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 50;
+    const action = req.query.action as string | undefined;
+    const actorId = req.query.actorId as string | undefined;
+    const targetId = req.query.targetId as string | undefined;
+
+    const result = await getAuditLogs({ page, limit, action, actorId, targetId });
+    res.json({ success: true, data: result.logs, meta: { page: result.page, limit: result.limit, total: result.total, totalPages: result.totalPages } });
   } catch (error) {
     next(error);
   }

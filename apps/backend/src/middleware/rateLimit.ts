@@ -1,4 +1,14 @@
 import rateLimit from 'express-rate-limit';
+import { securityLogger } from '../services/securityLogger';
+import type { Request } from 'express';
+
+const onRateLimitHit = (req: Request, limiterName: string) => {
+  securityLogger.suspiciousEvent(req, 'RATE_LIMIT_HIT', {
+    limiter: limiterName,
+    path: req.path,
+    method: req.method,
+  });
+};
 
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -38,6 +48,18 @@ export const matchProposalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, error: { message: 'Too many match proposals. Please try again later.', code: 'RATE_LIMITED' } },
+});
+
+export const adminLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { message: 'Too many admin login attempts. Please try again later.', code: 'RATE_LIMITED' } },
+  handler: (req, res, _next, options) => {
+    onRateLimitHit(req, 'adminLogin');
+    res.status(options.statusCode).json(options.message);
+  },
 });
 
 export const passwordResetLimiter = rateLimit({

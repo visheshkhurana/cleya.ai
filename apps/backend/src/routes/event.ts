@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { authenticate } from '../middleware/auth';
+import { authenticate, requireRole } from '../middleware/auth';
 import { prisma } from '@cleya/db';
 import { matchingService } from '../services/matchingService';
 import { messagingService } from '../services/messagingService';
@@ -7,11 +7,8 @@ import { automationService } from '../services/automationService';
 
 export const eventRouter = Router();
 
-eventRouter.get('/admin/all', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+eventRouter.get('/admin/all', authenticate, requireRole('MANAGER'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (req.user!.role !== 'admin') {
-      return res.status(403).json({ success: false, error: 'Admin access required' });
-    }
 
     const events = await prisma.event.findMany({
       include: {
@@ -40,11 +37,8 @@ eventRouter.get('/admin/all', authenticate, async (req: Request, res: Response, 
   }
 });
 
-eventRouter.post('/match-participants', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+eventRouter.post('/match-participants', authenticate, requireRole('ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (req.user!.role !== 'admin') {
-      return res.status(403).json({ success: false, error: 'Admin access required' });
-    }
 
     const { eventId, limit: rawLimit } = req.body;
     if (!eventId) {
@@ -67,11 +61,8 @@ eventRouter.post('/match-participants', authenticate, async (req: Request, res: 
   }
 });
 
-eventRouter.post('/follow-up', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+eventRouter.post('/follow-up', authenticate, requireRole('ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (req.user!.role !== 'admin') {
-      return res.status(403).json({ success: false, error: 'Admin access required' });
-    }
 
     const { eventId } = req.body;
     if (!eventId) {
@@ -216,11 +207,8 @@ eventRouter.get('/:id', authenticate, async (req: Request, res: Response, next: 
   }
 });
 
-eventRouter.post('/', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+eventRouter.post('/', authenticate, requireRole('ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (req.user!.role !== 'admin') {
-      return res.status(403).json({ success: false, error: 'Admin access required' });
-    }
 
     const { name, description, date, endDate, location, isVirtual, maxCapacity } = req.body;
 
@@ -250,11 +238,8 @@ eventRouter.post('/', authenticate, async (req: Request, res: Response, next: Ne
   }
 });
 
-eventRouter.patch('/:id', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+eventRouter.patch('/:id', authenticate, requireRole('ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (req.user!.role !== 'admin') {
-      return res.status(403).json({ success: false, error: 'Admin access required' });
-    }
 
     const { name, description, date, endDate, location, isVirtual, maxCapacity, status } = req.body;
 
@@ -286,11 +271,8 @@ eventRouter.patch('/:id', authenticate, async (req: Request, res: Response, next
   }
 });
 
-eventRouter.delete('/:id', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+eventRouter.delete('/:id', authenticate, requireRole('ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (req.user!.role !== 'admin') {
-      return res.status(403).json({ success: false, error: 'Admin access required' });
-    }
 
     await prisma.event.delete({ where: { id: req.params.id } });
     res.json({ success: true, message: 'Event deleted' });
@@ -358,11 +340,8 @@ eventRouter.delete('/:id/leave', authenticate, async (req: Request, res: Respons
   }
 });
 
-eventRouter.patch('/:eventId/participants/:userId', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+eventRouter.patch('/:eventId/participants/:userId', authenticate, requireRole('ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (req.user!.role !== 'admin') {
-      return res.status(403).json({ success: false, error: 'Admin access required' });
-    }
 
     const { status, checkedIn, pitchTopic, preferredMentors, eventCode, eventName } = req.body;
 

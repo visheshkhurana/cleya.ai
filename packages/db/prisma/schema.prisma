@@ -24,7 +24,8 @@ model User {
   phone         String?  @unique
   name          String?
   passwordHash  String
-  role          Role     @default(USER)
+  role          Role     @default(VIEWER)
+  tier          UserTier @default(FREE)
   isActive      Boolean  @default(true)
   emailVerified Boolean  @default(false)
   phoneVerified Boolean  @default(false)
@@ -73,14 +74,28 @@ model User {
   whatsappOptedIn        Boolean  @default(false)
   whatsappPhone          String?
 
+  totpSecret             String?
+  mfaEnabled             Boolean  @default(false)
+
+  adminAuditLogs         AdminAuditLog[] @relation("AuditActor")
+  adminAuditTargets      AdminAuditLog[] @relation("AuditTarget")
+
   @@index([email])
   @@index([phone])
   @@map("users")
 }
 
 enum Role {
+  VIEWER
   USER
+  MANAGER
   ADMIN
+}
+
+enum UserTier {
+  FREE
+  PRO
+  ENTERPRISE
 }
 
 // ─────────────────────────────────────────────
@@ -858,6 +873,116 @@ model OAuthState {
   @@index([state])
   @@index([expiresAt])
   @@map("oauth_states")
+}
+
+// ─────────────────────────────────────────────
+// AGENT RUN LOGS
+// ─────────────────────────────────────────────
+
+model AgentRunLog {
+  id               String   @id @default(cuid())
+  agentName        String
+  success          Boolean
+  durationMs       Int
+  recordsProcessed Int      @default(0)
+  errorMessage     String?
+  metadata         String?
+  createdAt        DateTime @default(now())
+
+  @@index([agentName])
+  @@index([createdAt])
+  @@index([agentName, createdAt])
+  @@map("agent_run_logs")
+}
+
+// ─────────────────────────────────────────────
+// SECURITY AUDIT LOGS
+// ─────────────────────────────────────────────
+
+model SecurityLog {
+  id        String              @id @default(cuid())
+  timestamp DateTime            @default(now())
+  userId    String?
+  action    SecurityAction
+  result    SecurityResult
+  severity  SecuritySeverity    @default(INFO)
+  ipAddress String?
+  userAgent String?
+  metadata  Json?               @db.JsonB
+
+  @@index([timestamp])
+  @@index([userId])
+  @@index([action])
+  @@index([severity])
+  @@index([result])
+  @@map("security_logs")
+}
+
+enum SecurityAction {
+  LOGIN_SUCCESS
+  LOGIN_FAILURE
+  SIGNUP
+  LOGOUT
+  PASSWORD_RESET_REQUEST
+  PASSWORD_RESET_COMPLETE
+  EMAIL_VERIFICATION
+  OAUTH_GOOGLE
+  OAUTH_LINKEDIN
+  TOKEN_REFRESH
+  TOKEN_INVALID
+  ACCESS_DENIED
+  ROLE_CHECK_FAILURE
+  PROFILE_VIEW
+  DATA_EXPORT
+  PII_ACCESS
+  ADMIN_DATA_QUERY
+  ROLE_CHANGE
+  CONFIG_CHANGE
+  RATE_LIMIT_HIT
+  REPEATED_AUTH_FAILURE
+  BLOCKED_INPUT
+  ACCOUNT_DELETION
+  PASSWORD_CHANGE
+  MFA_SETUP
+  MFA_ENABLED
+  MFA_VALIDATE
+  REAUTH
+  USER_MANAGEMENT
+}
+
+enum SecurityResult {
+  SUCCESS
+  FAILURE
+  BLOCKED
+}
+
+enum SecuritySeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+// ─────────────────────────────────────────────
+// ADMIN AUDIT LOG
+// ─────────────────────────────────────────────
+
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  timestamp  DateTime @default(now())
+  actorId    String
+  actor      User     @relation("AuditActor", fields: [actorId], references: [id], onDelete: Cascade)
+  action     String
+  targetId   String?
+  target     User?    @relation("AuditTarget", fields: [targetId], references: [id], onDelete: SetNull)
+  metadata   Json?    @db.JsonB
+  ipAddress  String?
+  userAgent  String?
+
+  @@index([actorId])
+  @@index([targetId])
+  @@index([action])
+  @@index([timestamp])
+  @@map("admin_audit_logs")
 }
 
 // ─────────────────────────────────────────────

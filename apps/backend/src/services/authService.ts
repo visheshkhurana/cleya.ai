@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '@cleya/db';
 import { env } from '../config/env';
 import { AppError } from '../middleware/errorHandler';
-import { AuthPayload } from '../middleware/auth';
+import { AuthPayload, RoleType } from '../middleware/auth';
 
 function isValidHttpsUrl(url: string): boolean {
   try {
@@ -16,7 +16,6 @@ function isValidHttpsUrl(url: string): boolean {
 
 export class AuthService {
   async signup(data: { email: string; password: string; name?: string; persona?: string; phone?: string; utmSource?: string; utmMedium?: string; utmCampaign?: string }) {
-    // Check existing user
     const existing = await prisma.user.findFirst({
       where: {
         OR: [
@@ -110,6 +109,62 @@ export class AuthService {
       throw new AppError(403, 'Account is disabled', 'ACCOUNT_DISABLED');
     }
 
+    if (user.mfaEnabled && user.totpSecret) {
+      const mfaToken = this.generateMfaToken(user);
+      return {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          phone: user.phone,
+          role: user.role,
+          emailVerified: user.emailVerified,
+          profile: user.profile,
+        },
+        token: mfaToken,
+        mfaRequired: true,
+      };
+    }
+
+    const token = this.generateToken(user);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        phone: user.phone,
+        role: user.role,
+        emailVerified: user.emailVerified,
+        profile: user.profile,
+      },
+      token,
+      mfaRequired: false,
+    };
+  }
+
+  async validateMfa(userId: string, totpCode: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { profile: true },
+    });
+
+    if (!user || !user.mfaEnabled || !user.totpSecret) {
+      throw new AppError(400, 'MFA not enabled for this account', 'MFA_NOT_ENABLED');
+    }
+
+    const otplib = await import('otplib');
+    const result = otplib.verifySync({
+      token: totpCode,
+      secret: user.totpSecret,
+      crypto: new otplib.NobleCryptoPlugin(),
+      base32: new otplib.ScureBase32Plugin(),
+    } as any);
+
+    if (!result.valid) {
+      throw new AppError(401, 'Invalid MFA code', 'INVALID_MFA_CODE');
+    }
+
     const token = this.generateToken(user);
 
     return {
@@ -124,6 +179,59 @@ export class AuthService {
       },
       token,
     };
+  }
+
+  async setupMfa(userId: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new AppError(404, 'User not found', 'USER_NOT_FOUND');
+    }
+
+    const otplib = await import('otplib');
+    const secret = otplib.generateSecret();
+    const otpauthUrl = otplib.generateURI({ issuer: 'Cleya.ai', label: user.email, secret } as any);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { totpSecret: secret },
+    });
+
+    return { secret, otpauthUrl };
+  }
+
+  async verifyMfaSetup(userId: string, totpCode: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.totpSecret) {
+      throw new AppError(400, 'MFA setup not initiated', 'MFA_NOT_SETUP');
+    }
+
+    const otplib = await import('otplib');
+    const verifyResult = otplib.verifySync({
+      token: totpCode,
+      secret: user.totpSecret,
+      crypto: new otplib.NobleCryptoPlugin(),
+      base32: new otplib.ScureBase32Plugin(),
+    } as any);
+    const isValid = verifyResult.valid;
+
+    if (!isValid) {
+      throw new AppError(400, 'Invalid TOTP code', 'INVALID_MFA_CODE');
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { mfaEnabled: true },
+    });
+
+    return { mfaEnabled: true };
+  }
+
+  async disableMfa(userId: string) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { mfaEnabled: false, totpSecret: null },
+    });
+    return { mfaEnabled: false };
   }
 
   async getMe(userId: string) {
@@ -143,6 +251,7 @@ export class AuthService {
       phone: user.phone,
       role: user.role,
       emailVerified: user.emailVerified,
+      mfaEnabled: user.mfaEnabled,
       profile: user.profile,
       createdAt: user.createdAt,
     };
@@ -344,15 +453,51 @@ export class AuthService {
     });
   }
 
-  private generateToken(user: { id: string; email: string; role: string }): string {
+  async reauth(userId: string, password: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new AppError(404, 'User not found', 'USER_NOT_FOUND');
+    }
+
+    const valid = await bcrypt.compare(password, user.passwordHash);
+    if (!valid) {
+      throw new AppError(401, 'Invalid password', 'INVALID_CREDENTIALS');
+    }
+
+    const elevatedToken = jwt.sign(
+      { userId: user.id, elevated: true },
+      env.JWT_SECRET,
+      { expiresIn: '15m' } as jwt.SignOptions
+    );
+
+    return { elevatedToken };
+  }
+
+  generateToken(user: { id: string; email: string; role: string }): string {
     const payload: AuthPayload = {
       userId: user.id,
       email: user.email,
-      role: user.role as 'user' | 'admin',
+      role: user.role as RoleType,
+      issuedAt: Math.floor(Date.now() / 1000),
+    };
+
+    const expiresIn = (user.role as string).toUpperCase() === 'ADMIN' ? '30m' : env.JWT_EXPIRES_IN;
+
+    return jwt.sign(payload, env.JWT_SECRET, {
+      expiresIn,
+    } as jwt.SignOptions);
+  }
+
+  generateMfaToken(user: { id: string; email: string; role: string }): string {
+    const payload = {
+      userId: user.id,
+      email: user.email,
+      role: user.role as RoleType,
+      mfaPending: true,
     };
 
     return jwt.sign(payload, env.JWT_SECRET, {
-      expiresIn: env.JWT_EXPIRES_IN,
+      expiresIn: '5m',
     } as jwt.SignOptions);
   }
 }

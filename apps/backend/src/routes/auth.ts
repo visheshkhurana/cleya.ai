@@ -3,12 +3,13 @@ import crypto from 'crypto';
 import { z } from 'zod';
 import { authService } from '../services/authService';
 import { authenticate } from '../middleware/auth';
-import { signupLimiter, loginLimiter, passwordResetLimiter } from '../middleware/rateLimit';
+import { signupLimiter, loginLimiter, passwordResetLimiter, adminLoginLimiter } from '../middleware/rateLimit';
 import { emailService } from '../services/email';
 import { env } from '../config/env';
 import { whatsappTemplates } from '../services/whatsappTemplates';
 import { gupshupService } from '../services/gupshupService';
 import { prisma } from '@cleya/db';
+import { securityLogger, checkRepeatedAuthFailures } from '../services/securityLogger';
 
 export const authRouter = Router();
 
@@ -205,7 +206,8 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
     }
     setAuthCookie(res, result.token);
     const profileComplete = result.user.profile?.isComplete;
-    const dest = (result.user.role as string).toLowerCase() === 'admin' ? '/admin' : profileComplete ? '/dashboard' : '/chat';
+    const roleLower = (result.user.role as string).toLowerCase();
+    const dest = (roleLower === 'admin' || roleLower === 'manager') ? '/controltower' : profileComplete ? '/dashboard' : '/chat';
     res.redirect(`${baseUrl}${dest}`);
   } catch (err) {
     console.error('Google OAuth error:', err);
@@ -356,7 +358,8 @@ authRouter.get('/linkedin/callback', async (req: Request, res: Response) => {
 
     setAuthCookie(res, result.token);
     const profileComplete = result.user.profile?.isComplete;
-    const dest = (result.user.role as string).toLowerCase() === 'admin' ? '/admin' : profileComplete ? '/dashboard' : '/chat';
+    const roleLower = (result.user.role as string).toLowerCase();
+    const dest = (roleLower === 'admin' || roleLower === 'manager') ? '/controltower' : profileComplete ? '/dashboard' : '/chat';
     res.redirect(`${baseUrl}${dest}`);
   } catch (err) {
     console.error('LinkedIn OAuth error:', err);
@@ -447,6 +450,75 @@ authRouter.post('/verify-email', async (req: Request, res: Response, next: NextF
     verifyTokens.delete(token);
     res.json({ success: true, message: 'Email verified successfully.' });
   } catch (error) {
+    next(error);
+  }
+});
+
+authRouter.post('/mfa/setup', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await authService.setupMfa(req.user!.userId);
+    const qrcode = await import('qrcode');
+    const qrDataUrl = await qrcode.toDataURL(result.otpauthUrl);
+    securityLogger.authEvent(req, 'MFA_SETUP', 'SUCCESS', req.user!.userId);
+    res.json({ success: true, data: { secret: result.secret, otpauthUrl: result.otpauthUrl, qrCode: qrDataUrl } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+authRouter.post('/mfa/verify', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { code } = z.object({ code: z.string().length(6) }).parse(req.body);
+    const result = await authService.verifyMfaSetup(req.user!.userId, code);
+    securityLogger.authEvent(req, 'MFA_ENABLED', 'SUCCESS', req.user!.userId);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
+authRouter.post('/mfa/validate', adminLoginLimiter, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { code } = z.object({ code: z.string().length(6) }).parse(req.body);
+
+    let token: string | undefined;
+    const header = req.headers.authorization;
+    if (header?.startsWith('Bearer ')) {
+      token = header.split(' ')[1];
+    }
+    if (!token && req.cookies?.cleo_auth) {
+      token = req.cookies.cleo_auth;
+    }
+    if (!token) {
+      res.status(401).json({ success: false, error: { message: 'Missing token', code: 'UNAUTHORIZED' } });
+      return;
+    }
+
+    const jwt = await import('jsonwebtoken');
+    const payload = jwt.default.verify(token, env.JWT_SECRET) as any;
+    if (!payload.mfaPending) {
+      res.status(400).json({ success: false, error: { message: 'No MFA pending for this session', code: 'MFA_NOT_PENDING' } });
+      return;
+    }
+
+    const result = await authService.validateMfa(payload.userId, code);
+    securityLogger.authEvent(req, 'MFA_VALIDATE', 'SUCCESS', payload.userId);
+    setAuthCookie(res, result.token);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    securityLogger.authEvent(req, 'MFA_VALIDATE', 'FAILURE', null, { error: (error as Error)?.message });
+    next(error);
+  }
+});
+
+authRouter.post('/reauth', adminLoginLimiter, authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { password } = z.object({ password: z.string() }).parse(req.body);
+    const result = await authService.reauth(req.user!.userId, password);
+    securityLogger.authEvent(req, 'REAUTH', 'SUCCESS', req.user!.userId);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    securityLogger.authEvent(req, 'REAUTH', 'FAILURE', req.user?.userId ?? null, { error: (error as Error)?.message });
     next(error);
   }
 });

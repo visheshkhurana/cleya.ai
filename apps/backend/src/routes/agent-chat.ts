@@ -1,5 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { authenticate } from '../middleware/auth';
+import { authenticate, requireRole } from '../middleware/auth';
+import { promptInjectionGuard } from '../middleware/promptInjectionGuard';
+import { aiRateLimiter } from '../middleware/aiRateLimit';
 import { createAIService } from '@cleya/ai';
 import { prisma } from '@cleya/db';
 
@@ -167,8 +169,24 @@ agentChatRouter.get('/list', authenticate, (_req: Request, res: Response) => {
   res.json({ success: true, data: AGENT_LIST });
 });
 
+async function loadUserTier(req: Request, _res: Response, next: NextFunction) {
+  try {
+    if (req.user?.userId) {
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.userId },
+        select: { tier: true },
+      });
+      (req as any).userTier = (user?.tier as 'FREE' | 'PRO' | 'ENTERPRISE') || 'FREE';
+    }
+  } catch {
+    (req as any).userTier = 'FREE';
+  }
+  next();
+}
+
 /** Chat with a specific agent */
-agentChatRouter.post('/chat', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+agentChatRouter.post('/chat', authenticate, requireRole('ADMIN'), loadUserTier, promptInjectionGuard, aiRateLimiter, async (req: Request, res: Response, next: NextFunction) => {
+  const startTime = Date.now();
   try {
     const { message, agentId, history } = req.body;
 
@@ -182,13 +200,6 @@ agentChatRouter.post('/chat', authenticate, async (req: Request, res: Response, 
     }
     if (message.length > 4000) {
       res.status(400).json({ success: false, error: { message: 'Message too long (max 4000 chars)' } });
-      return;
-    }
-
-    // Check admin role
-    const user = await prisma.user.findUnique({ where: { id: req.user!.userId } });
-    if (user?.role !== 'ADMIN') {
-      res.status(403).json({ success: false, error: { message: 'Admin access required' } });
       return;
     }
 

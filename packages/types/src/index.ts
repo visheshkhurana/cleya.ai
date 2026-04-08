@@ -3,7 +3,7 @@
 // ============================================
 
 // --- User & Profile ---
-export type UserRole = 'user' | 'admin';
+export type UserRole = 'viewer' | 'user' | 'manager' | 'admin';
 
 export type PersonaType =
   | 'founder'
