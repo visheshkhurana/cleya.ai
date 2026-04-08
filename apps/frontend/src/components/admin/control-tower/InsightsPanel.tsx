@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Channel, AGENT_MAP } from './types';
 import { api } from '@/lib/api';
 
@@ -735,31 +735,246 @@ function AnalyticsView({ data }: { data: any }) {
 }
 
 function WhatsAppView({ data }: { data: any }) {
-  if (!data) return <p className="text-xs text-white/20 text-center py-8">Loading WhatsApp...</p>;
+  const [diagnostics, setDiagnostics] = useState<any>(null);
+  const [diagLoading, setDiagLoading] = useState(false);
+  const [testPhone, setTestPhone] = useState('');
+  const [testLoading, setTestLoading] = useState(false);
+  const [testResult, setTestResult] = useState<any>(null);
+  const [pollingStopped, setPollingStopped] = useState(false);
+
+  const loadDiagnostics = async () => {
+    setDiagLoading(true);
+    try {
+      const res = await fetch('/api/admin/whatsapp/diagnostics', { credentials: 'include' });
+      const json = await res.json();
+      if (json.success) setDiagnostics(json.data);
+    } catch {}
+    setDiagLoading(false);
+  };
+
+  useEffect(() => { loadDiagnostics(); }, []);
+
+  const pollStatusRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => { if (pollStatusRef.current) clearInterval(pollStatusRef.current); };
+  }, []);
+
+  const refreshTestStatus = async (messageId: string) => {
+    try {
+      const res = await fetch(`/api/admin/whatsapp/test/status?messageId=${encodeURIComponent(messageId)}`, { credentials: 'include' });
+      const json = await res.json();
+      if (json.success && json.data?.status) {
+        setTestResult((prev: any) => prev ? {
+          ...prev,
+          status: json.data.status,
+          ...(json.data.errorMessage ? { errorMessage: json.data.errorMessage } : {}),
+        } : prev);
+      }
+    } catch {}
+  };
+
+  const startStatusPolling = (messageId: string) => {
+    if (pollStatusRef.current) clearInterval(pollStatusRef.current);
+    setPollingStopped(false);
+    let attempts = 0;
+    pollStatusRef.current = setInterval(async () => {
+      attempts++;
+      if (attempts > 10) {
+        if (pollStatusRef.current) clearInterval(pollStatusRef.current);
+        setPollingStopped(true);
+        return;
+      }
+      try {
+        const res = await fetch(`/api/admin/whatsapp/test/status?messageId=${encodeURIComponent(messageId)}`, { credentials: 'include' });
+        const json = await res.json();
+        if (json.success && json.data?.status) {
+          setTestResult((prev: any) => prev ? {
+            ...prev,
+            status: json.data.status,
+            ...(json.data.errorMessage ? { errorMessage: json.data.errorMessage } : {}),
+          } : prev);
+          if (['DELIVERED', 'READ', 'FAILED'].includes(json.data.status)) {
+            if (pollStatusRef.current) clearInterval(pollStatusRef.current);
+          }
+        }
+      } catch {}
+    }, 3000);
+  };
+
+  const sendTestMessage = async () => {
+    if (!testPhone.trim() || testLoading) return;
+    setTestLoading(true);
+    setTestResult(null);
+    setPollingStopped(false);
+    if (pollStatusRef.current) clearInterval(pollStatusRef.current);
+    try {
+      const res = await fetch('/api/admin/whatsapp/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ phoneNumber: testPhone.trim() }),
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        setTestResult(json.data);
+        if (json.data.messageId && json.data.status !== 'FAILED') {
+          startStatusPolling(json.data.messageId);
+        }
+      } else {
+        const errMsg = json.data?.errorMessage || json.error?.message || 'Send failed';
+        setTestResult({ status: json.data?.status || 'FAILED', errorMessage: errMsg });
+      }
+    } catch (err: any) {
+      setTestResult({ status: 'FAILED', errorMessage: err.message || 'Network error' });
+    }
+    setTestLoading(false);
+  };
+
+  const healthColor = diagnostics?.health === 'healthy' ? 'bg-green-400' : diagnostics?.health === 'degraded' ? 'bg-yellow-400' : 'bg-red-400';
+  const healthLabel = diagnostics?.health === 'healthy' ? 'Connected' : diagnostics?.health === 'degraded' ? 'Degraded' : 'Not Configured';
+
   return (
-    <div className="space-y-3">
-      <h4 className="text-xs font-semibold text-white/40 uppercase">WhatsApp</h4>
-      <div className="grid grid-cols-2 gap-2">
-        <StatCard label="Opted-In" value={data.stats?.optedInUsers || 0} icon="\u{2705}" />
-        <StatCard label="Messages" value={data.stats?.totalMessages || 0} icon="\u{1F4AC}" />
-        <StatCard label="Inbound" value={data.stats?.inboundCount || 0} icon="\u{1F4E5}" />
-        <StatCard label="Active 24h" value={data.stats?.activeConversations || 0} icon="\u{1F7E2}" />
-      </div>
-      {data.messages?.length > 0 && (
-        <div>
-          <h5 className="text-[10px] text-white/30 uppercase font-medium mb-2">Recent Messages</h5>
-          <div className="space-y-1.5">
-            {data.messages.slice(0, 5).map((msg: any) => (
-              <div key={msg.id} className="text-xs p-2 rounded-lg bg-white/[0.02]">
-                <div className="flex items-center gap-1.5">
-                  <span className={`w-1.5 h-1.5 rounded-full ${msg.content?.startsWith('[INBOUND]') ? 'bg-indigo-400' : 'bg-green-400'}`} />
-                  <span className="text-white/50 truncate">{msg.user?.name || msg.recipientPhone}</span>
-                </div>
-                <p className="text-white/30 truncate mt-0.5">{msg.content?.replace('[INBOUND] ', '').substring(0, 80)}</p>
-              </div>
-            ))}
-          </div>
+    <div className="space-y-4">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h4 className="text-xs font-semibold text-white/40 uppercase">Diagnostics</h4>
+          <button
+            onClick={loadDiagnostics}
+            disabled={diagLoading}
+            className="text-[10px] text-indigo-400 hover:text-indigo-300 transition disabled:opacity-50"
+          >
+            {diagLoading ? 'Checking...' : 'Refresh'}
+          </button>
         </div>
+
+        {diagnostics && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 p-2.5 rounded-lg border border-white/[0.06] bg-white/[0.02]">
+              <span className={`w-2.5 h-2.5 rounded-full ${healthColor} animate-pulse`} />
+              <span className="text-xs font-medium text-white/70">{healthLabel}</span>
+              {diagnostics.appName && (
+                <span className="text-[10px] text-white/30 ml-auto">{diagnostics.appName}</span>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              {Object.entries(diagnostics.config as Record<string, boolean>).map(([key, set]) => (
+                <div key={key} className="flex items-center gap-2 text-[11px]">
+                  <span className={`w-1.5 h-1.5 rounded-full ${set ? 'bg-green-400' : 'bg-red-400/60'}`} />
+                  <span className="text-white/40">{key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())}</span>
+                  <span className={`ml-auto text-[10px] ${set ? 'text-green-400/60' : 'text-red-400/60'}`}>{set ? 'Set' : 'Missing'}</span>
+                </div>
+              ))}
+            </div>
+
+            {diagnostics.apiReachable && (
+              <div className="flex items-center gap-2 text-[11px] p-2 rounded-lg bg-green-500/[0.06]">
+                <span className="text-green-400">API Reachable</span>
+                {diagnostics.templateCount !== null && (
+                  <span className="text-white/30 ml-auto">{diagnostics.templateCount} templates</span>
+                )}
+              </div>
+            )}
+
+            {diagnostics.apiError && (
+              <div className="text-[11px] p-2 rounded-lg bg-red-500/[0.06] text-red-400/80">
+                {diagnostics.apiError}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <h4 className="text-xs font-semibold text-white/40 uppercase">Send Test Message</h4>
+        <div className="flex gap-1.5">
+          <input
+            type="text"
+            value={testPhone}
+            onChange={(e) => setTestPhone(e.target.value)}
+            placeholder="+91 98765 43210"
+            className="flex-1 px-3 py-2 rounded-lg text-xs text-white placeholder-white/20 outline-none focus:ring-1 focus:ring-indigo-500/50"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+            onKeyDown={(e) => { if (e.key === 'Enter') sendTestMessage(); }}
+          />
+          <button
+            onClick={sendTestMessage}
+            disabled={testLoading || !testPhone.trim()}
+            className="px-3 py-2 rounded-lg text-xs font-medium text-white transition disabled:opacity-40"
+            style={{ background: 'linear-gradient(135deg, #6366F1, #4ECDC4)' }}
+          >
+            {testLoading ? 'Sending...' : 'Send'}
+          </button>
+        </div>
+
+        {testResult && (
+          <div className={`text-[11px] p-2.5 rounded-lg space-y-1 ${testResult.status === 'FAILED' ? 'bg-red-500/[0.06]' : 'bg-green-500/[0.06]'}`}>
+            <div className="flex items-center gap-2">
+              <span className={`w-1.5 h-1.5 rounded-full ${
+                testResult.status === 'FAILED' ? 'bg-red-400' :
+                testResult.status === 'DELIVERED' ? 'bg-green-400' :
+                testResult.status === 'READ' ? 'bg-blue-400' :
+                'bg-yellow-400'
+              }`} />
+              <span className={testResult.status === 'FAILED' ? 'text-red-400' : 'text-green-400'}>
+                {testResult.status === 'DELIVERED' ? 'Delivered' :
+                 testResult.status === 'READ' ? 'Read' :
+                 testResult.status === 'SENT' ? 'Sent' :
+                 testResult.status === 'QUEUED' ? 'Queued' :
+                 testResult.status === 'FAILED' ? 'Failed' : testResult.status}
+              </span>
+            </div>
+            {testResult.messageId && (
+              <p className="text-white/30 truncate">ID: {testResult.messageId}</p>
+            )}
+            {testResult.errorMessage && (
+              <p className="text-red-400/70">{testResult.errorMessage}</p>
+            )}
+            {testResult.sentAt && (
+              <p className="text-white/20">{new Date(testResult.sentAt).toLocaleTimeString()}</p>
+            )}
+            {pollingStopped && testResult.messageId && !['DELIVERED', 'READ', 'FAILED'].includes(testResult.status) && (
+              <button
+                onClick={() => refreshTestStatus(testResult.messageId)}
+                className="text-[10px] text-indigo-400 hover:text-indigo-300 transition mt-1"
+              >
+                Refresh status
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {data && (
+        <div className="space-y-3 pt-2 border-t border-white/[0.06]">
+          <h4 className="text-xs font-semibold text-white/40 uppercase">Activity</h4>
+          <div className="grid grid-cols-2 gap-2">
+            <StatCard label="Opted-In" value={data.stats?.optedInUsers || 0} icon={"\u2705"} />
+            <StatCard label="Messages" value={data.stats?.totalMessages || 0} icon={"\uD83D\uDCAC"} />
+            <StatCard label="Inbound" value={data.stats?.inboundCount || 0} icon={"\uD83D\uDCE5"} />
+            <StatCard label="Active 24h" value={data.stats?.activeConversations || 0} icon={"\uD83D\uDFE2"} />
+          </div>
+          {data.messages?.length > 0 && (
+            <div>
+              <h5 className="text-[10px] text-white/30 uppercase font-medium mb-2">Recent Messages</h5>
+              <div className="space-y-1.5">
+                {data.messages.slice(0, 5).map((msg: any) => (
+                  <div key={msg.id} className="text-xs p-2 rounded-lg bg-white/[0.02]">
+                    <div className="flex items-center gap-1.5">
+                      <span className={`w-1.5 h-1.5 rounded-full ${msg.content?.startsWith('[INBOUND]') ? 'bg-indigo-400' : 'bg-green-400'}`} />
+                      <span className="text-white/50 truncate">{msg.user?.name || msg.recipientPhone}</span>
+                    </div>
+                    <p className="text-white/30 truncate mt-0.5">{msg.content?.replace('[INBOUND] ', '').substring(0, 80)}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      {!data && (
+        <p className="text-xs text-white/20 text-center py-4">Loading activity...</p>
       )}
     </div>
   );

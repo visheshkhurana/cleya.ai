@@ -736,6 +736,150 @@ adminRouter.get('/whatsapp/gupshup-templates', async (_req: Request, res: Respon
   }
 });
 
+adminRouter.get('/whatsapp/diagnostics', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const config = {
+      apiKey: !!process.env.GUPSHUP_API_KEY,
+      appName: !!process.env.GUPSHUP_APP_NAME,
+      sourceNumber: !!process.env.GUPSHUP_SOURCE_NUMBER,
+      templateNamespace: !!process.env.GUPSHUP_TEMPLATE_NAMESPACE,
+      webhookSecret: !!process.env.GUPSHUP_WEBHOOK_SECRET,
+    };
+
+    const isConfigured = config.apiKey && config.appName && config.sourceNumber;
+
+    let apiReachable = false;
+    let apiError: string | null = null;
+    let templateCount: number | null = null;
+
+    if (isConfigured) {
+      try {
+        const result = await gupshupService.listTemplates();
+        if (result.success) {
+          apiReachable = true;
+          const data = result.data;
+          if (Array.isArray(data)) {
+            templateCount = data.length;
+          } else if (data?.templates && Array.isArray(data.templates)) {
+            templateCount = data.templates.length;
+          } else if (data?.status === 'success') {
+            apiReachable = true;
+          }
+        } else {
+          apiError = result.error || 'Unknown API error';
+        }
+      } catch (err: any) {
+        apiError = err.message || 'Failed to reach Gupshup API';
+      }
+    }
+
+    const overallHealth = isConfigured && apiReachable ? 'healthy' : isConfigured ? 'degraded' : 'not_configured';
+
+    res.json({
+      success: true,
+      data: {
+        health: overallHealth,
+        config,
+        isConfigured,
+        apiReachable,
+        apiError,
+        templateCount,
+        sourceNumber: isConfigured ? process.env.GUPSHUP_SOURCE_NUMBER!.replace(/.(?=.{4})/g, '*') : null,
+        appName: process.env.GUPSHUP_APP_NAME || null,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/whatsapp/test', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { phoneNumber } = req.body;
+
+    if (!phoneNumber) {
+      return res.status(400).json({ success: false, error: { message: 'phoneNumber is required' } });
+    }
+
+    const phoneRegex = /^[\d+\s\-()]{7,20}$/;
+    if (!phoneRegex.test(phoneNumber)) {
+      return res.status(400).json({ success: false, error: { message: 'Invalid phone number format' } });
+    }
+
+    if (!gupshupService.isConfigured()) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'Gupshup is not configured. Please set GUPSHUP_API_KEY, GUPSHUP_APP_NAME, and GUPSHUP_SOURCE_NUMBER.' },
+      });
+    }
+
+    try {
+      const connectivityCheck = await gupshupService.listTemplates();
+      if (!connectivityCheck.success) {
+        return res.status(502).json({
+          success: false,
+          error: { message: `Gupshup API connectivity check failed: ${connectivityCheck.error || 'Unknown error'}` },
+        });
+      }
+    } catch (connErr: any) {
+      return res.status(502).json({
+        success: false,
+        error: { message: `Gupshup API unreachable: ${connErr.message || 'Connection failed'}` },
+      });
+    }
+
+    const testMessage = `Hello from Cleya! This is a test message sent from the Control Tower at ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST. If you received this, your WhatsApp connection is working.`;
+
+    const adminUserId = req.user?.userId || 'system';
+    const result = await gupshupService.sendWhatsApp(adminUserId, phoneNumber, testMessage);
+
+    const sendStatus = result?.status || 'UNKNOWN';
+    const sendFailed = sendStatus === 'FAILED';
+
+    res.status(sendFailed ? 502 : 200).json({
+      success: !sendFailed,
+      data: {
+        messageId: result?.messageSid || null,
+        status: sendStatus,
+        errorMessage: result?.errorMessage || null,
+        phone: phoneNumber,
+        sentAt: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/whatsapp/test/status', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const messageId = req.query.messageId as string;
+    if (!messageId) {
+      return res.status(400).json({ success: false, error: { message: 'messageId is required' } });
+    }
+
+    const record = await prisma.messageRecord.findFirst({
+      where: { messageSid: messageId },
+      select: { status: true, errorMessage: true, updatedAt: true },
+    });
+
+    if (!record) {
+      return res.status(404).json({ success: false, error: { message: 'Message not found' } });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        status: record.status,
+        errorMessage: record.errorMessage,
+        updatedAt: record.updatedAt,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 adminRouter.post('/batch-matching', async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await matchScheduler.runBatchMatching();

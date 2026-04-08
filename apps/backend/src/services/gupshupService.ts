@@ -568,6 +568,11 @@ export class GupshupService {
         },
       });
 
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        return { success: false, error: `Gupshup API returned HTTP ${response.status}: ${errorText.substring(0, 200)}` };
+      }
+
       const result = await response.json() as any;
       return { success: true, data: result };
     } catch (error: any) {
