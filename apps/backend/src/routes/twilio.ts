@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { callService } from '../services/voice/callService';
 import { env } from '../config/env';
+import { prisma } from '@cleya/db';
 
 export const twilioRouter = Router();
 
@@ -49,7 +50,6 @@ twilioRouter.post('/status', async (req: Request, res: Response, next: NextFunct
     const { CallSid, CallStatus, CallDuration } = req.body;
     console.log(`Twilio status update: ${CallSid} -> ${CallStatus} (${CallDuration || 0}s)`);
     if (CallSid) {
-      const { prisma } = await import('@cleya/db');
       const call = await prisma.call.findFirst({
         where: { twilioCallSid: CallSid },
       });

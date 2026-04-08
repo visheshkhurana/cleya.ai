@@ -9,10 +9,13 @@ export interface AuthPayload {
   role: 'user' | 'admin';
 }
 
+type UserTier = 'FREE' | 'PRO' | 'ENTERPRISE';
+
 declare global {
   namespace Express {
     interface Request {
       user?: AuthPayload;
+      userTier?: UserTier;
     }
   }
 }
