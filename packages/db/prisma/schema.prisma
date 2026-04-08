@@ -861,6 +861,26 @@ model OAuthState {
 }
 
 // ─────────────────────────────────────────────
+// AGENT RUN LOGS
+// ─────────────────────────────────────────────
+
+model AgentRunLog {
+  id               String   @id @default(cuid())
+  agentName        String
+  success          Boolean
+  durationMs       Int
+  recordsProcessed Int      @default(0)
+  errorMessage     String?
+  metadata         String?
+  createdAt        DateTime @default(now())
+
+  @@index([agentName])
+  @@index([createdAt])
+  @@index([agentName, createdAt])
+  @@map("agent_run_logs")
+}
+
+// ─────────────────────────────────────────────
 // WAITLIST
 // ─────────────────────────────────────────────
 

@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import * as Sentry from '@sentry/node';
 import { ZodError } from 'zod';
 import { env } from '../config/env';
+import { logger } from '../lib/logger';
+import { recordEvent } from '../lib/alertRules';
 
 export class AppError extends Error {
   constructor(
@@ -52,7 +54,14 @@ export function errorHandler(
     });
   }
 
-  console.error('Unhandled error:', err.message);
+  logger.error('Unhandled error', {
+    error: err.message,
+    method: req.method,
+    url: req.originalUrl,
+    stack: err.stack,
+  });
+
+  recordEvent('critical_errors');
 
   if (env.SENTRY_DSN) {
     Sentry.captureException(err, {

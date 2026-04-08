@@ -1,3 +1,6 @@
+import { initSentry } from './lib/sentry';
+initSentry();
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -37,18 +40,12 @@ import { gupshupRouter } from './routes/gupshup';
 import { calendarRouter } from './routes/calendar';
 import { matchScheduler } from './services/matchScheduler';
 import { closeAllWebSocketConnections } from './websocket/server';
-
-const startTime = Date.now();
-
-if (env.SENTRY_DSN) {
-  Sentry.init({
-    dsn: env.SENTRY_DSN,
-    environment: env.NODE_ENV,
-    tracesSampleRate: env.NODE_ENV === 'production' ? 0.1 : 1.0,
-  });
-}
+import { healthRouter } from './routes/health';
+import { metricsMiddleware } from './middleware/metricsMiddleware';
+import { logger } from './lib/logger';
 
 const app = express();
+
 app.set('trust proxy', 1);
 
 const allowedOrigins = new Set(
@@ -98,40 +95,9 @@ app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(metricsMiddleware);
 
-app.get('/api/health', async (_req, res) => {
-  const memUsage = process.memoryUsage();
-  const uptimeSeconds = Math.floor((Date.now() - startTime) / 1000);
-
-  let dbStatus: 'connected' | 'disconnected' = 'disconnected';
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    dbStatus = 'connected';
-  } catch {
-    dbStatus = 'disconnected';
-  }
-
-  const schedulerRunning = matchScheduler.isRunning();
-
-  const healthy = dbStatus === 'connected' && schedulerRunning;
-  const statusCode = healthy ? 200 : 503;
-
-  res.status(statusCode).json({
-    status: healthy ? 'ok' : 'degraded',
-    timestamp: new Date().toISOString(),
-    version: '1.0.0',
-    uptime: uptimeSeconds,
-    env: env.NODE_ENV,
-    database: dbStatus,
-    scheduler: schedulerRunning ? 'running' : 'stopped',
-    memory: {
-      rss: Math.round(memUsage.rss / 1024 / 1024),
-      heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
-      heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
-    },
-  });
-});
-
+app.use('/api/health', healthRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/users', userRouter);
 app.use('/api/conversations', conversationRouter);
@@ -167,28 +133,30 @@ app.use(errorHandler);
 
 const PORT = env.PORT;
 const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Cleya.ai backend running on port ${PORT}`);
-  console.log(`   Environment: ${env.NODE_ENV}`);
+  logger.info(`Cleya.ai backend running on port ${PORT}`, {
+    port: PORT,
+    environment: env.NODE_ENV,
+  });
   matchScheduler.start();
 });
 
 async function gracefulShutdown(signal: string) {
-  console.log(`\n[Shutdown] Received ${signal}, shutting down gracefully...`);
+  logger.info(`Received ${signal}, shutting down gracefully...`);
 
   matchScheduler.stop();
-  console.log('[Shutdown] Cron jobs stopped');
+  logger.info('Cron jobs stopped');
 
   const forceExitTimer = setTimeout(() => {
-    console.error('[Shutdown] Forced exit after timeout');
+    logger.error('Forced exit after timeout');
     process.exit(1);
   }, 10000);
   forceExitTimer.unref();
 
   try {
     await closeAllWebSocketConnections();
-    console.log('[Shutdown] WebSocket connections drained');
+    logger.info('WebSocket connections drained');
   } catch {
-    console.error('[Shutdown] Error draining WebSocket connections');
+    logger.error('Error draining WebSocket connections');
   }
 
   try {
@@ -198,19 +166,19 @@ async function gracefulShutdown(signal: string) {
         else resolve();
       });
     });
-    console.log('[Shutdown] HTTP server closed');
+    logger.info('HTTP server closed');
   } catch {
-    console.error('[Shutdown] Error closing HTTP server');
+    logger.error('Error closing HTTP server');
   }
 
   try {
     await prisma.$disconnect();
-    console.log('[Shutdown] Database connections closed');
+    logger.info('Database connections closed');
   } catch {
-    console.error('[Shutdown] Error disconnecting database');
+    logger.error('Error disconnecting database');
   }
 
-  console.log('[Shutdown] Cleanup complete, exiting');
+  logger.info('Cleanup complete, exiting');
   process.exit(0);
 }
 

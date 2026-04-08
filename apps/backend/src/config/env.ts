@@ -63,6 +63,13 @@ const envSchema = z.object({
   POSTHOG_API_KEY: z.string().optional(),
   POSTHOG_HOST: z.string().optional(),
   POSTHOG_PROJECT_ID: z.string().optional(),
+
+  LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
+  STATSD_HOST: z.string().optional(),
+  STATSD_PORT: z.coerce.number().default(8125),
+  DD_ENABLED: z.string().optional(),
+  ALERT_EMAIL_RECIPIENTS: z.string().optional(),
+  SLACK_ALERTS_CHANNEL: z.string().optional(),
 });
 
 function validateEnv() {

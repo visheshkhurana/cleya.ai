@@ -31,11 +31,23 @@ Monorepo with:
 **CORS:** `CORS_ORIGIN` env var → defaults to `FRONTEND_URL`; locked to single origin (not wildcard)
 
 ## Analytics & Error Tracking
-- **Frontend Sentry:** Loaded via CDN script (`browser.sentry-cdn.com/8.48.0/bundle.min.js`) in `BootstrapClient.tsx` — avoids webpack conflicts with Next.js 14. Helper functions in `src/lib/sentry.ts` (`captureException`, `captureMessage`, `setUser`). Initializes on all routes regardless of cookie consent (essential service).
+- **Frontend Sentry:** Loaded via CDN script (`browser.sentry-cdn.com/8.48.0/bundle.min.js`) in `BootstrapClient.tsx` — avoids webpack conflicts with Next.js 14. Enhanced init in `src/lib/sentry.ts` with PII filtering (`beforeSend` strips auth headers/cookies), ignored errors list (ResizeObserver, ChunkLoadError, network errors), and deny URLs (browser extensions, analytics scripts). Helper functions: `captureException`, `captureMessage`, `setUser`, `initSentryEnhanced`.
 - **Frontend GA4:** `src/lib/ga.ts` — CDN-loaded Google Analytics. Consent-gated via `cleo_cookie_consent` localStorage key. Page views tracked via `usePathname()` in `BootstrapClient.tsx` (single source, `send_page_view: false` in config).
 - **Frontend PostHog:** CDN-loaded in `BootstrapClient.tsx`. Consent-gated. Analytics helpers in `src/lib/posthog.ts`.
-- **Backend Sentry:** `@sentry/node` in `apps/backend/src/index.ts` + `errorHandler.ts`. Uses `SENTRY_DSN` env var.
+- **Backend Sentry:** `@sentry/node` initialized first in `apps/backend/src/lib/sentry.ts` (before Express import for proper instrumentation). Enhanced with PII filtering (`beforeSend`), ignored errors (CORS, ECONNRESET, etc.), breadcrumb sanitization, Express + HTTP integrations.
 - **Cookie consent:** Banner in `BootstrapClient.tsx` (DOM-injected, not React-rendered). Stored as `cleo_cookie_consent` in localStorage. PostHog + GA4 only init after "Accept all"; Sentry loads regardless.
+
+## Monitoring & Alerting Stack
+- **Structured Logger:** `apps/backend/src/lib/logger.ts` — JSON-formatted logging with PII sanitization (emails, tokens, phone numbers redacted), log levels (error/warn/info/debug) via `LOG_LEVEL` env var, environment metadata. Child loggers for component-scoped context. Used across error handler, match scheduler, and key services.
+- **Custom Metrics:** `apps/backend/src/lib/metrics.ts` — Typed metric helpers for agents, AI calls, API requests, database queries, cache hits/misses, messages, and users. Pluggable backend: StatsD when `DD_ENABLED=true` + `STATSD_HOST` configured, otherwise log-based fallback.
+- **Health Checks:** `apps/backend/src/routes/health.ts` — `/api/health` (unified DB + Redis + memory check), `/api/health/db`, `/api/health/redis`, `/api/health/ai`. Returns 200/503 with detailed status.
+- **Agent Monitor:** `apps/backend/src/lib/agentMonitor.ts` — `AgentMonitor` class logs agent runs to `agent_run_logs` DB table, tracks consecutive failures, triggers P1/P2 alerts when agents become unhealthy (≥3 consecutive failures).
+- **Pipeline Monitor:** `apps/backend/src/lib/pipelineMonitor.ts` — `PipelineMonitor` class tracks processing stages, record counts, failure rates, queue depths. Alerts on threshold violations.
+- **Centralized Alerting:** `apps/backend/src/lib/alerting.ts` — `sendAlert()` with P1-P4 severity levels. Routes to Slack (rich formatted blocks with color-coding, fields, response time expectations) via `SLACK_ALERTS_CHANNEL`. P1/P2 alerts also sent via Resend email to `ALERT_EMAIL_RECIPIENTS`.
+- **Alert Rules:** `apps/backend/src/lib/alertRules.ts` — Config-driven rules: critical errors (>10 in 5min), agent failures (>3 in 10min), AI provider errors (>5 in 5min), database errors (>3 in 5min). Sliding window with 15-minute cooldown between alerts.
+- **Metrics Middleware:** `apps/backend/src/middleware/metricsMiddleware.ts` — Auto-instruments all API requests with method, normalized path, status code, and duration metrics.
+- **Database:** `agent_run_logs` table (Prisma migration `20260408000000_add_agent_run_logs`) for agent activity tracking.
+- **New Env Vars (optional):** `LOG_LEVEL` (default: info), `STATSD_HOST`, `STATSD_PORT` (default: 8125), `DD_ENABLED`, `ALERT_EMAIL_RECIPIENTS`, `SLACK_ALERTS_CHANNEL`.
 
 ## Matching Engine Intelligence
 The matching engine (`packages/matching/src/index.ts`) uses a three-layer hybrid approach: Rule-based (50%), Intent (20%), Semantic (30%). Enhanced with:

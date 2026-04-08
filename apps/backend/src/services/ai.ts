@@ -103,10 +103,18 @@ export async function chatWithCleo(userId: string, message: string, conversation
   ];
 
   try {
+    const startTime = Date.now();
     const response = await aiInstance.chat(messages);
+    const { metrics } = await import('../lib/metrics');
+    metrics.ai.callCompleted('openai', 'gpt-4o-mini', Date.now() - startTime);
     return { content: response.content, success: true, fallback: false };
   } catch (err) {
-    console.error('AI chat error:', err);
+    const { logger } = await import('../lib/logger');
+    const { metrics } = await import('../lib/metrics');
+    const { recordEvent } = await import('../lib/alertRules');
+    logger.error('AI chat error', { error: err instanceof Error ? err.message : String(err) });
+    metrics.ai.callFailed('openai', 'gpt-4o-mini');
+    recordEvent('ai_provider_errors');
     return {
       content: getFallbackResponse(message),
       success: true,

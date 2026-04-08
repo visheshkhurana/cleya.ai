@@ -4,6 +4,9 @@ import { matchingService } from './matchingService';
 import { vectorMatchingService } from './vectorMatchingService';
 import { slackService } from './slackService';
 import { linkedinEnrichmentService } from './linkedinEnrichmentService';
+import { logger } from '../lib/logger';
+import { agentMonitor } from '../lib/agentMonitor';
+import { PipelineMonitor } from '../lib/pipelineMonitor';
 
 class MatchScheduler {
   private tasks: ScheduledTask[] = [];
@@ -12,61 +15,66 @@ class MatchScheduler {
 
   start() {
     if (this.started) {
-      console.log('[MatchScheduler] Already started, skipping');
+      logger.info('MatchScheduler already started, skipping');
       return;
     }
 
     const matchJob = cron.schedule('0 8,14,20 * * *', () => {
       this.runBatchMatching().catch(err =>
-        console.error('[MatchScheduler] Batch matching failed:', err)
+        logger.error('Batch matching failed', { error: err.message })
       );
     }, { timezone: 'Asia/Kolkata' });
 
     const dailyReportJob = cron.schedule('0 21 * * *', () => {
       slackService.sendDailyReport().catch(err =>
-        console.error('[MatchScheduler] Daily report failed:', err)
+        logger.error('Daily report failed', { error: err.message })
       );
     }, { timezone: 'Asia/Kolkata' });
 
     const enrichmentJob = cron.schedule('0 3 * * *', () => {
       this.runLinkedinEnrichment().catch(err =>
-        console.error('[MatchScheduler] LinkedIn enrichment failed:', err)
+        logger.error('LinkedIn enrichment failed', { error: err.message })
       );
     }, { timezone: 'Asia/Kolkata' });
 
     const selfPingJob = cron.schedule('*/5 * * * *', () => {
       this.runSelfPing().catch(err =>
-        console.error('[MatchScheduler] Self-ping failed:', err)
+        logger.error('Self-ping failed', { error: err instanceof Error ? err.message : String(err) })
       );
     });
 
     const weeklyAnalyticsJob = cron.schedule('0 10 * * 1', () => {
       this.runWeeklyAnalyticsSummary().catch(err =>
-        console.error('[MatchScheduler] Weekly analytics summary failed:', err)
+        logger.error('Weekly analytics summary failed', { error: err instanceof Error ? err.message : String(err) })
       );
     }, { timezone: 'Asia/Kolkata' });
 
     const dataCleanupJob = cron.schedule('0 2 * * *', () => {
       this.runOldDataCleanup().catch(err =>
-        console.error('[MatchScheduler] Old data cleanup failed:', err)
+        logger.error('Old data cleanup failed', { error: err instanceof Error ? err.message : String(err) })
       );
     }, { timezone: 'Asia/Kolkata' });
 
     this.tasks.push(matchJob, dailyReportJob, enrichmentJob, selfPingJob, weeklyAnalyticsJob, dataCleanupJob);
     this.started = true;
-    console.log('[MatchScheduler] Scheduled batch matching at 8:00, 14:00, 20:00 IST');
-    console.log('[MatchScheduler] Scheduled daily Slack report at 21:00 IST');
-    console.log('[MatchScheduler] Scheduled LinkedIn enrichment at 3:00 IST');
-    console.log('[MatchScheduler] Scheduled self-ping health check every 5 minutes');
-    console.log('[MatchScheduler] Scheduled weekly analytics summary Monday 10:00 IST');
-    console.log('[MatchScheduler] Scheduled old data cleanup daily at 2:00 AM IST');
+    logger.info('MatchScheduler started', {
+      jobs: [
+        'batch-matching@8:00,14:00,20:00',
+        'daily-report@21:00',
+        'linkedin-enrichment@3:00',
+        'self-ping@every-5min',
+        'weekly-analytics@Monday-10:00',
+        'data-cleanup@2:00',
+      ],
+      timezone: 'Asia/Kolkata',
+    });
   }
 
   stop() {
     this.tasks.forEach(t => t.stop());
     this.tasks = [];
     this.started = false;
-    console.log('[MatchScheduler] All scheduled tasks stopped');
+    logger.info('MatchScheduler stopped');
   }
 
   isRunning(): boolean {
@@ -75,37 +83,42 @@ class MatchScheduler {
 
   async runBatchMatching() {
     if (this.running) {
-      console.log('[MatchScheduler] Batch already in progress, skipping');
+      logger.info('Batch matching already in progress, skipping');
       return { usersProcessed: 0, totalProposed: 0, errors: 0, duration: '0s', skipped: true };
     }
 
     this.running = true;
     const startTime = Date.now();
+    const pipeline = new PipelineMonitor('batch-matching', { maxDurationMs: 600000 });
+    pipeline.startPipeline();
 
     try {
-      console.log('[MatchScheduler] Starting batch matching run...');
+      logger.info('Starting batch matching run');
 
       const profiles = await prisma.profile.findMany({
         where: { isComplete: true },
         select: { userId: true, persona: true },
       });
 
-      console.log(`[MatchScheduler] Found ${profiles.length} complete profiles`);
+      logger.info('Found complete profiles for matching', { count: profiles.length });
 
+      pipeline.startStage('embedding-backfill', profiles.length);
       let embeddingsBackfilled = 0;
       for (const profile of profiles) {
         try {
           const created = await vectorMatchingService.ensureEmbedding(profile.userId);
           if (created) embeddingsBackfilled++;
         } catch (err: any) {
-          console.log(`[MatchScheduler] Embedding failed for ${profile.userId}: ${err.message}`);
+          logger.warn('Embedding failed', { userId: profile.userId, error: err.message });
         }
       }
+      pipeline.completeStage(embeddingsBackfilled, 0);
 
       if (embeddingsBackfilled > 0) {
-        console.log(`[MatchScheduler] Backfilled ${embeddingsBackfilled} embeddings`);
+        logger.info('Backfilled embeddings', { count: embeddingsBackfilled });
       }
 
+      pipeline.startStage('auto-propose', profiles.length);
       let totalProposed = 0;
       let usersProcessed = 0;
       const errors: string[] = [];
@@ -119,39 +132,73 @@ class MatchScheduler {
           errors.push(`${profile.userId}: ${err.message}`);
         }
       }
+      pipeline.completeStage(usersProcessed, errors.length);
 
-      const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-      console.log(
-        `[MatchScheduler] Batch complete in ${duration}s: ` +
-        `${usersProcessed}/${profiles.length} users processed, ` +
-        `${totalProposed} matches proposed, ` +
-        `${errors.length} errors`
-      );
+      const durationMs = Date.now() - startTime;
+      const duration = (durationMs / 1000).toFixed(1);
 
-      if (errors.length > 0) {
-        console.log(`[MatchScheduler] Errors: ${errors.slice(0, 5).join('; ')}`);
-      }
+      await agentMonitor.logRun({
+        agentName: 'batch-matching',
+        success: errors.length === 0,
+        durationMs,
+        recordsProcessed: usersProcessed,
+        errorMessage: errors.length > 0 ? errors.slice(0, 3).join('; ') : undefined,
+      });
 
+      logger.info('Batch matching complete', {
+        durationSec: duration,
+        usersProcessed,
+        totalProfiles: profiles.length,
+        totalProposed,
+        errorCount: errors.length,
+      });
+
+      pipeline.completePipeline();
       return { usersProcessed, totalProposed, errors: errors.length, duration: `${duration}s` };
+    } catch (err: any) {
+      pipeline.failPipeline(err.message);
+      await agentMonitor.logRun({
+        agentName: 'batch-matching',
+        success: false,
+        durationMs: Date.now() - startTime,
+        errorMessage: err.message,
+      });
+      throw err;
     } finally {
       this.running = false;
     }
   }
 
   async runLinkedinEnrichment() {
-    console.log('[MatchScheduler] Starting LinkedIn enrichment batch...');
+    logger.info('Starting LinkedIn enrichment batch');
     const startTime = Date.now();
 
     try {
       const result = await linkedinEnrichmentService.enrichBatch(15);
-      const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-      console.log(
-        `[MatchScheduler] LinkedIn enrichment complete in ${duration}s: ` +
-        `${result.enriched} enriched, ${result.skipped} skipped, ${result.errors} errors`
-      );
+      const durationMs = Date.now() - startTime;
+
+      await agentMonitor.logRun({
+        agentName: 'linkedin-enrichment',
+        success: true,
+        durationMs,
+        recordsProcessed: result.enriched,
+      });
+
+      logger.info('LinkedIn enrichment complete', {
+        durationSec: (durationMs / 1000).toFixed(1),
+        enriched: result.enriched,
+        skipped: result.skipped,
+        errors: result.errors,
+      });
       return result;
-    } catch (err) {
-      console.error('[MatchScheduler] LinkedIn enrichment batch failed:', err);
+    } catch (err: any) {
+      await agentMonitor.logRun({
+        agentName: 'linkedin-enrichment',
+        success: false,
+        durationMs: Date.now() - startTime,
+        errorMessage: err.message,
+      });
+      logger.error('LinkedIn enrichment batch failed', { error: err.message });
       throw err;
     }
   }
@@ -162,20 +209,20 @@ class MatchScheduler {
     try {
       const response = await fetch(url);
       if (!response.ok) {
-        console.warn(`[MatchScheduler] Self-ping health check returned ${response.status}`);
+        logger.warn('Self-ping health check returned non-OK', { status: response.status });
       } else {
-        const data = await response.json() as { status: string; database: string };
-        if (data.status !== 'ok') {
-          console.warn(`[MatchScheduler] Self-ping: service degraded — db=${data.database}`);
+        const data = await response.json() as { status: string };
+        if (data.status !== 'healthy') {
+          logger.warn('Self-ping: service degraded', { healthStatus: data.status });
         }
       }
     } catch (err) {
-      console.warn(`[MatchScheduler] Self-ping failed: ${err instanceof Error ? err.message : String(err)}`);
+      logger.warn('Self-ping failed', { error: err instanceof Error ? err.message : String(err) });
     }
   }
 
   private async runWeeklyAnalyticsSummary() {
-    console.log('[MatchScheduler] Generating weekly analytics summary...');
+    logger.info('Generating weekly analytics summary');
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
     try {
@@ -197,14 +244,15 @@ class MatchScheduler {
 
       const acceptRate = totalMatches > 0 ? Math.round((acceptedMatches / totalMatches) * 100) : 0;
 
-      console.log('[MatchScheduler] === Weekly Analytics Summary ===');
-      console.log(`  New users:          ${newUsers}`);
-      console.log(`  Completed profiles: ${completedProfiles}`);
-      console.log(`  Matches proposed:   ${totalMatches}`);
-      console.log(`  Matches accepted:   ${acceptedMatches} (${acceptRate}%)`);
-      console.log(`  Calls made:         ${totalCalls}`);
-      console.log(`  Messages sent:      ${totalMessages}`);
-      console.log('[MatchScheduler] === End Summary ===');
+      logger.info('Weekly analytics summary', {
+        newUsers,
+        completedProfiles,
+        totalMatches,
+        acceptedMatches,
+        acceptRate,
+        totalCalls,
+        totalMessages,
+      });
 
       try {
         await slackService.sendDailyReport();
@@ -213,13 +261,13 @@ class MatchScheduler {
 
       return { newUsers, completedProfiles, totalMatches, acceptedMatches, acceptRate, totalCalls, totalMessages };
     } catch (err) {
-      console.error('[MatchScheduler] Weekly analytics summary failed:', err);
+      logger.error('Weekly analytics summary failed', { error: err instanceof Error ? err.message : String(err) });
       throw err;
     }
   }
 
   private async runOldDataCleanup() {
-    console.log('[MatchScheduler] Starting old data cleanup...');
+    logger.info('Starting old data cleanup');
     const startTime = Date.now();
 
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -239,20 +287,20 @@ class MatchScheduler {
         },
       });
 
-      const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-      console.log(
-        `[MatchScheduler] Cleanup complete in ${duration}s: ` +
-        `${expiredNotifications.count} old notifications, ` +
-        `${oldActivities.count} old activity records removed`
-      );
+      const durationMs = Date.now() - startTime;
+      logger.info('Old data cleanup complete', {
+        durationSec: (durationMs / 1000).toFixed(1),
+        expiredNotifications: expiredNotifications.count,
+        oldActivities: oldActivities.count,
+      });
 
       return {
         expiredNotifications: expiredNotifications.count,
         oldActivities: oldActivities.count,
-        duration: `${duration}s`,
+        duration: `${(durationMs / 1000).toFixed(1)}s`,
       };
     } catch (err) {
-      console.error('[MatchScheduler] Old data cleanup failed:', err);
+      logger.error('Old data cleanup failed', { error: err instanceof Error ? err.message : String(err) });
       throw err;
     }
   }
