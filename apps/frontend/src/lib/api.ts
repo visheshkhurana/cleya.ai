@@ -305,6 +305,14 @@ class ApiClient {
     return this.fetch('/admin/communications');
   }
 
+  async getMessagingHealth() {
+    return this.fetch('/admin/messaging-health');
+  }
+
+  async getMessagingDeliveryStats() {
+    return this.fetch('/admin/messaging-delivery-stats');
+  }
+
   async adminTriggerCall(userId: string, phoneNumber: string) {
     return this.fetch(`/admin/trigger/call/${userId}`, {
       method: 'POST',

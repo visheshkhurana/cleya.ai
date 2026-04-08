@@ -16,6 +16,104 @@ export const adminRouter = Router();
 
 adminRouter.use(authenticate, requireAdmin);
 
+adminRouter.get('/messaging-health', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const configStatus = gupshupService.getConfigStatus();
+    const isConfigured = gupshupService.isConfigured();
+
+    let apiPing: { success: boolean; latencyMs: number; error?: string } = { success: false, latencyMs: 0, error: 'Skipped — not configured' };
+    if (isConfigured) {
+      apiPing = await gupshupService.pingApi();
+    }
+
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const [totalRecent, sentRecent, deliveredRecent, failedRecent] = await Promise.all([
+      prisma.messageRecord.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
+      prisma.messageRecord.count({ where: { status: 'SENT', createdAt: { gte: sevenDaysAgo } } }),
+      prisma.messageRecord.count({ where: { status: 'DELIVERED', createdAt: { gte: sevenDaysAgo } } }),
+      prisma.messageRecord.count({ where: { status: 'FAILED', createdAt: { gte: sevenDaysAgo } } }),
+    ]);
+
+    const successRate = totalRecent > 0 ? Math.round(((sentRecent + deliveredRecent) / totalRecent) * 100) : 0;
+
+    let overallStatus: 'healthy' | 'degraded' | 'down' = 'healthy';
+    if (!isConfigured) {
+      overallStatus = 'down';
+    } else if (!apiPing.success) {
+      overallStatus = 'down';
+    } else if (failedRecent > 0 && successRate < 50) {
+      overallStatus = 'degraded';
+    }
+
+    res.json({
+      success: true,
+      data: {
+        status: overallStatus,
+        provider: 'gupshup',
+        configured: isConfigured,
+        envVars: configStatus,
+        apiPing,
+        recentStats: {
+          period: '7d',
+          total: totalRecent,
+          sent: sentRecent,
+          delivered: deliveredRecent,
+          failed: failedRecent,
+          successRate,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/messaging-delivery-stats', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    interface DailyChannelStat {
+      day: string;
+      channel: string;
+      status: string;
+      count: number;
+    }
+
+    const dailyStats: DailyChannelStat[] = await prisma.$queryRaw`
+      SELECT
+        TO_CHAR("createdAt", 'YYYY-MM-DD') as day,
+        channel,
+        status,
+        COUNT(*)::int as count
+      FROM message_records
+      WHERE "createdAt" >= ${sevenDaysAgo}
+      GROUP BY day, channel, status
+      ORDER BY day DESC, channel, status
+    `;
+
+    const channelTotals = await prisma.messageRecord.groupBy({
+      by: ['channel', 'status'],
+      _count: { id: true },
+      where: { createdAt: { gte: sevenDaysAgo } },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        period: '7d',
+        dailyStats,
+        channelTotals: channelTotals.map(c => ({
+          channel: c.channel,
+          status: c.status,
+          count: c._count.id,
+        })),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 adminRouter.get('/stats', async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const [totalUsers, activeConversations, completedProfiles, totalMatches, acceptedMatches, totalCalls, totalMessages] = await Promise.all([

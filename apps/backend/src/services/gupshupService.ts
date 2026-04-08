@@ -111,6 +111,66 @@ export class GupshupService {
     }
   }
 
+  private isTransientError(error: any): boolean {
+    if (error?.httpStatus) {
+      return error.httpStatus >= 500 || error.httpStatus === 429;
+    }
+    const message = (error?.message || '').toLowerCase();
+    return message.includes('timeout') || message.includes('econnrefused') || message.includes('econnreset') || message.includes('fetch failed') || message.includes('network') || message.includes('abort');
+  }
+
+  private async retryWithBackoff<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+    const delays = [1000, 2000, 4000];
+    let lastError: any;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (error: any) {
+        lastError = error;
+        if (attempt < maxRetries && this.isTransientError(error)) {
+          const delay = delays[attempt] || 4000;
+          console.warn(`Gupshup retry ${attempt + 1}/${maxRetries} after ${delay}ms: ${error.message}`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        } else if (!this.isTransientError(error)) {
+          throw error;
+        }
+      }
+    }
+    throw lastError;
+  }
+
+  private async attemptSendMessage(destination: string, source: string, messagePayload: any): Promise<GupshupResponse> {
+    const body = new URLSearchParams({
+      channel: 'whatsapp',
+      source,
+      destination,
+      'src.name': this.appName!,
+      message: JSON.stringify(messagePayload),
+    });
+
+    const response = await fetch(`${this.baseUrl}/msg`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'apikey': this.apiKey!,
+      },
+      body: body.toString(),
+    });
+
+    const result = (await response.json()) as GupshupResponse;
+
+    if (!response.ok) {
+      const err = new Error(result.message || `Gupshup HTTP error: ${response.status}`);
+      (err as any).httpStatus = response.status;
+      throw err;
+    }
+    if (result.status !== 'submitted') {
+      throw new Error(result.message || `Gupshup rejected: status=${result.status}`);
+    }
+
+    return result;
+  }
+
   async sendWhatsApp(userId: string, phoneNumber: string, message: string) {
     const record = await prisma.messageRecord.create({
       data: {
@@ -136,34 +196,9 @@ export class GupshupService {
       const destination = this.formatPhone(phoneNumber);
       const source = this.formatPhone(this.sourceNumber!);
 
-      const body = new URLSearchParams({
-        channel: 'whatsapp',
-        source,
-        destination,
-        'src.name': this.appName!,
-        message: JSON.stringify({
-          type: 'text',
-          text: message,
-        }),
-      });
-
-      const response = await fetch(`${this.baseUrl}/msg`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'apikey': this.apiKey!,
-        },
-        body: body.toString(),
-      });
-
-      const result = (await response.json()) as GupshupResponse;
-
-      if (!response.ok) {
-        throw new Error(result.message || `Gupshup HTTP error: ${response.status}`);
-      }
-      if (result.status !== 'submitted') {
-        throw new Error(result.message || `Gupshup rejected: status=${result.status}`);
-      }
+      const result = await this.retryWithBackoff(() =>
+        this.attemptSendMessage(destination, source, { type: 'text', text: message })
+      );
 
       await prisma.messageRecord.update({
         where: { id: record.id },
@@ -176,7 +211,7 @@ export class GupshupService {
         where: { id: record.id },
         data: { status: 'FAILED', errorMessage: error.message },
       });
-      console.error(`Gupshup WhatsApp failed to ${phoneNumber}:`, error.message);
+      console.error(`Gupshup WhatsApp failed to ${phoneNumber} after retries:`, error.message);
       return { ...record, status: 'FAILED', errorMessage: error.message };
     }
   }
@@ -278,31 +313,9 @@ export class GupshupService {
 
       console.log(`Gupshup sendTemplate: dest=${destination}, template=${templateId}, namespace=${this.templateNamespace || 'none'}, payload=${JSON.stringify(templateMessage)}`);
 
-      const body = new URLSearchParams({
-        channel: 'whatsapp',
-        source,
-        destination,
-        'src.name': this.appName!,
-        message: JSON.stringify(templateMessage),
-      });
-
-      const response = await fetch(`${this.baseUrl}/msg`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'apikey': this.apiKey!,
-        },
-        body: body.toString(),
-      });
-
-      const result = (await response.json()) as GupshupResponse;
-
-      if (!response.ok) {
-        throw new Error(result.message || `Gupshup HTTP error: ${response.status}`);
-      }
-      if (result.status !== 'submitted') {
-        throw new Error(result.message || `Gupshup template rejected: status=${result.status}`);
-      }
+      const result = await this.retryWithBackoff(() =>
+        this.attemptSendMessage(destination, source, templateMessage)
+      );
 
       await prisma.messageRecord.update({
         where: { id: record.id },
@@ -506,6 +519,38 @@ export class GupshupService {
     } catch (e: any) {
       console.error(`Auto opt-in error:`, e.message);
     }
+  }
+
+  async pingApi(): Promise<{ success: boolean; latencyMs: number; error?: string }> {
+    if (!this.isConfigured()) {
+      return { success: false, latencyMs: 0, error: 'Gupshup not configured' };
+    }
+
+    try {
+      const start = Date.now();
+      const response = await fetch(`https://api.gupshup.io/sm/api/v1/template/list/${this.appName}`, {
+        method: 'GET',
+        headers: { 'apikey': this.apiKey! },
+        signal: AbortSignal.timeout(10000),
+      });
+      const latencyMs = Date.now() - start;
+
+      if (response.ok) {
+        return { success: true, latencyMs };
+      }
+      return { success: false, latencyMs, error: `HTTP ${response.status}: ${response.statusText}` };
+    } catch (error: any) {
+      return { success: false, latencyMs: 0, error: error.message };
+    }
+  }
+
+  getConfigStatus(): { apiKey: boolean; appName: boolean; sourceNumber: boolean; templateNamespace: boolean } {
+    return {
+      apiKey: !!this.apiKey,
+      appName: !!this.appName,
+      sourceNumber: !!this.sourceNumber,
+      templateNamespace: !!this.templateNamespace,
+    };
   }
 
   async registerTemplate(

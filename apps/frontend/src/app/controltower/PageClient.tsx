@@ -86,6 +86,9 @@ export default function AdminDashboard() {
   const [whatsappData, setWhatsappData] = useState<any>(null);
   const [whatsappUsers, setWhatsappUsers] = useState<any[] | null>(null);
   const [waSubTab, setWaSubTab] = useState<'activity' | 'users'>('activity');
+  const [messagingHealth, setMessagingHealth] = useState<any>(null);
+  const [deliveryStats, setDeliveryStats] = useState<any>(null);
+  const [healthLoading, setHealthLoading] = useState(false);
   // Agent state
   const [agentList] = useState<AgentInfo[]>([
     { id: 'cleya-marketing', name: 'Mira', emoji: '🎯', role: 'Marketing', description: 'Content, SEO, social media, viral campaigns', color: 'indigo' },
@@ -154,6 +157,22 @@ export default function AdminDashboard() {
       setCommData(data);
     } catch (err: any) {
       console.error('Failed to load communications:', err);
+    }
+  };
+
+  const loadMessagingHealth = async () => {
+    setHealthLoading(true);
+    try {
+      const [healthResult, statsResult] = await Promise.allSettled([
+        api.getMessagingHealth(),
+        api.getMessagingDeliveryStats(),
+      ]);
+      if (healthResult.status === 'fulfilled') setMessagingHealth(healthResult.value);
+      if (statsResult.status === 'fulfilled') setDeliveryStats(statsResult.value);
+    } catch (err: any) {
+      console.error('Failed to load messaging health:', err);
+    } finally {
+      setHealthLoading(false);
     }
   };
 
@@ -317,6 +336,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (activeTab === 'communications' && !commData) loadComms();
+    if (activeTab === 'communications' && !messagingHealth) loadMessagingHealth();
     if (activeTab === 'deals' && !dealData) loadDeals();
     if (activeTab === 'events' && !eventData) loadEvents();
     if (activeTab === 'analytics' && !analyticsData) loadAnalytics();
@@ -625,6 +645,112 @@ export default function AdminDashboard() {
 
         {activeTab === 'communications' && (
           <div className="space-y-6">
+            {messagingHealth && (
+              <div className="bg-[rgba(8,13,26,0.8)]/60 backdrop-blur-sm rounded-xl border border-brand-violet/10 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-sm font-semibold text-white">Messaging Channel Health</h2>
+                  <div className="flex items-center gap-3">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
+                      messagingHealth.status === 'healthy' ? 'text-green-400 bg-green-500/10 border-green-500/20' :
+                      messagingHealth.status === 'degraded' ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' :
+                      'text-red-400 bg-red-500/10 border-red-500/20'
+                    }`}>
+                      {messagingHealth.status === 'healthy' ? 'Healthy' : messagingHealth.status === 'degraded' ? 'Degraded' : 'Down'}
+                    </span>
+                    <button onClick={loadMessagingHealth} disabled={healthLoading} className="text-xs text-slate-400 hover:text-white transition">
+                      {healthLoading ? 'Checking...' : 'Refresh'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  <div className="bg-slate-800/40 rounded-lg p-3">
+                    <p className="text-xs text-slate-400">Provider</p>
+                    <p className="text-sm font-medium text-white capitalize">{messagingHealth.provider}</p>
+                  </div>
+                  <div className="bg-slate-800/40 rounded-lg p-3">
+                    <p className="text-xs text-slate-400">API Ping</p>
+                    <p className={`text-sm font-medium ${messagingHealth.apiPing?.success ? 'text-green-400' : 'text-red-400'}`}>
+                      {messagingHealth.apiPing?.success ? `OK (${messagingHealth.apiPing.latencyMs}ms)` : messagingHealth.apiPing?.error || 'Failed'}
+                    </p>
+                  </div>
+                  <div className="bg-slate-800/40 rounded-lg p-3">
+                    <p className="text-xs text-slate-400">7d Success Rate</p>
+                    <p className={`text-sm font-medium ${(messagingHealth.recentStats?.successRate || 0) >= 80 ? 'text-green-400' : (messagingHealth.recentStats?.successRate || 0) >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+                      {messagingHealth.recentStats?.successRate || 0}%
+                    </p>
+                  </div>
+                  <div className="bg-slate-800/40 rounded-lg p-3">
+                    <p className="text-xs text-slate-400">7d Failed</p>
+                    <p className={`text-sm font-medium ${(messagingHealth.recentStats?.failed || 0) === 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {messagingHealth.recentStats?.failed || 0} / {messagingHealth.recentStats?.total || 0}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4 text-xs text-slate-400">
+                  <span>API Key: {messagingHealth.envVars?.apiKey ? '✅' : '❌'}</span>
+                  <span>App Name: {messagingHealth.envVars?.appName ? '✅' : '❌'}</span>
+                  <span>Source Number: {messagingHealth.envVars?.sourceNumber ? '✅' : '❌'}</span>
+                  <span>Template NS: {messagingHealth.envVars?.templateNamespace ? '✅' : '⚠️'}</span>
+                </div>
+              </div>
+            )}
+
+            {deliveryStats && deliveryStats.channelTotals && deliveryStats.channelTotals.length > 0 && (
+              <div className="bg-[rgba(8,13,26,0.8)]/60 backdrop-blur-sm rounded-xl border border-brand-violet/10 p-6">
+                <h2 className="text-sm font-semibold text-white mb-4">Message Delivery Stats (Last 7 Days)</h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                  {deliveryStats.channelTotals.map((ct: any, i: number) => (
+                    <div key={i} className="bg-slate-800/40 rounded-lg p-3">
+                      <p className="text-xs text-slate-400">{ct.channel} / {ct.status}</p>
+                      <p className={`text-lg font-bold ${
+                        ct.status === 'DELIVERED' || ct.status === 'SENT' ? 'text-green-400' :
+                        ct.status === 'FAILED' ? 'text-red-400' :
+                        'text-white'
+                      }`}>{ct.count}</p>
+                    </div>
+                  ))}
+                </div>
+                {deliveryStats.dailyStats && deliveryStats.dailyStats.length > 0 && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-brand-violet-pressed/10">
+                          <th className="text-left px-4 py-2 text-xs font-medium text-slate-400 uppercase">Day</th>
+                          <th className="text-left px-4 py-2 text-xs font-medium text-slate-400 uppercase">Channel</th>
+                          <th className="text-left px-4 py-2 text-xs font-medium text-slate-400 uppercase">Status</th>
+                          <th className="text-left px-4 py-2 text-xs font-medium text-slate-400 uppercase">Count</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-brand-violet/5">
+                        {deliveryStats.dailyStats.map((row: any, i: number) => (
+                          <tr key={i} className="hover:bg-brand-violet-pressed/10 transition">
+                            <td className="px-4 py-2 text-white/70">{row.day}</td>
+                            <td className="px-4 py-2">
+                              <span className={`px-2 py-0.5 rounded-full text-xs border ${
+                                row.channel === 'WHATSAPP' ? 'text-green-400 bg-green-500/10 border-green-500/20' :
+                                row.channel === 'EMAIL' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' :
+                                'text-slate-400 bg-slate-500/10 border-slate-500/20'
+                              }`}>{row.channel}</span>
+                            </td>
+                            <td className="px-4 py-2">
+                              <span className={`px-2 py-0.5 rounded-full text-xs border ${
+                                row.status === 'DELIVERED' || row.status === 'SENT' ? 'text-green-400 bg-green-500/10 border-green-500/20' :
+                                row.status === 'FAILED' ? 'text-red-400 bg-red-500/10 border-red-500/20' :
+                                'text-yellow-400 bg-yellow-500/10 border-yellow-500/20'
+                              }`}>{row.status}</span>
+                            </td>
+                            <td className="px-4 py-2 text-white font-medium">{row.count}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
             {commData && (
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 {[

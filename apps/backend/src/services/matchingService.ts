@@ -137,14 +137,19 @@ export class MatchingService {
         bio: userAData.profile?.bio || undefined,
         matchReason: reason,
       };
-      emailService.sendMatchProposed(userAData.email, nameA, nameB, personaB, score.total, detailsB).catch(() => {});
-      emailService.sendMatchProposed(userBData.email, nameB, nameA, personaA, score.total, detailsA).catch(() => {});
-      whatsappTemplates.triggerMatchFound(userAId, userBId, score.total).catch((e) =>
-        console.log('[MatchingService] WhatsApp match found (A) failed:', e)
-      );
-      whatsappTemplates.triggerMatchFound(userBId, userAId, score.total).catch((e) =>
-        console.log('[MatchingService] WhatsApp match found (B) failed:', e)
-      );
+      Promise.allSettled([
+        emailService.sendMatchProposed(userAData.email, nameA, nameB, personaB, score.total, detailsB),
+        emailService.sendMatchProposed(userBData.email, nameB, nameA, personaA, score.total, detailsA),
+        whatsappTemplates.triggerMatchFound(userAId, userBId, score.total),
+        whatsappTemplates.triggerMatchFound(userBId, userAId, score.total),
+      ]).then(results => {
+        const labels = ['Email→A', 'Email→B', 'WhatsApp→A', 'WhatsApp→B'];
+        results.forEach((r, i) => {
+          if (r.status === 'rejected') {
+            console.log(`[MatchingService] Match proposed notification ${labels[i]} failed:`, r.reason);
+          }
+        });
+      });
     }
 
     return match;
@@ -198,12 +203,17 @@ export class MatchingService {
       onMatchAccepted(matchId, updated.userAId, updated.userBId).catch((e) =>
         console.log('[MatchingService] Secretary match notification failed:', e)
       );
-      whatsappTemplates.triggerMatchAccepted(updated.userAId, updated.userBId).catch((e) =>
-        console.log('[MatchingService] WhatsApp match accepted (A) failed:', e)
-      );
-      whatsappTemplates.triggerMatchAccepted(updated.userBId, updated.userAId).catch((e) =>
-        console.log('[MatchingService] WhatsApp match accepted (B) failed:', e)
-      );
+      Promise.allSettled([
+        whatsappTemplates.triggerMatchAccepted(updated.userAId, updated.userBId),
+        whatsappTemplates.triggerMatchAccepted(updated.userBId, updated.userAId),
+      ]).then(results => {
+        const labels = ['WhatsApp accepted→A', 'WhatsApp accepted→B'];
+        results.forEach((r, i) => {
+          if (r.status === 'rejected') {
+            console.log(`[MatchingService] ${labels[i]} failed:`, r.reason);
+          }
+        });
+      });
 
       this.scheduleFeedbackPrompt(matchId, updated.userAId, updated.userBId).catch((e) =>
         console.log('[MatchingService] Feedback prompt scheduling failed:', e)
