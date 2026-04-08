@@ -211,23 +211,29 @@ function ErrorState({ message }: { message: string }) {
   );
 }
 
-function StatusBadge({ status }: { status: 'active' | 'idle' | 'error' }) {
-  const statusConfig = {
+function StatusBadge({ status }: { status: string }) {
+  const statusConfig: Record<string, string> = {
     active: 'bg-green-500/20 text-green-300 border-green-500/30',
+    running: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+    completed: 'bg-green-500/20 text-green-300 border-green-500/30',
+    scheduled: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
     idle: 'bg-slate-500/20 text-slate-300 border-slate-500/30',
     error: 'bg-red-500/20 text-red-300 border-red-500/30',
+    failed: 'bg-red-500/20 text-red-300 border-red-500/30',
   };
 
+  const dotColor = ['active', 'running'].includes(status) ? 'bg-green-400 animate-pulse' :
+    ['error', 'failed'].includes(status) ? 'bg-red-400' :
+    status === 'scheduled' ? 'bg-amber-400' :
+    status === 'completed' ? 'bg-green-400' :
+    'bg-slate-400';
+
+  const label = status.charAt(0).toUpperCase() + status.slice(1);
+
   return (
-    <div className={`flex items-center gap-2 px-3 py-1 rounded-lg border text-xs font-medium ${statusConfig[status]}`}>
-      <div
-        className={`w-2 h-2 rounded-full ${
-          status === 'active' ? 'bg-green-400 animate-pulse' :
-          status === 'error' ? 'bg-red-400' :
-          'bg-slate-400'
-        }`}
-      />
-      {status === 'active' ? 'Active' : status === 'idle' ? 'Idle' : 'Error'}
+    <div className={`flex items-center gap-2 px-3 py-1 rounded-lg border text-xs font-medium ${statusConfig[status] || statusConfig.idle}`}>
+      <div className={`w-2 h-2 rounded-full ${dotColor}`} />
+      {label}
     </div>
   );
 }
@@ -1296,6 +1302,22 @@ export function AgentsManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [agentStatuses, setAgentStatuses] = useState<AgentStatusInfo[]>([]);
+
+  const loadStatuses = useCallback(async () => {
+    try {
+      const res = await api.getAgentStatuses();
+      if (res?.data) {
+        setAgentStatuses(res.data);
+      }
+    } catch (e) {}
+  }, []);
+
+  useEffect(() => {
+    loadStatuses();
+    const interval = setInterval(loadStatuses, 10000);
+    return () => clearInterval(interval);
+  }, [loadStatuses]);
 
   useEffect(() => {
     const loadData = async () => {
