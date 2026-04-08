@@ -2,27 +2,10 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { authenticate } from '../middleware/auth';
 import { chatWithCleo } from '../services/ai';
 import { prisma } from '@cleya/db';
-import { promptInjectionGuard } from '../middleware/promptInjectionGuard';
-import { aiRateLimiter, attachUserTier } from '../middleware/aiRateLimit';
 
 export const aiChatRouter = Router();
 
 const AI_CHAT_FLOW_ID = 'ai_chat_freeform';
-
-async function loadUserTier(req: Request, _res: Response, next: NextFunction) {
-  try {
-    if (req.user?.userId) {
-      const user = await prisma.user.findUnique({
-        where: { id: req.user.userId },
-        select: { tier: true },
-      });
-      req.userTier = (user?.tier as 'FREE' | 'PRO' | 'ENTERPRISE') || 'FREE';
-    }
-  } catch {
-    req.userTier = 'FREE';
-  }
-  next();
-}
 
 async function getOrCreateAIChatConversation(userId: string) {
   let conversation = await prisma.conversation.findFirst({
@@ -83,7 +66,7 @@ aiChatRouter.get('/history', authenticate, async (req: Request, res: Response, n
   }
 });
 
-aiChatRouter.post('/message', authenticate, loadUserTier, promptInjectionGuard, aiRateLimiter, async (req: Request, res: Response, next: NextFunction) => {
+aiChatRouter.post('/message', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { message, history } = req.body;
     if (!message || typeof message !== 'string' || message.trim().length === 0) {

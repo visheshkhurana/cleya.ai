@@ -13,14 +13,8 @@ interface NotificationPayload {
   metadata?: Record<string, any>;
 }
 
-interface SendResult {
-  channel: NotifChannel;
-  success: boolean;
-  fallback?: NotifChannel;
-}
-
 export class NotificationService {
-  async send(payload: NotificationPayload): Promise<{ notification: any; result: SendResult }> {
+  async send(payload: NotificationPayload) {
     const notification = await prisma.notification.create({
       data: {
         userId: payload.userId,
@@ -32,90 +26,45 @@ export class NotificationService {
       },
     });
 
-    let sendSuccess = false;
-    let fallbackChannel: NotifChannel | undefined;
-
     try {
       switch (payload.channel) {
         case 'IN_APP':
           this.sendInApp(payload);
-          sendSuccess = true;
           break;
         case 'WHATSAPP':
-          sendSuccess = await this.sendWhatsApp(payload);
-          if (!sendSuccess) {
-            console.log(`[NotificationService] WhatsApp failed for ${payload.userId}, falling back to EMAIL`);
-            fallbackChannel = 'EMAIL';
-            sendSuccess = await this.sendEmail(payload);
-            if (!sendSuccess) {
-              console.log(`[NotificationService] Email fallback also failed for ${payload.userId}, falling back to IN_APP`);
-              fallbackChannel = 'IN_APP';
-              this.sendInApp(payload);
-              sendSuccess = true;
-            }
-          }
+          await this.sendWhatsApp(payload);
           break;
         case 'SMS':
-          sendSuccess = await this.sendSMS(payload);
-          if (!sendSuccess) {
-            console.log(`[NotificationService] SMS failed for ${payload.userId}, falling back to EMAIL`);
-            fallbackChannel = 'EMAIL';
-            sendSuccess = await this.sendEmail(payload);
-            if (!sendSuccess) {
-              fallbackChannel = 'IN_APP';
-              this.sendInApp(payload);
-              sendSuccess = true;
-            }
-          }
+          await this.sendSMS(payload);
           break;
         case 'EMAIL':
-          sendSuccess = await this.sendEmail(payload);
-          if (!sendSuccess) {
-            console.log(`[NotificationService] Email failed for ${payload.userId}, falling back to IN_APP`);
-            fallbackChannel = 'IN_APP';
-            this.sendInApp(payload);
-            sendSuccess = true;
-          }
+          await this.sendEmail(payload);
           break;
       }
 
-      if (sendSuccess) {
-        await prisma.notification.update({
-          where: { id: notification.id },
-          data: { sentAt: new Date() },
-        });
-      }
+      await prisma.notification.update({
+        where: { id: notification.id },
+        data: { sentAt: new Date() },
+      });
     } catch (error) {
       console.error(`Notification dispatch failed for ${payload.channel}:`, error);
     }
 
-    return {
-      notification,
-      result: { channel: payload.channel, success: sendSuccess, fallback: fallbackChannel },
-    };
+    return notification;
   }
 
-  async sendMultiChannel(userId: string, event: NotifEvent, title: string, body: string, channels?: NotifChannel[], metadata?: Record<string, any>) {
-    const requestedChannels: NotifChannel[] = channels || ['IN_APP'];
+  async sendMultiChannel(userId: string, event: NotifEvent, title: string, body: string, metadata?: Record<string, any>) {
+    const channels: NotifChannel[] = ['IN_APP'];
 
-    if (!channels) {
-      const user = await prisma.user.findUnique({ where: { id: userId } });
-      if (user?.phone) requestedChannels.push('WHATSAPP');
-    }
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (user?.phone) channels.push('WHATSAPP');
 
     const results = await Promise.allSettled(
-      requestedChannels.map((channel) =>
+      channels.map((channel) =>
         this.send({ userId, channel, event, title, body, metadata })
       )
     );
 
-    const summary = results.map((r, i) => ({
-      channel: requestedChannels[i],
-      status: r.status,
-      ...(r.status === 'fulfilled' ? { result: r.value.result } : { error: (r as PromiseRejectedResult).reason?.message }),
-    }));
-
-    console.log(`[NotificationService] Multi-channel send for ${userId}: ${JSON.stringify(summary)}`);
     return results;
   }
 
@@ -128,72 +77,54 @@ export class NotificationService {
     });
   }
 
-  private async sendWhatsApp(payload: NotificationPayload): Promise<boolean> {
+  private async sendWhatsApp(payload: NotificationPayload) {
     const { messagingService } = await import('../messagingService');
     const provider = messagingService.getActiveProvider();
 
     if (provider === 'none') {
       console.warn('Gupshup not configured, WhatsApp notification skipped');
-      return false;
+      return;
     }
 
     const user = await prisma.user.findUnique({ where: { id: payload.userId } });
-    if (!user?.phone) return false;
+    if (!user?.phone) return;
 
     try {
-      const result = await messagingService.sendWhatsApp(
+      await messagingService.sendWhatsApp(
         payload.userId,
         user.phone,
         `*${payload.title}*\n\n${payload.body}`
       );
-      return result?.status !== 'FAILED';
     } catch (error) {
       console.error('WhatsApp notification failed:', error);
-      return false;
     }
   }
 
-  private async sendSMS(payload: NotificationPayload): Promise<boolean> {
+  private async sendSMS(payload: NotificationPayload) {
     const { messagingService } = await import('../messagingService');
     const provider = messagingService.getActiveProvider();
 
     if (provider === 'none') {
       console.warn('Gupshup not configured, SMS notification skipped (would send via WhatsApp)');
-      return false;
+      return;
     }
 
     const user = await prisma.user.findUnique({ where: { id: payload.userId } });
-    if (!user?.phone) return false;
+    if (!user?.phone) return;
 
     try {
-      const result = await messagingService.sendWhatsApp(
+      await messagingService.sendWhatsApp(
         payload.userId,
         user.phone,
         `${payload.title}: ${payload.body}`
       );
-      return result?.status !== 'FAILED';
     } catch (error) {
       console.error('SMS (via WhatsApp) notification failed:', error);
-      return false;
     }
   }
 
-  private async sendEmail(payload: NotificationPayload): Promise<boolean> {
-    try {
-      const { emailService } = await import('../email');
-      const user = await prisma.user.findUnique({ where: { id: payload.userId } });
-      if (!user?.email) {
-        console.warn(`No email for user ${payload.userId}, email notification skipped`);
-        return false;
-      }
-
-      await emailService.sendFollowup(user.email, payload.title, payload.body);
-      console.log(`[NotificationService] Email sent to ${user.email}: ${payload.title}`);
-      return true;
-    } catch (error) {
-      console.error(`Email notification failed for ${payload.userId}:`, error);
-      return false;
-    }
+  private async sendEmail(payload: NotificationPayload) {
+    console.log(`Email would be sent to user ${payload.userId}: ${payload.title}`);
   }
 
   async getNotifications(userId: string, limit = 20) {

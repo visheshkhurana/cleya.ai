@@ -3,7 +3,6 @@
 import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { initGA, trackPageView } from '@/lib/ga';
-import { initSentryEnhanced } from '@/lib/sentry';
 
 declare global {
   interface Window {
@@ -15,7 +14,6 @@ declare global {
       setUser: (user: { id: string; email?: string } | null) => void;
     };
     __sentryLoaded?: boolean;
-    __sentryEnhanced?: boolean;
   }
 }
 
@@ -59,7 +57,11 @@ function initSentry() {
   script.async = true;
   script.onload = () => {
     if (window.Sentry) {
-      initSentryEnhanced(SENTRY_DSN);
+      window.Sentry.init({
+        dsn: SENTRY_DSN,
+        environment: process.env.NODE_ENV || 'development',
+        tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.2 : 1.0,
+      });
     }
   };
   document.head.appendChild(script);

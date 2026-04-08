@@ -18,45 +18,24 @@ Monorepo with:
 - **Mobile:** Expo SDK 52 (React Native 0.76), expo-router 4, React Query, SecureStore for auth tokens
 - **Backend:** Express, TypeScript, WebSocket
 - **Database:** PostgreSQL (Replit built-in), Prisma ORM, pgvector
-- **Auth:** RS256 JWT (asymmetric, falls back to HS256 if no keys configured). Short-lived access tokens (15 min) in httpOnly `cleo_auth` cookie (web) or Bearer token (mobile). Refresh tokens (7 day) in httpOnly `cleo_refresh` cookie (path `/api/auth`, web) or expo-secure-store (mobile). Refresh token rotation with family tracking — reuse detection revokes all tokens in the family. Token blacklist via `token_blacklist` DB table (checked on every request). Session inactivity timeout (30 min sliding window via `lastActiveAt` on User). `POST /api/auth/refresh` endpoint rotates tokens. Frontend/mobile auto-retry on 401 via transparent refresh. bcryptjs password hashing, CSRF double-submit cookie protection (web only), email verification on signup.
+- **Auth:** JWT in httpOnly secure cookie (`cleo_auth`) for web, Bearer token (`Authorization: Bearer <token>`) for mobile. bcryptjs password hashing, CSRF double-submit cookie protection (web only), email verification on signup. Mobile stores JWT in expo-secure-store. Frontend auth checks use `/auth/me` endpoint.
 - **Validation:** Zod schemas on all state-changing endpoints (profile, password, match, introduction)
-- **Security Middleware:** Input sanitization (`middleware/sanitize.ts`) strips null bytes, control chars, normalizes Unicode (NFKC). HTML stripping (`stripHtml` in `validation.ts`) removes `<script>`, `<style>`, `<iframe>`, `<object>`, `<embed>`, event handlers, `javascript:` URIs. Body size limit 10MB (raw body captured for webhook signature verification). Helmet with strict CSP (whitelists self + Vercel/PostHog/Sentry/GA4), HSTS (2yr, includeSubDomains, preload), X-Frame-Options: DENY, Referrer-Policy: strict-origin-when-cross-origin, Permissions-Policy (camera/microphone/geolocation/payment disabled). Webhook signature verification on Gupshup (HMAC SHA-256 + shared secret fallback), Twilio (HMAC SHA-1 per Twilio spec), Zoom (v0 HMAC SHA-256 + timestamp). Webhook replay protection via 5-minute timestamp tolerance. File upload validation (`middleware/fileValidation.ts`) checks magic bytes against declared MIME type. Password policy: min 12 chars, upper+lower+digit+special. Session tokens regenerated on password change. Global ZodError + SyntaxError catching in error handler returns 400 (never 500 with stack traces). Health endpoint does not expose env/NODE_ENV.
-- **AI Security Layer:**
-  - **Prompt Injection Guard** (`middleware/promptInjectionGuard.ts`): Regex-based detection for instruction override attempts ("ignore previous instructions", "system prompt", "DAN/jailbreak"), unicode homoglyphs (Cyrillic/Greek substitutions), invisible/zero-width characters, excessive delimiters. Logs blocked attempts to `AIAuditLog`. Returns 400 with `PROMPT_INJECTION_DETECTED` code. Applied to `/api/ai-chat/message` and `/api/agents/chat`.
-  - **Prompt Isolation**: System prompts use explicit `<<<SYSTEM_INSTRUCTIONS>>>` / `<<<END_SYSTEM_INSTRUCTIONS>>>` delimiters and user context uses `<<<USER_CONTEXT>>>` / `<<<END_USER_CONTEXT>>>` delimiters. System prompts include anti-override instruction.
-  - **AI Output Sanitizer** (`middleware/aiOutputSanitizer.ts`): Scans LLM responses for PII (email, phone 10+ digits, Aadhaar 12-digit, PAN, SSN) and redacts them. Validates URLs against allowlist (cleya.ai, linkedin, twitter, github, wikipedia). Strips dangerous HTML/script tags. Enforces 8000 char output limit with truncation.
-  - **Tiered AI Rate Limiting** (`middleware/aiRateLimit.ts`): In-memory per-user rate buckets. FREE: 10/min, 100/hr, 1000/day. PRO: 60/min, 1000/hr, 10000/day. ENTERPRISE: 120/min, 5000/hr, 50000/day. User `tier` field on User model (enum: FREE/PRO/ENTERPRISE).
-  - **AI Audit Logging** (`services/aiAuditService.ts`): All AI interactions logged to `AIAuditLog` table with userId, endpoint, provider, model, input/output length, token usage, latency, injection detection flag, PII redaction details, agent ID, user tier, success/error.
-  - **AI Usage Monitoring**: Daily token/request counts tracked in `AIUsageDaily` table per provider/model. Alerts sent to admin users (IN_APP notification) when daily requests exceed 5000 or tokens exceed 2M.
-- **Security Audit Logging:** Structured event logging to `SecurityLog` Prisma model (`security_logs` table). Covers auth events (login/signup/logout/OAuth/password reset/token failures), authorization failures (role checks, invalid tokens), data access (profile views, data exports, admin queries), suspicious activity (rate limit hits, blocked inputs, repeated auth failures). Non-blocking writes via `services/securityLogger.ts`. Automated 90-day retention cleanup (daily cron at 03:00). Admin API: `GET /api/admin/security-logs` with filters (action, userId, severity, result, date range, IP) and pagination.
+- **Security Middleware:** Input sanitization (`middleware/sanitize.ts`) strips null bytes, control chars, normalizes Unicode (NFKC). HTML stripping (`stripHtml` in `validation.ts`) removes `<script>`, `<style>`, `<iframe>`, `<object>`, `<embed>`, event handlers, `javascript:` URIs. Body size limit 1MB. Helmet with CSP, HSTS, X-Content-Type-Options. Global ZodError + SyntaxError catching in error handler returns 400 (never 500 with stack traces). Health endpoint does not expose env/NODE_ENV.
 - **AI:** OpenAI for embeddings + chat (gpt-4-turbo-preview, text-embedding-3-small)
 
 ## Environment Variables (see .env.example for full list)
 **Required:** `DATABASE_URL`, `JWT_SECRET` (min 32 chars; startup throws if missing)
-**Auth Keys (optional, recommended):** `JWT_PRIVATE_KEY` (RS256 PEM private key), `JWT_PUBLIC_KEY` (RS256 PEM public key) — if not set, falls back to HS256 with JWT_SECRET
-**Optional (graceful fallback):** `OPENAI_API_KEY` (AI chat → fallback responses), `GUPSHUP_API_KEY` + `GUPSHUP_APP_NAME` + `GUPSHUP_SOURCE_NUMBER` (Gupshup WhatsApp — sole messaging provider), `GUPSHUP_TEMPLATE_NAMESPACE` (Gupshup template messages), `GUPSHUP_WEBHOOK_SECRET` (webhook signature/secret verification), `TWILIO_AUTH_TOKEN` (Twilio webhook signature verification), `ZOOM_WEBHOOK_SECRET` (Zoom webhook signature verification), `SMTP_*` (emails logged only), `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` + `GOOGLE_REDIRECT_URI` (Google Calendar + Google login), `LINKEDIN_CLIENT_ID` + `LINKEDIN_CLIENT_SECRET` (LinkedIn login hidden), `SENTRY_DSN` (backend error tracking), `NEXT_PUBLIC_SENTRY_DSN` (frontend error tracking via CDN), `NEXT_PUBLIC_POSTHOG_KEY` (PostHog analytics), `NEXT_PUBLIC_GA_MEASUREMENT_ID` (Google Analytics 4)
+**Optional (graceful fallback):** `OPENAI_API_KEY` (AI chat → fallback responses), `GUPSHUP_API_KEY` + `GUPSHUP_APP_NAME` + `GUPSHUP_SOURCE_NUMBER` (Gupshup WhatsApp — sole messaging provider), `GUPSHUP_TEMPLATE_NAMESPACE` (Gupshup template messages), `GUPSHUP_WEBHOOK_SECRET` (optional webhook verification), `SMTP_*` (emails logged only), `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` + `GOOGLE_REDIRECT_URI` (Google Calendar + Google login), `LINKEDIN_CLIENT_ID` + `LINKEDIN_CLIENT_SECRET` (LinkedIn login hidden), `SENTRY_DSN` (backend error tracking), `NEXT_PUBLIC_SENTRY_DSN` (frontend error tracking via CDN), `NEXT_PUBLIC_POSTHOG_KEY` (PostHog analytics), `NEXT_PUBLIC_GA_MEASUREMENT_ID` (Google Analytics 4)
 **Admin Analytics Integrations (optional):** `GA4_PROPERTY_ID` + `GA4_SERVICE_ACCOUNT_KEY` (GA4 Data API — website traffic in Control Tower), `INSTAGRAM_ACCESS_TOKEN` + `INSTAGRAM_BUSINESS_ACCOUNT_ID` (Instagram Graph API — social metrics), `POSTHOG_API_KEY` + `POSTHOG_HOST` + `POSTHOG_PROJECT_ID` (PostHog API — product analytics), `SENTRY_AUTH_TOKEN` + `SENTRY_ORG` + `SENTRY_PROJECT` (Sentry API — error tracking analytics in Control Tower). All show "Not configured" UI when missing.
 **Admin seed:** `ADMIN_EMAIL` + `ADMIN_PASSWORD` — both must be set to create admin; no defaults in code
 **CORS:** `CORS_ORIGIN` env var → defaults to `FRONTEND_URL`; locked to single origin (not wildcard)
 
 ## Analytics & Error Tracking
-- **Frontend Sentry:** Loaded via CDN script (`browser.sentry-cdn.com/8.48.0/bundle.min.js`) in `BootstrapClient.tsx` — avoids webpack conflicts with Next.js 14. Enhanced init in `src/lib/sentry.ts` with PII filtering (`beforeSend` strips auth headers/cookies), ignored errors list (ResizeObserver, ChunkLoadError, network errors), and deny URLs (browser extensions, analytics scripts). Helper functions: `captureException`, `captureMessage`, `setUser`, `initSentryEnhanced`.
+- **Frontend Sentry:** Loaded via CDN script (`browser.sentry-cdn.com/8.48.0/bundle.min.js`) in `BootstrapClient.tsx` — avoids webpack conflicts with Next.js 14. Helper functions in `src/lib/sentry.ts` (`captureException`, `captureMessage`, `setUser`). Initializes on all routes regardless of cookie consent (essential service).
 - **Frontend GA4:** `src/lib/ga.ts` — CDN-loaded Google Analytics. Consent-gated via `cleo_cookie_consent` localStorage key. Page views tracked via `usePathname()` in `BootstrapClient.tsx` (single source, `send_page_view: false` in config).
 - **Frontend PostHog:** CDN-loaded in `BootstrapClient.tsx`. Consent-gated. Analytics helpers in `src/lib/posthog.ts`.
-- **Backend Sentry:** `@sentry/node` initialized first in `apps/backend/src/lib/sentry.ts` (before Express import for proper instrumentation). Enhanced with PII filtering (`beforeSend`), ignored errors (CORS, ECONNRESET, etc.), breadcrumb sanitization, Express + HTTP integrations.
+- **Backend Sentry:** `@sentry/node` in `apps/backend/src/index.ts` + `errorHandler.ts`. Uses `SENTRY_DSN` env var.
 - **Cookie consent:** Banner in `BootstrapClient.tsx` (DOM-injected, not React-rendered). Stored as `cleo_cookie_consent` in localStorage. PostHog + GA4 only init after "Accept all"; Sentry loads regardless.
-
-## Monitoring & Alerting Stack
-- **Structured Logger:** `apps/backend/src/lib/logger.ts` — JSON-formatted logging with PII sanitization (emails, tokens, phone numbers redacted), log levels (error/warn/info/debug) via `LOG_LEVEL` env var, environment metadata. Child loggers for component-scoped context. Used across error handler, match scheduler, and key services.
-- **Custom Metrics:** `apps/backend/src/lib/metrics.ts` — Typed metric helpers for agents, AI calls, API requests, database queries, cache hits/misses, messages, and users. Pluggable backend: StatsD when `DD_ENABLED=true` + `STATSD_HOST` configured, otherwise log-based fallback.
-- **Health Checks:** `apps/backend/src/routes/health.ts` — `/api/health` (unified DB + Redis + memory check), `/api/health/db`, `/api/health/redis`, `/api/health/ai`. Returns 200/503 with detailed status.
-- **Agent Monitor:** `apps/backend/src/lib/agentMonitor.ts` — `AgentMonitor` class logs agent runs to `agent_run_logs` DB table, tracks consecutive failures, triggers P1/P2 alerts when agents become unhealthy (≥3 consecutive failures).
-- **Pipeline Monitor:** `apps/backend/src/lib/pipelineMonitor.ts` — `PipelineMonitor` class tracks processing stages, record counts, failure rates, queue depths. Alerts on threshold violations.
-- **Centralized Alerting:** `apps/backend/src/lib/alerting.ts` — `sendAlert()` with P1-P4 severity levels. Routes to Slack (rich formatted blocks with color-coding, fields, response time expectations) via `SLACK_ALERTS_CHANNEL`. P1/P2 alerts also sent via Resend email to `ALERT_EMAIL_RECIPIENTS`.
-- **Alert Rules:** `apps/backend/src/lib/alertRules.ts` — Config-driven rules: critical errors (>10 in 5min), agent failures (>3 in 10min), AI provider errors (>5 in 5min), database errors (>3 in 5min). Sliding window with 15-minute cooldown between alerts.
-- **Metrics Middleware:** `apps/backend/src/middleware/metricsMiddleware.ts` — Auto-instruments all API requests with method, normalized path, status code, and duration metrics.
-- **Database:** `agent_run_logs` table (Prisma migration `20260408000000_add_agent_run_logs`) for agent activity tracking.
-- **New Env Vars (optional):** `LOG_LEVEL` (default: info), `STATSD_HOST`, `STATSD_PORT` (default: 8125), `DD_ENABLED`, `ALERT_EMAIL_RECIPIENTS`, `SLACK_ALERTS_CHANNEL`.
 
 ## Matching Engine Intelligence
 The matching engine (`packages/matching/src/index.ts`) uses a three-layer hybrid approach: Rule-based (50%), Intent (20%), Semantic (30%). Enhanced with:
@@ -74,31 +53,6 @@ New profile fields stored in `extraData` JSON: `portfolioCompanies`, `openToMeet
 
 ## Match Scheduler
 Automatic batch matching runs 3 times daily at **8:00 AM, 2:00 PM, and 8:00 PM IST** via `node-cron` in `apps/backend/src/services/matchScheduler.ts`. Each run: (1) finds all complete profiles, (2) backfills any missing embeddings, (3) runs `findAndAutoPropose` for each user (up to 3 matches per user per run). Skips already-existing match pairs. Admin can trigger manually via `POST /api/admin/batch-matching`. LinkedIn enrichment batch runs daily at **3:00 AM IST**.
-
-Additional scheduled jobs:
-- **Self-ping health check** — every 5 minutes, pings `/api/health` and logs warnings on failure
-- **Weekly analytics summary** — Monday 10:00 AM IST, logs key platform metrics (new users, matches, calls, messages) for the past week
-- **Old data cleanup** — daily 2:00 AM IST, prunes read notifications (>30 days) and old activity records (>90 days)
-
-The backend handles `SIGTERM`/`SIGINT` for graceful shutdown: stops cron jobs, closes HTTP server, disconnects database (10s safety timeout). Health endpoint (`/api/health`) reports database connectivity, scheduler state, uptime, and memory usage (returns 503 when degraded).
-
-## Agent Scheduler (Autonomous AI Agents)
-`apps/backend/src/services/agentScheduler.ts` starts alongside `MatchScheduler` on server boot. Uses `node-cron` to autonomously run AI marketing agents:
-- **Orchestrator**: Daily at 7:00 AM IST — generates content plans, triggers sub-agents
-- **Content Strategist**: Mondays at 7:30 AM IST — weekly topic research & calendar
-- **Social Media Manager**: Mon/Wed/Fri at 9:00 AM IST — LinkedIn & Instagram posts
-- **Email Marketing**: Tuesdays at 10:00 AM IST — newsletters & drip sequences
-- **Cold Outreach**: Thursdays at 11:00 AM IST — lead sourcing & outreach sequences
-
-**AgentRunner** (`apps/backend/src/services/agentRunner.ts`): Executes agents by calling OpenAI (gpt-4o-mini), writes generated content to `dm_content_queue` (Supabase) with status PENDING for human review, and logs execution metadata to `dm_agent_logs`. Also processes pending tasks from `dm_agent_tasks` in priority order.
-
-**Supabase client** (`apps/backend/src/services/supabaseClient.ts`): Lightweight REST client for backend to read/write Supabase `dm_*` tables.
-
-**Admin API endpoints:**
-- `GET /api/admin/agents/status` — returns real-time agent statuses (running/completed/failed/scheduled), last run times, durations
-- `POST /api/admin/agents/:id/run` — manually trigger any agent immediately
-
-**Frontend:** `AgentsManagement.tsx` shows live agent status (polled every 10s) with "Run Now" button per agent card.
 
 ## Slack Notifications
 `apps/backend/src/services/slackService.ts` uses `@slack/web-api@7.10.0` via Replit's Slack connector (OAuth token auto-managed). Posts to `#all-cleya` channel (fallback: `#new-signups`, `#general`). Bot name in Slack: `replit`.

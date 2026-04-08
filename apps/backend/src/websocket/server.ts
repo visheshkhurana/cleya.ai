@@ -1,7 +1,8 @@
 import { Server as HttpServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
+import jwt from 'jsonwebtoken';
+import { env } from '../config/env';
 import { AuthPayload } from '../middleware/auth';
-import { verifyAccessToken, isTokenBlacklisted, checkSessionActivity } from '../services/tokenService';
 
 interface AuthenticatedSocket extends WebSocket {
   userId?: string;
@@ -45,27 +46,12 @@ export function setupWebSocket(server: HttpServer) {
     }
 
     try {
-      const payload = verifyAccessToken(token);
+      const payload = jwt.verify(token, env.JWT_SECRET) as AuthPayload;
+      ws.userId = payload.userId;
+      ws.isAlive = true;
+      clients.set(payload.userId, ws);
 
-      (async () => {
-        try {
-          if (payload.jti && await isTokenBlacklisted(payload.jti)) {
-            ws.close(4001, 'Token revoked');
-            return;
-          }
-          const sessionActive = await checkSessionActivity(payload.userId);
-          if (!sessionActive) {
-            ws.close(4001, 'Session expired');
-            return;
-          }
-          ws.userId = payload.userId;
-          ws.isAlive = true;
-          clients.set(payload.userId, ws);
-          console.log(`🔌 WS connected: ${payload.userId}`);
-        } catch {
-          ws.close(4001, 'Authentication failed');
-        }
-      })();
+      console.log(`🔌 WS connected: ${payload.userId}`);
     } catch {
       ws.close(4001, 'Invalid token');
       return;
@@ -141,19 +127,5 @@ export function broadcastToUsers(userIds: string[], type: string, payload: any) 
     if (client?.readyState === WebSocket.OPEN) {
       client.send(message);
     }
-  });
-}
-
-export function closeAllWebSocketConnections(): Promise<void> {
-  return new Promise((resolve) => {
-    clients.forEach((ws, userId) => {
-      try {
-        ws.close(1001, 'Server shutting down');
-      } catch {
-        ws.terminate();
-      }
-    });
-    clients.clear();
-    resolve();
   });
 }

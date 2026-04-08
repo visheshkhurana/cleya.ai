@@ -1,42 +1,17 @@
-import crypto from 'crypto';
 import { Router, Request, Response, NextFunction } from 'express';
 import { gupshupService } from '../services/gupshupService';
 import { whatsappBotService } from '../services/whatsappBotService';
 import { env } from '../config/env';
-import { verifyHmacSignature, verifyWebhookTimestamp, webhookPayloadSizeLimit, getRawBody } from '../middleware/webhookSecurity';
 
 export const gupshupRouter = Router();
 
-gupshupRouter.post('/webhook', webhookPayloadSizeLimit(512 * 1024), async (req: Request, res: Response, next: NextFunction) => {
+gupshupRouter.post('/webhook', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const webhookSecret = process.env.GUPSHUP_WEBHOOK_SECRET;
-    if (!webhookSecret) {
-      if (env.NODE_ENV === 'production') {
-        console.warn('[Gupshup Webhook] Rejected: GUPSHUP_WEBHOOK_SECRET not configured in production');
-        res.sendStatus(403);
-        return;
-      }
-    } else {
-      const hmacSignature = req.headers['x-gupshup-signature'] as string | undefined;
-      if (hmacSignature) {
-        const rawBody = getRawBody(req) || Buffer.from(JSON.stringify(req.body));
-        if (!verifyHmacSignature(rawBody, hmacSignature, webhookSecret)) {
-          console.warn('[Gupshup Webhook] Rejected: invalid HMAC signature');
-          res.sendStatus(403);
-          return;
-        }
-      } else {
-        const incomingKey = (req.query.secret as string) || req.headers['x-gupshup-webhook-secret'] as string;
-        if (!incomingKey || incomingKey !== webhookSecret) {
-          console.warn('[Gupshup Webhook] Rejected: invalid or missing webhook secret');
-          res.sendStatus(403);
-          return;
-        }
-      }
-
-      const timestamp = req.headers['x-gupshup-timestamp'] as string | undefined;
-      if (!verifyWebhookTimestamp(timestamp)) {
-        console.warn('[Gupshup Webhook] Rejected: missing or stale timestamp');
+    if (webhookSecret) {
+      const incomingKey = (req.query.secret as string) || req.headers['x-gupshup-webhook-secret'] as string;
+      if (incomingKey !== webhookSecret) {
+        console.warn('[Gupshup Webhook] Rejected: invalid or missing webhook secret');
         res.sendStatus(403);
         return;
       }

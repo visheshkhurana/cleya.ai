@@ -8,11 +8,7 @@ const envSchema = z.object({
   REDIS_URL: z.string().default('redis://localhost:6379'),
 
   JWT_SECRET: z.string().min(32),
-  JWT_EXPIRES_IN: z.string().default('15m'),
-  JWT_PRIVATE_KEY: z.string().optional(),
-  JWT_PUBLIC_KEY: z.string().optional(),
-  REFRESH_TOKEN_EXPIRES_IN: z.string().default('7d'),
-  SESSION_INACTIVITY_TIMEOUT: z.coerce.number().default(30 * 60 * 1000),
+  JWT_EXPIRES_IN: z.string().default('7d'),
 
   OPENAI_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
@@ -53,9 +49,6 @@ const envSchema = z.object({
   ZOOM_CLIENT_ID: z.string().optional(),
   ZOOM_CLIENT_SECRET: z.string().optional(),
   ZOOM_REDIRECT_URI: z.string().optional(),
-  ZOOM_WEBHOOK_SECRET: z.string().optional(),
-
-  TWILIO_AUTH_TOKEN: z.string().optional(),
 
   SENTRY_DSN: z.string().optional(),
   SENTRY_AUTH_TOKEN: z.string().optional(),
@@ -70,13 +63,6 @@ const envSchema = z.object({
   POSTHOG_API_KEY: z.string().optional(),
   POSTHOG_HOST: z.string().optional(),
   POSTHOG_PROJECT_ID: z.string().optional(),
-
-  LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
-  STATSD_HOST: z.string().optional(),
-  STATSD_PORT: z.coerce.number().default(8125),
-  DD_ENABLED: z.string().optional(),
-  ALERT_EMAIL_RECIPIENTS: z.string().optional(),
-  SLACK_ALERTS_CHANNEL: z.string().optional(),
 });
 
 function validateEnv() {

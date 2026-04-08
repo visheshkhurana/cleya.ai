@@ -1,10 +1,9 @@
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { prisma } from '@cleya/db';
+import { env } from '../config/env';
 import { AppError } from '../middleware/errorHandler';
-import {
-  generateAccessToken,
-  generateRefreshToken,
-} from './tokenService';
+import { AuthPayload } from '../middleware/auth';
 
 function isValidHttpsUrl(url: string): boolean {
   try {
@@ -17,6 +16,7 @@ function isValidHttpsUrl(url: string): boolean {
 
 export class AuthService {
   async signup(data: { email: string; password: string; name?: string; persona?: string; phone?: string; utmSource?: string; utmMedium?: string; utmCampaign?: string }) {
+    // Check existing user
     const existing = await prisma.user.findFirst({
       where: {
         OR: [
@@ -41,7 +41,6 @@ export class AuthService {
         utmSource: data.utmSource,
         utmMedium: data.utmMedium,
         utmCampaign: data.utmCampaign,
-        lastActiveAt: new Date(),
         profile: {
           create: data.persona ? { persona: data.persona as any } : {},
         },
@@ -49,8 +48,7 @@ export class AuthService {
       include: { profile: true },
     });
 
-    const token = generateAccessToken(user);
-    const refreshToken = await generateRefreshToken(user.id);
+    const token = this.generateToken(user);
 
     if (user.phone) {
       import('./gupshupService').then(({ gupshupService }) => {
@@ -90,7 +88,6 @@ export class AuthService {
         profile: user.profile,
       },
       token,
-      refreshToken,
     };
   }
 
@@ -113,13 +110,7 @@ export class AuthService {
       throw new AppError(403, 'Account is disabled', 'ACCOUNT_DISABLED');
     }
 
-    const token = generateAccessToken(user);
-    const refreshToken = await generateRefreshToken(user.id);
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { lastActiveAt: new Date() },
-    });
+    const token = this.generateToken(user);
 
     return {
       user: {
@@ -132,7 +123,6 @@ export class AuthService {
         profile: user.profile,
       },
       token,
-      refreshToken,
     };
   }
 
@@ -171,17 +161,11 @@ export class AuthService {
       if (!user.emailVerified) {
         user = await prisma.user.update({
           where: { id: user.id },
-          data: { emailVerified: true, lastActiveAt: new Date() },
+          data: { emailVerified: true },
           include: { profile: true },
         });
-      } else {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { lastActiveAt: new Date() },
-        });
       }
-      const token = generateAccessToken(user);
-      const refreshToken = await generateRefreshToken(user.id);
+      const token = this.generateToken(user);
       return {
         user: {
           id: user.id,
@@ -192,7 +176,6 @@ export class AuthService {
           profile: user.profile,
         },
         token,
-        refreshToken,
         isNew: false,
       };
     }
@@ -202,7 +185,6 @@ export class AuthService {
         email: googleProfile.email,
         passwordHash: '',
         emailVerified: true,
-        lastActiveAt: new Date(),
         profile: {
           create: {
             ...(googleProfile.name ? { currentRole: googleProfile.name } : {}),
@@ -212,8 +194,7 @@ export class AuthService {
       include: { profile: true },
     });
 
-    const token = generateAccessToken(user);
-    const refreshToken = await generateRefreshToken(user.id);
+    const token = this.generateToken(user);
     return {
       user: {
         id: user.id,
@@ -224,7 +205,6 @@ export class AuthService {
         profile: user.profile,
       },
       token,
-      refreshToken,
       isNew: true,
     };
   }
@@ -254,15 +234,17 @@ export class AuthService {
         throw new AppError(403, 'Account is disabled', 'ACCOUNT_DISABLED');
       }
 
-      const userUpdates: any = { lastActiveAt: new Date() };
+      const userUpdates: any = {};
       if (!user.emailVerified) userUpdates.emailVerified = true;
       if (!user.name && linkedinProfile.name) userUpdates.name = linkedinProfile.name;
 
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: userUpdates,
-        include: { profile: true },
-      });
+      if (Object.keys(userUpdates).length > 0) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: userUpdates,
+          include: { profile: true },
+        });
+      }
 
       if (user.profile) {
         const profileUpdates: any = {};
@@ -288,8 +270,7 @@ export class AuthService {
         }
       }
 
-      const token = generateAccessToken(user!);
-      const refreshToken = await generateRefreshToken(user!.id);
+      const token = this.generateToken(user!);
       return {
         user: {
           id: user!.id,
@@ -300,7 +281,6 @@ export class AuthService {
           profile: user!.profile,
         },
         token,
-        refreshToken,
         isNew: false,
       };
     }
@@ -323,7 +303,6 @@ export class AuthService {
         name: linkedinProfile.name || undefined,
         passwordHash: '',
         emailVerified: true,
-        lastActiveAt: new Date(),
         profile: {
           create: profileData,
         },
@@ -331,8 +310,7 @@ export class AuthService {
       include: { profile: true },
     });
 
-    const token = generateAccessToken(user);
-    const refreshToken = await generateRefreshToken(user.id);
+    const token = this.generateToken(user);
     return {
       user: {
         id: user.id,
@@ -343,7 +321,6 @@ export class AuthService {
         profile: user.profile,
       },
       token,
-      refreshToken,
       isNew: true,
     };
   }
@@ -365,6 +342,18 @@ export class AuthService {
       where: { id: userId },
       data: { emailVerified: true },
     });
+  }
+
+  private generateToken(user: { id: string; email: string; role: string }): string {
+    const payload: AuthPayload = {
+      userId: user.id,
+      email: user.email,
+      role: user.role as 'user' | 'admin',
+    };
+
+    return jwt.sign(payload, env.JWT_SECRET, {
+      expiresIn: env.JWT_EXPIRES_IN,
+    } as jwt.SignOptions);
   }
 }
 

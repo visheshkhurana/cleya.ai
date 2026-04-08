@@ -9,14 +9,6 @@ import { env } from '../config/env';
 import { whatsappTemplates } from '../services/whatsappTemplates';
 import { gupshupService } from '../services/gupshupService';
 import { prisma } from '@cleya/db';
-import { securityLogger, checkRepeatedAuthFailures } from '../services/securityLogger';
-import {
-  verifyAccessToken,
-  rotateRefreshToken,
-  blacklistAccessToken,
-  revokeAllUserTokens,
-  cleanupExpiredTokens,
-} from '../services/tokenService';
 
 export const authRouter = Router();
 
@@ -43,25 +35,16 @@ setInterval(() => {
   }
 }, 60 * 1000);
 
-setInterval(() => {
-  cleanupExpiredTokens().catch((e) => console.error('[Auth] Token cleanup failed:', e));
-}, 60 * 60 * 1000);
-
 function stripHtmlBasic(str: string): string {
   return str.replace(/<[^>]*>/g, '').replace(/&#?[a-z0-9]+;/gi, ' ').trim();
 }
 
-const passwordSchema = z.string()
-  .min(12, 'Password must be at least 12 characters')
-  .max(128, 'Password must be less than 128 characters')
-  .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-  .regex(/[0-9]/, 'Password must contain at least one number')
-  .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character');
-
 const signupSchema = z.object({
   email: z.string().email().max(255),
-  password: passwordSchema,
+  password: z.string().min(8, 'Password must be at least 8 characters')
+    .max(128, 'Password must be less than 128 characters')
+    .regex(/[A-Za-z]/, 'Password must contain at least one letter')
+    .regex(/[0-9]/, 'Password must contain at least one number'),
   name: z.string().min(2, 'Full name is required').max(100).transform(stripHtmlBasic).optional(),
   persona: z.enum(['FOUNDER', 'INVESTOR', 'TALENT']).optional(),
   phone: z.string().max(20).optional(),
@@ -75,48 +58,20 @@ const loginSchema = z.object({
   password: z.string().max(128),
 });
 
-const ACCESS_COOKIE_MAX_AGE = 15 * 60 * 1000;
-const REFRESH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
-
-function isMobileClient(req: Request): boolean {
-  const auth = req.headers.authorization;
-  return !!(auth && auth.startsWith('Bearer '));
-}
-
-function setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
-  res.cookie('cleo_auth', accessToken, {
+function setAuthCookie(res: Response, token: string) {
+  res.cookie('cleo_auth', token, {
     httpOnly: true,
     secure: true,
     sameSite: 'lax',
     path: '/',
-    maxAge: ACCESS_COOKIE_MAX_AGE,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
   });
-  res.cookie('cleo_refresh', refreshToken, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'lax',
-    path: '/api/auth',
-    maxAge: REFRESH_COOKIE_MAX_AGE,
-  });
-}
-
-function clearAuthCookies(res: Response) {
-  res.clearCookie('cleo_auth', { httpOnly: true, secure: true, sameSite: 'lax', path: '/' });
-  res.clearCookie('cleo_refresh', { httpOnly: true, secure: true, sameSite: 'lax', path: '/api/auth' });
-}
-
-function buildAuthResponse(req: Request, result: { user: any; token: string; refreshToken: string }) {
-  if (isMobileClient(req)) {
-    return { user: result.user, token: result.token, refreshToken: result.refreshToken };
-  }
-  return { user: result.user, token: result.token };
 }
 
 authRouter.post('/signup', signupLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = signupSchema.parse(req.body);
     const result = await authService.signup(data);
-    securityLogger.authEvent(req, 'SIGNUP', 'SUCCESS', result.user.id, { email: data.email });
     const smtpConfigured = !!(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS);
     if (smtpConfigured) {
       emailService.sendWelcome(data.email).catch(() => {});
@@ -127,8 +82,8 @@ authRouter.post('/signup', signupLimiter, async (req: Request, res: Response, ne
       await authService.verifyEmail(result.user.id);
       result.user.emailVerified = true;
     }
-    setAuthCookies(res, result.token, result.refreshToken);
-    res.status(201).json({ success: true, data: buildAuthResponse(req, result) });
+    setAuthCookie(res, result.token);
+    res.status(201).json({ success: true, data: result });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       res.status(400).json({
@@ -141,7 +96,6 @@ authRouter.post('/signup', signupLimiter, async (req: Request, res: Response, ne
       });
       return;
     }
-    securityLogger.authEvent(req, 'SIGNUP', 'FAILURE', null, { email: req.body?.email, error: error?.message });
     next(error);
   }
 });
@@ -150,124 +104,15 @@ authRouter.post('/login', loginLimiter, async (req: Request, res: Response, next
   try {
     const data = loginSchema.parse(req.body);
     const result = await authService.login(data);
-    securityLogger.authEvent(req, 'LOGIN_SUCCESS', 'SUCCESS', result.user.id, { email: data.email });
-    setAuthCookies(res, result.token, result.refreshToken);
-    res.json({ success: true, data: buildAuthResponse(req, result) });
+    setAuthCookie(res, result.token);
+    res.json({ success: true, data: result });
   } catch (error) {
-    securityLogger.authEvent(req, 'LOGIN_FAILURE', 'FAILURE', null, { email: req.body?.email, error: (error as Error)?.message });
-    const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || 'unknown';
-    checkRepeatedAuthFailures(req, ipAddress);
     next(error);
   }
 });
 
-authRouter.post('/refresh', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    let refreshTokenValue: string | undefined;
-
-    if (req.cookies?.cleo_refresh) {
-      refreshTokenValue = req.cookies.cleo_refresh;
-    }
-
-    if (!refreshTokenValue && req.body?.refreshToken) {
-      refreshTokenValue = req.body.refreshToken;
-    }
-
-    if (!refreshTokenValue) {
-      res.status(401).json({
-        success: false,
-        error: { message: 'No refresh token provided', code: 'NO_REFRESH_TOKEN' },
-      });
-      return;
-    }
-
-    const result = await rotateRefreshToken(refreshTokenValue);
-    setAuthCookies(res, result.accessToken, result.refreshToken);
-
-    const responseData: { token: string; refreshToken?: string } = { token: result.accessToken };
-    if (req.body?.refreshToken) {
-      responseData.refreshToken = result.refreshToken;
-    }
-    res.json({ success: true, data: responseData });
-  } catch (error: any) {
-    if (error.message === 'REFRESH_TOKEN_REUSE') {
-      clearAuthCookies(res);
-      res.status(401).json({
-        success: false,
-        error: { message: 'Token reuse detected. All sessions have been revoked.', code: 'TOKEN_REUSE' },
-      });
-      return;
-    }
-    if (error.message === 'INVALID_REFRESH_TOKEN' || error.message === 'REFRESH_TOKEN_EXPIRED') {
-      clearAuthCookies(res);
-      res.status(401).json({
-        success: false,
-        error: { message: 'Invalid or expired refresh token', code: 'INVALID_REFRESH_TOKEN' },
-      });
-      return;
-    }
-    if (error.message === 'ACCOUNT_DISABLED') {
-      clearAuthCookies(res);
-      res.status(403).json({
-        success: false,
-        error: { message: 'Account is disabled', code: 'ACCOUNT_DISABLED' },
-      });
-      return;
-    }
-    next(error);
-  }
-});
-
-authRouter.post('/logout', async (req: Request, res: Response) => {
-  try {
-    let userId: string | undefined;
-
-    const header = req.headers.authorization;
-    let accessToken: string | undefined;
-    if (header?.startsWith('Bearer ')) {
-      accessToken = header.split(' ')[1];
-    }
-    if (!accessToken && req.cookies?.cleo_auth) {
-      accessToken = req.cookies.cleo_auth;
-    }
-
-    if (accessToken) {
-      try {
-        const payload = verifyAccessToken(accessToken);
-        userId = payload.userId;
-        if (payload.jti && payload.exp) {
-          await blacklistAccessToken(payload.jti, payload.userId, payload.exp);
-        }
-      } catch {}
-    }
-
-    if (!userId) {
-      const refreshTokenValue = req.cookies?.cleo_refresh || req.body?.refreshToken;
-      if (refreshTokenValue) {
-        try {
-          const decoded = Buffer.from(refreshTokenValue, 'base64url').toString('utf8');
-          const parsed = JSON.parse(decoded);
-          if (parsed.t) {
-            const tokenHash = (await import('crypto')).createHash('sha256').update(parsed.t).digest('hex');
-            const rt = await prisma.refreshToken.findUnique({
-              where: { tokenHash },
-              select: { userId: true },
-            });
-            if (rt) userId = rt.userId;
-          }
-        } catch {}
-      }
-    }
-
-    if (userId) {
-      securityLogger.authEvent(req, 'LOGOUT', 'SUCCESS', userId);
-      await revokeAllUserTokens(userId);
-    } else {
-      securityLogger.authEvent(req, 'LOGOUT', 'SUCCESS', null);
-    }
-  } catch {}
-
-  clearAuthCookies(res);
+authRouter.post('/logout', (_req: Request, res: Response) => {
+  res.clearCookie('cleo_auth', { httpOnly: true, secure: true, sameSite: 'lax', path: '/' });
   res.json({ success: true, message: 'Logged out' });
 });
 
@@ -347,7 +192,6 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
       name: profile.name,
       googleId: profile.id,
     });
-    securityLogger.authEvent(req, 'OAUTH_GOOGLE', 'SUCCESS', result.user.id, { email: profile.email, isNew: result.isNew });
     if (result.isNew) {
       emailService.sendWelcome(profile.email).catch(() => {});
       if (result.user.phone) {
@@ -359,12 +203,11 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
         ).catch((e) => console.error('[Auth/Google] WhatsApp welcome failed:', e));
       }
     }
-    setAuthCookies(res, result.token, result.refreshToken);
+    setAuthCookie(res, result.token);
     const profileComplete = result.user.profile?.isComplete;
     const dest = (result.user.role as string).toLowerCase() === 'admin' ? '/admin' : profileComplete ? '/dashboard' : '/chat';
     res.redirect(`${baseUrl}${dest}`);
   } catch (err) {
-    securityLogger.authEvent(req, 'OAUTH_GOOGLE', 'FAILURE', null, { error: (err as Error)?.message });
     console.error('Google OAuth error:', err);
     res.redirect(`${env.FRONTEND_URL}/?error=google_auth_error`);
   }
@@ -499,8 +342,6 @@ authRouter.get('/linkedin/callback', async (req: Request, res: Response) => {
       industryName: linkedinIndustry || undefined,
     });
 
-    securityLogger.authEvent(req, 'OAUTH_LINKEDIN', 'SUCCESS', result.user.id, { email: profile.email, isNew: result.isNew });
-
     if (result.isNew) {
       emailService.sendWelcome(profile.email).catch(() => {});
       if (result.user.phone) {
@@ -513,12 +354,11 @@ authRouter.get('/linkedin/callback', async (req: Request, res: Response) => {
       }
     }
 
-    setAuthCookies(res, result.token, result.refreshToken);
+    setAuthCookie(res, result.token);
     const profileComplete = result.user.profile?.isComplete;
     const dest = (result.user.role as string).toLowerCase() === 'admin' ? '/admin' : profileComplete ? '/dashboard' : '/chat';
     res.redirect(`${baseUrl}${dest}`);
   } catch (err) {
-    securityLogger.authEvent(req, 'OAUTH_LINKEDIN', 'FAILURE', null, { error: (err as Error)?.message });
     console.error('LinkedIn OAuth error:', err);
     res.redirect(`${env.FRONTEND_URL}/?error=linkedin_auth_error`);
   }
@@ -551,7 +391,6 @@ authRouter.post('/forgot-password', passwordResetLimiter, async (req: Request, r
   try {
     const { email } = z.object({ email: z.string().email() }).parse(req.body);
     const user = await authService.findUserByEmail(email);
-    securityLogger.authEvent(req, 'PASSWORD_RESET_REQUEST', 'SUCCESS', user?.id ?? null, { email });
     if (user) {
       const token = crypto.randomBytes(32).toString('hex');
       resetTokens.set(token, { email, createdAt: Date.now() });
@@ -567,13 +406,7 @@ authRouter.post('/reset-password', passwordResetLimiter, async (req: Request, re
   try {
     const { token, password } = z.object({
       token: z.string(),
-      password: z.string()
-        .min(12, 'Password must be at least 12 characters')
-        .max(128)
-        .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-        .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-        .regex(/[0-9]/, 'Password must contain at least one number')
-        .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
+      password: z.string().min(8),
     }).parse(req.body);
 
     const entry = resetTokens.get(token);
@@ -584,7 +417,6 @@ authRouter.post('/reset-password', passwordResetLimiter, async (req: Request, re
 
     await authService.resetPassword(entry.email, password);
     resetTokens.delete(token);
-    securityLogger.authEvent(req, 'PASSWORD_RESET_COMPLETE', 'SUCCESS', null, { email: entry.email });
     res.json({ success: true, message: 'Password has been reset successfully.' });
   } catch (error) {
     next(error);
@@ -613,7 +445,6 @@ authRouter.post('/verify-email', async (req: Request, res: Response, next: NextF
     }
     await authService.verifyEmail(entry.userId);
     verifyTokens.delete(token);
-    securityLogger.authEvent(req, 'EMAIL_VERIFICATION', 'SUCCESS', entry.userId);
     res.json({ success: true, message: 'Email verified successfully.' });
   } catch (error) {
     next(error);

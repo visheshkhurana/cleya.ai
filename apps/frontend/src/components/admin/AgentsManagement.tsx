@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Brain, Lightbulb, Share2, Mail, Target, Globe, Zap, BarChart3,
   Clock, AlertCircle, CheckCircle, ChevronRight, X, Send, Plus,
-  Filter, Download, Eye, Check, XCircle, Loader, Play
+  Filter, Download, Eye, Check, XCircle, Loader
 } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -90,16 +90,6 @@ interface CampaignMetric {
   metric_date: string;
   metrics: Record<string, any>;
   created_at: string;
-}
-
-interface AgentStatusInfo {
-  agentId: string;
-  name: string;
-  status: 'idle' | 'running' | 'completed' | 'failed' | 'scheduled';
-  lastRunAt: string | null;
-  lastRunDuration: number | null;
-  lastRunStatus: string | null;
-  nextRunAt: string | null;
 }
 
 const SUPABASE_URL = 'https://lyuiazskqubmlzwuokzm.supabase.co';
@@ -199,41 +189,23 @@ function ErrorState({ message }: { message: string }) {
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const statusConfig: Record<string, string> = {
+function StatusBadge({ status }: { status: 'active' | 'idle' | 'error' }) {
+  const statusConfig = {
     active: 'bg-green-500/20 text-green-300 border-green-500/30',
-    running: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-    completed: 'bg-green-500/20 text-green-300 border-green-500/30',
-    scheduled: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-    failed: 'bg-red-500/20 text-red-300 border-red-500/30',
     idle: 'bg-slate-500/20 text-slate-300 border-slate-500/30',
     error: 'bg-red-500/20 text-red-300 border-red-500/30',
   };
 
-  const dotConfig: Record<string, string> = {
-    active: 'bg-green-400 animate-pulse',
-    running: 'bg-blue-400 animate-pulse',
-    completed: 'bg-green-400',
-    scheduled: 'bg-yellow-400',
-    failed: 'bg-red-400',
-    idle: 'bg-slate-400',
-    error: 'bg-red-400',
-  };
-
-  const labels: Record<string, string> = {
-    active: 'Active',
-    running: 'Running',
-    completed: 'Completed',
-    scheduled: 'Scheduled',
-    failed: 'Failed',
-    idle: 'Idle',
-    error: 'Error',
-  };
-
   return (
-    <div className={`flex items-center gap-2 px-3 py-1 rounded-lg border text-xs font-medium ${statusConfig[status] || statusConfig['idle']}`}>
-      <div className={`w-2 h-2 rounded-full ${dotConfig[status] || dotConfig['idle']}`} />
-      {labels[status] || status}
+    <div className={`flex items-center gap-2 px-3 py-1 rounded-lg border text-xs font-medium ${statusConfig[status]}`}>
+      <div
+        className={`w-2 h-2 rounded-full ${
+          status === 'active' ? 'bg-green-400 animate-pulse' :
+          status === 'error' ? 'bg-red-400' :
+          'bg-slate-400'
+        }`}
+      />
+      {status === 'active' ? 'Active' : status === 'idle' ? 'Idle' : 'Error'}
     </div>
   );
 }
@@ -241,88 +213,55 @@ function StatusBadge({ status }: { status: string }) {
 function AgentCard({
   agent,
   stats,
-  onClick,
-  liveStatus,
-  onRunNow,
-  isTriggering,
+  onClick
 }: {
   agent: Agent;
   stats: { tasksToday: number; contentPending: number; messagesUnread: number };
   onClick: () => void;
-  liveStatus?: AgentStatusInfo;
-  onRunNow?: (agentId: string) => void;
-  isTriggering?: boolean;
 }) {
   const colorClass = AGENT_COLORS[agent.color] || AGENT_COLORS['blue'];
   const icon = AGENT_ICONS[agent.icon] || AGENT_ICONS['lightbulb'];
-  const displayStatus = liveStatus?.status || agent.status;
-  const isRunning = displayStatus === 'running' || !!isTriggering;
-  const lastRunDisplay = liveStatus?.lastRunAt
-    ? `Last: ${new Date(liveStatus.lastRunAt).toLocaleString()}`
-    : agent.last_run_at
-    ? `Last: ${new Date(agent.last_run_at).toLocaleDateString()}`
-    : 'Never run';
 
   return (
-    <div className={`group relative bg-gradient-to-br ${colorClass} border rounded-xl p-6 transition-all hover:shadow-lg hover:shadow-brand-violet/10 w-full text-left`}>
-      <button onClick={onClick} className="w-full text-left">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="text-brand-violet-hover">{icon}</div>
-            <div>
-              <h3 className="font-semibold text-white">{agent.name}</h3>
-              <p className="text-sm text-slate-400">{agent.role}</p>
-            </div>
-          </div>
-          <StatusBadge status={displayStatus} />
-        </div>
-
-        <p className="text-sm text-slate-300 mb-4 line-clamp-2">{agent.description}</p>
-
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="bg-slate-800/50 rounded-lg p-2">
-            <div className="text-xs text-slate-400">Tasks Today</div>
-            <div className="text-lg font-bold text-white">{stats.tasksToday}</div>
-          </div>
-          <div className="bg-slate-800/50 rounded-lg p-2">
-            <div className="text-xs text-slate-400">Content</div>
-            <div className="text-lg font-bold text-white">{stats.contentPending}</div>
-          </div>
-          <div className="bg-slate-800/50 rounded-lg p-2">
-            <div className="text-xs text-slate-400">Unread</div>
-            <div className="text-lg font-bold text-white">{stats.messagesUnread}</div>
+    <button
+      onClick={onClick}
+      className={`group relative bg-gradient-to-br ${colorClass} border rounded-xl p-6 transition-all hover:shadow-lg hover:shadow-brand-violet/10 cursor-pointer w-full text-left`}
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="text-brand-violet-hover">{icon}</div>
+          <div>
+            <h3 className="font-semibold text-white">{agent.name}</h3>
+            <p className="text-sm text-slate-400">{agent.role}</p>
           </div>
         </div>
-
-        <div className="flex items-center justify-between text-xs text-slate-400">
-          <span>{lastRunDisplay}</span>
-          {liveStatus?.lastRunDuration != null && (
-            <span>{(liveStatus.lastRunDuration / 1000).toFixed(1)}s</span>
-          )}
-        </div>
-        {liveStatus?.nextRunAt && (
-          <div className="text-xs text-slate-500 mt-1">
-            Schedule: {liveStatus.nextRunAt}
-          </div>
-        )}
-      </button>
-
-      <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between">
-        {liveStatus ? (
-          <button
-            onClick={(e) => { e.stopPropagation(); onRunNow?.(agent.id); }}
-            disabled={isRunning}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-brand-violet/20 text-brand-violet-hover hover:bg-brand-violet/30 border border-brand-violet/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {isRunning ? <Loader size={14} className="animate-spin" /> : <Play size={14} />}
-            {isRunning ? 'Running...' : 'Run Now'}
-          </button>
-        ) : (
-          <span className="text-xs text-slate-500">Chat only</span>
-        )}
-        <ChevronRight size={16} className="text-slate-400 group-hover:translate-x-1 transition-transform" />
+        <StatusBadge status={agent.status} />
       </div>
-    </div>
+
+      <p className="text-sm text-slate-300 mb-4 line-clamp-2">{agent.description}</p>
+
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="bg-slate-800/50 rounded-lg p-2">
+          <div className="text-xs text-slate-400">Tasks Today</div>
+          <div className="text-lg font-bold text-white">{stats.tasksToday}</div>
+        </div>
+        <div className="bg-slate-800/50 rounded-lg p-2">
+          <div className="text-xs text-slate-400">Content</div>
+          <div className="text-lg font-bold text-white">{stats.contentPending}</div>
+        </div>
+        <div className="bg-slate-800/50 rounded-lg p-2">
+          <div className="text-xs text-slate-400">Unread</div>
+          <div className="text-lg font-bold text-white">{stats.messagesUnread}</div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between text-xs text-slate-400">
+        <span>
+          {agent.last_run_at ? `Last: ${new Date(agent.last_run_at).toLocaleDateString()}` : 'Never run'}
+        </span>
+        <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
+      </div>
+    </button>
   );
 }
 
@@ -1077,35 +1016,6 @@ export function AgentsManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
-  const [agentStatuses, setAgentStatuses] = useState<AgentStatusInfo[]>([]);
-  const [runningAgents, setRunningAgents] = useState<Set<string>>(new Set());
-
-  const loadStatuses = useCallback(async () => {
-    try {
-      const statuses = await api.getAgentStatuses();
-      if (Array.isArray(statuses)) {
-        setAgentStatuses(statuses);
-      }
-    } catch (err) {
-      console.error('Failed to load agent statuses:', err);
-    }
-  }, []);
-
-  const handleRunNow = useCallback(async (agentId: string) => {
-    setRunningAgents(prev => new Set(prev).add(agentId));
-    try {
-      await api.runAgent(agentId);
-      await loadStatuses();
-    } catch (err) {
-      console.error(`Failed to run agent ${agentId}:`, err);
-    } finally {
-      setRunningAgents(prev => {
-        const next = new Set(prev);
-        next.delete(agentId);
-        return next;
-      });
-    }
-  }, [loadStatuses]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -1149,11 +1059,9 @@ export function AgentsManagement() {
     };
 
     loadData();
-    loadStatuses();
     const interval = setInterval(loadData, 30000);
-    const statusInterval = setInterval(loadStatuses, 10000);
-    return () => { clearInterval(interval); clearInterval(statusInterval); };
-  }, [loadStatuses]);
+    return () => clearInterval(interval);
+  }, []);
 
   if (loading) return <LoadingSpinner />;
   if (error) return <ErrorState message={error} />;
@@ -1203,9 +1111,6 @@ export function AgentsManagement() {
                           agent={agent}
                           stats={stats[agent.id] || { tasksToday: 0, contentPending: 0, messagesUnread: 0 }}
                           onClick={() => setSelectedAgent(agent)}
-                          liveStatus={agentStatuses.find(s => s.agentId === agent.id)}
-                          onRunNow={handleRunNow}
-                          isTriggering={runningAgents.has(agent.id)}
                         />
                       ))}
                     </div>
@@ -1223,9 +1128,6 @@ export function AgentsManagement() {
                           agent={agent}
                           stats={stats[agent.id] || { tasksToday: 0, contentPending: 0, messagesUnread: 0 }}
                           onClick={() => setSelectedAgent(agent)}
-                          liveStatus={agentStatuses.find(s => s.agentId === agent.id)}
-                          onRunNow={handleRunNow}
-                          isTriggering={runningAgents.has(agent.id)}
                         />
                       ))}
                     </div>

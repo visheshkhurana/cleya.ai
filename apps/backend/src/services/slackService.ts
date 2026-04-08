@@ -84,39 +84,6 @@ class SlackService {
     }
   }
 
-  async postAlert(text: string, blocks?: any[]) {
-    if (!this.enabled) return;
-    try {
-      const slack = await getUncachableSlackClient();
-      const alertsChannelName = process.env.SLACK_ALERTS_CHANNEL || 'all-cleya';
-      const result = await slack.conversations.list({ types: 'public_channel', limit: 200 });
-      const alertChannel = result.channels?.find(ch => ch.name === alertsChannelName)
-        || result.channels?.find(ch => ch.name === 'all-cleya');
-
-      const channelId = alertChannel?.id || await getNotificationChannelId();
-
-      try {
-        await slack.conversations.join({ channel: channelId });
-      } catch {}
-      await slack.chat.postMessage({ channel: channelId, text, blocks });
-    } catch (err: any) {
-      console.log(`[SlackService] Failed to send alert: ${err.message}`);
-    }
-  }
-
-  async notifySecurityAlert(title: string, details: string) {
-    const blocks = [
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: `:rotating_light: *Security Alert: ${title}*\n${details}`
-        }
-      }
-    ];
-    await this.post(`Security Alert: ${title} — ${details}`, blocks);
-  }
-
   async notifyUserRegistered(user: { id: string; email: string; name?: string }) {
     const totalUsers = await prisma.user.count();
     const blocks = [

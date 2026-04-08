@@ -14,12 +14,8 @@ export class MessagingService {
     return gupshupService.sendImage(userId, phoneNumber, imageUrl, caption);
   }
 
-  // NOTE: SMS is NOT an independent channel. It routes through WhatsApp via Gupshup.
-  // This means if WhatsApp/Gupshup is down, SMS will also fail.
-  // For true SMS delivery, a separate SMS provider (e.g. Twilio) with TRAI DLT
-  // registration would be needed — that is out of scope for now.
   async sendSMS(userId: string, phoneNumber: string, message: string) {
-    console.log(`SMS routed to WhatsApp via Gupshup for ${phoneNumber} (not an independent channel)`);
+    console.log(`SMS routed to WhatsApp via Gupshup for ${phoneNumber}`);
     return gupshupService.sendWhatsApp(userId, phoneNumber, message);
   }
 
