@@ -119,6 +119,15 @@ export function sendToUser(userId: string, type: string, payload: any) {
   return false;
 }
 
+export function closeAllWebSocketConnections() {
+  clients.forEach((ws, userId) => {
+    try {
+      ws.close(1001, 'Server shutting down');
+    } catch {}
+  });
+  clients.clear();
+}
+
 // Broadcast to multiple users
 export function broadcastToUsers(userIds: string[], type: string, payload: any) {
   const message = JSON.stringify({ type, payload });

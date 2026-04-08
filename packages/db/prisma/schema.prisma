@@ -986,6 +986,58 @@ model AdminAuditLog {
 }
 
 // ─────────────────────────────────────────────
+// AI AUDIT & USAGE
+// ─────────────────────────────────────────────
+
+model AIAuditLog {
+  id                      String   @id @default(cuid())
+  userId                  String
+  endpoint                String
+  provider                String   @default("openai")
+  model                   String   @default("gpt-4o-mini")
+  inputLength             Int      @default(0)
+  outputLength            Int      @default(0)
+  promptTokens            Int?
+  completionTokens        Int?
+  totalTokens             Int?
+  latencyMs               Int      @default(0)
+  promptInjectionDetected Boolean  @default(false)
+  piiRedacted             Boolean  @default(false)
+  redactionDetails        String[] @default([])
+  outputTruncated         Boolean  @default(false)
+  agentId                 String?
+  userTier                String   @default("FREE")
+  success                 Boolean  @default(true)
+  errorMessage            String?
+  inputContent            String?
+  outputContent           String?
+  createdAt               DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([provider, model])
+  @@map("ai_audit_logs")
+}
+
+model AIUsageDaily {
+  id               String   @id @default(cuid())
+  date             DateTime
+  provider         String
+  model            String
+  requestCount     Int      @default(0)
+  totalTokens      Int      @default(0)
+  promptTokens     Int      @default(0)
+  completionTokens Int      @default(0)
+  errorCount       Int      @default(0)
+  alertSent        Boolean  @default(false)
+  createdAt        DateTime @default(now())
+
+  @@unique([date, provider, model], name: "date_provider_model")
+  @@index([date])
+  @@map("ai_usage_daily")
+}
+
+// ─────────────────────────────────────────────
 // WAITLIST
 // ─────────────────────────────────────────────
 

@@ -118,7 +118,7 @@ export async function checkRepeatedAuthFailures(
       slackService.notifySecurityAlert(
         'Repeated Authentication Failures',
         `>*IP:* ${ipAddress}\n>*Failed attempts:* ${failedCount} in the last 15 minutes`
-      ).catch((err) => {
+      ).catch((err: any) => {
         console.error('[SecurityLogger] Failed to send Slack alert:', err);
       });
     }
