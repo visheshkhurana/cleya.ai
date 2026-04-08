@@ -710,6 +710,46 @@ class ApiClient {
   async getAuditLogs(page = 1, limit = 50) {
     return this.fetch(`/admin/audit-logs?page=${page}&limit=${limit}`);
   }
+
+  async getFounderBriefing() {
+    return this.fetch('/admin/founder/briefing');
+  }
+
+  async generateFounderBriefing() {
+    return this.fetch('/admin/founder/briefing/generate', { method: 'POST' });
+  }
+
+  async getFounderDecisions(params?: { status?: string; urgency?: string; limit?: number }) {
+    const qs = new URLSearchParams();
+    if (params?.status) qs.set('status', params.status);
+    if (params?.urgency) qs.set('urgency', params.urgency);
+    if (params?.limit) qs.set('limit', String(params.limit));
+    return this.fetch(`/admin/founder/decisions?${qs.toString()}`);
+  }
+
+  async createFounderDecision(data: { title: string; context: string; options: string[]; requesting_agent: string; urgency: string }) {
+    return this.fetch('/admin/founder/decisions', { method: 'POST', body: JSON.stringify(data) });
+  }
+
+  async updateFounderDecision(id: number, data: { status: string; chosen_option?: string; founder_notes?: string }) {
+    return this.fetch(`/admin/founder/decisions/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+  }
+
+  async updateFounderDecisionOutcome(id: number, outcome: string) {
+    return this.fetch(`/admin/founder/decisions/${id}/outcome`, { method: 'PATCH', body: JSON.stringify({ outcome }) });
+  }
+
+  async triggerFounderDebate(id: number) {
+    return this.fetch(`/admin/founder/decisions/${id}/debate`, { method: 'POST' });
+  }
+
+  async getFounderDebateEntries(id: number) {
+    return this.fetch(`/admin/founder/decisions/${id}/debate`);
+  }
+
+  async getFounderPriorityInbox() {
+    return this.fetch('/admin/founder/priority-inbox');
+  }
 }
 
 export const api = new ApiClient();

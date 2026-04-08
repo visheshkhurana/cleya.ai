@@ -1,4 +1,5 @@
 import { prisma } from '@cleya/db';
+import { ensureFounderModeTables } from './founderModeService';
 
 export async function ensureAgentTables(): Promise<void> {
   try {
@@ -26,4 +27,6 @@ export async function ensureAgentTables(): Promise<void> {
   } catch (err: any) {
     console.log(`[AgentMigration] Could not create dm_agent_state table: ${err.message}`);
   }
+
+  await ensureFounderModeTables();
 }

@@ -7,6 +7,7 @@ import { InsightsPanel } from '@/components/admin/control-tower/InsightsPanel';
 import { CommandPalette } from '@/components/admin/control-tower/CommandPalette';
 import { Channel, ChatMessage, Thread, AGENT_CHANNELS, AGENT_MAP } from '@/components/admin/control-tower/types';
 import { ClassicDashboard } from '@/components/admin/ClassicDashboard';
+import { FounderMode } from '@/components/admin/FounderMode';
 
 type ViewMode = 'dashboard' | 'command-center';
 
@@ -59,6 +60,7 @@ export default function AdminDashboard() {
   const [activeThread, setActiveThread] = useState<Thread | null>(null);
   const [threadReplies, setThreadReplies] = useState<Record<string, ChatMessage[]>>({});
   const [agentChatHistory, setAgentChatHistory] = useState<Record<string, { role: string; content: string }[]>>({});
+  const [founderDashboardOpen, setFounderDashboardOpen] = useState(false);
 
   const messageIdCounter = useRef(0);
 
@@ -674,6 +676,14 @@ export default function AdminDashboard() {
             Command Center
           </button>
         </div>
+        {viewMode === 'command-center' && activeChannelId === 'founder-room' && (
+          <button
+            onClick={() => setFounderDashboardOpen(true)}
+            className="text-[11px] text-amber-400/70 hover:text-amber-300 transition px-3 py-1 rounded-md border border-amber-400/20 hover:border-amber-400/40 ml-2"
+          >
+            &#9889; Founder Dashboard
+          </button>
+        )}
         <button
           onClick={() => { api.logout().then(() => { setAuthenticated(false); setLoading(true); }); }}
           className="text-[11px] text-white/30 hover:text-red-300 transition px-2 py-1 ml-3"
@@ -731,6 +741,23 @@ export default function AdminDashboard() {
             onAskAgent={handleAskAgent}
           />
         </>
+      )}
+
+      {activeChannelId === 'founder-room' && founderDashboardOpen && (
+        <div className="fixed inset-0 z-40 flex flex-col" style={{ background: '#080D1A' }}>
+          <div className="h-11 flex-shrink-0 flex items-center px-4 border-b border-white/[0.06]" style={{ background: 'rgba(8,13,26,0.95)', backdropFilter: 'blur(20px)' }}>
+            <button
+              onClick={() => setFounderDashboardOpen(false)}
+              className="text-xs text-white/50 hover:text-white/80 transition flex items-center gap-1.5 mr-3"
+            >
+              <span>&#8592;</span> Back to Chat
+            </button>
+            <span className="text-xs font-semibold text-white/70">Founder Mode Dashboard</span>
+          </div>
+          <div className="flex-1 overflow-auto">
+            <FounderMode />
+          </div>
+        </div>
       )}
     </div>
   );

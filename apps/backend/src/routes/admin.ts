@@ -20,6 +20,17 @@ import { publishingService } from '../services/publishingService';
 import { supabaseSelect } from '../services/supabaseClient';
 import { securityLogger } from '../services/securityLogger';
 import { logAdminAction, getAuditLogs } from '../services/auditLogger';
+import {
+  createDecision,
+  getDecisions,
+  updateDecisionStatus,
+  updateDecisionOutcome,
+  triggerDebate,
+  getDebateEntries,
+  generateDailyBriefing,
+  getLatestBriefing,
+  getPriorityInbox,
+} from '../services/founderModeService';
 
 export const adminRouter = Router();
 
@@ -1244,6 +1255,131 @@ adminRouter.get('/audit-logs', async (req: Request, res: Response, next: NextFun
 
     const result = await getAuditLogs({ page, limit, action, actorId, targetId });
     res.json({ success: true, data: result.logs, meta: { page: result.page, limit: result.limit, total: result.total, totalPages: result.totalPages } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/founder/briefing', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const briefing = await getLatestBriefing();
+    res.json({ success: true, data: briefing });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/founder/briefing/generate', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const briefing = await generateDailyBriefing();
+    res.json({ success: true, data: briefing });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/founder/decisions', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const status = req.query.status as string | undefined;
+    const urgency = req.query.urgency as string | undefined;
+    const limit = parseInt(req.query.limit as string) || 50;
+    const decisions = await getDecisions({ status, urgency, limit });
+    res.json({ success: true, data: decisions });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/founder/decisions', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { title, context, options, requesting_agent, urgency } = req.body;
+    if (!title || !requesting_agent) {
+      res.status(400).json({ success: false, error: { message: 'title and requesting_agent are required' } });
+      return;
+    }
+    const decision = await createDecision({
+      title,
+      context: context || '',
+      options: options || [],
+      requesting_agent,
+      urgency: urgency || 'medium',
+    });
+    res.json({ success: true, data: decision });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.patch('/founder/decisions/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      res.status(400).json({ success: false, error: { message: 'Invalid decision ID' } });
+      return;
+    }
+    const { status, chosen_option, founder_notes } = req.body;
+    if (!status || !['approved', 'rejected', 'deferred'].includes(status)) {
+      res.status(400).json({ success: false, error: { message: 'Status must be approved, rejected, or deferred' } });
+      return;
+    }
+    await updateDecisionStatus(id, status, chosen_option, founder_notes);
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.patch('/founder/decisions/:id/outcome', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      res.status(400).json({ success: false, error: { message: 'Invalid decision ID' } });
+      return;
+    }
+    const { outcome } = req.body;
+    if (!outcome) {
+      res.status(400).json({ success: false, error: { message: 'Outcome is required' } });
+      return;
+    }
+    await updateDecisionOutcome(id, outcome);
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/founder/decisions/:id/debate', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      res.status(400).json({ success: false, error: { message: 'Invalid decision ID' } });
+      return;
+    }
+    const entries = await triggerDebate(id);
+    res.json({ success: true, data: entries });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/founder/decisions/:id/debate', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      res.status(400).json({ success: false, error: { message: 'Invalid decision ID' } });
+      return;
+    }
+    const entries = await getDebateEntries(id);
+    res.json({ success: true, data: entries });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/founder/priority-inbox', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const inbox = await getPriorityInbox();
+    res.json({ success: true, data: inbox });
   } catch (error) {
     next(error);
   }
