@@ -238,7 +238,7 @@ function InsightsPanel({ agents, tasks, logs }: { agents: Agent[]; tasks: AgentT
               <div key={agent.id} className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-slate-800/50">
                 <div className="flex items-center gap-2">
                   <span className="text-sm">{agentEmoji(agent.id)}</span>
-                  <span className="text-xs text-slate-300">{AGENT_DISPLAY_NAMES[agent.id] || agent.name}</span>
+                  <span className="text-xs text-slate-300">{agentName(agent.id)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] text-slate-500">{agent.last_run_at ? timeAgo(agent.last_run_at) : 'never'}</span>
@@ -307,8 +307,8 @@ export function CommandCenter() {
     { id: 'tasks', name: 'tasks', icon: <ListTodo size={14} />, description: 'All Agent Tasks', unread: tasks.filter(t => t.status === 'pending').length, type: 'system' },
     ...agents.map(a => ({
       id: a.id,
-      name: AGENT_DISPLAY_NAMES[a.id]?.toLowerCase().replace(/\s+/g, '-') || a.id,
-      icon: <span className="text-xs">{AGENT_EMOJIS[a.id] || '🤖'}</span>,
+      name: agentName(a.id).toLowerCase().replace(/\s+/g, '-') || a.id,
+      icon: <span className="text-xs">{agentEmoji(a.id)}</span>,
       description: a.role,
       unread: 0,
       type: 'agent' as const,
@@ -325,9 +325,9 @@ export function CommandCenter() {
         .slice(0, 10)
         .map(l => ({
           id: `log-${l.id}`,
-          sender: AGENT_DISPLAY_NAMES[l.agent_id] || l.agent_id,
+          sender: agentName(l.agent_id),
           senderType: 'agent' as const,
-          avatar: AGENT_EMOJIS[l.agent_id] || '🤖',
+          avatar: agentEmoji(l.agent_id),
           content: formatLogMessage(l),
           timestamp: l.created_at,
           channel: 'founder-room',
@@ -343,9 +343,9 @@ export function CommandCenter() {
         .slice(0, 20)
         .map(l => ({
           id: `alert-${l.id}`,
-          sender: AGENT_DISPLAY_NAMES[l.agent_id] || l.agent_id,
+          sender: agentName(l.agent_id),
           senderType: 'agent' as const,
-          avatar: AGENT_EMOJIS[l.agent_id] || '🤖',
+          avatar: agentEmoji(l.agent_id),
           content: l.details?.alerts?.[0] || l.details?.error || `Error in ${l.action}`,
           timestamp: l.created_at,
           channel: 'alerts',
@@ -356,9 +356,9 @@ export function CommandCenter() {
     if (activeChannel === 'tasks') {
       return tasks.map(t => ({
         id: `task-${t.id}`,
-        sender: AGENT_DISPLAY_NAMES[t.agent_id] || t.agent_id,
+        sender: agentName(t.agent_id),
         senderType: 'agent' as const,
-        avatar: AGENT_EMOJIS[t.agent_id] || '🤖',
+        avatar: agentEmoji(t.agent_id),
         content: `**${t.title}** — ${t.description}`,
         timestamp: t.created_at,
         channel: 'tasks',
@@ -375,9 +375,9 @@ export function CommandCenter() {
     agentLogs.forEach(l => {
       messages.push({
         id: `log-${l.id}`,
-        sender: AGENT_DISPLAY_NAMES[l.agent_id] || l.agent_id,
+        sender: agentName(l.agent_id),
         senderType: 'agent',
-        avatar: AGENT_EMOJIS[l.agent_id] || '🤖',
+        avatar: agentEmoji(l.agent_id),
         content: formatLogMessage(l),
         timestamp: l.created_at,
         channel: activeChannel,
@@ -581,7 +581,7 @@ export function CommandCenter() {
         <div className="px-4 py-2.5 border-b border-slate-700/50 flex items-center justify-between bg-[#080d1a]/80">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              {currentChannel?.type === 'agent' && <span className="text-base">{AGENT_EMOJIS[activeChannel] || '🤖'}</span>}
+              {currentChannel?.type === 'agent' && <span className="text-base">{agentEmoji(activeChannel)}</span>}
               {currentChannel?.type === 'system' && <Hash size={16} className="text-slate-400" />}
               <h2 className="text-sm font-semibold text-white">{currentChannel?.name || activeChannel}</h2>
             </div>
@@ -765,7 +765,7 @@ export function CommandCenter() {
                   className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-slate-300 hover:bg-brand-violet/20 hover:text-white transition-colors"
                 >
                   <span>{agentEmoji(agent.id)}</span>
-                  <span className="flex-1 text-left">{AGENT_DISPLAY_NAMES[agent.id] || agent.name}</span>
+                  <span className="flex-1 text-left">{agentName(agent.id)}</span>
                   <span className="text-[10px] text-slate-500">{agent.role}</span>
                 </button>
               ))}
