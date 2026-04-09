@@ -9,6 +9,9 @@ import {
   AGENT_DEFINITIONS,
 } from './agentRunner';
 import { supabaseInsert, supabaseSelect } from './supabaseClient';
+import { processContentCalendar } from './publishingService';
+import { generateDailyBriefing } from './founderModeService';
+import { sendBriefingNotifications } from './agentNotifier';
 
 const ORCHESTRATOR_SUB_AGENT_MAP: Record<string, string> = {
   mavenTasks: 'maven',
@@ -79,12 +82,27 @@ class AgentScheduler {
         console.error('[AgentScheduler] Task processing failed:', err)
       );
     }, { timezone: 'Asia/Kolkata' });
-
     this.tasks.push(taskProcessingJob);
+
+    const contentCalendarJob = cron.schedule('*/15 * * * *', () => {
+      this.processContentCalendarCron().catch(err =>
+        console.error('[AgentScheduler] Content calendar processing failed:', err)
+      );
+    }, { timezone: 'Asia/Kolkata' });
+    this.tasks.push(contentCalendarJob);
+
+    const dailyBriefingJob = cron.schedule('0 8 * * *', () => {
+      this.sendDailyBriefing().catch(err =>
+        console.error('[AgentScheduler] Daily briefing failed:', err)
+      );
+    }, { timezone: 'Asia/Kolkata' });
+    this.tasks.push(dailyBriefingJob);
 
     this.started = true;
     console.log('[AgentScheduler] All agent schedules initialized');
     console.log('[AgentScheduler] Task processing scheduled every 4 hours');
+    console.log('[AgentScheduler] Content calendar processor running every 15 minutes');
+    console.log('[AgentScheduler] Daily briefing scheduled at 8:00 AM IST');
   }
 
   stop() {
@@ -174,13 +192,17 @@ class AgentScheduler {
 
         for (const task of tasks) {
           try {
+            const platforms = task.platforms || (subAgentId === 'maven' ? ['linkedin', 'instagram'] : []);
+            const contentPillars = task.content_pillars || task.contentPillars || [];
+            const targetDate = task.target_date || task.targetDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
             await supabaseInsert('dm_agent_tasks', {
               agent_id: subAgentId,
               title: task.title || 'Orchestrator-assigned task',
-              description: task.description || '',
+              description: buildTaskDescription(task, subAgentId, platforms, contentPillars),
               priority: task.priority || 'medium',
               status: 'pending',
-              due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+              due_date: targetDate,
               output: {},
               created_at: new Date().toISOString(),
             });
@@ -204,6 +226,32 @@ class AgentScheduler {
       }
     } catch (err: any) {
       console.error('[AgentScheduler] Orchestrator delegation failed:', err.message);
+    }
+  }
+
+  private async processContentCalendarCron(): Promise<void> {
+    console.log('[AgentScheduler] Running content calendar publish processor...');
+    try {
+      const result = await processContentCalendar();
+      if (result.published > 0 || result.failed > 0) {
+        console.log(`[AgentScheduler] Content calendar: ${result.published} published, ${result.failed} failed`);
+      }
+      if (result.errors.length > 0) {
+        console.log(`[AgentScheduler] Content calendar errors: ${result.errors.join('; ')}`);
+      }
+    } catch (err: any) {
+      console.error('[AgentScheduler] Content calendar processor error:', err.message);
+    }
+  }
+
+  private async sendDailyBriefing(): Promise<void> {
+    console.log('[AgentScheduler] Generating daily Nexus briefing...');
+    try {
+      const briefing = await generateDailyBriefing();
+      await sendBriefingNotifications(briefing);
+      console.log('[AgentScheduler] Daily briefing sent successfully');
+    } catch (err: any) {
+      console.error('[AgentScheduler] Daily briefing failed:', err.message);
     }
   }
 
@@ -231,6 +279,29 @@ class AgentScheduler {
   isRunning(): boolean {
     return this.started;
   }
+}
+
+function buildTaskDescription(
+  task: any,
+  subAgentId: string,
+  platforms: string[],
+  contentPillars: string[],
+): string {
+  let description = task.description || '';
+
+  if (subAgentId === 'maven' && platforms.length > 0) {
+    description += `\n\nTarget Platforms: ${platforms.join(', ')}`;
+  }
+
+  if (contentPillars.length > 0) {
+    description += `\nContent Pillars: ${contentPillars.join(', ')}`;
+  }
+
+  if (task.channel) {
+    description += `\nChannel: ${task.channel}`;
+  }
+
+  return description.trim();
 }
 
 export const agentScheduler = new AgentScheduler();

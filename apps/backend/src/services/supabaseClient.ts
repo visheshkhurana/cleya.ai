@@ -3,15 +3,15 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 function castPlaceholder(col: string, idx: number, value: any): string {
-  const tsColumns = ['created_at', 'updated_at', 'last_run_at', 'scheduled_for', 'executed_at', 'occurredAt', 'expiresAt'];
+  const tsColumns = ['created_at', 'updated_at', 'last_run_at', 'scheduled_for', 'executed_at', 'occurredAt', 'expiresAt', 'scheduled_time', 'published_at', 'decided_at', 'resolved_at', 'started_at', 'ended_at', 'last_contacted_at', 'next_follow_up', 'completed_at'];
   if (tsColumns.includes(col)) return `$${idx}::timestamptz`;
-  const jsonColumns = ['details', 'metadata', 'data', 'guardrails'];
+  const jsonColumns = ['details', 'metadata', 'data', 'guardrails', 'risk_factors', 'publish_result', 'output'];
   if (jsonColumns.includes(col) && typeof value === 'object' && value !== null) return `$${idx}::jsonb`;
   return `$${idx}`;
 }
 
 function prepareValue(col: string, value: any): any {
-  const jsonColumns = ['details', 'metadata', 'data', 'guardrails'];
+  const jsonColumns = ['details', 'metadata', 'data', 'guardrails', 'risk_factors', 'publish_result', 'output'];
   if (jsonColumns.includes(col) && typeof value === 'object' && value !== null) {
     return JSON.stringify(value);
   }
@@ -67,8 +67,8 @@ export async function supabaseUpdate(
   data: Record<string, any>
 ): Promise<void> {
   const setCols = Object.keys(data);
-  const setValues = Object.values(data);
-  const setClause = setCols.map((col, i) => `"${col}" = $${i + 1}`).join(', ');
+  const setValues = setCols.map(col => prepareValue(col, data[col]));
+  const setClause = setCols.map((col, i) => `"${col}" = ${castPlaceholder(col, i + 1, data[col])}`).join(', ');
 
   const filterEntries = Object.entries(filters);
   const whereClause = filterEntries

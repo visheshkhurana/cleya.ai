@@ -6,11 +6,13 @@ import { assembleMemoryContext, formatMemoryForPrompt, storeRunMemories, setWork
 import {
   type AutonomyLevel,
   type AgentGuardrails,
+  type RiskScore,
   DEFAULT_GUARDRAILS,
   checkGuardrails,
   shouldAutoExecute,
-  classifyActionRisk,
+  scoreContentRisk,
   logExecution,
+  logAudit,
 } from './guardrailsService';
 
 const AGENT_PROMPTS: Record<string, { name: string; codename: string; emoji: string; color: string; systemPrompt: string; contentType: string; channel: string }> = {
@@ -21,17 +23,25 @@ const AGENT_PROMPTS: Record<string, { name: string; codename: string; emoji: str
     color: 'purple',
     systemPrompt: `You are Nexus — the Orchestrator and Master Coordinator for Cleya.ai's AI workforce.
 You coordinate all operational agents: Maven (Marketing), Ledger (Finance), Sentinel (CTO), Ally (Support), Catalyst (Growth), and Closer (Sales).
-Generate a weekly operational plan. Output a structured JSON object with task assignments for each sub-agent:
-- maven: marketing content, campaigns, and brand activities
-- ledger: financial analysis, runway tracking, unit economics
-- sentinel: technical priorities, infrastructure, security reviews
-- ally: customer support improvements, FAQ updates, ticket triage
-- catalyst: growth experiments, referral loops, activation funnels
-- closer: sales pipeline, outreach sequences, partnership deals
 
-Format your response as a JSON object with keys: mavenTasks, ledgerTasks, sentinelTasks, allyTasks, catalystTasks, closerTasks.
-Each should be an array of {title, description, channel, priority} objects where priority is "low"|"medium"|"high"|"critical".
-Be specific to Indian startup ecosystem context. Include dates relative to today.`,
+Generate a weekly operational plan as a JSON object with task assignments for each sub-agent.
+Keys: mavenTasks, ledgerTasks, sentinelTasks, allyTasks, catalystTasks, closerTasks.
+
+Each task object must include:
+- title: clear task title
+- description: detailed instructions
+- channel: the channel to focus on
+- priority: "low" | "medium" | "high" | "critical"
+- platforms: array of target platforms (e.g. ["linkedin", "instagram"] for Maven)
+- content_pillars: array of content pillars to cover (e.g. ["thought_leadership", "product_update"])
+- target_date: ISO date string for when the task should be completed
+
+For Maven tasks specifically, include which platforms to post on and content pillars.
+For Closer tasks, include target companies or segments.
+For Catalyst tasks, include experiment hypotheses and target metrics.
+
+Be specific to Indian startup ecosystem context.
+Output ONLY valid JSON, no markdown fences.`,
     contentType: 'operational_plan',
     channel: 'internal',
   },
@@ -42,11 +52,23 @@ Be specific to Indian startup ecosystem context. Include dates relative to today
     color: 'blue',
     systemPrompt: `You are Maven — Cleya.ai's Marketing Agent.
 Expertise: Content marketing, LinkedIn/Instagram strategy, SEO, email campaigns, brand storytelling for India's startup ecosystem.
-Generate a weekly content plan: 5 LinkedIn posts, 3 Instagram posts, 1 newsletter, 1 blog article.
-Each piece should include: title, hook/opening line, key points, CTA, and target audience segment (Founders/Investors/Operators).
-Focus on trending topics in Indian startup ecosystem. Map content to funnel stages (Awareness/Consideration/Activation).
-Also generate copy-ready social media posts, email drafts, and outreach sequences.
-Output each content piece as a separate section with clear formatting.`,
+
+You MUST output a JSON object with a "contentItems" array. Each item must have:
+- platform: "linkedin" | "instagram" | "email"
+- content_type: "post" | "carousel" | "newsletter" | "article"
+- title: short descriptive title
+- body: the full copy-ready content
+- hook: the opening hook line
+- cta: call to action
+- content_pillar: "thought_leadership" | "product_update" | "community" | "education" | "case_study"
+- target_audience: "founders" | "investors" | "operators"
+- funnel_stage: "awareness" | "consideration" | "activation"
+- media_hints: description of ideal image/visual (empty string if none)
+- scheduled_offset_hours: number of hours from now to schedule (e.g. 24, 48, 72)
+
+Generate: 5 LinkedIn posts, 3 Instagram posts, 1 newsletter.
+Focus on trending topics in India's startup ecosystem.
+Output ONLY valid JSON, no markdown fences.`,
     contentType: 'content_draft',
     channel: 'marketing',
   },
@@ -410,6 +432,38 @@ async function executeWithRetry(agentId: string, taskContext?: string): Promise<
   };
 }
 
+interface ContentItem {
+  platform: string;
+  content_type: string;
+  title: string;
+  body: string;
+  hook?: string;
+  cta?: string;
+  content_pillar?: string;
+  target_audience?: string;
+  funnel_stage?: string;
+  media_urls?: string[];
+  media_hints?: string;
+  scheduled_offset_hours?: number;
+}
+
+function parseStructuredContent(output: string): ContentItem[] | null {
+  try {
+    const jsonMatch = output.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (Array.isArray(parsed.contentItems) && parsed.contentItems.length > 0) {
+      return parsed.contentItems;
+    }
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 async function executeAgentOnce(agentId: string, taskContext?: string): Promise<AgentRunResult> {
   const config = AGENT_PROMPTS[agentId];
   if (!config) {
@@ -457,9 +511,127 @@ async function executeAgentOnce(agentId: string, taskContext?: string): Promise<
   const autonomyLevel = state?.autonomyLevel || 'manual';
   const guardrails = state?.guardrails || DEFAULT_GUARDRAILS;
 
-  const actionRisk = classifyActionRisk('content_generation');
-  const decision = shouldAutoExecute(autonomyLevel, actionRisk);
+  const structuredItems = (agentId === 'maven') ? parseStructuredContent(content) : null;
 
+  if (structuredItems && structuredItems.length > 0) {
+    let calendarItemsCreated = 0;
+    for (const item of structuredItems) {
+      const riskAssessment = scoreContentRisk(item.body || '', 'content_generation');
+      const decision = shouldAutoExecute(autonomyLevel, riskAssessment.score);
+      const guardrailCheck = await checkGuardrails(agentId, 'content_generation', guardrails, item.body);
+
+      const platformLower = (item.platform || 'linkedin').toLowerCase();
+      const hasMediaUrls = Array.isArray(item.media_urls) && item.media_urls.length > 0;
+      const needsMedia = platformLower === 'instagram' && !hasMediaUrls;
+
+      let calendarStatus: string;
+      if (!guardrailCheck.allowed) {
+        calendarStatus = 'blocked';
+      } else if (needsMedia) {
+        calendarStatus = 'pending_approval';
+      } else if (riskAssessment.score >= 3) {
+        calendarStatus = 'pending_approval';
+      } else if (decision === 'execute') {
+        calendarStatus = 'scheduled';
+      } else {
+        calendarStatus = 'pending_approval';
+      }
+
+      const scheduledTime = new Date(Date.now() + (item.scheduled_offset_hours || 24) * 60 * 60 * 1000);
+
+      try {
+        const calendarRows = await supabaseInsert('content_calendar', {
+          agent_id: agentId,
+          platform: item.platform || 'linkedin',
+          content_type: item.content_type || 'post',
+          title: item.title || '',
+          body: item.body || '',
+          media_urls: item.media_urls || [],
+          media_hints: item.media_hints || '',
+          content_pillar: item.content_pillar || '',
+          hook: item.hook || '',
+          cta: item.cta || '',
+          target_audience: item.target_audience || '',
+          funnel_stage: item.funnel_stage || '',
+          scheduled_time: scheduledTime.toISOString(),
+          risk_score: riskAssessment.score,
+          risk_factors: riskAssessment.factors,
+          status: calendarStatus,
+          metadata: { generated_by: agentId, task_context: taskContext || null, autonomy_level: autonomyLevel },
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+
+        if (calendarStatus === 'pending_approval' && calendarRows.length > 0) {
+          await supabaseInsert('founder_approval_queue', {
+            content_calendar_id: calendarRows[0].id,
+            agent_id: agentId,
+            title: item.title || '',
+            summary: (item.body || '').substring(0, 300),
+            risk_score: riskAssessment.score,
+            risk_factors: riskAssessment.factors,
+            status: 'pending',
+            created_at: new Date().toISOString(),
+          });
+        }
+
+        calendarItemsCreated++;
+
+        const estimatedLlmCost = ((item.body || '').length / 4000) * 0.0006 + 0.0005;
+
+        await logAudit({
+          agentId,
+          actionType: 'content_calendar_insert',
+          actionDescription: `Scheduled ${item.platform} ${item.content_type}: "${item.title}"`,
+          entityType: 'content_calendar',
+          entityId: calendarRows[0]?.id?.toString() || '',
+          riskScore: riskAssessment.score,
+          costAmount: Math.round(estimatedLlmCost * 10000) / 10000,
+          costCurrency: 'USD',
+          status: calendarStatus,
+          metadata: { platform: item.platform, content_pillar: item.content_pillar },
+        });
+      } catch (err: any) {
+        console.error(`[AgentRunner] Failed to insert content calendar item: ${err.message}`);
+      }
+    }
+
+    await supabaseInsert('dm_content_queue', {
+      agent_id: agentId,
+      channel: config.channel,
+      content_type: config.contentType,
+      title: `${config.name} (${config.codename}) — ${new Date().toLocaleDateString('en-IN')}`,
+      body: content,
+      media_urls: [],
+      scheduled_for: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      status: 'processed',
+      metadata: { generated_by: 'agent_scheduler', task_context: taskContext || null, autonomy_level: autonomyLevel, calendar_items: calendarItemsCreated },
+      created_at: new Date().toISOString(),
+    });
+
+    await logExecution({
+      agentId,
+      actionType: 'structured_content_generation',
+      actionDescription: `Generated ${calendarItemsCreated} structured content items for content calendar`,
+      autonomyLevel,
+      guardrailsChecked: ['max_actions_per_day', 'content_blocklist', 'risk_scoring'],
+      guardrailResult: 'passed',
+      executionResult: 'success',
+      details: { contentType: config.contentType, channel: config.channel, calendarItems: calendarItemsCreated },
+    });
+
+    return {
+      agentId,
+      status: 'success',
+      duration,
+      outputSummary,
+      fullOutput: content,
+      contentItems: calendarItemsCreated,
+    };
+  }
+
+  const riskAssessment = scoreContentRisk(content, 'content_generation');
+  const decision = shouldAutoExecute(autonomyLevel, riskAssessment.score);
   const guardrailCheck = await checkGuardrails(agentId, 'content_generation', guardrails, content);
 
   let contentStatus = 'pending';
@@ -476,7 +648,7 @@ async function executeAgentOnce(agentId: string, taskContext?: string): Promise<
     media_urls: [],
     scheduled_for: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     status: contentStatus,
-    metadata: { generated_by: 'agent_scheduler', task_context: taskContext || null, autonomy_level: autonomyLevel },
+    metadata: { generated_by: 'agent_scheduler', task_context: taskContext || null, autonomy_level: autonomyLevel, risk_score: riskAssessment.score, risk_factors: riskAssessment.factors },
     created_at: new Date().toISOString(),
   });
 
@@ -485,10 +657,10 @@ async function executeAgentOnce(agentId: string, taskContext?: string): Promise<
     actionType: 'content_generation',
     actionDescription: `Generated ${config.contentType} for ${config.channel}`,
     autonomyLevel,
-    guardrailsChecked: ['max_actions_per_day', 'content_blocklist'],
+    guardrailsChecked: ['max_actions_per_day', 'content_blocklist', 'risk_scoring'],
     guardrailResult: guardrailCheck.allowed ? 'passed' : (guardrailCheck.escalated ? 'escalated' : 'blocked'),
     executionResult: contentStatus === 'approved' ? 'success' : 'queued',
-    details: { contentType: config.contentType, channel: config.channel, autoApproved: contentStatus === 'approved' },
+    details: { contentType: config.contentType, channel: config.channel, autoApproved: contentStatus === 'approved', riskScore: riskAssessment.score },
   });
 
   return {

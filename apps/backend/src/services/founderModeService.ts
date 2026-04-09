@@ -319,6 +319,60 @@ export async function generateDailyBriefing(): Promise<DailyBriefing> {
     );
   } catch {}
 
+  let calendarPendingApproval: any[] = [];
+  let calendarScheduled: any[] = [];
+  let calendarPublished: any[] = [];
+  try {
+    calendarPendingApproval = await supabaseSelect('content_calendar', { status: 'pending_approval' }, {
+      order: 'scheduled_time.asc',
+      limit: 20,
+    });
+  } catch {}
+  try {
+    calendarScheduled = await supabaseSelect('content_calendar', { status: 'scheduled' }, {
+      order: 'scheduled_time.asc',
+      limit: 20,
+    });
+  } catch {}
+  try {
+    const recentPublished = await supabaseSelect('content_calendar', { status: 'published' }, {
+      order: 'published_at.desc',
+      limit: 10,
+    });
+    calendarPublished = recentPublished.filter(
+      (item: any) => new Date(item.published_at) >= yesterday
+    );
+  } catch {}
+
+  let adSpendSummary = { totalSpend: 0, platforms: {} as Record<string, number>, campaigns: 0 };
+  try {
+    const adRows = await supabaseSelect('ad_performance', undefined, {
+      order: 'date.desc',
+      limit: 100,
+    });
+    const recentAds = adRows.filter((a: any) => new Date(a.date) >= yesterday);
+    adSpendSummary.campaigns = recentAds.length;
+    for (const ad of recentAds) {
+      const spend = Number(ad.spend) || 0;
+      adSpendSummary.totalSpend += spend;
+      const plat = ad.platform || 'unknown';
+      adSpendSummary.platforms[plat] = (adSpendSummary.platforms[plat] || 0) + spend;
+    }
+  } catch {}
+
+  let auditCostSummary = { totalCost: 0, actionCount: 0 };
+  try {
+    const auditRows = await supabaseSelect('audit_log', undefined, {
+      order: 'created_at.desc',
+      limit: 200,
+    });
+    const recentAudits = auditRows.filter((a: any) => new Date(a.created_at) >= yesterday);
+    auditCostSummary.actionCount = recentAudits.length;
+    for (const entry of recentAudits) {
+      auditCostSummary.totalCost += Number(entry.cost_amount) || 0;
+    }
+  } catch {}
+
   const metrics = {
     totalUsers,
     completedProfiles,
@@ -326,6 +380,13 @@ export async function generateDailyBriefing(): Promise<DailyBriefing> {
     acceptedMatches,
     matchAcceptRate: totalMatches > 0 ? Math.round((acceptedMatches / totalMatches) * 100) : 0,
     recentSignups,
+    contentCalendar: {
+      pendingApproval: calendarPendingApproval.length,
+      scheduled: calendarScheduled.length,
+      publishedLast24h: calendarPublished.length,
+    },
+    adSpend: adSpendSummary,
+    auditCosts: auditCostSummary,
   };
 
   const priorityItems: any[] = [];
@@ -334,8 +395,12 @@ export async function generateDailyBriefing(): Promise<DailyBriefing> {
     priorityItems.push({ type: 'decision', urgency: d.urgency, title: d.title, id: d.id });
   });
 
+  calendarPendingApproval.forEach(c => {
+    priorityItems.push({ type: 'content_approval', urgency: c.risk_score >= 4 ? 'high' : 'medium', title: `[${c.platform}] ${c.title}`, id: c.id });
+  });
+
   pendingContent.slice(0, 5).forEach(c => {
-    priorityItems.push({ type: 'content_approval', urgency: 'medium', title: c.title, id: c.id });
+    priorityItems.push({ type: 'legacy_content_approval', urgency: 'medium', title: c.title, id: c.id });
   });
 
   agentErrors.forEach(e => {
@@ -343,8 +408,13 @@ export async function generateDailyBriefing(): Promise<DailyBriefing> {
   });
 
   const actionList = [
+    ...(calendarPendingApproval.length > 0 ? [`Review ${calendarPendingApproval.length} content calendar item(s) pending approval`] : []),
+    ...(calendarScheduled.length > 0 ? [`${calendarScheduled.length} content item(s) scheduled for publishing`] : []),
+    ...(calendarPublished.length > 0 ? [`${calendarPublished.length} content item(s) published in last 24h`] : []),
+    ...(adSpendSummary.totalSpend > 0 ? [`Ad spend last 24h: $${adSpendSummary.totalSpend.toFixed(2)} across ${adSpendSummary.campaigns} campaign(s)`] : []),
+    ...(auditCostSummary.totalCost > 0 ? [`Agent action costs last 24h: $${auditCostSummary.totalCost.toFixed(2)} (${auditCostSummary.actionCount} actions)`] : []),
     ...(pendingDecisions.length > 0 ? [`Review ${pendingDecisions.length} pending decision(s)`] : []),
-    ...(pendingContent.length > 0 ? [`Approve ${pendingContent.length} content item(s) in queue`] : []),
+    ...(pendingContent.length > 0 ? [`Approve ${pendingContent.length} legacy content item(s) in queue`] : []),
     ...(agentErrors.length > 0 ? [`Investigate ${agentErrors.length} agent error(s) from last 24h`] : []),
     ...(recentSignups > 0 ? [`${recentSignups} new signup(s) — review onboarding funnel`] : []),
   ];

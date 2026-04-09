@@ -808,6 +808,40 @@ class ApiClient {
   async getAgentDataCampaigns() {
     return this.fetch('/admin/agents/data/campaigns');
   }
+
+  async getContentCalendar(params?: { status?: string; platform?: string; limit?: number }) {
+    const qs = new URLSearchParams();
+    if (params?.status) qs.set('status', params.status);
+    if (params?.platform) qs.set('platform', params.platform);
+    if (params?.limit) qs.set('limit', String(params.limit));
+    return this.fetch(`/admin/content-calendar?${qs.toString()}`);
+  }
+
+  async approveCalendarItem(id: number, options?: { founder_notes?: string; publish_immediately?: boolean }) {
+    return this.fetch(`/admin/content-calendar/${id}/approve`, {
+      method: 'POST',
+      body: JSON.stringify(options || {}),
+    });
+  }
+
+  async rejectCalendarItem(id: number, founderNotes?: string) {
+    return this.fetch(`/admin/content-calendar/${id}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ founder_notes: founderNotes || '' }),
+    });
+  }
+
+  async publishCalendarItem(id: number) {
+    return this.fetch(`/admin/content-calendar/${id}/publish`, { method: 'POST' });
+  }
+
+  async processContentCalendar() {
+    return this.fetch('/admin/content-calendar/process', { method: 'POST' });
+  }
+
+  async getApprovalQueue() {
+    return this.fetch('/admin/approval-queue');
+  }
 }
 
 export const api = new ApiClient();

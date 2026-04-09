@@ -151,10 +151,47 @@ Legacy components `AgentsManagement.tsx` and `AgentArchitecture.tsx` are preserv
 - `GET /api/admin/founder/decisions/:id/debate` — get debate entries
 - `GET /api/admin/founder/priority-inbox` — get priority inbox items
 
-**DB tables** (auto-created via `ensureFounderModeTables()` in `agentMigration.ts`):
+**DB tables** (auto-created via `ensureFounderModeTables()` and `ensureAgentTables()` in `agentMigration.ts`):
 - `dm_decisions` — decision records with title, context, options (text[]), urgency, status, outcome
 - `dm_decision_debates` — debate entries linked to decisions, with agent_id, position, argument, data_points (JSONB)
 - `dm_daily_briefings` — stored briefing snapshots with date and content (JSONB)
+- `content_calendar` — structured content items with platform, content_type, risk_score (1-5), scheduled_time, status (draft/scheduled/pending_approval/approved/published/failed/blocked/rejected)
+- `founder_approval_queue` — items needing founder approval, linked to content_calendar via content_calendar_id
+- `audit_log` — comprehensive action audit trail with agent_id, action_type, risk_score, cost tracking
+- `tickets` — support tickets for Ally agent
+- `faq_kb` — FAQ knowledge base for self-service support
+- `experiments` — growth experiments for Catalyst agent (A/B tests)
+- `outreach_crm` — sales outreach CRM for Closer agent
+- `ad_performance` — ad campaign performance tracking
+
+## Agent Action Execution Pipeline
+The agent system follows a structured execution pipeline: Agent generates content → Risk scoring (1-5 scale) → Approval routing → Publishing.
+
+**Risk Scoring (1-5 scale)** (`guardrailsService.ts`):
+- Score 1-2: Low risk — auto-publishable if autonomy level allows
+- Score 3: Medium risk (named persons, financial claims, legal language, non-English) — requires founder approval
+- Score 4: High risk (journalist/investor context, ad spend, mass email, multiple financial claims) — requires founder approval
+- Score 5: Critical (crisis topics, significant legal language) — always requires founder approval
+
+**Content Calendar Flow**:
+- Maven agent generates structured JSON content items (individual LinkedIn posts, Instagram posts, newsletters)
+- Each item gets risk-scored and inserted into `content_calendar` with appropriate status
+- Items with risk_score < 3 and sufficient autonomy level → `scheduled` (auto-publish at scheduled_time)
+- Items with risk_score >= 3 → `pending_approval` (added to founder_approval_queue)
+- A cron job runs every 15 minutes to publish due scheduled/approved items via LinkedIn/Instagram/email
+- Founder can approve (schedule for later or publish immediately) or reject items
+
+**Content Calendar API endpoints:**
+- `GET /api/admin/content-calendar` — list calendar items (filterable by status, platform)
+- `POST /api/admin/content-calendar/:id/approve` — approve item (with optional immediate publish)
+- `POST /api/admin/content-calendar/:id/reject` — reject item
+- `POST /api/admin/content-calendar/:id/publish` — manually publish a calendar item
+- `POST /api/admin/content-calendar/process` — manually trigger the publish processor
+- `GET /api/admin/approval-queue` — list founder approval queue items
+
+**Daily Nexus Briefing** (8 AM IST cron):
+- Aggregates yesterday's actions, pending approvals, content calendar status, platform metrics
+- Sends structured summary via Slack and email to founder
 
 ## Slack Notifications
 `apps/backend/src/services/slackService.ts` uses `@slack/web-api@7.10.0` via Replit's Slack connector (OAuth token auto-managed). Posts to `#all-cleya` channel (fallback: `#new-signups`, `#general`). Bot name in Slack: `replit`.

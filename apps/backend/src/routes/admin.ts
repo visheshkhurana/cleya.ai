@@ -1244,6 +1244,98 @@ adminRouter.post('/content/publish-approved', async (_req: Request, res: Respons
   }
 });
 
+adminRouter.get('/content-calendar', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const status = req.query.status as string | undefined;
+    const platform = req.query.platform as string | undefined;
+    const limit = parseInt(req.query.limit as string) || 50;
+    const filters: Record<string, string> = {};
+    if (status) filters.status = status;
+    if (platform) filters.platform = platform;
+    const items = await supabaseSelect('content_calendar', Object.keys(filters).length > 0 ? filters : undefined, {
+      order: 'scheduled_time.asc',
+      limit,
+    });
+    res.json({ success: true, data: items });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/content-calendar/:id/approve', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      res.status(400).json({ success: false, error: { message: 'Invalid calendar item ID' } });
+      return;
+    }
+    const { founder_notes, publish_immediately } = req.body;
+    const result = await publishingService.approveCalendarItem(id, founder_notes, publish_immediately);
+    if (!result.success) {
+      res.status(400).json({ success: false, error: { message: result.error } });
+      return;
+    }
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/content-calendar/:id/reject', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      res.status(400).json({ success: false, error: { message: 'Invalid calendar item ID' } });
+      return;
+    }
+    const { founder_notes } = req.body;
+    const result = await publishingService.rejectCalendarItem(id, founder_notes);
+    if (!result.success) {
+      res.status(400).json({ success: false, error: { message: result.error } });
+      return;
+    }
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/content-calendar/:id/publish', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      res.status(400).json({ success: false, error: { message: 'Invalid calendar item ID' } });
+      return;
+    }
+    const result = await publishingService.publishCalendarItem(id);
+    res.json({ success: result.success, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/content-calendar/process', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await publishingService.processContentCalendar();
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/approval-queue', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const status = req.query.status as string || 'pending';
+    const items = await supabaseSelect('founder_approval_queue', { status }, {
+      order: 'created_at.desc',
+      limit: 50,
+    });
+    res.json({ success: true, data: items });
+  } catch (error) {
+    next(error);
+  }
+});
+
 adminRouter.get('/execution-log', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const agentId = req.query.agentId as string | undefined;

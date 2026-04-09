@@ -38,6 +38,7 @@ import { agentChatRouter } from './routes/agent-chat';
 import { healthRouter } from './routes/health';
 import { matchScheduler } from './services/matchScheduler';
 import { agentScheduler } from './services/agentScheduler';
+import { ensureAgentTables } from './services/agentMigration';
 
 if (env.SENTRY_DSN) {
   Sentry.init({
@@ -134,8 +135,12 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Cleya.ai backend running on port ${PORT}`);
   console.log(`   Environment: ${env.NODE_ENV}`);
   matchScheduler.start();
-  agentScheduler.start().catch(err =>
-    console.error('[AgentScheduler] Failed to start:', err)
+  ensureAgentTables().then(() => {
+    agentScheduler.start().catch(err =>
+      console.error('[AgentScheduler] Failed to start:', err)
+    );
+  }).catch(err =>
+    console.error('[AgentMigration] Failed to ensure tables:', err)
   );
 });
 
