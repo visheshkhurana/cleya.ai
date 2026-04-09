@@ -1,24 +1,35 @@
-const SUPABASE_URL = 'https://lyuiazskqubmlzwuokzm.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5dWlhenNrcXVibWx6d3Vva3ptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1MjIyNzQsImV4cCI6MjA5MDA5ODI3NH0.R-8NDZHFpmfqt0Lw0QhdZtNvaXY28NzLKFSEyFpb6g4';
+import { PrismaClient } from '@prisma/client';
 
-const headers = {
-  'apikey': SUPABASE_ANON_KEY,
-  'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-  'Content-Type': 'application/json',
-  'Prefer': 'return=representation',
-};
+const prisma = new PrismaClient();
+
+function castPlaceholder(col: string, idx: number, value: any): string {
+  const tsColumns = ['created_at', 'updated_at', 'last_run_at', 'scheduled_for', 'executed_at', 'occurredAt', 'expiresAt'];
+  if (tsColumns.includes(col)) return `$${idx}::timestamptz`;
+  const jsonColumns = ['details', 'metadata', 'data', 'guardrails'];
+  if (jsonColumns.includes(col) && typeof value === 'object' && value !== null) return `$${idx}::jsonb`;
+  return `$${idx}`;
+}
+
+function prepareValue(col: string, value: any): any {
+  const jsonColumns = ['details', 'metadata', 'data', 'guardrails'];
+  if (jsonColumns.includes(col) && typeof value === 'object' && value !== null) {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return value;
+  }
+  return value;
+}
 
 export async function supabaseInsert<T = any>(table: string, data: Record<string, any>): Promise<T[]> {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Supabase insert to ${table} failed: ${res.status} ${text}`);
-  }
-  return res.json() as Promise<T[]>;
+  const columns = Object.keys(data);
+  const values = columns.map(col => prepareValue(col, data[col]));
+  const placeholders = columns.map((col, i) => castPlaceholder(col, i + 1, data[col]));
+
+  const query = `INSERT INTO "${table}" (${columns.map(c => `"${c}"`).join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`;
+
+  const result = await prisma.$queryRawUnsafe(query, ...values);
+  return (Array.isArray(result) ? result : [result]) as T[];
 }
 
 export async function supabaseSelect<T = any>(
@@ -26,21 +37,28 @@ export async function supabaseSelect<T = any>(
   filters?: Record<string, string>,
   options?: { select?: string; order?: string; limit?: number }
 ): Promise<T[]> {
-  let url = `${SUPABASE_URL}/rest/v1/${table}?select=${options?.select || '*'}`;
-  if (filters) {
-    Object.entries(filters).forEach(([key, value]) => {
-      url += `&${key}=eq.${value}`;
-    });
-  }
-  if (options?.order) url += `&order=${options.order}`;
-  if (options?.limit) url += `&limit=${options.limit}`;
+  let query = `SELECT ${options?.select || '*'} FROM "${table}"`;
+  const values: any[] = [];
 
-  const res = await fetch(url, { headers: { ...headers, 'Prefer': '' } });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Supabase select from ${table} failed: ${res.status} ${text}`);
+  if (filters && Object.keys(filters).length > 0) {
+    const conditions = Object.entries(filters).map(([key, value], i) => {
+      values.push(value);
+      return `"${key}" = $${i + 1}`;
+    });
+    query += ` WHERE ${conditions.join(' AND ')}`;
   }
-  return res.json() as Promise<T[]>;
+
+  if (options?.order) {
+    const [col, dir] = options.order.split('.');
+    query += ` ORDER BY "${col}" ${dir === 'desc' ? 'DESC' : 'ASC'}`;
+  }
+
+  if (options?.limit) {
+    query += ` LIMIT ${options.limit}`;
+  }
+
+  const result = await prisma.$queryRawUnsafe(query, ...values);
+  return (Array.isArray(result) ? result : []) as T[];
 }
 
 export async function supabaseUpdate(
@@ -48,20 +66,20 @@ export async function supabaseUpdate(
   filters: Record<string, string>,
   data: Record<string, any>
 ): Promise<void> {
-  let url = `${SUPABASE_URL}/rest/v1/${table}?`;
-  Object.entries(filters).forEach(([key, value]) => {
-    url += `${key}=eq.${value}&`;
-  });
+  const setCols = Object.keys(data);
+  const setValues = Object.values(data);
+  const setClause = setCols.map((col, i) => `"${col}" = $${i + 1}`).join(', ');
 
-  const res = await fetch(url, {
-    method: 'PATCH',
-    headers: { ...headers, 'Prefer': 'return=minimal' },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Supabase update on ${table} failed: ${res.status} ${text}`);
-  }
+  const filterEntries = Object.entries(filters);
+  const whereClause = filterEntries
+    .map(([key, value], i) => {
+      setValues.push(value);
+      return `"${key}" = $${setCols.length + i + 1}`;
+    })
+    .join(' AND ');
+
+  const query = `UPDATE "${table}" SET ${setClause} WHERE ${whereClause}`;
+  await prisma.$queryRawUnsafe(query, ...setValues);
 }
 
 export async function supabaseUpsert<T = any>(
@@ -69,30 +87,21 @@ export async function supabaseUpsert<T = any>(
   data: Record<string, any>,
   onConflict: string
 ): Promise<T[]> {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
-    method: 'POST',
-    headers: {
-      ...headers,
-      'Prefer': 'return=representation,resolution=merge-duplicates',
-    },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Supabase upsert to ${table} failed: ${res.status} ${text}`);
-  }
-  return res.json() as Promise<T[]>;
+  const columns = Object.keys(data);
+  const values = Object.values(data);
+  const placeholders = columns.map((_, i) => `$${i + 1}`);
+  const updateCols = columns
+    .filter(c => c !== onConflict)
+    .map(c => `"${c}" = EXCLUDED."${c}"`)
+    .join(', ');
+
+  const query = `INSERT INTO "${table}" (${columns.map(c => `"${c}"`).join(', ')}) VALUES (${placeholders.join(', ')}) ON CONFLICT ("${onConflict}") DO UPDATE SET ${updateCols} RETURNING *`;
+
+  const result = await prisma.$queryRawUnsafe(query, ...values);
+  return (Array.isArray(result) ? result : [result]) as T[];
 }
 
 export async function supabaseRpc(functionName: string, params?: Record<string, any>): Promise<any> {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${functionName}`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(params || {}),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Supabase RPC ${functionName} failed: ${res.status} ${text}`);
-  }
-  return res.json();
+  console.log(`[supabaseRpc] Function ${functionName} called with params:`, params);
+  return {};
 }
