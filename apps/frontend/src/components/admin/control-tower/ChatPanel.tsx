@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { ChatMessage, Channel, AGENT_MAP, Thread } from './types';
+import { ChatMessage, Channel, useAgentData, getAgentMap, Thread } from './types';
 
 interface ChatPanelProps {
   channel: Channel;
@@ -24,6 +24,7 @@ export function ChatPanel({
   onCloseThread,
   onSendThreadReply,
 }: ChatPanelProps) {
+  const { agentMap } = useAgentData();
   const [input, setInput] = useState('');
   const [threadInput, setThreadInput] = useState('');
   const [showMentions, setShowMentions] = useState(false);
@@ -45,12 +46,12 @@ export function ChatPanel({
     const mentions: string[] = [];
     let match;
     while ((match = mentionRegex.exec(text)) !== null) {
-      if (AGENT_MAP[match[1].toLowerCase()]) {
+      if (agentMap[match[1].toLowerCase()]) {
         mentions.push(match[1].toLowerCase());
       }
     }
     return mentions;
-  }, []);
+  }, [agentMap]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
@@ -100,7 +101,7 @@ export function ChatPanel({
     }
   };
 
-  const filteredAgents = Object.values(AGENT_MAP).filter(a =>
+  const filteredAgents = Object.values(agentMap).filter(a =>
     a.id.includes(mentionFilter) || a.name.toLowerCase().includes(mentionFilter)
   );
 
@@ -234,6 +235,7 @@ export function ChatPanel({
 }
 
 function MessageBubble({ message, onOpenThread, isThreadParent }: { message: ChatMessage; onOpenThread: (msg: ChatMessage) => void; isThreadParent?: boolean }) {
+  const agentMap = getAgentMap();
   const [expanded, setExpanded] = useState(false);
 
   if (message.type === 'system-event') {
@@ -262,7 +264,7 @@ function MessageBubble({ message, onOpenThread, isThreadParent }: { message: Cha
         parts.push(text.slice(lastIndex, match.index));
       }
       const name = match[1];
-      if (AGENT_MAP[name.toLowerCase()]) {
+      if (agentMap[name.toLowerCase()]) {
         parts.push(
           <span key={key++} className="text-indigo-400 font-medium bg-indigo-500/10 px-1 rounded">@{name}</span>
         );

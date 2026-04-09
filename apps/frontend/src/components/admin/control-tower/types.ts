@@ -1,4 +1,5 @@
-import { AGENT_REGISTRY, type AgentDefinition } from '@/lib/agentDefinitions';
+import { useState, useEffect } from 'react';
+import { fetchAgentDefinitions, clearAgentCache, type AgentDefinition } from '@/lib/agentDefinitions';
 
 export interface Channel {
   id: string;
@@ -52,42 +53,87 @@ export interface CommandAction {
   action: () => void;
 }
 
-const ROLE_DESCRIPTIONS: Record<string, string> = {
-  nexus: 'Orchestrator \u2014 coordinates all agents',
-  maven: 'Marketing \u2014 content, SEO, social',
-  ledger: 'Finance \u2014 modeling, runway, fundraising',
-  sentinel: 'CTO \u2014 architecture, security, performance',
-  ally: 'Support \u2014 customer success, onboarding',
-  catalyst: 'Growth \u2014 viral loops, referrals, activation',
-  closer: 'Sales \u2014 outreach, pipeline, investor relations',
-};
+export function buildAgentChannels(registry: Record<string, AgentDefinition>): Channel[] {
+  return [
+    { id: 'founder-room', name: 'founder-room', type: 'special', emoji: '\uD83C\uDFE0', description: 'Your command center \u2014 talk to any agent', color: 'indigo', unreadCount: 0, presence: 'active' },
+    { id: 'all-agents', name: 'all-agents', type: 'special', emoji: '\uD83D\uDCE2', description: 'Broadcast to all agents', color: 'violet', unreadCount: 0, presence: 'active' },
+    ...Object.values(registry).map((agent: AgentDefinition) => ({
+      id: agent.id,
+      name: agent.id,
+      type: 'agent' as const,
+      agentId: agent.id,
+      emoji: agent.emoji,
+      description: agent.role ? `${agent.role} \u2014 ${agent.description}` : agent.description,
+      color: agent.color,
+      unreadCount: 0,
+      presence: 'idle' as const,
+    })),
+  ];
+}
 
-export const AGENT_CHANNELS: Channel[] = [
+export function buildAgentMap(registry: Record<string, AgentDefinition>): Record<string, AgentInfo> {
+  return Object.fromEntries(
+    Object.entries(registry).map(([id, agent]) => [id, {
+      id: agent.id,
+      name: agent.name,
+      emoji: agent.emoji,
+      role: agent.role,
+      description: agent.description,
+      color: agent.color,
+    }])
+  );
+}
+
+const SPECIAL_CHANNELS: Channel[] = [
   { id: 'founder-room', name: 'founder-room', type: 'special', emoji: '\uD83C\uDFE0', description: 'Your command center \u2014 talk to any agent', color: 'indigo', unreadCount: 0, presence: 'active' },
   { id: 'all-agents', name: 'all-agents', type: 'special', emoji: '\uD83D\uDCE2', description: 'Broadcast to all agents', color: 'violet', unreadCount: 0, presence: 'active' },
-  ...Object.values(AGENT_REGISTRY).map((agent: AgentDefinition) => ({
-    id: agent.id,
-    name: agent.id,
-    type: 'agent' as const,
-    agentId: agent.id,
-    emoji: agent.emoji,
-    description: ROLE_DESCRIPTIONS[agent.id] || agent.description,
-    color: agent.color,
-    unreadCount: 0,
-    presence: 'idle' as const,
-  })),
 ];
 
-export const AGENT_MAP: Record<string, AgentInfo> = Object.fromEntries(
-  Object.entries(AGENT_REGISTRY).map(([id, agent]) => [id, {
-    id: agent.id,
-    name: agent.name,
-    emoji: agent.emoji,
-    role: agent.role,
-    description: agent.description,
-    color: agent.color,
-  }])
-);
+let sharedAgentMap: Record<string, AgentInfo> = {};
+let sharedAgentChannels: Channel[] = [...SPECIAL_CHANNELS];
+let sharedLoaded = false;
+let sharedListeners: Set<() => void> = new Set();
+
+function notifyListeners() {
+  sharedListeners.forEach(fn => fn());
+}
+
+async function loadAgentData() {
+  const registry = await fetchAgentDefinitions();
+  if (Object.keys(registry).length > 0) {
+    sharedAgentMap = buildAgentMap(registry);
+    sharedAgentChannels = buildAgentChannels(registry);
+  }
+  sharedLoaded = true;
+  notifyListeners();
+}
+
+export function refreshAgentData() {
+  clearAgentCache();
+  sharedLoaded = false;
+  loadAgentData();
+}
+
+export function useAgentData() {
+  const [, forceUpdate] = useState(0);
+
+  useEffect(() => {
+    const listener = () => forceUpdate(n => n + 1);
+    sharedListeners.add(listener);
+
+    if (!sharedLoaded) {
+      loadAgentData();
+    }
+
+    return () => { sharedListeners.delete(listener); };
+  }, []);
+
+  return { agentChannels: sharedAgentChannels, agentMap: sharedAgentMap, loading: !sharedLoaded };
+}
+
+export function getAgentMap(): Record<string, AgentInfo> {
+  return sharedAgentMap;
+}
 
 export const PRESENCE_COLORS: Record<string, string> = {
   active: 'bg-green-400',

@@ -1,6 +1,8 @@
-const SENTRY_AUTH_TOKEN = process.env.SENTRY_AUTH_TOKEN;
-const SENTRY_ORG = process.env.SENTRY_ORG;
-const SENTRY_PROJECT = process.env.SENTRY_PROJECT;
+import { env } from '../config/env';
+
+const SENTRY_AUTH_TOKEN = env.SENTRY_AUTH_TOKEN;
+const SENTRY_ORG = env.SENTRY_ORG;
+const SENTRY_PROJECT = env.SENTRY_PROJECT;
 
 const SENTRY_API_BASE = 'https://sentry.io/api/0';
 

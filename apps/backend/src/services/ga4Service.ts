@@ -1,5 +1,7 @@
-const GA4_PROPERTY_ID = process.env.GA4_PROPERTY_ID;
-const GA4_SERVICE_ACCOUNT_KEY = process.env.GA4_SERVICE_ACCOUNT_KEY;
+import { env } from '../config/env';
+
+const GA4_PROPERTY_ID = env.GA4_PROPERTY_ID;
+const GA4_SERVICE_ACCOUNT_KEY = env.GA4_SERVICE_ACCOUNT_KEY;
 
 interface GA4Metrics {
   pageviews: number;

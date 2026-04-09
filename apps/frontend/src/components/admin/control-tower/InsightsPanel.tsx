@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Channel, AGENT_MAP } from './types';
+import { Channel, useAgentData } from './types';
 import { api } from '@/lib/api';
 
 interface InsightsPanelProps {
@@ -39,6 +39,7 @@ export function InsightsPanel({
   onLoadAnalytics,
   onLoadWhatsApp,
 }: InsightsPanelProps) {
+  const { agentMap } = useAgentData();
   const [activeTab, setActiveTab] = useState<InsightTab>('overview');
   const [agentStatus, setAgentStatus] = useState<any>(null);
   const [runHistory, setRunHistory] = useState<any[]>([]);
@@ -46,7 +47,7 @@ export function InsightsPanel({
   const [runLoading, setRunLoading] = useState(false);
 
   const isAgentChannel = channel.type === 'agent' && channel.agentId;
-  const agent = isAgentChannel ? AGENT_MAP[channel.agentId!] : null;
+  const agent = isAgentChannel ? agentMap[channel.agentId!] : null;
 
   useEffect(() => {
     setActiveTab('overview');

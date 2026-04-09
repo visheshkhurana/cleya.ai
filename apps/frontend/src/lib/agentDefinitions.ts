@@ -1,3 +1,5 @@
+import { api } from '@/lib/api';
+
 export interface AgentDefinition {
   id: string;
   name: string;
@@ -7,14 +9,47 @@ export interface AgentDefinition {
   color: string;
 }
 
-export const AGENT_REGISTRY: Record<string, AgentDefinition> = {
-  nexus: { id: 'nexus', name: 'Nexus', emoji: '\uD83E\uDDE0', role: 'Orchestrator', description: 'Master coordinator', color: 'purple' },
-  maven: { id: 'maven', name: 'Maven', emoji: '\uD83C\uDFAF', role: 'Marketing', description: 'Content, SEO, social media', color: 'blue' },
-  ledger: { id: 'ledger', name: 'Ledger', emoji: '\uD83D\uDCCA', role: 'Finance', description: 'Financial modeling, runway', color: 'amber' },
-  sentinel: { id: 'sentinel', name: 'Sentinel', emoji: '\uD83D\uDEE1\uFE0F', role: 'CTO', description: 'Architecture, security', color: 'cyan' },
-  ally: { id: 'ally', name: 'Ally', emoji: '\uD83D\uDCAC', role: 'Support', description: 'Customer success', color: 'green' },
-  catalyst: { id: 'catalyst', name: 'Catalyst', emoji: '\uD83D\uDE80', role: 'Growth', description: 'Viral loops, referrals', color: 'emerald' },
-  closer: { id: 'closer', name: 'Closer', emoji: '\uD83E\uDD1D', role: 'Sales', description: 'B2B sales, outreach', color: 'rose' },
-};
+let cachedAgents: Record<string, AgentDefinition> | null = null;
+let fetchPromise: Promise<Record<string, AgentDefinition>> | null = null;
 
-export const AGENT_IDS = Object.keys(AGENT_REGISTRY);
+export async function fetchAgentDefinitions(): Promise<Record<string, AgentDefinition>> {
+  if (cachedAgents && Object.keys(cachedAgents).length > 0) return cachedAgents;
+  if (fetchPromise) return fetchPromise;
+
+  fetchPromise = (async () => {
+    try {
+      const data = await api.getAgentStatuses();
+      const agents = Array.isArray(data) ? data : [];
+      const registry: Record<string, AgentDefinition> = {};
+      for (const a of agents) {
+        registry[a.agentId] = {
+          id: a.agentId,
+          name: a.name,
+          emoji: a.emoji || '🤖',
+          role: a.codename,
+          description: `${a.codename} agent`,
+          color: a.color || 'slate',
+        };
+      }
+      if (Object.keys(registry).length > 0) {
+        cachedAgents = registry;
+      }
+      return registry;
+    } catch (err: any) {
+      const msg = err?.message || '';
+      if (!msg.includes('authorization') && !msg.includes('401')) {
+        console.error('Failed to fetch agent definitions:', err);
+      }
+      return {};
+    } finally {
+      fetchPromise = null;
+    }
+  })();
+
+  return fetchPromise;
+}
+
+export function clearAgentCache() {
+  cachedAgents = null;
+  fetchPromise = null;
+}

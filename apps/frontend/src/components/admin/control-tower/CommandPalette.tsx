@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { AGENT_MAP, AGENT_CHANNELS, CommandAction } from './types';
+import { useAgentData, CommandAction } from './types';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -34,6 +34,7 @@ function fuzzyMatch(text: string, pattern: string): number {
 }
 
 export function CommandPalette({ isOpen, onClose, onSelectChannel, onRunAgent, onAskAgent }: CommandPaletteProps) {
+  const { agentChannels, agentMap } = useAgentData();
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [askMode, setAskMode] = useState<{ agentId: string; agentName: string } | null>(null);
@@ -65,7 +66,7 @@ export function CommandPalette({ isOpen, onClose, onSelectChannel, onRunAgent, o
     const scored: { item: CommandAction; score: number }[] = [];
     const q = query.trim();
 
-    AGENT_CHANNELS.forEach(ch => {
+    agentChannels.forEach(ch => {
       const nameScore = fuzzyMatch(ch.name, q);
       const descScore = fuzzyMatch(ch.description, q);
       const score = Math.max(nameScore, descScore);
@@ -84,7 +85,7 @@ export function CommandPalette({ isOpen, onClose, onSelectChannel, onRunAgent, o
       }
     });
 
-    Object.values(AGENT_MAP).forEach(agent => {
+    Object.values(agentMap).forEach(agent => {
       const askLabel = `/ask ${agent.name}`;
       const askScore = Math.max(fuzzyMatch(askLabel, q), fuzzyMatch(agent.role, q));
       if (askScore > 0) {
@@ -140,7 +141,7 @@ export function CommandPalette({ isOpen, onClose, onSelectChannel, onRunAgent, o
 
     scored.sort((a, b) => b.score - a.score);
     return scored.map(s => s.item);
-  }, [query, onSelectChannel, onRunAgent, onClose]);
+  }, [query, onSelectChannel, onRunAgent, onClose, agentChannels, agentMap]);
 
   useEffect(() => {
     setSelectedIndex(0);
@@ -202,7 +203,7 @@ export function CommandPalette({ isOpen, onClose, onSelectChannel, onRunAgent, o
           </svg>
           {askMode && (
             <span className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-indigo-500/20 text-indigo-300 text-xs font-medium flex-shrink-0">
-              <span>{AGENT_MAP[askMode.agentId]?.emoji}</span>
+              <span>{agentMap[askMode.agentId]?.emoji}</span>
               <span>Ask {askMode.agentName}</span>
               <button onClick={() => { setAskMode(null); setQuery(''); }} className="ml-1 text-indigo-300/50 hover:text-indigo-300">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>

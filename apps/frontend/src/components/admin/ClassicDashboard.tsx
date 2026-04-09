@@ -279,15 +279,13 @@ export function ClassicDashboard() {
     try {
       const data = await api.getAgentStatuses();
       if (Array.isArray(data)) {
-        const EMOJI_MAP: Record<string, string> = { nexus: '🧠', maven: '🎯', ledger: '📊', sentinel: '🛡️', ally: '💬', catalyst: '🚀', closer: '🤝' };
-        const COLOR_MAP: Record<string, string> = { nexus: 'purple', maven: 'indigo', ledger: 'amber', sentinel: 'cyan', ally: 'green', catalyst: 'emerald', closer: 'rose' };
         setAgentList(data.map((a: any) => ({
           id: a.agentId,
           name: a.name,
-          emoji: EMOJI_MAP[a.agentId] || '🤖',
+          emoji: a.emoji || '🤖',
           role: a.codename,
           description: `${a.codename} agent`,
-          color: COLOR_MAP[a.agentId] || 'slate',
+          color: a.color || 'slate',
         })));
       }
     } catch (err) {

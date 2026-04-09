@@ -1,6 +1,8 @@
-const POSTHOG_API_KEY = process.env.POSTHOG_API_KEY;
-const POSTHOG_HOST = process.env.POSTHOG_HOST || 'https://app.posthog.com';
-const POSTHOG_PROJECT_ID = process.env.POSTHOG_PROJECT_ID;
+import { env } from '../config/env';
+
+const POSTHOG_API_KEY = env.POSTHOG_API_KEY;
+const POSTHOG_HOST = env.POSTHOG_HOST || 'https://app.posthog.com';
+const POSTHOG_PROJECT_ID = env.POSTHOG_PROJECT_ID;
 
 interface PostHogMetrics {
   uniqueUsers: number;

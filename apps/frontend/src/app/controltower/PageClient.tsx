@@ -5,7 +5,7 @@ import { ChannelSidebar } from '@/components/admin/control-tower/ChannelSidebar'
 import { ChatPanel } from '@/components/admin/control-tower/ChatPanel';
 import { InsightsPanel } from '@/components/admin/control-tower/InsightsPanel';
 import { CommandPalette } from '@/components/admin/control-tower/CommandPalette';
-import { Channel, ChatMessage, Thread, AGENT_CHANNELS, AGENT_MAP } from '@/components/admin/control-tower/types';
+import { Channel, ChatMessage, Thread, useAgentData, refreshAgentData } from '@/components/admin/control-tower/types';
 import { ClassicDashboard } from '@/components/admin/ClassicDashboard';
 import { FounderMode } from '@/components/admin/FounderMode';
 import { CommandCenter } from '@/components/admin/CommandCenter';
@@ -52,7 +52,8 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [channels, setChannels] = useState<Channel[]>(AGENT_CHANNELS);
+  const { agentChannels, agentMap } = useAgentData();
+  const [channels, setChannels] = useState<Channel[]>([]);
   const [activeChannelId, setActiveChannelId] = useState('founder-room');
   const [messages, setMessages] = useState<Record<string, ChatMessage[]>>({});
   const [agentLoading, setAgentLoading] = useState(false);
@@ -64,6 +65,8 @@ export default function AdminDashboard() {
   const [founderDashboardOpen, setFounderDashboardOpen] = useState(false);
 
   const messageIdCounter = useRef(0);
+  const agentMapRef = useRef(agentMap);
+  useEffect(() => { agentMapRef.current = agentMap; }, [agentMap]);
 
   const genId = () => `msg-${Date.now()}-${++messageIdCounter.current}`;
 
@@ -76,6 +79,7 @@ export default function AdminDashboard() {
         api.setToken('authenticated');
         setAuthenticated(true);
         setUserRole(user.role);
+        refreshAgentData();
         loadDashboard();
       }
     }).catch(() => {}).finally(() => setCheckingAuth(false));
@@ -91,6 +95,20 @@ export default function AdminDashboard() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  useEffect(() => {
+    if (agentChannels.length === 0) return;
+    setChannels(prev => {
+      const newAgents = agentChannels.filter(c => c.type === 'agent');
+      if (newAgents.length === 0) return prev.length === 0 ? agentChannels : prev;
+      const specials = agentChannels.filter(c => c.type === 'special');
+      const merged = newAgents.map(newCh => {
+        const existing = prev.find(c => c.id === newCh.id);
+        return existing ? { ...newCh, unreadCount: existing.unreadCount, hasNewActivity: existing.hasNewActivity, presence: existing.presence } : newCh;
+      });
+      return [...specials, ...merged];
+    });
+  }, [agentChannels]);
 
   useEffect(() => {
     if (!authenticated) return;
@@ -118,6 +136,7 @@ export default function AdminDashboard() {
       api.setToken('authenticated');
       setAuthenticated(true);
       setUserRole(data.user.role);
+      refreshAgentData();
       loadDashboard();
     } catch (err: any) {
       setLoginError(err.message || 'Invalid credentials');
@@ -141,6 +160,7 @@ export default function AdminDashboard() {
       setAuthenticated(true);
       setUserRole(data.user.role);
       setMfaRequired(false);
+      refreshAgentData();
       loadDashboard();
     } catch (err: any) {
       setMfaError(err.message || 'Invalid MFA code');
@@ -294,12 +314,13 @@ export default function AdminDashboard() {
 
     if (channelId === 'all-agents') {
       setAgentLoading(true);
-      const agentIds = Object.keys(AGENT_MAP);
+      const currentMap = agentMapRef.current;
+      const agentIds = Object.keys(currentMap);
       for (const agentId of agentIds) {
         try {
           const history = agentChatHistory[agentId] || [];
           const result = await api.sendAgentMessage(agentId, content, history);
-          const agent = AGENT_MAP[agentId];
+          const agent = currentMap[agentId];
           addMessage(channelId, {
             id: genId(),
             channelId,
@@ -321,8 +342,8 @@ export default function AdminDashboard() {
             channelId,
             sender: 'agent',
             agentId,
-            agentName: AGENT_MAP[agentId]?.name || agentId,
-            agentEmoji: AGENT_MAP[agentId]?.emoji,
+            agentName: currentMap[agentId]?.name || agentId,
+            agentEmoji: currentMap[agentId]?.emoji,
             content: `Error: ${err.message}`,
             timestamp: new Date(),
             type: 'error',
@@ -338,9 +359,10 @@ export default function AdminDashboard() {
 
     setAgentLoading(true);
     try {
+      const currentMap = agentMapRef.current;
       const history = agentChatHistory[targetAgentId] || [];
       const result = await api.sendAgentMessage(targetAgentId, content, history);
-      const agent = AGENT_MAP[targetAgentId];
+      const agent = currentMap[targetAgentId];
       addMessage(channelId, {
         id: genId(),
         channelId,
@@ -357,13 +379,14 @@ export default function AdminDashboard() {
         [targetAgentId]: [...(prev[targetAgentId] || []), { role: 'user', content }, { role: 'assistant', content: result.content }],
       }));
     } catch (err: any) {
+      const currentMap = agentMapRef.current;
       addMessage(channelId, {
         id: genId(),
         channelId,
         sender: 'agent',
         agentId: targetAgentId,
-        agentName: AGENT_MAP[targetAgentId]?.name || targetAgentId,
-        agentEmoji: AGENT_MAP[targetAgentId]?.emoji,
+        agentName: currentMap[targetAgentId]?.name || targetAgentId,
+        agentEmoji: currentMap[targetAgentId]?.emoji,
         content: `Error: ${err.message}`,
         timestamp: new Date(),
         type: 'error',
@@ -421,9 +444,10 @@ export default function AdminDashboard() {
 
     setAgentLoading(true);
     try {
+      const currentMap = agentMapRef.current;
       const history = agentChatHistory[targetAgentId] || [];
       const result = await api.sendAgentMessage(targetAgentId, content, history);
-      const agent = AGENT_MAP[targetAgentId];
+      const agent = currentMap[targetAgentId];
       const agentReply: ChatMessage = {
         id: genId(),
         channelId,
@@ -473,10 +497,11 @@ export default function AdminDashboard() {
   }, []);
 
   const handleRunAgent = useCallback(async (agentId: string) => {
+    const currentMap = agentMapRef.current;
     try {
-      addSystemMessage(agentId, `Agent ${AGENT_MAP[agentId]?.name || agentId} has been triggered to run.`);
+      addSystemMessage(agentId, `Agent ${currentMap[agentId]?.name || agentId} has been triggered to run.`);
       const result = await api.runAgent(agentId);
-      const agent = AGENT_MAP[agentId];
+      const agent = currentMap[agentId];
       addMessage(agentId, {
         id: genId(),
         channelId: agentId,
@@ -494,8 +519,8 @@ export default function AdminDashboard() {
         channelId: agentId,
         sender: 'agent',
         agentId,
-        agentName: AGENT_MAP[agentId]?.name || agentId,
-        agentEmoji: AGENT_MAP[agentId]?.emoji,
+        agentName: currentMap[agentId]?.name || agentId,
+        agentEmoji: currentMap[agentId]?.emoji,
         content: `Run failed: ${err.message}`,
         timestamp: new Date(),
         type: 'error',

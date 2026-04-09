@@ -754,7 +754,7 @@ adminRouter.post('/whatsapp/register-templates', async (req: Request, res: Respo
         category: 'UTILITY',
         templateType: 'TEXT',
         content: 'Hi {{1}}! Cleya.ai has found a great connection for you. {{2}} would love to connect. Reply to start the conversation!',
-        example: 'Hi [Rahul]! Cleya.ai has found a great connection for you. [Priya from Sequoia] would love to connect. Reply to start the conversation!',
+        example: 'Hi [User]! Cleya.ai has found a great connection for you. [Connection Name from Company] would love to connect. Reply to start the conversation!',
       },
       {
         elementName: 'cleya_meeting_reminder',
@@ -762,7 +762,7 @@ adminRouter.post('/whatsapp/register-templates', async (req: Request, res: Respo
         category: 'UTILITY',
         templateType: 'TEXT',
         content: 'Reminder: You have a meeting scheduled {{1}}. {{2}}',
-        example: 'Reminder: You have a meeting scheduled [tomorrow at 3 PM]. [Coffee chat with Ananya Patel at Starbucks Koramangala]',
+        example: 'Reminder: You have a meeting scheduled [tomorrow at 3 PM]. [Coffee chat with Connection Name at Meeting Location]',
       },
       {
         elementName: 'cleya_followup',
@@ -770,7 +770,7 @@ adminRouter.post('/whatsapp/register-templates', async (req: Request, res: Respo
         category: 'UTILITY',
         templateType: 'TEXT',
         content: "Hi {{1}}! How was your meeting? We'd love to hear your feedback. Reply with your thoughts!",
-        example: "Hi [Rahul]! How was your meeting? We'd love to hear your feedback. Reply with your thoughts!",
+        example: "Hi [User]! How was your meeting? We'd love to hear your feedback. Reply with your thoughts!",
       },
       {
         elementName: 'cleya_reengagement',
@@ -778,7 +778,7 @@ adminRouter.post('/whatsapp/register-templates', async (req: Request, res: Respo
         category: 'MARKETING',
         templateType: 'TEXT',
         content: "Hi {{1}}! It's been a while since we connected. Cleya.ai has new networking opportunities waiting for you. Tap to explore!",
-        example: "Hi [Rahul]! It's been a while since we connected. Cleya.ai has new networking opportunities waiting for you. Tap to explore!",
+        example: "Hi [User]! It's been a while since we connected. Cleya.ai has new networking opportunities waiting for you. Tap to explore!",
       },
     ];
 

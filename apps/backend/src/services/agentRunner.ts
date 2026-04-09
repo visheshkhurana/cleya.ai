@@ -13,10 +13,12 @@ import {
   logExecution,
 } from './guardrailsService';
 
-const AGENT_PROMPTS: Record<string, { name: string; codename: string; systemPrompt: string; contentType: string; channel: string }> = {
+const AGENT_PROMPTS: Record<string, { name: string; codename: string; emoji: string; color: string; systemPrompt: string; contentType: string; channel: string }> = {
   'nexus': {
     name: 'Nexus',
     codename: 'Orchestrator',
+    emoji: '🧠',
+    color: 'purple',
     systemPrompt: `You are Nexus — the Orchestrator and Master Coordinator for Cleya.ai's AI workforce.
 You coordinate all operational agents: Maven (Marketing), Ledger (Finance), Sentinel (CTO), Ally (Support), Catalyst (Growth), and Closer (Sales).
 Generate a weekly operational plan. Output a structured JSON object with task assignments for each sub-agent:
@@ -36,6 +38,8 @@ Be specific to Indian startup ecosystem context. Include dates relative to today
   'maven': {
     name: 'Maven',
     codename: 'Marketing',
+    emoji: '🎯',
+    color: 'blue',
     systemPrompt: `You are Maven — Cleya.ai's Marketing Agent.
 Expertise: Content marketing, LinkedIn/Instagram strategy, SEO, email campaigns, brand storytelling for India's startup ecosystem.
 Generate a weekly content plan: 5 LinkedIn posts, 3 Instagram posts, 1 newsletter, 1 blog article.
@@ -49,6 +53,8 @@ Output each content piece as a separate section with clear formatting.`,
   'ledger': {
     name: 'Ledger',
     codename: 'Finance',
+    emoji: '📊',
+    color: 'amber',
     systemPrompt: `You are Ledger — Cleya.ai's Finance Agent.
 Expertise: SaaS/marketplace financial modeling, unit economics, runway analysis, fundraising prep, investor reporting.
 Tasks:
@@ -65,6 +71,8 @@ Output structured financial summaries with actionable recommendations.`,
   'sentinel': {
     name: 'Sentinel',
     codename: 'CTO',
+    emoji: '🛡️',
+    color: 'cyan',
     systemPrompt: `You are Sentinel — Cleya.ai's CTO Agent.
 Expertise: Technical architecture, infrastructure monitoring, security audits, performance optimization, tech debt management.
 Tasks:
@@ -82,6 +90,8 @@ Focus on scalability for Indian market conditions (variable connectivity, mobile
   'ally': {
     name: 'Ally',
     codename: 'Support',
+    emoji: '💬',
+    color: 'green',
     systemPrompt: `You are Ally — Cleya.ai's Customer Support Agent.
 Expertise: Customer success, support ticket triage, FAQ management, user onboarding optimization, NPS tracking.
 Tasks:
@@ -98,6 +108,8 @@ Prioritize self-service solutions to reduce support volume.`,
   'catalyst': {
     name: 'Catalyst',
     codename: 'Growth',
+    emoji: '🚀',
+    color: 'emerald',
     systemPrompt: `You are Catalyst — Cleya.ai's Growth Agent.
 Expertise: Viral loops, referral mechanics, network effects, activation funnels, A/B testing, partnerships.
 Growth Playbooks:
@@ -117,6 +129,8 @@ Always prioritize network density over raw user count. Think India-first distrib
   'closer': {
     name: 'Closer',
     codename: 'Sales',
+    emoji: '🤝',
+    color: 'rose',
     systemPrompt: `You are Closer — Cleya.ai's Sales Agent.
 Expertise: B2B sales, investor outreach, partnership development, cold outreach, pipeline management.
 Tasks:
@@ -163,6 +177,8 @@ interface AgentStatusInfo {
   agentId: string;
   name: string;
   codename: string;
+  emoji: string;
+  color: string;
   status: AgentStatus;
   lastRunAt: string | null;
   lastRunDuration: number | null;
@@ -659,6 +675,8 @@ export function getAgentStatuses(scheduleInfo?: Record<string, string>): AgentSt
       agentId: id,
       name: config.name,
       codename: config.codename,
+      emoji: config.emoji,
+      color: config.color,
       status: state?.status || 'idle',
       lastRunAt: state?.lastRunAt || null,
       lastRunDuration: state?.lastRunDuration || null,

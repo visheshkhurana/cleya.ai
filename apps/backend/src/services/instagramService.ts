@@ -1,5 +1,7 @@
-const INSTAGRAM_ACCESS_TOKEN = process.env.INSTAGRAM_ACCESS_TOKEN;
-const INSTAGRAM_BUSINESS_ACCOUNT_ID = process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID;
+import { env } from '../config/env';
+
+const INSTAGRAM_ACCESS_TOKEN = env.INSTAGRAM_ACCESS_TOKEN;
+const INSTAGRAM_BUSINESS_ACCOUNT_ID = env.INSTAGRAM_BUSINESS_ACCOUNT_ID;
 
 const IG_BASE = 'https://graph.facebook.com/v19.0';
 
