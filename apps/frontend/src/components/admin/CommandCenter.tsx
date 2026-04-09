@@ -68,44 +68,18 @@ interface ChatMessage {
 }
 
 // === CONFIG ===
-const SUPABASE_URL = 'https://kocvqzcxycwzoftcsxch.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtvY3ZxemN4eWN3em9mdGNzeGNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2MjU1MTksImV4cCI6MjA5MTIwMTUxOX0.a5RQvI1rCQQI7mO8jyxWzn7yhZ49ZCbeTGlLcVWTfQ0';
+import { api } from '@/lib/api';
+import { useAgentData, getAgentMap } from '@/components/admin/control-tower/types';
 
-const supabaseHeaders = {
-  'apikey': SUPABASE_ANON_KEY,
-  'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-  'Content-Type': 'application/json',
-};
+function agentName(id: string): string {
+  const map = getAgentMap();
+  return map[id]?.name || id;
+}
 
-const AGENT_EMOJIS: Record<string, string> = {
-  'orchestrator': '🧠',
-  'content-strategist': '💡',
-  'social-media': '📱',
-  'email-marketing': '✉️',
-  'cold-outreach': '🎯',
-  'seo-geo': '🌐',
-  'paid-ads': '⚡',
-  'analytics': '📊',
-  'cleya-marketing': '🎨',
-  'cleya-growth': '🚀',
-  'cleya-finance': '💰',
-  'cleya-sales': '🤝',
-};
-
-const AGENT_DISPLAY_NAMES: Record<string, string> = {
-  'orchestrator': 'Nexus',
-  'content-strategist': 'Content Strategist',
-  'social-media': 'Social Media',
-  'email-marketing': 'Email Marketing',
-  'cold-outreach': 'Cold Outreach',
-  'seo-geo': 'SEO/GEO',
-  'paid-ads': 'Paid Ads',
-  'analytics': 'Analytics',
-  'cleya-marketing': 'Mira',
-  'cleya-growth': 'Vega',
-  'cleya-finance': 'Arjun',
-  'cleya-sales': 'Kavi',
-};
+function agentEmoji(id: string): string {
+  const map = getAgentMap();
+  return map[id]?.emoji || '🤖';
+}
 
 const STATUS_DOT: Record<string, string> = {
   'idle': 'bg-green-400',
@@ -232,7 +206,7 @@ function InsightsPanel({ agents, tasks, logs }: { agents: Agent[]; tasks: AgentT
               {criticalTasks.map(task => (
                 <div key={task.id} className="bg-red-500/10 border border-red-500/20 rounded-lg p-2.5">
                   <div className="text-xs font-medium text-red-300">{task.title}</div>
-                  <div className="text-[10px] text-red-400/70 mt-1">{AGENT_DISPLAY_NAMES[task.agent_id] || task.agent_id}</div>
+                  <div className="text-[10px] text-red-400/70 mt-1">{agentName(task.agent_id)}</div>
                 </div>
               ))}
             </div>
@@ -249,7 +223,7 @@ function InsightsPanel({ agents, tasks, logs }: { agents: Agent[]; tasks: AgentT
               {highTasks.slice(0, 5).map(task => (
                 <div key={task.id} className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-2.5">
                   <div className="text-xs font-medium text-orange-300">{task.title}</div>
-                  <div className="text-[10px] text-orange-400/70 mt-1">{AGENT_DISPLAY_NAMES[task.agent_id] || task.agent_id}</div>
+                  <div className="text-[10px] text-orange-400/70 mt-1">{agentName(task.agent_id)}</div>
                 </div>
               ))}
             </div>
@@ -263,7 +237,7 @@ function InsightsPanel({ agents, tasks, logs }: { agents: Agent[]; tasks: AgentT
             {agents.map(agent => (
               <div key={agent.id} className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-slate-800/50">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm">{AGENT_EMOJIS[agent.id] || '🤖'}</span>
+                  <span className="text-sm">{agentEmoji(agent.id)}</span>
                   <span className="text-xs text-slate-300">{AGENT_DISPLAY_NAMES[agent.id] || agent.name}</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -294,20 +268,18 @@ export function CommandCenter() {
   const [refreshing, setRefreshing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Fetch data
+  const { agentMap, loading: agentDataLoading } = useAgentData();
+
   const fetchData = useCallback(async () => {
     try {
-      const [agentsRes, logsRes, tasksRes] = await Promise.all([
-        fetch(`${SUPABASE_URL}/rest/v1/dm_agents?select=*&order=name`, { headers: supabaseHeaders }),
-        fetch(`${SUPABASE_URL}/rest/v1/dm_agent_logs?select=*&order=created_at.desc&limit=100`, { headers: supabaseHeaders }),
-        fetch(`${SUPABASE_URL}/rest/v1/dm_agent_tasks?select=*&order=created_at.desc`, { headers: supabaseHeaders }),
-      ]);
       const [agentsData, logsData, tasksData] = await Promise.all([
-        agentsRes.json(), logsRes.json(), tasksRes.json()
+        api.getAgentDataList(),
+        api.getAgentDataLogs(),
+        api.getAgentDataTasks(),
       ]);
-      setAgents(agentsData);
-      setLogs(logsData);
-      setTasks(tasksData);
+      setAgents(Array.isArray(agentsData) ? agentsData : []);
+      setLogs(Array.isArray(logsData) ? logsData : []);
+      setTasks(Array.isArray(tasksData) ? tasksData : []);
       setLoading(false);
     } catch (err) {
       console.error('Failed to fetch:', err);
@@ -319,9 +291,9 @@ export function CommandCenter() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    // Trigger all agents to run
     try {
-      await fetch(`${SUPABASE_URL}/functions/v1/agent-scheduler?run_all=true`);
+      const agentIds = agents.map(a => a.id);
+      await Promise.all(agentIds.map(id => api.runAgent(id).catch(() => {})));
       await new Promise(r => setTimeout(r, 2000));
       await fetchData();
     } catch (err) { console.error(err); }
@@ -472,7 +444,7 @@ export function CommandCenter() {
     if (cmd.startsWith('/run ')) {
       const agentId = cmd.replace('/run ', '').trim();
       try {
-        await fetch(`${SUPABASE_URL}/functions/v1/agent-scheduler?agent_id=${agentId}`);
+        await api.runAgent(agentId);
         setTimeout(fetchData, 2000);
       } catch (err) { console.error(err); }
     } else if (cmd === '/run-all') {
@@ -792,7 +764,7 @@ export function CommandCenter() {
                   onClick={() => { setActiveChannel(agent.id); setShowCommandPalette(false); }}
                   className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs text-slate-300 hover:bg-brand-violet/20 hover:text-white transition-colors"
                 >
-                  <span>{AGENT_EMOJIS[agent.id] || '🤖'}</span>
+                  <span>{agentEmoji(agent.id)}</span>
                   <span className="flex-1 text-left">{AGENT_DISPLAY_NAMES[agent.id] || agent.name}</span>
                   <span className="text-[10px] text-slate-500">{agent.role}</span>
                 </button>
