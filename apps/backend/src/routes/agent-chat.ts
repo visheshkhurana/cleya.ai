@@ -4,6 +4,9 @@ import { promptInjectionGuard } from '../middleware/promptInjectionGuard';
 import { aiRateLimiter } from '../middleware/aiRateLimit';
 import { createAIService } from '@cleya/ai';
 import { prisma } from '@cleya/db';
+import OpenAI from 'openai';
+import { getToolPromptForAgent } from '../prompts/masterPrompt';
+import { getOpenAIToolSchemas, executeTool, parseToolCallsFromResponse, AGENT_TOOLS } from '../services/agentTools';
 
 export const agentChatRouter = Router();
 
@@ -164,6 +167,15 @@ function getAI() {
   return aiService;
 }
 
+let openaiClient: OpenAI | null = null;
+function getOpenAIClient(): OpenAI | null {
+  if (!openaiClient) {
+    if (!process.env.OPENAI_API_KEY) return null;
+    openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+  return openaiClient;
+}
+
 /** List available agents */
 agentChatRouter.get('/list', authenticate, (_req: Request, res: Response) => {
   res.json({ success: true, data: AGENT_LIST });
@@ -184,7 +196,7 @@ async function loadUserTier(req: Request, _res: Response, next: NextFunction) {
   next();
 }
 
-/** Chat with a specific agent */
+/** Chat with a specific agent — supports tool calling for agents with tools */
 agentChatRouter.post('/chat', authenticate, requireRole('ADMIN'), loadUserTier, promptInjectionGuard, aiRateLimiter, async (req: Request, res: Response, next: NextFunction) => {
   const startTime = Date.now();
   try {
@@ -203,8 +215,11 @@ agentChatRouter.post('/chat', authenticate, requireRole('ADMIN'), loadUserTier, 
       return;
     }
 
+    const agentHasTools = !!(AGENT_TOOLS[agentId] && AGENT_TOOLS[agentId].length > 0);
+    const openai = agentHasTools ? getOpenAIClient() : null;
     const ai = getAI();
-    if (!ai) {
+
+    if (!ai && !openai) {
       res.json({
         success: true,
         data: { content: 'AI service not configured. Set OPENAI_API_KEY in environment.', fallback: true },
@@ -212,7 +227,10 @@ agentChatRouter.post('/chat', authenticate, requireRole('ADMIN'), loadUserTier, 
       return;
     }
 
-    const systemPrompt = AGENT_PROMPTS[agentId];
+    const basePrompt = AGENT_PROMPTS[agentId];
+    const toolPrompt = agentHasTools ? getToolPromptForAgent(agentId) : '';
+    const systemPrompt = basePrompt + toolPrompt;
+
     const validHistory = Array.isArray(history)
       ? history.slice(-20).map((h: any) => ({
           role: h.role === 'assistant' ? 'assistant' as const : 'user' as const,
@@ -220,13 +238,120 @@ agentChatRouter.post('/chat', authenticate, requireRole('ADMIN'), loadUserTier, 
         }))
       : [];
 
+    // If agent has tools AND we have OpenAI client, use native function calling
+    if (agentHasTools && openai) {
+      const toolSchemas = getOpenAIToolSchemas(agentId);
+
+      const messages: OpenAI.ChatCompletionMessageParam[] = [
+        { role: 'system', content: systemPrompt },
+        ...validHistory.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
+        { role: 'user', content: message.trim() },
+      ];
+
+      let response = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages,
+        tools: toolSchemas as any,
+        tool_choice: 'auto',
+        temperature: 0.7,
+        max_tokens: 2048,
+      });
+
+      let assistantMessage = response.choices[0]?.message;
+      const toolResults: Array<{ tool: string; result: any }> = [];
+
+      // Tool execution loop — max 3 iterations to prevent infinite loops
+      let iterations = 0;
+      while (assistantMessage?.tool_calls && assistantMessage.tool_calls.length > 0 && iterations < 3) {
+        iterations++;
+
+        // Add assistant's message (with tool calls) to conversation
+        messages.push(assistantMessage as any);
+
+        // Execute each tool call
+        for (const toolCall of assistantMessage.tool_calls) {
+          const args = typeof toolCall.function.arguments === 'string'
+            ? JSON.parse(toolCall.function.arguments)
+            : toolCall.function.arguments;
+
+          console.log(`[AgentChat] ${agentId} calling tool: ${toolCall.function.name}`, args);
+
+          const toolResult = await executeTool(agentId, toolCall.function.name, args);
+          toolResults.push({ tool: toolCall.function.name, result: toolResult });
+
+          // Add tool result to conversation for the LLM
+          messages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: JSON.stringify(toolResult),
+          });
+        }
+
+        // Get follow-up response from LLM with tool results
+        response = await openai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages,
+          tools: toolSchemas as any,
+          tool_choice: 'auto',
+          temperature: 0.7,
+          max_tokens: 2048,
+        });
+
+        assistantMessage = response.choices[0]?.message;
+      }
+
+      const content = assistantMessage?.content || '';
+      res.json({
+        success: true,
+        data: {
+          content,
+          agentId,
+          toolCalls: toolResults.length > 0 ? toolResults : undefined,
+        },
+      });
+      return;
+    }
+
+    // Fallback: no tools — plain chat via AIService (original behavior)
     const messages = [
       { role: 'system' as const, content: systemPrompt },
       ...validHistory,
       { role: 'user' as const, content: message.trim() },
     ];
 
-    const result = await ai.chat(messages);
+    const result = await ai!.chat(messages);
+
+    // Check if the response contains a manual tool_call JSON block
+    const manualToolCalls = parseToolCallsFromResponse(result.content);
+    if (manualToolCalls.length > 0 && agentHasTools) {
+      const toolResults: Array<{ tool: string; result: any }> = [];
+      for (const tc of manualToolCalls) {
+        const toolResult = await executeTool(agentId, tc.name, tc.arguments);
+        toolResults.push({ tool: tc.name, result: toolResult });
+      }
+
+      // Get a follow-up response with tool results
+      const toolResultSummary = toolResults.map(tr =>
+        `Tool "${tr.tool}" result: ${JSON.stringify(tr.result)}`
+      ).join('\n');
+
+      const followUp = await ai!.chat([
+        ...messages,
+        { role: 'assistant' as const, content: result.content },
+        { role: 'user' as const, content: `Tool execution results:\n${toolResultSummary}\n\nPlease summarize the outcome for the user.` },
+      ]);
+
+      res.json({
+        success: true,
+        data: {
+          content: followUp.content,
+          agentId,
+          toolCalls: toolResults,
+        },
+      });
+      return;
+    }
+
     res.json({ success: true, data: { content: result.content, agentId } });
   } catch (error) {
     next(error);

@@ -15,6 +15,9 @@ import {
   logAudit,
 } from './guardrailsService';
 import { routeModel, inferTaskType, isHighCostTask, USD_TO_INR, HIGH_COST_THRESHOLD_INR, type RoutingInput } from './modelRouter';
+import OpenAI from 'openai';
+import { getToolPromptForAgent } from '../prompts/masterPrompt';
+import { getOpenAIToolSchemas, executeTool, parseToolCallsFromResponse, AGENT_TOOLS, type ToolCallResult } from './agentTools';
 
 const AGENT_PROMPTS: Record<string, { name: string; codename: string; emoji: string; color: string; systemPrompt: string; contentType: string; channel: string }> = {
   'nexus': {
@@ -399,6 +402,15 @@ function getAI() {
   return multiModelAI;
 }
 
+let openaiClientRunner: OpenAI | null = null;
+function getOpenAIClientForRunner(): OpenAI | null {
+  if (!openaiClientRunner) {
+    if (!process.env.OPENAI_API_KEY) return null;
+    openaiClientRunner = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+  return openaiClientRunner;
+}
+
 const MAX_RETRIES = 2;
 const BASE_DELAY_MS = 2000;
 
@@ -519,7 +531,10 @@ async function executeAgentOnce(agentId: string, taskContext?: string, assignedM
   }
   userPrompt += '\n\nGenerate content now.';
 
-  const systemPrompt = config.systemPrompt + memoryPromptSection;
+  const toolPromptSection = (AGENT_TOOLS[agentId] && AGENT_TOOLS[agentId].length > 0)
+    ? getToolPromptForAgent(agentId)
+    : '';
+  const systemPrompt = config.systemPrompt + memoryPromptSection + toolPromptSection;
 
   const messages = [
     { role: 'system' as const, content: systemPrompt },
@@ -529,20 +544,130 @@ async function executeAgentOnce(agentId: string, taskContext?: string, assignedM
   let result;
   let modelUsed = primaryModel;
   let usedFallback = false;
+  const toolCallResults: ToolCallResult[] = [];
 
-  try {
-    console.log(`[AgentRunner] ${agentId} using primary model: ${primaryModel} (${routing.reason})`);
-    result = await ai.chat(messages, { model: primaryModel });
-  } catch (primaryErr: any) {
-    console.warn(`[AgentRunner] Primary model ${primaryModel} failed for ${agentId}: ${primaryErr.message}`);
-    console.log(`[AgentRunner] Falling back to: ${fallbackModel}`);
+  // Try native OpenAI tool calling if agent has tools and model is OpenAI
+  const agentHasTools = !!(AGENT_TOOLS[agentId] && AGENT_TOOLS[agentId].length > 0);
+  const openaiRunner = agentHasTools ? getOpenAIClientForRunner() : null;
+  const isOpenAIModel = primaryModel.startsWith('gpt-') || primaryModel.startsWith('o1') || primaryModel.startsWith('o3');
 
+  if (agentHasTools && openaiRunner && isOpenAIModel) {
     try {
-      result = await ai.chat(messages, { model: fallbackModel });
-      modelUsed = fallbackModel;
-      usedFallback = true;
-    } catch (fallbackErr: any) {
-      throw new Error(`Both primary (${primaryModel}) and fallback (${fallbackModel}) models failed. Primary: ${primaryErr.message}. Fallback: ${fallbackErr.message}`);
+      console.log(`[AgentRunner] ${agentId} using primary model with tools: ${primaryModel} (${routing.reason})`);
+      const toolSchemas = getOpenAIToolSchemas(agentId);
+
+      const oaiMessages: OpenAI.ChatCompletionMessageParam[] = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ];
+
+      let response = await openaiRunner.chat.completions.create({
+        model: primaryModel,
+        messages: oaiMessages,
+        tools: toolSchemas as any,
+        tool_choice: 'auto',
+        temperature: 0.7,
+        max_tokens: 2048,
+      });
+
+      let assistantMessage = response.choices[0]?.message;
+
+      // Tool execution loop — max 3 iterations
+      let iterations = 0;
+      while (assistantMessage?.tool_calls && assistantMessage.tool_calls.length > 0 && iterations < 3) {
+        iterations++;
+        oaiMessages.push(assistantMessage as any);
+
+        for (const toolCall of assistantMessage.tool_calls) {
+          const args = typeof toolCall.function.arguments === 'string'
+            ? JSON.parse(toolCall.function.arguments)
+            : toolCall.function.arguments;
+
+          console.log(`[AgentRunner] ${agentId} auto-calling tool: ${toolCall.function.name}`, args);
+          const toolResult = await executeTool(agentId, toolCall.function.name, args);
+          toolCallResults.push(toolResult);
+
+          oaiMessages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: JSON.stringify(toolResult),
+          });
+        }
+
+        response = await openaiRunner.chat.completions.create({
+          model: primaryModel,
+          messages: oaiMessages,
+          tools: toolSchemas as any,
+          tool_choice: 'auto',
+          temperature: 0.7,
+          max_tokens: 2048,
+        });
+
+        assistantMessage = response.choices[0]?.message;
+      }
+
+      result = {
+        content: assistantMessage?.content || '',
+        model: primaryModel,
+        provider: 'openai',
+        usage: response.usage ? {
+          promptTokens: response.usage.prompt_tokens,
+          completionTokens: response.usage.completion_tokens,
+          totalTokens: response.usage.total_tokens,
+        } : undefined,
+      };
+    } catch (primaryErr: any) {
+      console.warn(`[AgentRunner] Primary model with tools ${primaryModel} failed for ${agentId}: ${primaryErr.message}`);
+      // Fall through to standard path below
+      result = null;
+    }
+  }
+
+  // Standard path (no tools, non-OpenAI model, or tool path failed)
+  if (!result) {
+    try {
+      console.log(`[AgentRunner] ${agentId} using primary model: ${primaryModel} (${routing.reason})`);
+      result = await ai.chat(messages, { model: primaryModel });
+    } catch (primaryErr: any) {
+      console.warn(`[AgentRunner] Primary model ${primaryModel} failed for ${agentId}: ${primaryErr.message}`);
+      console.log(`[AgentRunner] Falling back to: ${fallbackModel}`);
+
+      try {
+        result = await ai.chat(messages, { model: fallbackModel });
+        modelUsed = fallbackModel;
+        usedFallback = true;
+      } catch (fallbackErr: any) {
+        throw new Error(`Both primary (${primaryModel}) and fallback (${fallbackModel}) models failed. Primary: ${primaryErr.message}. Fallback: ${fallbackErr.message}`);
+      }
+    }
+
+    // Check for manual tool calls in the text response (non-OpenAI models)
+    if (agentHasTools && result.content) {
+      const manualToolCalls = parseToolCallsFromResponse(result.content);
+      for (const tc of manualToolCalls) {
+        console.log(`[AgentRunner] ${agentId} manual tool call: ${tc.name}`, tc.arguments);
+        const toolResult = await executeTool(agentId, tc.name, tc.arguments);
+        toolCallResults.push(toolResult);
+      }
+
+      // If tools were called, get a follow-up response with results
+      if (toolCallResults.length > 0) {
+        const toolSummary = toolCallResults.map(tr =>
+          `Tool "${tr.toolName}": ${tr.success ? 'Success' : 'Failed'} — ${JSON.stringify(tr.result || tr.error)}`
+        ).join('\n');
+
+        try {
+          const followUp = await ai.chat([
+            ...messages,
+            { role: 'assistant' as const, content: result.content },
+            { role: 'user' as const, content: `Tool execution results:\n${toolSummary}\n\nSummarize what was accomplished.` },
+          ], { model: modelUsed });
+
+          result = { ...result, content: followUp.content };
+        } catch {
+          // Keep original content if follow-up fails
+        }
+      }
     }
   }
 
@@ -756,6 +881,7 @@ async function executeAgentOnce(agentId: string, taskContext?: string, assignedM
       prompt_tokens: result.usage?.promptTokens,
       completion_tokens: result.usage?.completionTokens,
       total_tokens: result.usage?.totalTokens,
+      tool_calls: toolCallResults.length > 0 ? toolCallResults.map(tc => ({ tool: tc.toolName, success: tc.success })) : undefined,
     },
   });
 
