@@ -7,6 +7,7 @@
 
 import { ayrshareService } from './ayrshareService';
 import { adsService } from './adsService';
+import { getAnalyticsSummary, getTopPages, getTrafficSources } from './analyticsService';
 import { logExecution, logAudit, scoreContentRisk, checkGuardrails, shouldAutoExecute, type AutonomyLevel } from './guardrailsService';
 import { getAgentGuardrails, getAgentAutonomyLevel } from './agentRunner';
 
@@ -17,11 +18,11 @@ export const AGENT_TOOLS: Record<string, string[]> = {
   ledger: ['create_ad_campaign', 'get_campaign_stats', 'optimize_campaigns'],
   catalyst: ['post_to_social', 'create_ad_campaign', 'schedule_post'],
   nexus: ['post_to_social', 'send_email', 'schedule_post'],
-  sentinel: ['get_campaign_stats', 'get_post_analytics'],
+  sentinel: ['get_campaign_stats', 'get_post_analytics', 'get_analytics_summary', 'get_top_pages', 'get_traffic_sources'],
   ally: ['send_email', 'schedule_post'],
   closer: ['send_email', 'create_ad_campaign'],
-  scout: ['analyze_seo', 'keyword_research', 'analyze_competitors', 'generate_schema_markup', 'check_indexing', 'optimize_content'],
-  probe: ['run_page_test', 'run_api_test', 'run_agent_test', 'run_full_qa', 'get_qa_report'],
+  scout: ['analyze_seo', 'keyword_research', 'analyze_competitors', 'generate_schema_markup', 'check_indexing', 'optimize_content', 'get_analytics_summary', 'get_top_pages', 'get_traffic_sources'],
+  probe: ['run_page_test', 'run_api_test', 'run_agent_test', 'run_full_qa', 'get_qa_report', 'get_analytics_summary'],
 };
 
 // --- Tool parameter schemas (used in OpenAI function-calling format) ---
@@ -251,6 +252,39 @@ export const TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
       },
     },
   },
+
+  // --- GA4 Analytics tools ---
+  get_analytics_summary: {
+    name: 'get_analytics_summary',
+    description: 'Get a combined Google Analytics summary for the last 7 days: page views, top pages, traffic sources, user metrics, and real-time active users.',
+    parameters: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  get_top_pages: {
+    name: 'get_top_pages',
+    description: 'Get the top pages by page views from Google Analytics. Returns page path, views, and sessions.',
+    parameters: {
+      type: 'object',
+      properties: {
+        startDate: { type: 'string', description: 'Start date (e.g. "7daysAgo", "30daysAgo", or "2024-01-01"). Defaults to "7daysAgo".' },
+        endDate: { type: 'string', description: 'End date (e.g. "today", "yesterday", or "2024-01-31"). Defaults to "today".' },
+        limit: { type: 'number', description: 'Number of top pages to return (default 10)' },
+      },
+    },
+  },
+  get_traffic_sources: {
+    name: 'get_traffic_sources',
+    description: 'Get traffic sources from Google Analytics — session source, medium, sessions, and users.',
+    parameters: {
+      type: 'object',
+      properties: {
+        startDate: { type: 'string', description: 'Start date (e.g. "7daysAgo", "30daysAgo", or "2024-01-01"). Defaults to "7daysAgo".' },
+        endDate: { type: 'string', description: 'End date (e.g. "today", "yesterday", or "2024-01-31"). Defaults to "today".' },
+      },
+    },
+  },
 };
 
 // --- Get OpenAI-format tool schemas for a specific agent ---
@@ -440,6 +474,26 @@ export async function executeTool(agentId: string, toolName: string, params: Rec
           result = await getLatestQAReport();
         }
         if (!result) result = { success: false, error: 'No QA report found' };
+        break;
+      }
+
+      // --- GA4 Analytics tools ---
+      case 'get_analytics_summary':
+        result = await getAnalyticsSummary();
+        break;
+
+      case 'get_top_pages': {
+        const startDate = params.startDate || '7daysAgo';
+        const endDate = params.endDate || 'today';
+        const limit = params.limit || 10;
+        result = await getTopPages(startDate, endDate, limit);
+        break;
+      }
+
+      case 'get_traffic_sources': {
+        const startDate = params.startDate || '7daysAgo';
+        const endDate = params.endDate || 'today';
+        result = await getTrafficSources(startDate, endDate);
         break;
       }
 
