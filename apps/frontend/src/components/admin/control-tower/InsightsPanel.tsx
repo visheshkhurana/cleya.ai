@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Channel, useAgentData } from './types';
 import { api } from '@/lib/api';
+import { useTheme, t } from '@/components/admin/ThemeContext';
 
 interface InsightsPanelProps {
   channel: Channel;
@@ -39,6 +40,7 @@ export function InsightsPanel({
   onLoadAnalytics,
   onLoadWhatsApp,
 }: InsightsPanelProps) {
+  const { isDark } = useTheme();
   const { agentMap } = useAgentData();
   const [activeTab, setActiveTab] = useState<InsightTab>('overview');
   const [agentStatus, setAgentStatus] = useState<any>(null);
@@ -88,10 +90,10 @@ export function InsightsPanel({
     return (
       <button
         onClick={onToggle}
-        className="w-10 h-full border-l border-white/[0.06] flex items-center justify-center hover:bg-white/[0.04] transition"
-        style={{ background: 'rgba(8,13,26,0.95)' }}
+        className={`w-10 h-full flex items-center justify-center transition ${t.textMuted(isDark)}`}
+        style={{ background: t.bgSecondary(isDark), borderLeft: `1px solid ${t.border(isDark)}` }}
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/30">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="m15 18-6-6 6-6"/>
         </svg>
       </button>
@@ -116,10 +118,10 @@ export function InsightsPanel({
     : [{ id: 'overview', label: 'Overview' }];
 
   return (
-    <div className="w-[320px] min-w-[320px] h-full flex flex-col border-l border-white/[0.06]" style={{ background: 'rgba(8,13,26,0.95)' }}>
-      <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-white">Insights</h3>
-        <button onClick={onToggle} className="text-white/30 hover:text-white transition p-1">
+    <div className="w-[320px] min-w-[320px] h-full flex flex-col" style={{ background: t.bgSecondary(isDark), borderLeft: `1px solid ${t.border(isDark)}` }}>
+      <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: `1px solid ${t.border(isDark)}` }}>
+        <h3 className={`text-sm font-semibold ${t.textPrimary(isDark)}`}>Insights</h3>
+        <button onClick={onToggle} className={`${t.textMuted(isDark)} hover:opacity-80 transition p-1`}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="m9 18 6-6-6-6"/>
           </svg>
@@ -182,13 +184,14 @@ export function InsightsPanel({
 }
 
 function StatCard({ label, value, icon }: { label: string; value: string | number; icon?: string }) {
+  const { isDark } = useTheme();
   return (
-    <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+    <div className="rounded-lg p-3" style={{ background: t.bgCard(isDark), border: `1px solid ${t.border(isDark)}` }}>
       <div className="flex items-center gap-1.5 mb-1">
         {icon && <span className="text-xs">{icon}</span>}
-        <span className="text-[10px] text-white/30 uppercase font-medium">{label}</span>
+        <span className={`text-[10px] uppercase font-medium ${t.textDimmed(isDark)}`}>{label}</span>
       </div>
-      <span className="text-lg font-bold text-white">{value}</span>
+      <span className={`text-lg font-bold ${t.textPrimary(isDark)}`}>{value}</span>
     </div>
   );
 }

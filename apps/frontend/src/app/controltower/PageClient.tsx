@@ -9,6 +9,7 @@ import { Channel, ChatMessage, Thread, useAgentData, refreshAgentData } from '@/
 import { ClassicDashboard } from '@/components/admin/ClassicDashboard';
 import { FounderMode } from '@/components/admin/FounderMode';
 import { CommandCenter } from '@/components/admin/CommandCenter';
+import { ThemeProvider, useTheme, t } from '@/components/admin/ThemeContext';
 
 type ViewMode = 'dashboard' | 'command-center' | 'command';
 
@@ -31,6 +32,15 @@ interface CommData {
 }
 
 export default function AdminDashboard() {
+  return (
+    <ThemeProvider>
+      <AdminDashboardInner />
+    </ThemeProvider>
+  );
+}
+
+function AdminDashboardInner() {
+  const { theme, toggleTheme, isDark } = useTheme();
   const [authenticated, setAuthenticated] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -539,7 +549,7 @@ export default function AdminDashboard() {
 
   if (checkingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#080D1A' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: t.bg(isDark) }}>
         <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -547,21 +557,21 @@ export default function AdminDashboard() {
 
   if (!authenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#080D1A' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: t.bg(isDark) }}>
         <div className="w-full max-w-sm mx-auto px-6">
           <div className="text-center mb-8">
             <div className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center mb-4"
               style={{ background: 'linear-gradient(135deg, #6366F1, #4ECDC4)' }}>
               <span className="text-white font-bold text-xl">C</span>
             </div>
-            <h1 className="text-xl font-bold text-white mb-1">Control Tower</h1>
-            <p className="text-sm text-white/40">Cleya.ai Administration</p>
+            <h1 className={`text-xl font-bold mb-1 ${t.textPrimary(isDark)}`}>Control Tower</h1>
+            <p className={`text-sm ${t.textMuted(isDark)}`}>Cleya.ai Administration</p>
           </div>
           {mfaRequired ? (
             <form onSubmit={handleMfaSubmit} className="space-y-4">
-              <p className="text-sm text-white/60 text-center">Enter the 6-digit code from your authenticator app</p>
+              <p className={`text-sm text-center ${t.textSecondary(isDark)}`}>Enter the 6-digit code from your authenticator app</p>
               <div>
-                <label className="block text-xs font-medium text-white/50 uppercase tracking-wider mb-1.5">MFA Code</label>
+                <label className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${t.textLabel(isDark)}`}>MFA Code</label>
                 <input
                   type="text"
                   inputMode="numeric"
@@ -569,8 +579,8 @@ export default function AdminDashboard() {
                   value={mfaCode}
                   onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
                   required
-                  className="w-full px-4 py-3 rounded-xl text-sm text-white text-center tracking-[0.5em] placeholder-white/30 outline-none focus:ring-2 focus:ring-indigo-500/50 transition"
-                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
+                  className={`w-full px-4 py-3 rounded-xl text-sm text-center tracking-[0.5em] outline-none focus:ring-2 focus:ring-indigo-500/50 transition ${t.textPrimary(isDark)}`}
+                  style={{ background: t.bgInput(isDark), border: `1px solid ${t.borderInput(isDark)}` }}
                   placeholder="000000"
                   autoFocus
                 />
@@ -591,7 +601,7 @@ export default function AdminDashboard() {
               <button
                 type="button"
                 onClick={() => { setMfaRequired(false); setMfaCode(''); setMfaError(''); }}
-                className="w-full text-sm text-white/40 hover:text-white/60 transition"
+                className={`w-full text-sm transition ${t.textMuted(isDark)} hover:opacity-80`}
               >
                 Back to login
               </button>
@@ -599,26 +609,26 @@ export default function AdminDashboard() {
           ) : (
             <form onSubmit={handleAdminLogin} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-white/50 uppercase tracking-wider mb-1.5">Email</label>
+                <label className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${t.textLabel(isDark)}`}>Email</label>
                 <input
                   type="email"
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
                   required
-                  className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-white/30 outline-none focus:ring-2 focus:ring-indigo-500/50 transition"
-                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
+                  className={`w-full px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/50 transition ${t.textPrimary(isDark)}`}
+                  style={{ background: t.bgInput(isDark), border: `1px solid ${t.borderInput(isDark)}` }}
                   placeholder="admin@cleya.ai"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-white/50 uppercase tracking-wider mb-1.5">Password</label>
+                <label className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${t.textLabel(isDark)}`}>Password</label>
                 <input
                   type="password"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
                   required
-                  className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-white/30 outline-none focus:ring-2 focus:ring-indigo-500/50 transition"
-                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
+                  className={`w-full px-4 py-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/50 transition ${t.textPrimary(isDark)}`}
+                  style={{ background: t.bgInput(isDark), border: `1px solid ${t.borderInput(isDark)}` }}
                   placeholder="Password"
                 />
               </div>
@@ -644,7 +654,7 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#080D1A' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: t.bg(isDark) }}>
         <div className="flex items-center gap-3">
           <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-indigo-300">Loading Control Tower...</p>
@@ -655,7 +665,7 @@ export default function AdminDashboard() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#080D1A' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: t.bg(isDark) }}>
         <div className="text-center space-y-4">
           <p className="text-red-400">{error}</p>
           <button
@@ -670,23 +680,23 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="h-screen flex flex-col" style={{ background: '#080D1A', color: '#e2e8f0', fontFamily: "'Inter', system-ui, sans-serif" }}>
-      <header className="h-11 flex-shrink-0 flex items-center px-4 border-b border-white/[0.06]" style={{ background: 'rgba(8,13,26,0.95)', backdropFilter: 'blur(20px)' }}>
+    <div className="h-screen flex flex-col" style={{ background: t.bg(isDark), color: t.text(isDark), fontFamily: "'Inter', system-ui, sans-serif" }}>
+      <header className="h-11 flex-shrink-0 flex items-center px-4" style={{ background: t.bgSecondary(isDark), backdropFilter: 'blur(20px)', borderBottom: `1px solid ${t.border(isDark)}` }}>
         <div className="flex items-center gap-2 flex-1">
           <div className="w-6 h-6 rounded-lg flex items-center justify-center"
             style={{ background: 'linear-gradient(135deg, #6366F1, #4ECDC4)' }}>
             <span className="text-white text-[10px] font-bold">C</span>
           </div>
-          <span className="text-xs font-semibold text-white/70">Control Tower</span>
-          <span className="text-[10px] text-white/20 ml-1">Cleya.ai</span>
+          <span className={`text-xs font-semibold ${t.textSecondary(isDark)}`}>Control Tower</span>
+          <span className={`text-[10px] ml-1 ${t.textDimmed(isDark)}`}>Cleya.ai</span>
         </div>
-        <div className="flex items-center gap-1 bg-white/[0.04] rounded-lg p-0.5 border border-white/[0.06]">
+        <div className="flex items-center gap-1 rounded-lg p-0.5" style={{ background: t.bgCard(isDark), border: `1px solid ${t.border(isDark)}` }}>
           <button
             onClick={() => setViewMode('dashboard')}
             className={`px-3 py-1 rounded-md text-[11px] font-medium transition-all ${
               viewMode === 'dashboard'
                 ? 'bg-indigo-500/20 text-indigo-300 shadow-sm'
-                : 'text-white/40 hover:text-white/60'
+                : `${t.textMuted(isDark)} hover:opacity-80`
             }`}
           >
             Dashboard
@@ -696,7 +706,7 @@ export default function AdminDashboard() {
             className={`px-3 py-1 rounded-md text-[11px] font-medium transition-all ${
               viewMode === 'command-center'
                 ? 'bg-indigo-500/20 text-indigo-300 shadow-sm'
-                : 'text-white/40 hover:text-white/60'
+                : `${t.textMuted(isDark)} hover:opacity-80`
             }`}
           >
             Command Center
@@ -706,10 +716,10 @@ export default function AdminDashboard() {
             className={`px-3 py-1 rounded-md text-[11px] font-medium transition-all ${
               viewMode === 'command'
                 ? 'bg-indigo-500/20 text-indigo-300 shadow-sm'
-                : 'text-white/40 hover:text-white/60'
+                : `${t.textMuted(isDark)} hover:opacity-80`
             }`}
           >
-            💬 Command
+            Command
           </button>
         </div>
         {viewMode === 'command-center' && activeChannelId === 'founder-room' && (
@@ -717,12 +727,27 @@ export default function AdminDashboard() {
             onClick={() => setFounderDashboardOpen(true)}
             className="text-[11px] text-amber-400/70 hover:text-amber-300 transition px-3 py-1 rounded-md border border-amber-400/20 hover:border-amber-400/40 ml-2"
           >
-            &#9889; Founder Dashboard
+            Founder Dashboard
           </button>
         )}
         <button
+          onClick={toggleTheme}
+          className={`ml-2 p-1.5 rounded-lg transition ${isDark ? 'text-yellow-400/60 hover:text-yellow-300 hover:bg-yellow-400/10' : 'text-indigo-500/60 hover:text-indigo-600 hover:bg-indigo-500/10'}`}
+          title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+        >
+          {isDark ? (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          )}
+        </button>
+        <button
           onClick={() => { api.logout().then(() => { setAuthenticated(false); setLoading(true); }); }}
-          className="text-[11px] text-white/30 hover:text-red-300 transition px-2 py-1 ml-3"
+          className={`text-[11px] hover:text-red-300 transition px-2 py-1 ml-1 ${t.textMuted(isDark)}`}
         >
           Sign out
         </button>
@@ -784,15 +809,15 @@ export default function AdminDashboard() {
       )}
 
       {activeChannelId === 'founder-room' && founderDashboardOpen && (
-        <div className="fixed inset-0 z-40 flex flex-col" style={{ background: '#080D1A' }}>
-          <div className="h-11 flex-shrink-0 flex items-center px-4 border-b border-white/[0.06]" style={{ background: 'rgba(8,13,26,0.95)', backdropFilter: 'blur(20px)' }}>
+        <div className="fixed inset-0 z-40 flex flex-col" style={{ background: t.bg(isDark) }}>
+          <div className="h-11 flex-shrink-0 flex items-center px-4" style={{ background: t.bgSecondary(isDark), backdropFilter: 'blur(20px)', borderBottom: `1px solid ${t.border(isDark)}` }}>
             <button
               onClick={() => setFounderDashboardOpen(false)}
-              className="text-xs text-white/50 hover:text-white/80 transition flex items-center gap-1.5 mr-3"
+              className={`text-xs transition flex items-center gap-1.5 mr-3 ${t.textLabel(isDark)} hover:opacity-80`}
             >
               <span>&#8592;</span> Back to Chat
             </button>
-            <span className="text-xs font-semibold text-white/70">Founder Mode Dashboard</span>
+            <span className={`text-xs font-semibold ${t.textSecondary(isDark)}`}>Founder Mode Dashboard</span>
           </div>
           <div className="flex-1 overflow-auto">
             <FounderMode />
