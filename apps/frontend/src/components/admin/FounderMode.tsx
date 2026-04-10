@@ -5,7 +5,8 @@ import {
   Brain, Target, BarChart3, Clock, AlertCircle, CheckCircle,
   X, Loader, Shield, Zap, MessageSquare, ThumbsUp, ThumbsDown,
   Pause, Play, ChevronDown, ChevronUp, Plus, RefreshCw, Inbox,
-  FileText, AlertTriangle, History, Sparkles
+  FileText, AlertTriangle, History, Sparkles, Octagon, Send,
+  ShieldAlert
 } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -60,7 +61,14 @@ interface PriorityInbox {
   totalCount: number;
 }
 
-type FounderTab = 'briefing' | 'decisions' | 'inbox' | 'history';
+interface CrisisModeState {
+  active: boolean;
+  activatedAt: string | null;
+  activatedBy: string | null;
+  reason: string | null;
+}
+
+type FounderTab = 'briefing' | 'decisions' | 'inbox' | 'history' | 'safety';
 
 const AGENT_CONFIG: Record<string, { name: string; emoji: string; color: string }> = {
   nexus: { name: 'Nexus', emoji: '🧠', color: 'purple' },
@@ -548,6 +556,188 @@ function InboxView({ inbox, loading, onAction, onSimulate, onRefresh }: {
   );
 }
 
+function SafetyPanel({ crisisMode, onRefresh, loading }: {
+  crisisMode: CrisisModeState | null;
+  onRefresh: () => void;
+  loading: boolean;
+}) {
+  const [activating, setActivating] = useState(false);
+  const [deactivating, setDeactivating] = useState(false);
+  const [reason, setReason] = useState('');
+  const [sendingDigest, setSendingDigest] = useState(false);
+  const [sendingReport, setSendingReport] = useState(false);
+
+  const handleActivate = async () => {
+    if (!reason.trim()) return;
+    setActivating(true);
+    try {
+      await api.activateCrisisMode(reason);
+      setReason('');
+      onRefresh();
+    } catch (err: any) {
+      console.error('Failed to activate crisis mode:', err);
+    }
+    setActivating(false);
+  };
+
+  const handleDeactivate = async () => {
+    setDeactivating(true);
+    try {
+      await api.deactivateCrisisMode();
+      onRefresh();
+    } catch (err: any) {
+      console.error('Failed to deactivate crisis mode:', err);
+    }
+    setDeactivating(false);
+  };
+
+  const handleSendDigest = async () => {
+    setSendingDigest(true);
+    try {
+      await api.sendAuditDigest();
+    } catch (err: any) {
+      console.error('Failed to send audit digest:', err);
+    }
+    setSendingDigest(false);
+  };
+
+  const handleSendReport = async () => {
+    setSendingReport(true);
+    try {
+      await api.sendWeeklyReport();
+    } catch (err: any) {
+      console.error('Failed to send weekly report:', err);
+    }
+    setSendingReport(false);
+  };
+
+  if (loading) return <LoadingSpinner />;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-white font-semibold text-lg flex items-center gap-2">
+          <ShieldAlert className="text-red-400" size={20} />
+          Safety & Crisis Mode
+        </h3>
+        <button onClick={onRefresh} className="text-slate-400 hover:text-white transition">
+          <RefreshCw size={16} />
+        </button>
+      </div>
+
+      <div className={`border rounded-xl p-5 ${
+        crisisMode?.active
+          ? 'border-red-500/30 bg-red-500/10'
+          : 'border-green-500/30 bg-green-500/5'
+      }`}>
+        <div className="flex items-center gap-3 mb-3">
+          {crisisMode?.active ? (
+            <Octagon className="text-red-400" size={24} />
+          ) : (
+            <CheckCircle className="text-green-400" size={24} />
+          )}
+          <div>
+            <h4 className="font-semibold text-white">
+              {crisisMode?.active ? 'Crisis Mode ACTIVE' : 'Normal Operations'}
+            </h4>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {crisisMode?.active
+                ? 'All autonomous agent activity is paused'
+                : 'Agents are operating normally within guardrails'}
+            </p>
+          </div>
+        </div>
+
+        {crisisMode?.active && (
+          <div className="text-sm text-slate-300 space-y-1 mt-3 mb-4 bg-black/20 rounded-lg p-3">
+            <div><span className="text-slate-400">Activated by:</span> {crisisMode.activatedBy}</div>
+            <div><span className="text-slate-400">Reason:</span> {crisisMode.reason}</div>
+            <div><span className="text-slate-400">Since:</span> {crisisMode.activatedAt ? new Date(crisisMode.activatedAt).toLocaleString() : 'Unknown'}</div>
+          </div>
+        )}
+
+        {crisisMode?.active ? (
+          <button
+            onClick={handleDeactivate}
+            disabled={deactivating}
+            className="w-full py-2.5 rounded-xl bg-green-600 text-white font-medium text-sm hover:bg-green-500 transition disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            <Play size={14} />
+            {deactivating ? 'Resuming...' : 'Deactivate Crisis Mode & Resume Operations'}
+          </button>
+        ) : (
+          <div className="space-y-3 mt-4">
+            <input
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Reason for activating crisis mode..."
+              className="w-full px-3 py-2.5 rounded-xl border border-red-500/20 bg-slate-800/50 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+            <button
+              onClick={handleActivate}
+              disabled={activating || !reason.trim()}
+              className="w-full py-2.5 rounded-xl bg-red-600 text-white font-medium text-sm hover:bg-red-500 transition disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              <Octagon size={14} />
+              {activating ? 'Activating...' : 'Activate Crisis Mode'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="border border-brand-violet/15 rounded-xl p-5 bg-slate-800/30">
+        <h4 className="text-white font-semibold text-sm mb-4 flex items-center gap-2">
+          <Send size={14} className="text-brand-violet" />
+          Manual Triggers
+        </h4>
+        <div className="space-y-3">
+          <button
+            onClick={handleSendDigest}
+            disabled={sendingDigest}
+            className="w-full py-2.5 rounded-xl border border-brand-violet/20 text-sm font-medium text-slate-300 hover:text-white hover:border-brand-violet/40 transition disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            <BarChart3 size={14} />
+            {sendingDigest ? 'Sending...' : 'Send Daily Audit Digest Now'}
+          </button>
+          <button
+            onClick={handleSendReport}
+            disabled={sendingReport}
+            className="w-full py-2.5 rounded-xl border border-brand-violet/20 text-sm font-medium text-slate-300 hover:text-white hover:border-brand-violet/40 transition disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            <FileText size={14} />
+            {sendingReport ? 'Sending...' : 'Send Weekly Performance Report Now'}
+          </button>
+        </div>
+        <p className="text-xs text-slate-500 mt-3">
+          Daily digest runs automatically at 10 PM IST. Weekly report runs every Monday at 7 AM IST.
+        </p>
+      </div>
+
+      <div className="border border-brand-violet/15 rounded-xl p-5 bg-slate-800/30">
+        <h4 className="text-white font-semibold text-sm mb-3 flex items-center gap-2">
+          <Clock size={14} className="text-amber-400" />
+          Auto-Escalation Rules
+        </h4>
+        <div className="space-y-2 text-sm text-slate-300">
+          <div className="flex items-start gap-2">
+            <span className="text-amber-400 mt-0.5">1.</span>
+            <span>Pending decisions trigger a Slack notification immediately</span>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="text-orange-400 mt-0.5">2.</span>
+            <span>After 2 hours with no response, an escalation reminder is sent</span>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="text-red-400 mt-0.5">3.</span>
+            <span>After 4 hours with no response, the action is auto-cancelled</span>
+          </div>
+        </div>
+        <p className="text-xs text-slate-500 mt-3">Escalation checks run every 30 minutes.</p>
+      </div>
+    </div>
+  );
+}
+
 export function FounderMode() {
   const [activeTab, setActiveTab] = useState<FounderTab>('briefing');
   const [briefing, setBriefing] = useState<DailyBriefing | null>(null);
@@ -565,6 +755,20 @@ export function FounderMode() {
   const [newDecision, setNewDecision] = useState({ title: '', context: '', options: '', requesting_agent: 'nexus', urgency: 'medium' });
   const [createLoading, setCreateLoading] = useState(false);
   const [inboxCount, setInboxCount] = useState(0);
+  const [crisisMode, setCrisisMode] = useState<CrisisModeState | null>(null);
+  const [crisisLoading, setCrisisLoading] = useState(false);
+
+  const loadCrisisMode = useCallback(async () => {
+    setCrisisLoading(true);
+    try {
+      const data = await api.getCrisisModeStatus();
+      setCrisisMode(data);
+    } catch (err) {
+      console.error('Failed to load crisis mode status:', err);
+    } finally {
+      setCrisisLoading(false);
+    }
+  }, []);
 
   const loadBriefing = useCallback(async () => {
     setBriefingLoading(true);
@@ -634,12 +838,14 @@ export function FounderMode() {
   useEffect(() => {
     loadBriefing();
     loadInbox();
+    loadCrisisMode();
   }, []);
 
   useEffect(() => {
     if (activeTab === 'decisions') loadDecisions();
     if (activeTab === 'history') loadHistory();
     if (activeTab === 'inbox') loadInbox();
+    if (activeTab === 'safety') loadCrisisMode();
   }, [activeTab]);
 
   const handleDecisionAction = useCallback(async (
@@ -711,6 +917,7 @@ export function FounderMode() {
     { id: 'decisions', label: 'Decisions', icon: <Shield size={16} /> },
     { id: 'inbox', label: 'Priority Inbox', icon: <Inbox size={16} />, badge: inboxCount },
     { id: 'history', label: 'Decision Log', icon: <History size={16} /> },
+    { id: 'safety', label: 'Safety', icon: <ShieldAlert size={16} />, badge: crisisMode?.active ? 1 : undefined },
   ];
 
   return (
@@ -851,6 +1058,10 @@ export function FounderMode() {
             </>
           )}
         </div>
+      )}
+
+      {activeTab === 'safety' && (
+        <SafetyPanel crisisMode={crisisMode} onRefresh={loadCrisisMode} loading={crisisLoading} />
       )}
 
       {showCreateDecision && (

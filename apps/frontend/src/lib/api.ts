@@ -842,6 +842,29 @@ class ApiClient {
   async getApprovalQueue() {
     return this.fetch('/admin/approval-queue');
   }
+
+  async getCrisisModeStatus() {
+    return this.fetch('/admin/crisis-mode/status');
+  }
+
+  async activateCrisisMode(reason?: string) {
+    return this.fetch('/admin/crisis-mode/activate', {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+  }
+
+  async deactivateCrisisMode() {
+    return this.fetch('/admin/crisis-mode/deactivate', { method: 'POST' });
+  }
+
+  async sendAuditDigest() {
+    return this.fetch('/admin/founder/audit-digest', { method: 'POST' });
+  }
+
+  async sendWeeklyReport() {
+    return this.fetch('/admin/founder/weekly-report', { method: 'POST' });
+  }
 }
 
 export const api = new ApiClient();

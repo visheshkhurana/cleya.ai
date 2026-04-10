@@ -144,17 +144,32 @@ Legacy components `AgentsManagement.tsx` and `AgentArchitecture.tsx` are preserv
 - `GET /api/admin/founder/briefing` — get latest daily briefing
 - `POST /api/admin/founder/briefing/generate` — generate fresh briefing from live data
 - `GET /api/admin/founder/decisions` — list decisions (filterable by status, urgency)
-- `POST /api/admin/founder/decisions` — create a new decision
+- `POST /api/admin/founder/decisions` — create a new decision (auto-sends Slack notification)
 - `PATCH /api/admin/founder/decisions/:id` — approve/reject/defer a decision
 - `PATCH /api/admin/founder/decisions/:id/outcome` — record decision outcome
 - `POST /api/admin/founder/decisions/:id/debate` — trigger AI debate
 - `GET /api/admin/founder/decisions/:id/debate` — get debate entries
 - `GET /api/admin/founder/priority-inbox` — get priority inbox items
+- `POST /api/admin/founder/audit-digest` — manually trigger daily audit digest
+- `POST /api/admin/founder/weekly-report` — manually trigger weekly performance report
 
-**DB tables** (auto-created via `ensureFounderModeTables()` and `ensureAgentTables()` in `agentMigration.ts`):
+**Crisis Mode API endpoints:**
+- `GET /api/admin/crisis-mode/status` — get current crisis mode state
+- `POST /api/admin/crisis-mode/activate` — activate crisis mode (stops scheduler, pauses all agents, sends Slack alert)
+- `POST /api/admin/crisis-mode/deactivate` — deactivate crisis mode (resumes scheduler, sends Slack notification)
+
+**Safety & Notification System** (`apps/backend/src/services/founderSafetyService.ts`):
+- **Approval notifications**: When a new decision is created, a structured Slack message is sent with agent name, context, options, urgency, and a link to Control Tower
+- **Auto-escalation**: Every 30 minutes, checks pending decisions — sends escalation reminder after 2 hours, auto-cancels (rejects) after 4 hours
+- **Crisis mode**: System-wide flag in `dm_system_flags` table — blocks all agent execution via scheduler guard, pauses all autonomous activity. Emergency stop button also activates crisis mode. Only deactivates via explicit API call.
+- **Daily audit digest**: Sent at 10 PM IST via Slack + email — summarizes all agent actions (taken/blocked/errors), pending decisions, API spend
+- **Weekly performance report**: Sent Monday 7 AM IST via email — platform metrics, content stats, agent activity, API spend
+
+**DB tables** (auto-created via `ensureFounderModeTables()` and `ensureAgentTables()` in `agentMigration.ts`, and `ensureSafetyTables()` in `founderSafetyService.ts`):
 - `dm_decisions` — decision records with title, context, options (text[]), urgency, status, outcome
 - `dm_decision_debates` — debate entries linked to decisions, with agent_id, position, argument, data_points (JSONB)
 - `dm_daily_briefings` — stored briefing snapshots with date and content (JSONB)
+- `dm_system_flags` — key-value store for system-wide flags (crisis_mode state)
 - `content_calendar` — structured content items with platform, content_type, risk_score (1-5), scheduled_time, status (draft/scheduled/pending_approval/approved/published/failed/blocked/rejected)
 - `founder_approval_queue` — items needing founder approval, linked to content_calendar via content_calendar_id
 - `audit_log` — comprehensive action audit trail with agent_id, action_type, risk_score, cost tracking

@@ -1,6 +1,7 @@
 import { prisma } from '@cleya/db';
 import { createAIService } from '@cleya/ai';
 import { supabaseInsert, supabaseSelect, supabaseUpdate } from './supabaseClient';
+import { notifyApprovalNeeded } from './founderSafetyService';
 
 export interface Decision {
   id: number;
@@ -115,7 +116,22 @@ export async function createDecision(data: {
     status: 'pending',
     created_at: new Date().toISOString(),
   });
-  return rows[0];
+  const decision = rows[0];
+
+  try {
+    await notifyApprovalNeeded({
+      id: decision.id,
+      title: decision.title,
+      context: decision.context,
+      requesting_agent: decision.requesting_agent,
+      urgency: decision.urgency as string,
+      options: decision.options,
+    });
+  } catch (err: any) {
+    console.log(`[FounderMode] Failed to send approval notification: ${err.message}`);
+  }
+
+  return decision;
 }
 
 export async function getDecisions(filters?: {

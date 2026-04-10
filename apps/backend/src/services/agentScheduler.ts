@@ -12,6 +12,13 @@ import { supabaseInsert, supabaseSelect } from './supabaseClient';
 import { processContentCalendar } from './publishingService';
 import { generateDailyBriefing } from './founderModeService';
 import { sendBriefingNotifications } from './agentNotifier';
+import {
+  processEscalations,
+  isCrisisModeActive,
+  sendDailyAuditDigest,
+  sendWeeklyPerformanceReport,
+  ensureSafetyTables,
+} from './founderSafetyService';
 
 const ORCHESTRATOR_SUB_AGENT_MAP: Record<string, string> = {
   mavenTasks: 'maven',
@@ -45,6 +52,7 @@ class AgentScheduler {
     }
 
     await hydrateAgentStatesFromDB();
+    await ensureSafetyTables();
 
     const statuses = getAgentStatuses();
 
@@ -98,6 +106,30 @@ class AgentScheduler {
     }, { timezone: 'Asia/Kolkata' });
     this.tasks.push(dailyBriefingJob);
 
+    const escalationJob = cron.schedule('*/30 * * * *', () => {
+      processEscalations().catch(err =>
+        console.error('[AgentScheduler] Escalation check failed:', err)
+      );
+    }, { timezone: 'Asia/Kolkata' });
+    this.tasks.push(escalationJob);
+    console.log('[AgentScheduler] Escalation check scheduled every 30 minutes');
+
+    const dailyAuditJob = cron.schedule('0 22 * * *', () => {
+      sendDailyAuditDigest().catch(err =>
+        console.error('[AgentScheduler] Daily audit digest failed:', err)
+      );
+    }, { timezone: 'Asia/Kolkata' });
+    this.tasks.push(dailyAuditJob);
+    console.log('[AgentScheduler] Daily audit digest scheduled at 10 PM IST');
+
+    const weeklyReportJob = cron.schedule('0 7 * * 1', () => {
+      sendWeeklyPerformanceReport().catch(err =>
+        console.error('[AgentScheduler] Weekly performance report failed:', err)
+      );
+    }, { timezone: 'Asia/Kolkata' });
+    this.tasks.push(weeklyReportJob);
+    console.log('[AgentScheduler] Weekly performance report scheduled for Monday 7 AM IST');
+
     this.started = true;
     console.log('[AgentScheduler] All agent schedules initialized');
     console.log('[AgentScheduler] Task processing scheduled every 4 hours');
@@ -122,6 +154,12 @@ class AgentScheduler {
     if (this.running.has(agentId)) {
       console.log(`[AgentScheduler] ${agentId} already running, skipping`);
       return { skipped: true };
+    }
+
+    const crisisActive = await isCrisisModeActive();
+    if (crisisActive) {
+      console.log(`[AgentScheduler] ${agentId} blocked — crisis mode is active`);
+      return { blocked: true, reason: 'crisis_mode' };
     }
 
     this.running.add(agentId);

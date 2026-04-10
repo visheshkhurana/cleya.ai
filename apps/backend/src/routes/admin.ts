@@ -15,6 +15,13 @@ import { analyticsAggregatorService } from '../services/analyticsAggregatorServi
 import { agentScheduler } from '../services/agentScheduler';
 import cronValidator from 'node-cron';
 import { runAgent, getAgentStatuses, KNOWN_AGENT_IDS, getAgentRunHistory, getAgentAccountability, updateAgentConfig, resolveAgentId, emergencyStopAllAgents } from '../services/agentRunner';
+import {
+  getCrisisMode,
+  activateCrisisMode,
+  deactivateCrisisMode,
+  sendDailyAuditDigest,
+  sendWeeklyPerformanceReport,
+} from '../services/founderSafetyService';
 import { getAllMemories, addShortTermMemory, addLongTermMemory, addEpisodicMemory, addSemanticMemory, deleteShortTermMemory, deleteLongTermMemory, deleteEpisodicMemory, deleteSemanticMemory, setWorkingMemory, clearWorkingMemory } from '../services/agentMemoryService';
 import { publishingService } from '../services/publishingService';
 import { supabaseSelect } from '../services/supabaseClient';
@@ -1102,11 +1109,68 @@ adminRouter.patch('/agents/:id/config', async (req: Request, res: Response, next
   }
 });
 
-adminRouter.post('/agents/emergency-stop', async (_req: Request, res: Response, next: NextFunction) => {
+adminRouter.post('/agents/emergency-stop', async (req: Request, res: Response, next: NextFunction) => {
   try {
     agentScheduler.stop();
     const result = await emergencyStopAllAgents();
+    try {
+      await activateCrisisMode(
+        (req as any).user?.email || 'admin',
+        'Emergency stop triggered from Control Tower'
+      );
+    } catch {}
     res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/crisis-mode/status', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const state = await getCrisisMode();
+    res.json({ success: true, data: state });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/crisis-mode/activate', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { reason } = req.body;
+    const activatedBy = (req as any).user?.email || 'admin';
+    agentScheduler.stop();
+    await emergencyStopAllAgents();
+    const state = await activateCrisisMode(activatedBy, reason || 'Manually activated from Control Tower');
+    res.json({ success: true, data: state });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/crisis-mode/deactivate', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const deactivatedBy = (req as any).user?.email || 'admin';
+    const state = await deactivateCrisisMode(deactivatedBy);
+    await agentScheduler.reload();
+    res.json({ success: true, data: state });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/founder/audit-digest', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    await sendDailyAuditDigest();
+    res.json({ success: true, message: 'Daily audit digest sent' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/founder/weekly-report', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    await sendWeeklyPerformanceReport();
+    res.json({ success: true, message: 'Weekly performance report sent' });
   } catch (error) {
     next(error);
   }
