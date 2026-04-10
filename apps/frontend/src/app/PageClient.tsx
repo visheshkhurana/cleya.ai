@@ -827,7 +827,17 @@ export default function Home() {
       const urlError = params.get('error');
       const urlAction = params.get('action');
       if (urlError) {
-        setError('Sign-in failed. Please try again or use email.');
+        const errorMessages: Record<string, string> = {
+          linkedin_auth_denied: 'LinkedIn sign-in was cancelled. Please try again.',
+          linkedin_token_failed: 'LinkedIn sign-in failed. Please try again.',
+          linkedin_no_email: 'Could not retrieve your email from LinkedIn. Please use email sign-in.',
+          linkedin_auth_failed: 'LinkedIn sign-in failed. Please try again.',
+          linkedin_auth_error: 'LinkedIn sign-in encountered an error. Please try again.',
+          google_auth_denied: 'Google sign-in was cancelled. Please try again.',
+          google_auth_failed: 'Google sign-in failed. Please try again.',
+          google_auth_error: 'Google sign-in encountered an error. Please try again.',
+        };
+        setError(errorMessages[urlError] || 'Sign-in failed. Please try again or use email.');
         setShowAuth(true);
         window.history.replaceState({}, '', '/');
       }

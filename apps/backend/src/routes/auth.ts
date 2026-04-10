@@ -30,7 +30,13 @@ function getBaseUrl(req: Request): string {
   return env.FRONTEND_URL;
 }
 
-function getOAuthRedirectBase(_req: Request): string {
+function getOAuthRedirectBase(req: Request): string {
+  const proto = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
+  const host = (req.headers['x-forwarded-host'] as string) || req.headers['host'] || '';
+  const hostOnly = host.split(':')[0];
+  if (ALLOWED_HOSTS.includes(hostOnly)) {
+    return `${proto}://${host}`;
+  }
   return env.FRONTEND_URL;
 }
 
@@ -240,6 +246,7 @@ authRouter.get('/linkedin', (req: Request, res: Response) => {
   const state = crypto.randomBytes(32).toString('hex');
   oauthStates.set(state, { createdAt: Date.now(), baseUrl, oauthBase });
   const redirectUri = `${oauthBase}/api/auth/linkedin/callback`;
+  console.log('[LinkedIn OAuth] Initiating login, redirectUri:', redirectUri, 'oauthBase:', oauthBase);
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: env.LINKEDIN_CLIENT_ID,
@@ -253,20 +260,23 @@ authRouter.get('/linkedin', (req: Request, res: Response) => {
 authRouter.get('/linkedin/callback', async (req: Request, res: Response) => {
   try {
     if (req.query.error) {
-      res.redirect(`${env.FRONTEND_URL}/?error=linkedin_auth_denied`);
+      console.error('[LinkedIn OAuth] Auth denied by user:', req.query.error, req.query.error_description);
+      res.redirect(`${getBaseUrl(req)}/?error=linkedin_auth_denied`);
       return;
     }
     const code = typeof req.query.code === 'string' ? req.query.code : '';
     const state = typeof req.query.state === 'string' ? req.query.state : '';
     const stateData = oauthStates.get(state);
     if (!code || !state || !stateData || !env.LINKEDIN_CLIENT_ID || !env.LINKEDIN_CLIENT_SECRET) {
-      res.redirect(`${env.FRONTEND_URL}/?error=linkedin_auth_failed`);
+      console.error('[LinkedIn OAuth] Callback validation failed - code:', !!code, 'state:', !!state, 'stateData:', !!stateData);
+      res.redirect(`${getBaseUrl(req)}/?error=linkedin_auth_failed`);
       return;
     }
     const baseUrl = stateData.baseUrl;
     const oauthBase = stateData.oauthBase || baseUrl;
     oauthStates.delete(state);
     const redirectUri = `${oauthBase}/api/auth/linkedin/callback`;
+    console.log('[LinkedIn OAuth] Exchanging code, redirectUri:', redirectUri);
     const tokenRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -279,7 +289,8 @@ authRouter.get('/linkedin/callback', async (req: Request, res: Response) => {
       }).toString(),
     });
     if (!tokenRes.ok) {
-      console.error('LinkedIn token exchange HTTP error:', tokenRes.status);
+      const errorBody = await tokenRes.text().catch(() => 'no body');
+      console.error('[LinkedIn OAuth] Token exchange failed:', tokenRes.status, errorBody);
       res.redirect(`${baseUrl}/?error=linkedin_token_failed`);
       return;
     }
