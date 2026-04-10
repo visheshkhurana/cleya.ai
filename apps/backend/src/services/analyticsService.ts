@@ -10,8 +10,8 @@
  */
 
 const GA4_PROPERTY_ID = process.env.GA4_PROPERTY_ID || '530514964';
-const CLIENT_ID = process.env.GOOGLE_ADS_CLIENT_ID || '';
-const CLIENT_SECRET = process.env.GOOGLE_ADS_CLIENT_SECRET || '';
+const CLIENT_ID = process.env.GOOGLE_ADS_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '';
+const CLIENT_SECRET = process.env.GOOGLE_ADS_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || '';
 const REFRESH_TOKEN = process.env.GOOGLE_ANALYTICS_REFRESH_TOKEN || '';
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';

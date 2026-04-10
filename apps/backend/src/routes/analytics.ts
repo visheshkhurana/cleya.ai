@@ -9,15 +9,17 @@ export const analyticsRouter = Router();
 // ---------- GA4 OAuth flow ----------
 
 const GA4_OAUTH_SCOPE = 'https://www.googleapis.com/auth/analytics.readonly';
-const GA4_REDIRECT_URI = process.env.BACKEND_URL
-  ? `${process.env.BACKEND_URL}/api/analytics/ga4/callback`
-  : 'https://cleyaai.vysheshk.repl.co/api/analytics/ga4/callback';
-const CLIENT_ID = process.env.GOOGLE_ADS_CLIENT_ID || '';
-const CLIENT_SECRET = process.env.GOOGLE_ADS_CLIENT_SECRET || '';
+const GA4_REDIRECT_URI = process.env.FRONTEND_URL
+  ? `${process.env.FRONTEND_URL}/api/analytics/ga4/callback`
+  : (process.env.BACKEND_URL
+    ? `${process.env.BACKEND_URL}/api/analytics/ga4/callback`
+    : 'http://localhost:5000/api/analytics/ga4/callback');
+const CLIENT_ID = process.env.GOOGLE_ADS_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '';
+const CLIENT_SECRET = process.env.GOOGLE_ADS_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || '';
 
-analyticsRouter.get('/ga4/auth', authenticate, (_req: Request, res: Response) => {
+analyticsRouter.get('/ga4/auth', (_req: Request, res: Response) => {
   if (!CLIENT_ID) {
-    res.status(500).json({ success: false, error: 'GOOGLE_ADS_CLIENT_ID not configured' });
+    res.status(500).json({ success: false, error: 'Google OAuth client ID not configured. Set GOOGLE_CLIENT_ID or GOOGLE_ADS_CLIENT_ID.' });
     return;
   }
 
@@ -31,7 +33,7 @@ analyticsRouter.get('/ga4/auth', authenticate, (_req: Request, res: Response) =>
   });
 
   const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-  res.json({ success: true, data: { authUrl } });
+  res.redirect(authUrl);
 });
 
 analyticsRouter.get('/ga4/callback', async (req: Request, res: Response) => {
