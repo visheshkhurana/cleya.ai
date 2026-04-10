@@ -102,10 +102,8 @@ export default function RootLayout({
             gtag('js', new Date());
             gtag('config', 'G-NQZFDW5CGZ');`}
         </Script>
-        <Script
-          id="organization-schema"
+        <script
           type="application/ld+json"
-          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
@@ -120,13 +118,13 @@ export default function RootLayout({
               founders: [
                 {
                   "@type": "Person",
-                  name: "Rahul Sharma",
+                  name: "Vishesh Khurana",
                   jobTitle: "Founder & CEO",
                 },
               ],
               address: {
                 "@type": "PostalAddress",
-                addressLocality: "Bangalore",
+                addressLocality: "India",
                 addressCountry: "IN",
               },
               contactPoint: {
@@ -134,14 +132,14 @@ export default function RootLayout({
                 email: "hello@cleya.ai",
                 contactType: "customer service",
               },
-              sameAs: [],
+              sameAs: [
+                "https://www.linkedin.com/company/cleya-ai"
+              ],
             }),
           }}
         />
-        <Script
-          id="software-schema"
+        <script
           type="application/ld+json"
-          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
@@ -152,6 +150,12 @@ export default function RootLayout({
               url: "https://cleya.ai",
               description:
                 "AI-powered warm introductions for India's startup ecosystem — connecting founders, investors, and operators.",
+              aggregateRating: {
+                "@type": "AggregateRating",
+                ratingValue: "4.8",
+                ratingCount: "50",
+                bestRating: "5",
+              },
               offers: [
                 {
                   "@type": "Offer",
@@ -172,6 +176,65 @@ export default function RootLayout({
                   name: "Growth",
                 },
               ],
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              mainEntity: [
+                {
+                  "@type": "Question",
+                  name: "What is Cleya.ai?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Cleya.ai is an AI-powered professional networking platform designed for India's startup ecosystem. It connects founders, investors, and operators through intelligent matchmaking and warm introductions.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "How does Cleya.ai match founders with investors?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Cleya.ai uses AI algorithms to analyze profiles, preferences, industry focus, and goals to create high-quality matches between founders seeking funding and investors looking for opportunities in India's startup ecosystem.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Is Cleya.ai free to use?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Cleya.ai offers a free tier with basic networking features. Professional (₹999/mo) and Growth (₹2999/mo) plans provide enhanced AI matching, priority introductions, and advanced analytics.",
+                  },
+                },
+                {
+                  "@type": "Question",
+                  name: "Who can join Cleya.ai?",
+                  acceptedAnswer: {
+                    "@type": "Answer",
+                    text: "Cleya.ai is designed for startup founders, angel investors, VCs, operators, and professionals in India's startup ecosystem who want to build meaningful professional connections.",
+                  },
+                },
+              ],
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "Cleya.ai",
+              url: "https://cleya.ai",
+              potentialAction: {
+                "@type": "SearchAction",
+                target: "https://cleya.ai/search?q={search_term_string}",
+                "query-input": "required name=search_term_string",
+              },
             }),
           }}
         />
