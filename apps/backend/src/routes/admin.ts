@@ -1876,3 +1876,44 @@ adminRouter.get('/agents/data/campaigns', async (_req: Request, res: Response, n
     next(error);
   }
 });
+
+// --- SEO Reports ---
+
+adminRouter.get('/seo/reports', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { getSEOReports } = await import('../services/seoAutomation');
+    const limit = parseInt(req.query.limit as string) || 30;
+    const data = await getSEOReports(limit);
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/seo/latest', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { getLatestSEOReport } = await import('../services/seoAutomation');
+    const data = await getLatestSEOReport();
+    if (!data) {
+      res.status(404).json({ success: false, error: { message: 'No SEO reports found' } });
+      return;
+    }
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/seo/reports/:date', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { getSEOReportByDate } = await import('../services/seoAutomation');
+    const data = await getSEOReportByDate(req.params.date);
+    if (!data) {
+      res.status(404).json({ success: false, error: { message: `No SEO report found for ${req.params.date}` } });
+      return;
+    }
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+});

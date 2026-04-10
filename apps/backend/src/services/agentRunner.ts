@@ -297,7 +297,7 @@ const DEFAULT_SCHEDULES: Record<string, { cron: string; desc: string }> = {
   'ally': { cron: '0 10 * * 1,3,5', desc: 'Mon/Wed/Fri at 10:00 AM IST' },
   'catalyst': { cron: '0 11 * * 2', desc: 'Tuesdays at 11:00 AM IST' },
   'closer': { cron: '0 11 * * 4', desc: 'Thursdays at 11:00 AM IST' },
-  'scout': { cron: '0 6 * * 1,3,5', desc: 'Mon/Wed/Fri at 6:00 AM IST' },
+  'scout': { cron: '0 6 * * *', desc: 'Daily at 6:00 AM IST' },
 };
 
 function initAgentState(agentId: string) {
