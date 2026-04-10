@@ -37,6 +37,7 @@ export async function ensureAgentTables(): Promise<void> {
   await ensureSharedMemoryTable();
   await ensureAgentCommsTable();
   await ensureFilesTable();
+  await ensureAgentsTable();
 }
 
 async function ensureAgentMessagesTables(): Promise<void> {
@@ -459,5 +460,48 @@ async function ensureAgentChatHistoryTable(): Promise<void> {
     console.log('[AgentMigration] dm_agent_chat_history table ensured');
   } catch (err: any) {
     console.log(`[AgentMigration] Could not create dm_agent_chat_history: ${err.message}`);
+  }
+}
+
+async function ensureAgentsTable(): Promise<void> {
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS dm_agents (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT '',
+        description TEXT DEFAULT '',
+        status TEXT DEFAULT 'idle',
+        color TEXT DEFAULT '',
+        icon TEXT DEFAULT '',
+        tools JSONB DEFAULT '{}',
+        schedule TEXT DEFAULT '',
+        last_run_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ DEFAULT now(),
+        updated_at TIMESTAMPTZ DEFAULT now()
+      );
+    `);
+
+    const agents = [
+      { id: 'nexus', name: 'Nexus', role: 'Orchestrator', description: 'Master coordinator & brand guardian' },
+      { id: 'maven', name: 'Maven', role: 'Content Strategist', description: 'Topic research & content planning' },
+      { id: 'ledger', name: 'Ledger', role: 'Finance', description: 'Financial tracking & cost optimization' },
+      { id: 'sentinel', name: 'Sentinel', role: 'Security & Compliance', description: 'Security monitoring & compliance' },
+      { id: 'ally', name: 'Ally', role: 'Community', description: 'Community engagement & support' },
+      { id: 'catalyst', name: 'Catalyst', role: 'Growth', description: 'Growth hacking & experimentation' },
+      { id: 'closer', name: 'Closer', role: 'Sales', description: 'Sales pipeline & outreach' },
+    ];
+
+    for (const agent of agents) {
+      await prisma.$executeRawUnsafe(`
+        INSERT INTO dm_agents (id, name, role, description)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (id) DO NOTHING;
+      `, agent.id, agent.name, agent.role, agent.description);
+    }
+
+    console.log('[AgentMigration] dm_agents table ensured and seeded');
+  } catch (err: any) {
+    console.log(`[AgentMigration] Could not create dm_agents: ${err.message}`);
   }
 }
