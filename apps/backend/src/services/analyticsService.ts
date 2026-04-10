@@ -46,7 +46,7 @@ async function getAccessToken(): Promise<string> {
     throw new Error(`Failed to refresh GA4 access token: ${res.status} ${body}`);
   }
 
-  const data = await res.json();
+  const data: any = await res.json();
   cachedAccessToken = data.access_token;
   tokenExpiresAt = Date.now() + (data.expires_in ?? 3600) * 1000;
   return cachedAccessToken!;
@@ -172,7 +172,7 @@ export async function getRealTimeUsers() {
     throw new Error(`GA4 realtime API failed: ${res.status} ${text}`);
   }
 
-  const data = await res.json();
+  const data: any = await res.json();
   const row = data.rows?.[0];
   return {
     activeUsers: parseInt(row?.metricValues?.[0]?.value || '0'),

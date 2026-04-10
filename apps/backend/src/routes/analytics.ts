@@ -57,14 +57,13 @@ analyticsRouter.get('/ga4/callback', async (req: Request, res: Response) => {
       }),
     });
 
-    const tokenData = await tokenRes.json();
+    const tokenData: any = await tokenRes.json();
 
     if (!tokenRes.ok) {
       res.status(400).json({ success: false, error: 'Token exchange failed', details: tokenData });
       return;
     }
 
-    // Log the refresh token so it can be added to secrets
     console.log('[GA4 OAuth] Successfully obtained tokens');
     console.log('[GA4 OAuth] Refresh token — add this as GOOGLE_ANALYTICS_REFRESH_TOKEN:');
     console.log(tokenData.refresh_token);
