@@ -26,10 +26,10 @@ const AGENT_PROMPTS: Record<string, { name: string; codename: string; emoji: str
     emoji: '🧠',
     color: 'purple',
     systemPrompt: `You are Nexus — the Orchestrator and Master Coordinator for Cleya.ai's AI workforce.
-You coordinate all operational agents: Maven (Marketing), Ledger (Finance), Sentinel (CTO), Ally (Support), Catalyst (Growth), Closer (Sales), and Scout (SEO & GEO).
+You coordinate all operational agents: Maven (Marketing), Ledger (Finance), Sentinel (CTO), Ally (Support), Catalyst (Growth), Closer (Sales), Scout (SEO & GEO), and Probe (QA).
 
 Generate a weekly operational plan as a JSON object with task assignments for each sub-agent.
-Keys: mavenTasks, ledgerTasks, sentinelTasks, allyTasks, catalystTasks, closerTasks, scoutTasks.
+Keys: mavenTasks, ledgerTasks, sentinelTasks, allyTasks, catalystTasks, closerTasks, scoutTasks, probeTasks.
 
 Each task object must include:
 - title: clear task title
@@ -219,6 +219,42 @@ Output ONLY valid JSON, no markdown fences.`,
     contentType: 'seo_report',
     channel: 'seo',
   },
+  'probe': {
+    name: 'Probe',
+    codename: 'QA Specialist',
+    emoji: '🧪',
+    color: 'amber',
+    systemPrompt: `You are Probe — Cleya.ai's QA Specialist Agent.
+Expertise: Automated testing, uptime monitoring, API health checks, page load testing, performance benchmarking, security header validation, agent health verification.
+
+Cleya.ai is a members-only AI-powered networking platform for founders, investors, and operators in India's startup ecosystem.
+
+Tasks:
+- Test all pages load correctly (no 404s, 500s, crashes)
+- Test all API endpoints respond correctly with valid JSON
+- Test authentication flows (login, signup, session management)
+- Test agent chat functionality (each agent responds to messages)
+- Test Control Tower features and admin endpoints
+- Monitor performance (page load times, API response times)
+- Check SSL/HTTPS and security headers
+- Verify internal navigation links
+- Monitor uptime and alert on failures
+
+You MUST output a JSON object with a "qaItems" array. Each item must have:
+- item_type: "page_test" | "api_test" | "agent_test" | "performance_test" | "security_test" | "navigation_test"
+- title: descriptive title
+- body: detailed findings or test results
+- priority: "low" | "medium" | "high" | "critical"
+- status: "pass" | "fail" | "warning"
+- target_url: the URL tested (if applicable)
+- response_time_ms: measured response time
+- action_items: array of specific fixes needed
+
+Always categorize failures by severity. Critical = site down or data loss risk. High = broken feature. Medium = degraded performance. Low = cosmetic or minor.
+Output ONLY valid JSON, no markdown fences.`,
+    contentType: 'qa_report',
+    channel: 'qa',
+  },
 };
 
 const AGENT_ID_ALIASES: Record<string, string> = {
@@ -298,6 +334,7 @@ const DEFAULT_SCHEDULES: Record<string, { cron: string; desc: string }> = {
   'catalyst': { cron: '0 11 * * 2', desc: 'Tuesdays at 11:00 AM IST' },
   'closer': { cron: '0 11 * * 4', desc: 'Thursdays at 11:00 AM IST' },
   'scout': { cron: '0 6 * * *', desc: 'Daily at 6:00 AM IST' },
+  'probe': { cron: '0 7 * * *', desc: 'Daily at 7:00 AM IST' },
 };
 
 function initAgentState(agentId: string) {

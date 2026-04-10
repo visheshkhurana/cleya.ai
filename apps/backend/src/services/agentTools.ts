@@ -21,6 +21,7 @@ export const AGENT_TOOLS: Record<string, string[]> = {
   ally: ['send_email', 'schedule_post'],
   closer: ['send_email', 'create_ad_campaign'],
   scout: ['analyze_seo', 'keyword_research', 'analyze_competitors', 'generate_schema_markup', 'check_indexing', 'optimize_content'],
+  probe: ['run_page_test', 'run_api_test', 'run_agent_test', 'run_full_qa', 'get_qa_report'],
 };
 
 // --- Tool parameter schemas (used in OpenAI function-calling format) ---
@@ -198,6 +199,58 @@ export const TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
       required: ['content', 'targetKeyword'],
     },
   },
+  run_page_test: {
+    name: 'run_page_test',
+    description: 'Test a single page load. Checks status code, response time, and basic availability.',
+    parameters: {
+      type: 'object',
+      properties: {
+        url: { type: 'string', description: 'The URL to test (e.g. https://cleya.ai)' },
+      },
+      required: ['url'],
+    },
+  },
+  run_api_test: {
+    name: 'run_api_test',
+    description: 'Test a single API endpoint. Checks status code, response time, and whether it returns valid JSON.',
+    parameters: {
+      type: 'object',
+      properties: {
+        url: { type: 'string', description: 'The API endpoint URL to test (e.g. https://cleya.ai/api/health)' },
+        method: { type: 'string', enum: ['GET', 'POST', 'PUT', 'DELETE'], description: 'HTTP method (default: GET)' },
+      },
+      required: ['url'],
+    },
+  },
+  run_agent_test: {
+    name: 'run_agent_test',
+    description: 'Test if a specific agent responds to chat messages. Sends a ping and checks for a valid response.',
+    parameters: {
+      type: 'object',
+      properties: {
+        agentId: { type: 'string', description: 'The agent ID to test (e.g. nexus, maven, scout)' },
+      },
+      required: ['agentId'],
+    },
+  },
+  run_full_qa: {
+    name: 'run_full_qa',
+    description: 'Run the full daily QA routine on demand. Tests all pages, APIs, agents, security, navigation, and performance.',
+    parameters: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  get_qa_report: {
+    name: 'get_qa_report',
+    description: 'Retrieve a QA report from the database. Returns the latest report by default, or a specific date if provided.',
+    parameters: {
+      type: 'object',
+      properties: {
+        date: { type: 'string', description: 'Optional date in YYYY-MM-DD format. Returns latest report if omitted.' },
+      },
+    },
+  },
 };
 
 // --- Get OpenAI-format tool schemas for a specific agent ---
@@ -356,6 +409,39 @@ export async function executeTool(agentId: string, toolName: string, params: Rec
       case 'optimize_content':
         result = await executeOptimizeContent(params.content, params.targetKeyword, params.contentType || 'blog_post');
         break;
+
+      // --- Probe QA tools ---
+      case 'run_page_test': {
+        const { runSinglePageTest } = await import('./qaAutomation');
+        result = await runSinglePageTest(params.url);
+        break;
+      }
+      case 'run_api_test': {
+        const { runSingleAPITest } = await import('./qaAutomation');
+        result = await runSingleAPITest(params.url, params.method || 'GET');
+        break;
+      }
+      case 'run_agent_test': {
+        const { runSingleAgentTest } = await import('./qaAutomation');
+        result = await runSingleAgentTest(params.agentId);
+        break;
+      }
+      case 'run_full_qa': {
+        const { runDailyQARoutine } = await import('./qaAutomation');
+        result = await runDailyQARoutine();
+        break;
+      }
+      case 'get_qa_report': {
+        if (params.date) {
+          const { getQAReportByDate } = await import('./qaAutomation');
+          result = await getQAReportByDate(params.date);
+        } else {
+          const { getLatestQAReport } = await import('./qaAutomation');
+          result = await getLatestQAReport();
+        }
+        if (!result) result = { success: false, error: 'No QA report found' };
+        break;
+      }
 
       default:
         return { success: false, toolName, error: `Unknown tool: ${toolName}` };

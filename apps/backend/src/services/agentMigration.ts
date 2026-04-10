@@ -34,7 +34,9 @@ export async function ensureAgentTables(): Promise<void> {
   await ensureAuditAndSupportTables();
   await ensureCampaignMetricsTables();
   await ensureSEOReportsTables();
+  await ensureQAReportsTables();
   await seedScoutAgent();
+  await seedProbeAgent();
 }
 
 async function seedScoutAgent(): Promise<void> {
@@ -363,6 +365,62 @@ async function ensureCampaignMetricsTables(): Promise<void> {
     console.log('[AgentMigration] dm_campaign_metrics table ensured');
   } catch (err: any) {
     console.log(`[AgentMigration] Could not create dm_campaign_metrics: ${err.message}`);
+  }
+}
+
+async function seedProbeAgent(): Promise<void> {
+  try {
+    await prisma.$executeRawUnsafe(`
+      INSERT INTO dm_agents (id, name, role, description, status, color, icon, tools)
+      VALUES (
+        'probe',
+        'Probe',
+        'QA Specialist',
+        'Automated QA testing — page loads, API health, agent chat, performance monitoring, security checks, uptime alerts',
+        'idle',
+        'amber',
+        'test-tube',
+        '["run_page_test","run_api_test","run_agent_test","run_full_qa","get_qa_report"]'
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        name = EXCLUDED.name,
+        role = EXCLUDED.role,
+        description = EXCLUDED.description,
+        color = EXCLUDED.color,
+        icon = EXCLUDED.icon,
+        tools = EXCLUDED.tools;
+    `);
+    console.log('[AgentMigration] Probe agent seeded into dm_agents');
+  } catch (err: any) {
+    console.log(`[AgentMigration] Could not seed Probe agent (dm_agents table may not exist): ${err.message}`);
+  }
+}
+
+async function ensureQAReportsTables(): Promise<void> {
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS qa_daily_reports (
+        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+        report_date DATE NOT NULL UNIQUE,
+        summary TEXT,
+        full_report JSONB,
+        total_tests INTEGER,
+        passed INTEGER,
+        failed INTEGER,
+        warnings INTEGER,
+        avg_response_time NUMERIC(10,2),
+        critical_failures JSONB,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_qa_reports_date ON qa_daily_reports(report_date);
+    `);
+
+    console.log('[AgentMigration] qa_daily_reports table ensured');
+  } catch (err: any) {
+    console.log(`[AgentMigration] Could not create qa_daily_reports: ${err.message}`);
   }
 }
 

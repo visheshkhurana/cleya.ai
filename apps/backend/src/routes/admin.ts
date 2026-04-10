@@ -1917,3 +1917,54 @@ adminRouter.get('/seo/reports/:date', async (req: Request, res: Response, next: 
     next(error);
   }
 });
+
+// --- QA Reports ---
+
+adminRouter.get('/qa/reports', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { getQAReports } = await import('../services/qaAutomation');
+    const limit = parseInt(req.query.limit as string) || 30;
+    const data = await getQAReports(limit);
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/qa/latest', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { getLatestQAReport } = await import('../services/qaAutomation');
+    const data = await getLatestQAReport();
+    if (!data) {
+      res.status(404).json({ success: false, error: { message: 'No QA reports found' } });
+      return;
+    }
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.get('/qa/reports/:date', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { getQAReportByDate } = await import('../services/qaAutomation');
+    const data = await getQAReportByDate(req.params.date);
+    if (!data) {
+      res.status(404).json({ success: false, error: { message: `No QA report found for ${req.params.date}` } });
+      return;
+    }
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/qa/run', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { runDailyQARoutine } = await import('../services/qaAutomation');
+    const result = await runDailyQARoutine();
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
