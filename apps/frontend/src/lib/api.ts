@@ -610,11 +610,11 @@ class ApiClient {
 
   // Agent chat endpoints
   async getAgentList() {
-    return this.fetch('/agents/list');
+    return this.fetch('/agent-chat/list');
   }
 
   async sendAgentMessage(agentId: string, message: string, history: { role: string; content: string }[] = []) {
-    return this.fetch('/agents/chat', {
+    return this.fetch('/agent-chat/chat', {
       method: 'POST',
       body: JSON.stringify({ agentId, message, history }),
     });
