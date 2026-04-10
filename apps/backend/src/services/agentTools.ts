@@ -7,19 +7,26 @@
 
 import { ayrshareService } from './ayrshareService';
 import { adsService } from './adsService';
+import { analyticsToolsService } from './analyticsToolsService';
 import { logExecution, logAudit, scoreContentRisk, checkGuardrails, shouldAutoExecute, type AutonomyLevel } from './guardrailsService';
 import { getAgentGuardrails, getAgentAutonomyLevel } from './agentRunner';
 
 // --- Tool definitions per agent ---
 
+const ANALYTICS_TOOLS = [
+  'get_posthog_insights', 'get_ga4_insights', 'get_analytics_overview',
+  'get_platform_stats', 'get_user_growth_trend', 'get_funnel_metrics',
+  'get_agent_performance',
+];
+
 export const AGENT_TOOLS: Record<string, string[]> = {
-  maven: ['post_to_social', 'schedule_post', 'get_post_analytics', 'get_post_history'],
-  ledger: ['create_ad_campaign', 'get_campaign_stats', 'optimize_campaigns'],
-  catalyst: ['post_to_social', 'create_ad_campaign', 'schedule_post'],
-  nexus: ['post_to_social', 'send_email', 'schedule_post'],
-  sentinel: ['get_campaign_stats', 'get_post_analytics'],
-  ally: ['send_email', 'schedule_post'],
-  closer: ['send_email', 'create_ad_campaign'],
+  maven: ['post_to_social', 'schedule_post', 'get_post_analytics', 'get_post_history', ...ANALYTICS_TOOLS],
+  ledger: ['create_ad_campaign', 'get_campaign_stats', 'optimize_campaigns', ...ANALYTICS_TOOLS],
+  catalyst: ['post_to_social', 'create_ad_campaign', 'schedule_post', ...ANALYTICS_TOOLS],
+  nexus: ['post_to_social', 'send_email', 'schedule_post', ...ANALYTICS_TOOLS],
+  sentinel: ['get_campaign_stats', 'get_post_analytics', ...ANALYTICS_TOOLS],
+  ally: ['send_email', 'schedule_post', ...ANALYTICS_TOOLS],
+  closer: ['send_email', 'create_ad_campaign', ...ANALYTICS_TOOLS],
 };
 
 // --- Tool parameter schemas (used in OpenAI function-calling format) ---
@@ -125,6 +132,70 @@ export const TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
         body: { type: 'string', description: 'Email body content' },
       },
       required: ['to', 'subject', 'body'],
+    },
+  },
+  get_posthog_insights: {
+    name: 'get_posthog_insights',
+    description: 'Get product analytics from PostHog: unique users, total events, top events, daily event volume, session duration, retention cohorts, and feature usage. Essential for understanding user behavior and product engagement.',
+    parameters: {
+      type: 'object',
+      properties: {
+        dateRange: { type: 'string', enum: ['7d', '30d', '90d'], description: 'Date range for analytics (default: 30d)' },
+      },
+    },
+  },
+  get_ga4_insights: {
+    name: 'get_ga4_insights',
+    description: 'Get website analytics from Google Analytics 4: pageviews, sessions, active users, bounce rate, top pages, traffic sources, geographic breakdown, and daily trends. Essential for understanding website traffic and acquisition channels.',
+    parameters: {
+      type: 'object',
+      properties: {
+        dateRange: { type: 'string', enum: ['7d', '30d', '90d'], description: 'Date range for analytics (default: 30d)' },
+      },
+    },
+  },
+  get_analytics_overview: {
+    name: 'get_analytics_overview',
+    description: 'Get a combined overview of all analytics platforms at once: GA4 (website traffic), PostHog (product analytics), Instagram (social), and Sentry (errors). Returns a summary from each configured platform.',
+    parameters: {
+      type: 'object',
+      properties: {
+        dateRange: { type: 'string', enum: ['7d', '30d', '90d'], description: 'Date range for analytics (default: 30d)' },
+      },
+    },
+  },
+  get_platform_stats: {
+    name: 'get_platform_stats',
+    description: 'Get Cleya.ai platform statistics from the database: total users, profiles, matches, conversations, calls, events, match acceptance rate, call completion rate, new signups, top cities, and top roles. This is the core business metrics data.',
+    parameters: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  get_user_growth_trend: {
+    name: 'get_user_growth_trend',
+    description: 'Get daily user signups and match creation trends over a specified number of days. Shows growth trajectory and momentum.',
+    parameters: {
+      type: 'object',
+      properties: {
+        days: { type: 'number', description: 'Number of days to look back (default: 30, max: 90)' },
+      },
+    },
+  },
+  get_funnel_metrics: {
+    name: 'get_funnel_metrics',
+    description: 'Get the complete user activation funnel: Signed Up → Completed Profile → Received Match → Accepted Match → Started Conversation → Completed Call. Shows conversion rates at each stage. Critical for identifying drop-off points.',
+    parameters: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  get_agent_performance: {
+    name: 'get_agent_performance',
+    description: 'Get performance data for all AI agents: activity logs, content generation stats, run history, and enabled/disabled status. Useful for the orchestrator (Nexus) to coordinate agent activity.',
+    parameters: {
+      type: 'object',
+      properties: {},
     },
   },
 };
@@ -260,6 +331,34 @@ export async function executeTool(agentId: string, toolName: string, params: Rec
 
       case 'send_email':
         result = { status: 'not_configured', message: 'Email sending is not yet configured. Use the publishingService email flow or configure a dedicated email provider.' };
+        break;
+
+      case 'get_posthog_insights':
+        result = await analyticsToolsService.getPostHogInsights(params.dateRange);
+        break;
+
+      case 'get_ga4_insights':
+        result = await analyticsToolsService.getGA4Insights(params.dateRange);
+        break;
+
+      case 'get_analytics_overview':
+        result = await analyticsToolsService.getAnalyticsOverview(params.dateRange);
+        break;
+
+      case 'get_platform_stats':
+        result = await analyticsToolsService.getPlatformStats();
+        break;
+
+      case 'get_user_growth_trend':
+        result = await analyticsToolsService.getUserGrowthTrend(Math.min(params.days || 30, 90));
+        break;
+
+      case 'get_funnel_metrics':
+        result = await analyticsToolsService.getFunnelMetrics();
+        break;
+
+      case 'get_agent_performance':
+        result = await analyticsToolsService.getAgentPerformanceData();
         break;
 
       default:
