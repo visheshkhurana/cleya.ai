@@ -37,7 +37,7 @@ export async function sendAgentToAgentMessage(
   content: string,
   messageType: 'message' | 'task_delegation' | 'status_update' | 'question' | 'insight' | 'task_result' = 'message',
   subject: string = '',
-  priority: 'urgent' | 'high' | 'normal' | 'low' = 'normal',
+  priority: 'critical' | 'urgent' | 'high' | 'normal' | 'low' = 'normal',
   metadata?: any
 ): Promise<{ success: boolean; messageId?: number; error?: string }> {
   if (!isValidAgent(fromAgentId)) return { success: false, error: `Invalid sender: ${fromAgentId}` };
