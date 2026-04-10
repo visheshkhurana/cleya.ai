@@ -261,7 +261,7 @@ export function ClassicDashboard() {
     setAgentMessages((prev) => ({ ...prev, [selectedAgent]: [...(prev[selectedAgent] || []), { role: 'user', content: msg }] }));
     setAgentLoading(true);
     try {
-      const result = await api.sendAgentMessage(selectedAgent, msg, history);
+      const result = await api.sendAgentMessage(selectedAgent, msg);
       setAgentMessages((prev) => ({
         ...prev,
         [selectedAgent]: [...(prev[selectedAgent] || []), { role: 'assistant', content: result.content }],

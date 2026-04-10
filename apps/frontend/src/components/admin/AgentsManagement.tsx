@@ -535,16 +535,9 @@ function ChatTab({ agentId }: { agentId: string }) {
     try {
       await api.saveAgentMessage(agentId, 'inbound', userMsg);
 
-      // Build chat history from recent messages for context
-      const history = messages.slice(-10).map(m => ({
-        role: m.direction === 'inbound' ? 'user' : 'assistant',
-        content: m.message,
-      }));
-
-      // Call backend agent-chat API via the authenticated api client
       let assistantText = 'Sorry, I could not generate a response. Please check that the OpenAI API key is configured.';
       try {
-        const data = await api.sendAgentMessage(agentId, userMsg, history);
+        const data = await api.sendAgentMessage(agentId, userMsg);
         assistantText = data.data?.content || data.content || assistantText;
       } catch (apiErr) {
         console.error('Agent chat API error:', apiErr);
