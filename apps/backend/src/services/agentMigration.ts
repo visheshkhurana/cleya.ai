@@ -34,6 +34,8 @@ export async function ensureAgentTables(): Promise<void> {
   await ensureAuditAndSupportTables();
   await ensureCampaignMetricsTables();
   await ensureAgentChatHistoryTable();
+  await ensureSharedMemoryTable();
+  await ensureAgentCommsTable();
 }
 
 async function ensureAgentMessagesTables(): Promise<void> {
@@ -334,6 +336,70 @@ async function ensureCampaignMetricsTables(): Promise<void> {
     console.log('[AgentMigration] dm_campaign_metrics table ensured');
   } catch (err: any) {
     console.log(`[AgentMigration] Could not create dm_campaign_metrics: ${err.message}`);
+  }
+}
+
+async function ensureSharedMemoryTable(): Promise<void> {
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS dm_shared_memory (
+        id SERIAL PRIMARY KEY,
+        author_agent_id TEXT NOT NULL,
+        category TEXT NOT NULL DEFAULT 'general',
+        title TEXT NOT NULL DEFAULT '',
+        content TEXT NOT NULL DEFAULT '',
+        importance TEXT DEFAULT 'normal',
+        tags TEXT[] DEFAULT '{}',
+        metadata JSONB DEFAULT '{}',
+        expires_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ DEFAULT now(),
+        updated_at TIMESTAMPTZ DEFAULT now()
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_shared_memory_category ON dm_shared_memory(category);
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_shared_memory_author ON dm_shared_memory(author_agent_id);
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_shared_memory_importance ON dm_shared_memory(importance);
+    `);
+    console.log('[AgentMigration] dm_shared_memory table ensured');
+  } catch (err: any) {
+    console.log(`[AgentMigration] Could not create dm_shared_memory: ${err.message}`);
+  }
+}
+
+async function ensureAgentCommsTable(): Promise<void> {
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS dm_agent_comms (
+        id SERIAL PRIMARY KEY,
+        from_agent_id TEXT NOT NULL,
+        to_agent_id TEXT NOT NULL,
+        message_type TEXT NOT NULL DEFAULT 'message',
+        subject TEXT DEFAULT '',
+        content TEXT NOT NULL DEFAULT '',
+        priority TEXT DEFAULT 'normal',
+        status TEXT DEFAULT 'unread',
+        parent_id INTEGER,
+        metadata JSONB DEFAULT '{}',
+        created_at TIMESTAMPTZ DEFAULT now()
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_agent_comms_to ON dm_agent_comms(to_agent_id, status, created_at DESC);
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_agent_comms_from ON dm_agent_comms(from_agent_id, created_at DESC);
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_agent_comms_type ON dm_agent_comms(message_type);
+    `);
+    console.log('[AgentMigration] dm_agent_comms table ensured');
+  } catch (err: any) {
+    console.log(`[AgentMigration] Could not create dm_agent_comms: ${err.message}`);
   }
 }
 

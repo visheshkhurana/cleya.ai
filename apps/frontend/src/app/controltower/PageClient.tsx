@@ -131,7 +131,45 @@ function AdminDashboardInner() {
         console.error('Failed to load agent chat history:', err);
       }
     };
+    const loadTeamComms = async () => {
+      try {
+        const comms = await api.getTeamComms();
+        if (!comms || !Array.isArray(comms)) return;
+        const AGENT_NAME_MAP: Record<string, { name: string; emoji: string }> = {
+          nexus: { name: 'Nexus', emoji: '🧠' }, maven: { name: 'Maven', emoji: '🎯' },
+          ledger: { name: 'Ledger', emoji: '📊' }, sentinel: { name: 'Sentinel', emoji: '🛡️' },
+          ally: { name: 'Ally', emoji: '💬' }, catalyst: { name: 'Catalyst', emoji: '🚀' },
+          closer: { name: 'Closer', emoji: '🤝' },
+        };
+        const commMessages: ChatMessage[] = comms.map((c: any, i: number) => {
+          const from = AGENT_NAME_MAP[c.from_agent_id] || { name: c.from_agent_id, emoji: '🤖' };
+          const to = AGENT_NAME_MAP[c.to_agent_id] || { name: c.to_agent_id, emoji: '🤖' };
+          const typeTag = c.message_type !== 'message' ? `[${c.message_type}] ` : '';
+          const priorityTag = c.priority !== 'normal' ? ` ⚡${c.priority}` : '';
+          return {
+            id: `comms-${c.id || i}`,
+            channelId: 'team-comms',
+            sender: 'agent' as const,
+            agentId: c.from_agent_id,
+            agentName: from.name,
+            agentEmoji: from.emoji,
+            content: `${typeTag}→ ${to.emoji} ${to.name}${priorityTag}: ${c.content}`,
+            timestamp: new Date(c.created_at),
+            type: 'chat' as const,
+          };
+        });
+        if (commMessages.length > 0) {
+          setMessages(prev => ({
+            ...prev,
+            'team-comms': commMessages,
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to load team comms:', err);
+      }
+    };
     loadChatHistory();
+    loadTeamComms();
   }, [authenticated]);
 
   useEffect(() => {

@@ -8,6 +8,7 @@ import OpenAI from 'openai';
 import { getToolPromptForAgent } from '../prompts/masterPrompt';
 import { getOpenAIToolSchemas, executeTool, parseToolCallsFromResponse, AGENT_TOOLS } from '../services/agentTools';
 import { assembleMemoryContext, formatMemoryForPrompt, addShortTermMemory } from '../services/agentMemoryService';
+import { processAgentInbox, markMessagesRead } from '../services/agentCoordinationService';
 
 export const agentChatRouter = Router();
 
@@ -24,7 +25,28 @@ ABOUT CLEYA:
 TARGET USERS: Founders, Investors, Operators/Talent in India's startup ecosystem
 Be concise, actionable, and data-driven. Use Indian startup ecosystem context.
 
-IMPORTANT: You have persistent memory. You remember all previous conversations with the founder/admin. Reference past discussions when relevant. Build on previous context rather than starting fresh each time.`;
+IMPORTANT: You have persistent memory. You remember all previous conversations with the founder/admin. Reference past discussions when relevant. Build on previous context rather than starting fresh each time.
+
+TEAM COORDINATION:
+You are part of a team of 7 AI agents. You can communicate with your teammates:
+- Use "message_agent" to send direct messages to specific agents
+- Use "delegate_to_agent" to assign tasks that fall under another agent's expertise
+- Use "share_insight" to broadcast important discoveries to the entire team
+- Use "get_my_inbox" to check for messages and tasks from other agents
+- Use "get_team_updates" to see recent team communication
+- Use "add_shared_memory" to store important knowledge in the central team memory (visible to ALL agents)
+- Use "search_shared_memory" to find knowledge shared by any team member
+
+YOUR TEAMMATES:
+- Nexus (Orchestrator): Coordinates all agents, strategic planning, resource allocation
+- Maven (Marketing): Content, SEO, social media, email campaigns
+- Ledger (Finance): Financial modeling, unit economics, fundraising
+- Sentinel (CTO): Architecture, security, performance, tech debt
+- Ally (Support): Customer success, ticket triage, onboarding
+- Catalyst (Growth): Viral loops, referral mechanics, activation funnels
+- Closer (Sales): B2B sales, outreach, investor relations
+
+When you discover something important, proactively share it with relevant teammates. When a task is better suited for another agent's expertise, delegate it. Always check your inbox for pending messages.`;
 
 const AGENT_PROMPTS: Record<string, string> = {
   'cleya-marketing': `${CLEYA_CONTEXT}
@@ -251,6 +273,27 @@ agentChatRouter.get('/list', authenticate, (_req: Request, res: Response) => {
   res.json({ success: true, data: AGENT_LIST });
 });
 
+agentChatRouter.get('/team-comms', authenticate, requireRole('MANAGER'), async (_req: Request, res: Response) => {
+  try {
+    const { getAllTeamComms } = await import('../services/agentCoordinationService');
+    const comms = await getAllTeamComms(50);
+    res.json({ success: true, data: comms });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+agentChatRouter.get('/shared-memory', authenticate, requireRole('MANAGER'), async (req: Request, res: Response) => {
+  try {
+    const { getSharedMemories } = await import('../services/agentMemoryService');
+    const category = req.query.category as string | undefined;
+    const memories = await getSharedMemories(category, undefined, 50);
+    res.json({ success: true, data: memories });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
 agentChatRouter.get('/history/:agentId', authenticate, requireRole('MANAGER'), async (req: Request, res: Response) => {
   try {
     const { agentId } = req.params;
@@ -325,16 +368,17 @@ agentChatRouter.post('/chat', authenticate, requireRole('ADMIN'), loadUserTier, 
       return;
     }
 
-    const [dbHistory, memoryPrompt] = await Promise.all([
+    const [dbHistory, memoryPrompt, inboxResult] = await Promise.all([
       loadChatHistory(agentId, userId, 40),
       buildMemoryPrompt(agentId, message.trim()),
+      processAgentInbox(agentId),
     ]);
 
     await saveChatMessage(agentId, 'user', message.trim(), userId);
 
     const basePrompt = AGENT_PROMPTS[agentId];
     const toolPrompt = agentHasTools ? getToolPromptForAgent(agentId) : '';
-    const systemPrompt = basePrompt + memoryPrompt + toolPrompt;
+    const systemPrompt = basePrompt + memoryPrompt + inboxResult.prompt + toolPrompt;
 
     const conversationHistory = dbHistory.map(h => ({
       role: h.role === 'assistant' ? 'assistant' as const : 'user' as const,
@@ -399,6 +443,7 @@ agentChatRouter.post('/chat', authenticate, requireRole('ADMIN'), loadUserTier, 
       await saveChatMessage(agentId, 'assistant', content, userId, toolResults.length > 0 ? { toolCalls: toolResults } : undefined);
 
       storeChatMemory(agentId, message.trim(), content).catch(() => {});
+      if (inboxResult.messageIds.length > 0) markMessagesRead(agentId, inboxResult.messageIds).catch(() => {});
 
       res.json({
         success: true,
@@ -440,6 +485,7 @@ agentChatRouter.post('/chat', authenticate, requireRole('ADMIN'), loadUserTier, 
       await saveChatMessage(agentId, 'assistant', followUp.content, userId, { toolCalls: toolResults });
 
       storeChatMemory(agentId, message.trim(), followUp.content).catch(() => {});
+      if (inboxResult.messageIds.length > 0) markMessagesRead(agentId, inboxResult.messageIds).catch(() => {});
 
       res.json({
         success: true,
@@ -455,6 +501,7 @@ agentChatRouter.post('/chat', authenticate, requireRole('ADMIN'), loadUserTier, 
     await saveChatMessage(agentId, 'assistant', result.content, userId);
 
     storeChatMemory(agentId, message.trim(), result.content).catch(() => {});
+    if (inboxResult.messageIds.length > 0) markMessagesRead(agentId, inboxResult.messageIds).catch(() => {});
 
     res.json({ success: true, data: { content: result.content, agentId } });
   } catch (error) {

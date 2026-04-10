@@ -79,13 +79,26 @@ Backward-compatible agent ID aliases: `orchestrator→nexus`, `content-strategis
 
 **AgentRunner** (`apps/backend/src/services/agentRunner.ts`): Executes agents using multi-model LLM routing — each agent/task uses the optimal model selected by the model router (`modelRouter.ts`). Maven uses Claude Sonnet for LinkedIn thought leadership, Ally uses Claude Sonnet for empathetic support replies, Ledger uses GPT-4o for financial analysis, and cost-efficient tasks use GPT-4o-mini or Gemini Flash. Fallback logic: if primary model fails, automatically retries with fallback model. Per-call cost estimation logged (model_used, api_cost_usd, api_cost_inr) to execution log. ₹500 high-cost task alerts sent to Ledger. Task payloads include `assigned_model` set by Nexus. Writes generated content to `dm_content_queue` (Supabase REST) with status PENDING for human review, logs execution metadata to `dm_agent_logs`. Retry logic with exponential backoff (max 2 retries, 2s base delay). Agent state persisted to `dm_agent_state` table via Prisma raw SQL. State hydrated on boot. Enable/disable toggles per agent. Memory context injected into system prompts before each run; run results stored as short-term memories after completion.
 
-**Agent Memory System** (`apps/backend/src/services/agentMemoryService.ts`): 5-layer persistent memory for agents:
+**Agent Memory System** (`apps/backend/src/services/agentMemoryService.ts`): 6-layer persistent memory for agents:
 - **Working Memory** (`agent_working_memory`): Session-scoped JSON, one per agent, tracks current active task context. Cleared after each run.
 - **Short-Term Memory** (`agent_short_term_memory`): Time-decaying entries (48h TTL), stores recent run outputs, decisions, context.
 - **Long-Term Memory** (`agent_long_term_memory`): Durable patterns with confidence scores. Auto-promoted from short-term when a pattern appears 3+ times (keyword overlap detection).
 - **Episodic Memory** (`agent_episodic_memory`): Tagged notable events (successes, failures, milestones) with impact assessment.
 - **Semantic Memory** (`agent_semantic_memory`): Vector embeddings (pgvector 1536-dim) for domain knowledge retrieval via cosine similarity search.
-Memory is assembled and injected into agent system prompts automatically before each run. Admin UI "Memory" tab per agent shows all layers with add/delete capabilities. API routes: `GET/POST /admin/agents/:id/memory`, `DELETE /admin/agents/:id/memory/:memoryId?layer=...`.
+- **Shared Memory** (`dm_shared_memory`): Central knowledge pool visible to ALL agents. Agents can add insights, decisions, strategies, metrics via `add_shared_memory` tool. Supports categories, importance levels (critical/high/normal/low), tags, and expiration. Auto-injected into every agent's system prompt as "Team Shared Knowledge".
+Memory is assembled and injected into agent system prompts automatically before each run. Admin UI "Memory" tab per agent shows all layers with add/delete capabilities. API routes: `GET/POST /admin/agents/:id/memory`, `DELETE /admin/agents/:id/memory/:memoryId?layer=...`. Shared memory API: `GET /agent-chat/shared-memory`.
+
+**Inter-Agent Communication** (`apps/backend/src/services/agentCoordinationService.ts`): Agents can communicate with each other via `dm_agent_comms` table:
+- **Direct Messages** (`message_agent`): Agent-to-agent messaging with subject, priority, and message types.
+- **Task Delegation** (`delegate_to_agent`): Agents delegate tasks to teammates with context and priority.
+- **Insight Broadcast** (`share_insight`): Broadcast important findings to all agents simultaneously.
+- **Inbox** (`get_my_inbox`): Each agent has an inbox with unread messages, sorted by priority.
+- **Team Updates** (`get_team_updates`): View recent communication activity.
+- **Coordinated Tasks** (`coordinate_task`, Nexus only): Orchestrate multi-agent tasks across the team.
+- **Inbox Processing**: On each chat, agent's unread messages are loaded and injected into context.
+- **Frontend**: "team-comms" channel in Control Tower shows all agent-to-agent communication feed. API: `GET /agent-chat/team-comms`.
+
+**Agent Chat Persistence** (`dm_agent_chat_history`): All agent chat messages (user + assistant) are stored in PostgreSQL, scoped per user_id. Backend loads last 40 messages from DB on each request (frontend doesn't pass history). Chat history restored on page load via `GET /agent-chat/history`. Each chat interaction stored as short-term memory for agent recall.
 
 **AgentNotifier** (`apps/backend/src/services/agentNotifier.ts`): Sends Slack alerts to `#all-cleya` on agent success/failure. Sends email via Resend to admin on agent failure. Non-blocking, errors logged silently.
 

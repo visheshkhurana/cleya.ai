@@ -57,6 +57,7 @@ export function buildAgentChannels(registry: Record<string, AgentDefinition>): C
   return [
     { id: 'founder-room', name: 'founder-room', type: 'special', emoji: '\uD83C\uDFE0', description: 'Your command center \u2014 talk to any agent', color: 'indigo', unreadCount: 0, presence: 'active' },
     { id: 'all-agents', name: 'all-agents', type: 'special', emoji: '\uD83D\uDCE2', description: 'Broadcast to all agents', color: 'violet', unreadCount: 0, presence: 'active' },
+    { id: 'team-comms', name: 'team-comms', type: 'special', emoji: '\uD83D\uDD17', description: 'Agent-to-agent communication feed', color: 'cyan', unreadCount: 0, presence: 'active' },
     ...Object.values(registry).map((agent: AgentDefinition) => ({
       id: agent.id,
       name: agent.id,
@@ -87,6 +88,7 @@ export function buildAgentMap(registry: Record<string, AgentDefinition>): Record
 const SPECIAL_CHANNELS: Channel[] = [
   { id: 'founder-room', name: 'founder-room', type: 'special', emoji: '\uD83C\uDFE0', description: 'Your command center \u2014 talk to any agent', color: 'indigo', unreadCount: 0, presence: 'active' },
   { id: 'all-agents', name: 'all-agents', type: 'special', emoji: '\uD83D\uDCE2', description: 'Broadcast to all agents', color: 'violet', unreadCount: 0, presence: 'active' },
+  { id: 'team-comms', name: 'team-comms', type: 'special', emoji: '\uD83D\uDD17', description: 'Agent-to-agent communication feed', color: 'cyan', unreadCount: 0, presence: 'active' },
 ];
 
 let sharedAgentMap: Record<string, AgentInfo> = {};

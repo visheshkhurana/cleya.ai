@@ -10,6 +10,11 @@ import { adsService } from './adsService';
 import { analyticsToolsService } from './analyticsToolsService';
 import { logExecution, logAudit, scoreContentRisk, checkGuardrails, shouldAutoExecute, type AutonomyLevel } from './guardrailsService';
 import { getAgentGuardrails, getAgentAutonomyLevel } from './agentRunner';
+import { addSharedMemory, getSharedMemories, searchSharedMemories } from './agentMemoryService';
+import {
+  sendAgentToAgentMessage, delegateTask, shareInsight,
+  coordinateTask, getAgentInbox, getTeamUpdates,
+} from './agentCoordinationService';
 
 // --- Tool definitions per agent ---
 
@@ -19,14 +24,25 @@ const ANALYTICS_TOOLS = [
   'get_agent_performance',
 ];
 
+const COORDINATION_TOOLS = [
+  'message_agent', 'delegate_to_agent', 'share_insight',
+  'get_my_inbox', 'get_team_updates',
+  'add_shared_memory', 'search_shared_memory',
+];
+
+const ORCHESTRATOR_TOOLS = [
+  ...COORDINATION_TOOLS,
+  'coordinate_task',
+];
+
 export const AGENT_TOOLS: Record<string, string[]> = {
-  maven: ['post_to_social', 'schedule_post', 'get_post_analytics', 'get_post_history', ...ANALYTICS_TOOLS],
-  ledger: ['create_ad_campaign', 'get_campaign_stats', 'optimize_campaigns', ...ANALYTICS_TOOLS],
-  catalyst: ['post_to_social', 'create_ad_campaign', 'schedule_post', ...ANALYTICS_TOOLS],
-  nexus: ['post_to_social', 'send_email', 'schedule_post', ...ANALYTICS_TOOLS],
-  sentinel: ['get_campaign_stats', 'get_post_analytics', ...ANALYTICS_TOOLS],
-  ally: ['send_email', 'schedule_post', ...ANALYTICS_TOOLS],
-  closer: ['send_email', 'create_ad_campaign', ...ANALYTICS_TOOLS],
+  maven: ['post_to_social', 'schedule_post', 'get_post_analytics', 'get_post_history', ...ANALYTICS_TOOLS, ...COORDINATION_TOOLS],
+  ledger: ['create_ad_campaign', 'get_campaign_stats', 'optimize_campaigns', ...ANALYTICS_TOOLS, ...COORDINATION_TOOLS],
+  catalyst: ['post_to_social', 'create_ad_campaign', 'schedule_post', ...ANALYTICS_TOOLS, ...COORDINATION_TOOLS],
+  nexus: ['post_to_social', 'send_email', 'schedule_post', ...ANALYTICS_TOOLS, ...ORCHESTRATOR_TOOLS],
+  sentinel: ['get_campaign_stats', 'get_post_analytics', ...ANALYTICS_TOOLS, ...COORDINATION_TOOLS],
+  ally: ['send_email', 'schedule_post', ...ANALYTICS_TOOLS, ...COORDINATION_TOOLS],
+  closer: ['send_email', 'create_ad_campaign', ...ANALYTICS_TOOLS, ...COORDINATION_TOOLS],
 };
 
 // --- Tool parameter schemas (used in OpenAI function-calling format) ---
@@ -198,6 +214,107 @@ export const TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
       properties: {},
     },
   },
+  message_agent: {
+    name: 'message_agent',
+    description: 'Send a direct message to another agent on the team. Use this to ask questions, share updates, or request information. Valid agents: nexus, maven, ledger, sentinel, ally, catalyst, closer.',
+    parameters: {
+      type: 'object',
+      properties: {
+        to_agent: { type: 'string', enum: ['nexus', 'maven', 'ledger', 'sentinel', 'ally', 'catalyst', 'closer'], description: 'The agent to message' },
+        content: { type: 'string', description: 'The message content' },
+        subject: { type: 'string', description: 'Brief subject line (optional)' },
+        priority: { type: 'string', enum: ['urgent', 'high', 'normal', 'low'], description: 'Message priority (default: normal)' },
+      },
+      required: ['to_agent', 'content'],
+    },
+  },
+  delegate_to_agent: {
+    name: 'delegate_to_agent',
+    description: 'Delegate a specific task to another agent. The receiving agent will see it in their inbox. Use this when a task falls under another agent\'s expertise.',
+    parameters: {
+      type: 'object',
+      properties: {
+        to_agent: { type: 'string', enum: ['nexus', 'maven', 'ledger', 'sentinel', 'ally', 'catalyst', 'closer'], description: 'The agent to delegate to' },
+        task: { type: 'string', description: 'Clear description of the task to delegate' },
+        context: { type: 'string', description: 'Additional context to help the receiving agent (optional)' },
+        priority: { type: 'string', enum: ['urgent', 'high', 'normal', 'low'], description: 'Task priority (default: normal)' },
+      },
+      required: ['to_agent', 'task'],
+    },
+  },
+  share_insight: {
+    name: 'share_insight',
+    description: 'Broadcast an important insight or finding to all agents on the team. Use for discoveries that would benefit the entire team.',
+    parameters: {
+      type: 'object',
+      properties: {
+        insight: { type: 'string', description: 'The insight or finding to share' },
+        category: { type: 'string', description: 'Category (e.g., growth, marketing, finance, product, support, sales)' },
+        importance: { type: 'string', enum: ['critical', 'high', 'normal', 'low'], description: 'Importance level (default: normal)' },
+      },
+      required: ['insight'],
+    },
+  },
+  get_my_inbox: {
+    name: 'get_my_inbox',
+    description: 'Check your inbox for messages and tasks from other agents. Returns unread messages first, sorted by priority.',
+    parameters: {
+      type: 'object',
+      properties: {
+        unread_only: { type: 'boolean', description: 'If true, only return unread messages (default: false)' },
+      },
+    },
+  },
+  get_team_updates: {
+    name: 'get_team_updates',
+    description: 'Get recent team communication activity — messages sent to and from you. Use to stay up to date on cross-agent coordination.',
+    parameters: {
+      type: 'object',
+      properties: {
+        limit: { type: 'number', description: 'Number of recent messages to retrieve (default: 15)' },
+      },
+    },
+  },
+  add_shared_memory: {
+    name: 'add_shared_memory',
+    description: 'Add a piece of knowledge to the shared team memory — a central knowledge pool visible to ALL agents. Use for important facts, decisions, strategies, metrics, or lessons learned that the whole team should know.',
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Short title for this knowledge item' },
+        content: { type: 'string', description: 'The knowledge content to share' },
+        category: { type: 'string', description: 'Category (e.g., strategy, metric, decision, lesson, goal, blocker)' },
+        importance: { type: 'string', enum: ['critical', 'high', 'normal', 'low'], description: 'Importance level (default: normal)' },
+        tags: { type: 'array', items: { type: 'string' }, description: 'Tags for searchability (optional)' },
+      },
+      required: ['title', 'content', 'category'],
+    },
+  },
+  search_shared_memory: {
+    name: 'search_shared_memory',
+    description: 'Search the shared team knowledge pool for specific topics, facts, or decisions. All agents contribute to and can read from this shared memory.',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Search term to find in shared knowledge' },
+        category: { type: 'string', description: 'Filter by category (optional)' },
+      },
+      required: ['query'],
+    },
+  },
+  coordinate_task: {
+    name: 'coordinate_task',
+    description: 'Orchestrate a multi-agent task by delegating sub-tasks to multiple agents simultaneously. Only available to the Nexus orchestrator.',
+    parameters: {
+      type: 'object',
+      properties: {
+        task: { type: 'string', description: 'Description of the coordinated task' },
+        agents: { type: 'array', items: { type: 'string', enum: ['maven', 'ledger', 'sentinel', 'ally', 'catalyst', 'closer'] }, description: 'Agents to involve in this task' },
+        priority: { type: 'string', enum: ['urgent', 'high', 'normal', 'low'], description: 'Task priority (default: normal)' },
+      },
+      required: ['task', 'agents'],
+    },
+  },
 };
 
 // --- Get OpenAI-format tool schemas for a specific agent ---
@@ -359,6 +476,64 @@ export async function executeTool(agentId: string, toolName: string, params: Rec
 
       case 'get_agent_performance':
         result = await analyticsToolsService.getAgentPerformanceData();
+        break;
+
+      case 'message_agent':
+        result = await sendAgentToAgentMessage(
+          agentId, params.to_agent, params.content,
+          'message', params.subject || '', params.priority || 'normal'
+        );
+        break;
+
+      case 'delegate_to_agent':
+        result = await delegateTask(
+          agentId, params.to_agent, params.task,
+          params.priority || 'normal', params.context
+        );
+        break;
+
+      case 'share_insight':
+        result = await shareInsight(
+          agentId, params.insight,
+          params.category || 'general', params.importance || 'normal'
+        );
+        break;
+
+      case 'get_my_inbox':
+        result = await getAgentInbox(agentId, params.unread_only || false, 20);
+        break;
+
+      case 'get_team_updates':
+        result = await getTeamUpdates(agentId, params.limit || 15);
+        break;
+
+      case 'add_shared_memory':
+        result = await addSharedMemory(
+          agentId, params.category, params.title, params.content,
+          params.importance || 'normal', params.tags || []
+        );
+        break;
+
+      case 'search_shared_memory': {
+        let searchResults;
+        if (params.query) {
+          searchResults = await searchSharedMemories(params.query, 15);
+          if (params.category) {
+            searchResults = searchResults.filter((r: any) => r.category === params.category);
+          }
+        } else if (params.category) {
+          searchResults = await getSharedMemories(params.category, undefined, 15);
+        } else {
+          searchResults = await getSharedMemories(undefined, undefined, 15);
+        }
+        result = searchResults;
+        break;
+      }
+
+      case 'coordinate_task':
+        result = await coordinateTask(
+          agentId, params.task, params.agents, params.priority || 'normal'
+        );
         break;
 
       default:

@@ -628,6 +628,15 @@ class ApiClient {
     return this.fetch('/agent-chat/history');
   }
 
+  async getTeamComms() {
+    return this.fetch('/agent-chat/team-comms');
+  }
+
+  async getSharedMemory(category?: string) {
+    const params = category ? `?category=${encodeURIComponent(category)}` : '';
+    return this.fetch(`/agent-chat/shared-memory${params}`);
+  }
+
   async getAgentStatuses() {
     return this.fetch('/admin/agents/status');
   }
