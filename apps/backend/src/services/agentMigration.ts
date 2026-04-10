@@ -32,6 +32,7 @@ export async function ensureAgentTables(): Promise<void> {
   await ensureAgentMessagesTables();
   await ensureContentCalendarTables();
   await ensureAuditAndSupportTables();
+  await ensureCampaignMetricsTables();
 }
 
 async function ensureAgentMessagesTables(): Promise<void> {
@@ -304,5 +305,33 @@ async function ensureAuditAndSupportTables(): Promise<void> {
     console.log('[AgentMigration] ad_performance table ensured');
   } catch (err: any) {
     console.log(`[AgentMigration] Could not create ad_performance: ${err.message}`);
+  }
+}
+
+async function ensureCampaignMetricsTables(): Promise<void> {
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS dm_campaign_metrics (
+        id SERIAL PRIMARY KEY,
+        agent_id TEXT NOT NULL,
+        campaign_name TEXT DEFAULT '',
+        platform TEXT DEFAULT '',
+        status TEXT DEFAULT 'active',
+        impressions INTEGER DEFAULT 0,
+        clicks INTEGER DEFAULT 0,
+        conversions INTEGER DEFAULT 0,
+        spend NUMERIC DEFAULT 0,
+        revenue NUMERIC DEFAULT 0,
+        roas NUMERIC DEFAULT 0,
+        start_date DATE,
+        end_date DATE,
+        metadata JSONB DEFAULT '{}',
+        created_at TIMESTAMPTZ DEFAULT now(),
+        updated_at TIMESTAMPTZ DEFAULT now()
+      );
+    `);
+    console.log('[AgentMigration] dm_campaign_metrics table ensured');
+  } catch (err: any) {
+    console.log(`[AgentMigration] Could not create dm_campaign_metrics: ${err.message}`);
   }
 }

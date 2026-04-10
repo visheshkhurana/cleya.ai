@@ -39,6 +39,7 @@ import { healthRouter } from './routes/health';
 import { csrfTokenProvider, csrfProtection } from './middleware/csrf';
 import { matchScheduler } from './services/matchScheduler';
 import { agentScheduler } from './services/agentScheduler';
+import { ensureAgentTables } from './services/agentMigration';
 
 if (env.SENTRY_DSN) {
   Sentry.init({
@@ -134,9 +135,12 @@ if (env.SENTRY_DSN) {
 app.use(errorHandler);
 
 const PORT = env.PORT;
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, '0.0.0.0', async () => {
   console.log(`🚀 Cleya.ai backend running on port ${PORT}`);
   console.log(`   Environment: ${env.NODE_ENV}`);
+  await ensureAgentTables().catch(err =>
+    console.error('[AgentMigration] Failed to run migrations:', err)
+  );
   matchScheduler.start();
   agentScheduler.start().catch(err =>
     console.error('[AgentScheduler] Failed to start:', err)
