@@ -58,6 +58,10 @@ const envSchema = z.object({
 
   GA4_PROPERTY_ID: z.string().optional(),
   GA4_SERVICE_ACCOUNT_KEY: z.string().optional(),
+  GA4_MEASUREMENT_ID: z.string().optional(),
+  GOOGLE_ANALYTICS_REFRESH_TOKEN: z.string().optional(),
+  GOOGLE_ADS_CLIENT_ID: z.string().optional(),
+  GOOGLE_ADS_CLIENT_SECRET: z.string().optional(),
   INSTAGRAM_ACCESS_TOKEN: z.string().optional(),
   INSTAGRAM_BUSINESS_ACCOUNT_ID: z.string().optional(),
   POSTHOG_API_KEY: z.string().optional(),

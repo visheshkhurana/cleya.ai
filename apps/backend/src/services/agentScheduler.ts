@@ -20,6 +20,8 @@ import {
   ensureSafetyTables,
 } from './founderSafetyService';
 import { routeModel, inferTaskType } from './modelRouter';
+import { runDailySEORoutine } from './seoAutomation';
+import { runDailyQARoutine } from './qaAutomation';
 
 const ORCHESTRATOR_SUB_AGENT_MAP: Record<string, string> = {
   mavenTasks: 'maven',
@@ -174,6 +176,68 @@ class AgentScheduler {
 
       if (agentId === 'nexus' && result.status === 'success') {
         await this.handleOrchestratorDelegation(result.fullOutput || result.outputSummary);
+      }
+
+      // Scout: run the daily SEO automation pipeline after the LLM run
+      if (agentId === 'scout') {
+        try {
+          console.log('[AgentScheduler] Running Scout daily SEO automation pipeline...');
+          const seoReport = await runDailySEORoutine();
+          console.log(`[AgentScheduler] Scout SEO pipeline completed (${seoReport.length} chars)`);
+
+          // Log the SEO routine as a separate action
+          await supabaseInsert('dm_agent_logs', {
+            agent_id: 'scout',
+            action: 'Daily SEO automation pipeline',
+            details: {
+              report_length: seoReport.length,
+              report_preview: seoReport.substring(0, 500),
+            },
+            status: 'success',
+            created_at: new Date().toISOString(),
+          });
+        } catch (seoErr: any) {
+          console.error('[AgentScheduler] Scout SEO pipeline failed:', seoErr.message);
+          await supabaseInsert('dm_agent_logs', {
+            agent_id: 'scout',
+            action: 'Daily SEO automation pipeline failed',
+            details: { error: seoErr.message },
+            status: 'error',
+            created_at: new Date().toISOString(),
+          }).catch(() => {});
+        }
+      }
+
+      // Probe: run the daily QA automation pipeline after the LLM run
+      if (agentId === 'probe') {
+        try {
+          console.log('[AgentScheduler] Running Probe daily QA automation pipeline...');
+          const qaResult = await runDailyQARoutine();
+          console.log(`[AgentScheduler] Probe QA pipeline completed — ${qaResult.results.length} tests run`);
+
+          await supabaseInsert('dm_agent_logs', {
+            agent_id: 'probe',
+            action: 'Daily QA automation pipeline',
+            details: {
+              total_tests: qaResult.results.length,
+              passed: qaResult.results.filter((r: any) => r.status === 'pass').length,
+              failed: qaResult.results.filter((r: any) => r.status === 'fail').length,
+              warnings: qaResult.results.filter((r: any) => r.status === 'warning').length,
+              summary: qaResult.summary,
+            },
+            status: qaResult.results.some((r: any) => r.status === 'fail') ? 'warning' : 'success',
+            created_at: new Date().toISOString(),
+          });
+        } catch (qaErr: any) {
+          console.error('[AgentScheduler] Probe QA pipeline failed:', qaErr.message);
+          await supabaseInsert('dm_agent_logs', {
+            agent_id: 'probe',
+            action: 'Daily QA automation pipeline failed',
+            details: { error: qaErr.message },
+            status: 'error',
+            created_at: new Date().toISOString(),
+          }).catch(() => {});
+        }
       }
 
       return result;

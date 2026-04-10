@@ -33,11 +33,38 @@ export async function ensureAgentTables(): Promise<void> {
   await ensureContentCalendarTables();
   await ensureAuditAndSupportTables();
   await ensureCampaignMetricsTables();
-  await ensureAgentChatHistoryTable();
-  await ensureSharedMemoryTable();
-  await ensureAgentCommsTable();
-  await ensureFilesTable();
-  await ensureAgentsTable();
+  await ensureSEOReportsTables();
+  await ensureQAReportsTables();
+  await seedScoutAgent();
+  await seedProbeAgent();
+}
+
+async function seedScoutAgent(): Promise<void> {
+  try {
+    await prisma.$executeRawUnsafe(`
+      INSERT INTO dm_agents (id, name, role, description, status, color, icon, tools)
+      VALUES (
+        'scout',
+        'Scout',
+        'SEO & GEO Specialist',
+        'SEO audits, keyword research, content optimization, GEO for AI search engines, local SEO across India, competitor analysis',
+        'idle',
+        'teal',
+        'search',
+        '["analyze_seo","keyword_research","analyze_competitors","generate_schema_markup","check_indexing","optimize_content"]'
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        name = EXCLUDED.name,
+        role = EXCLUDED.role,
+        description = EXCLUDED.description,
+        color = EXCLUDED.color,
+        icon = EXCLUDED.icon,
+        tools = EXCLUDED.tools;
+    `);
+    console.log('[AgentMigration] Scout agent seeded into dm_agents');
+  } catch (err: any) {
+    console.log(`[AgentMigration] Could not seed Scout agent (dm_agents table may not exist): ${err.message}`);
+  }
 }
 
 async function ensureAgentMessagesTables(): Promise<void> {
@@ -341,167 +368,89 @@ async function ensureCampaignMetricsTables(): Promise<void> {
   }
 }
 
-async function ensureSharedMemoryTable(): Promise<void> {
+async function seedProbeAgent(): Promise<void> {
   try {
     await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS dm_shared_memory (
-        id SERIAL PRIMARY KEY,
-        author_agent_id TEXT NOT NULL,
-        category TEXT NOT NULL DEFAULT 'general',
-        title TEXT NOT NULL DEFAULT '',
-        content TEXT NOT NULL DEFAULT '',
-        importance TEXT DEFAULT 'normal',
-        tags TEXT[] DEFAULT '{}',
-        metadata JSONB DEFAULT '{}',
-        expires_at TIMESTAMPTZ,
-        created_at TIMESTAMPTZ DEFAULT now(),
-        updated_at TIMESTAMPTZ DEFAULT now()
-      );
+      INSERT INTO dm_agents (id, name, role, description, status, color, icon, tools)
+      VALUES (
+        'probe',
+        'Probe',
+        'QA Specialist',
+        'Automated QA testing — page loads, API health, agent chat, performance monitoring, security checks, uptime alerts',
+        'idle',
+        'amber',
+        'test-tube',
+        '["run_page_test","run_api_test","run_agent_test","run_full_qa","get_qa_report"]'
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        name = EXCLUDED.name,
+        role = EXCLUDED.role,
+        description = EXCLUDED.description,
+        color = EXCLUDED.color,
+        icon = EXCLUDED.icon,
+        tools = EXCLUDED.tools;
     `);
-    await prisma.$executeRawUnsafe(`
-      CREATE INDEX IF NOT EXISTS idx_shared_memory_category ON dm_shared_memory(category);
-    `);
-    await prisma.$executeRawUnsafe(`
-      CREATE INDEX IF NOT EXISTS idx_shared_memory_author ON dm_shared_memory(author_agent_id);
-    `);
-    await prisma.$executeRawUnsafe(`
-      CREATE INDEX IF NOT EXISTS idx_shared_memory_importance ON dm_shared_memory(importance);
-    `);
-    console.log('[AgentMigration] dm_shared_memory table ensured');
+    console.log('[AgentMigration] Probe agent seeded into dm_agents');
   } catch (err: any) {
-    console.log(`[AgentMigration] Could not create dm_shared_memory: ${err.message}`);
+    console.log(`[AgentMigration] Could not seed Probe agent (dm_agents table may not exist): ${err.message}`);
   }
 }
 
-async function ensureAgentCommsTable(): Promise<void> {
+async function ensureQAReportsTables(): Promise<void> {
   try {
     await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS dm_agent_comms (
-        id SERIAL PRIMARY KEY,
-        from_agent_id TEXT NOT NULL,
-        to_agent_id TEXT NOT NULL,
-        message_type TEXT NOT NULL DEFAULT 'message',
-        subject TEXT DEFAULT '',
-        content TEXT NOT NULL DEFAULT '',
-        priority TEXT DEFAULT 'normal',
-        status TEXT DEFAULT 'unread',
-        parent_id INTEGER,
-        metadata JSONB DEFAULT '{}',
-        created_at TIMESTAMPTZ DEFAULT now()
+      CREATE TABLE IF NOT EXISTS qa_daily_reports (
+        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+        report_date DATE NOT NULL UNIQUE,
+        summary TEXT,
+        full_report JSONB,
+        total_tests INTEGER,
+        passed INTEGER,
+        failed INTEGER,
+        warnings INTEGER,
+        avg_response_time NUMERIC(10,2),
+        critical_failures JSONB,
+        created_at TIMESTAMPTZ DEFAULT NOW()
       );
     `);
+
     await prisma.$executeRawUnsafe(`
-      CREATE INDEX IF NOT EXISTS idx_agent_comms_to ON dm_agent_comms(to_agent_id, status, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_qa_reports_date ON qa_daily_reports(report_date);
     `);
-    await prisma.$executeRawUnsafe(`
-      CREATE INDEX IF NOT EXISTS idx_agent_comms_from ON dm_agent_comms(from_agent_id, created_at DESC);
-    `);
-    await prisma.$executeRawUnsafe(`
-      CREATE INDEX IF NOT EXISTS idx_agent_comms_type ON dm_agent_comms(message_type);
-    `);
-    console.log('[AgentMigration] dm_agent_comms table ensured');
+
+    console.log('[AgentMigration] qa_daily_reports table ensured');
   } catch (err: any) {
-    console.log(`[AgentMigration] Could not create dm_agent_comms: ${err.message}`);
+    console.log(`[AgentMigration] Could not create qa_daily_reports: ${err.message}`);
   }
 }
 
-async function ensureFilesTable(): Promise<void> {
+async function ensureSEOReportsTables(): Promise<void> {
   try {
     await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS dm_files (
-        id SERIAL PRIMARY KEY,
-        file_id TEXT UNIQUE NOT NULL,
-        original_name TEXT NOT NULL,
-        stored_name TEXT NOT NULL,
-        mime_type TEXT NOT NULL DEFAULT 'application/octet-stream',
-        size_bytes INTEGER NOT NULL DEFAULT 0,
-        category TEXT NOT NULL DEFAULT 'upload',
-        created_by TEXT NOT NULL,
-        created_by_type TEXT NOT NULL DEFAULT 'user',
-        description TEXT DEFAULT '',
-        metadata JSONB DEFAULT '{}',
-        created_at TIMESTAMPTZ DEFAULT now()
-      );
-    `);
-    await prisma.$executeRawUnsafe(`
-      CREATE INDEX IF NOT EXISTS idx_files_file_id ON dm_files(file_id);
-    `);
-    await prisma.$executeRawUnsafe(`
-      CREATE INDEX IF NOT EXISTS idx_files_created_by ON dm_files(created_by, created_at DESC);
-    `);
-    await prisma.$executeRawUnsafe(`
-      CREATE INDEX IF NOT EXISTS idx_files_category ON dm_files(category);
-    `);
-    console.log('[AgentMigration] dm_files table ensured');
-  } catch (err: any) {
-    console.log(`[AgentMigration] Could not create dm_files: ${err.message}`);
-  }
-}
-
-async function ensureAgentChatHistoryTable(): Promise<void> {
-  try {
-    await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS dm_agent_chat_history (
-        id SERIAL PRIMARY KEY,
-        agent_id TEXT NOT NULL,
-        user_id TEXT,
-        role TEXT NOT NULL DEFAULT 'user',
-        content TEXT NOT NULL DEFAULT '',
-        metadata JSONB DEFAULT '{}',
-        created_at TIMESTAMPTZ DEFAULT now()
-      );
-    `);
-    await prisma.$executeRawUnsafe(`
-      CREATE INDEX IF NOT EXISTS idx_agent_chat_history_agent ON dm_agent_chat_history(agent_id, created_at DESC);
-    `);
-    await prisma.$executeRawUnsafe(`
-      CREATE INDEX IF NOT EXISTS idx_agent_chat_history_user ON dm_agent_chat_history(user_id, agent_id);
-    `);
-    console.log('[AgentMigration] dm_agent_chat_history table ensured');
-  } catch (err: any) {
-    console.log(`[AgentMigration] Could not create dm_agent_chat_history: ${err.message}`);
-  }
-}
-
-async function ensureAgentsTable(): Promise<void> {
-  try {
-    await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS dm_agents (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        role TEXT NOT NULL DEFAULT '',
-        description TEXT DEFAULT '',
-        status TEXT DEFAULT 'idle',
-        color TEXT DEFAULT '',
-        icon TEXT DEFAULT '',
-        tools JSONB DEFAULT '{}',
-        schedule TEXT DEFAULT '',
-        last_run_at TIMESTAMPTZ,
-        created_at TIMESTAMPTZ DEFAULT now(),
-        updated_at TIMESTAMPTZ DEFAULT now()
+      CREATE TABLE IF NOT EXISTS seo_daily_reports (
+        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+        report_date DATE NOT NULL UNIQUE,
+        summary TEXT,
+        full_report JSONB,
+        pages_audited INTEGER,
+        critical_issues INTEGER DEFAULT 0,
+        high_issues INTEGER DEFAULT 0,
+        medium_issues INTEGER DEFAULT 0,
+        seo_score NUMERIC(5,2),
+        geo_score NUMERIC(5,2),
+        competitor_data JSONB,
+        keyword_rankings JSONB,
+        recommendations JSONB,
+        created_at TIMESTAMPTZ DEFAULT NOW()
       );
     `);
 
-    const agents = [
-      { id: 'nexus', name: 'Nexus', role: 'Orchestrator', description: 'Master coordinator & brand guardian' },
-      { id: 'maven', name: 'Maven', role: 'Content Strategist', description: 'Topic research & content planning' },
-      { id: 'ledger', name: 'Ledger', role: 'Finance', description: 'Financial tracking & cost optimization' },
-      { id: 'sentinel', name: 'Sentinel', role: 'Security & Compliance', description: 'Security monitoring & compliance' },
-      { id: 'ally', name: 'Ally', role: 'Community', description: 'Community engagement & support' },
-      { id: 'catalyst', name: 'Catalyst', role: 'Growth', description: 'Growth hacking & experimentation' },
-      { id: 'closer', name: 'Closer', role: 'Sales', description: 'Sales pipeline & outreach' },
-    ];
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_seo_reports_date ON seo_daily_reports(report_date);
+    `);
 
-    for (const agent of agents) {
-      await prisma.$executeRawUnsafe(`
-        INSERT INTO dm_agents (id, name, role, description)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (id) DO NOTHING;
-      `, agent.id, agent.name, agent.role, agent.description);
-    }
-
-    console.log('[AgentMigration] dm_agents table ensured and seeded');
+    console.log('[AgentMigration] seo_daily_reports table ensured');
   } catch (err: any) {
-    console.log(`[AgentMigration] Could not create dm_agents: ${err.message}`);
+    console.log(`[AgentMigration] Could not create seo_daily_reports: ${err.message}`);
   }
 }
