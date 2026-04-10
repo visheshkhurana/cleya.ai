@@ -36,6 +36,7 @@ import { gupshupRouter } from './routes/gupshup';
 import { calendarRouter } from './routes/calendar';
 import { agentChatRouter } from './routes/agent-chat';
 import { healthRouter } from './routes/health';
+import { csrfTokenProvider, csrfProtection } from './middleware/csrf';
 import { matchScheduler } from './services/matchScheduler';
 import { agentScheduler } from './services/agentScheduler';
 
@@ -93,6 +94,9 @@ app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+app.get('/api/csrf-token', csrfTokenProvider);
+app.use(csrfProtection);
 
 app.use('/api/auth', authRouter);
 app.use('/api/users', userRouter);
