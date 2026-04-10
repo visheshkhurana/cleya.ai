@@ -37,7 +37,7 @@ async function getGA4Insights(dateRange?: string): Promise<Record<string, any>> 
   const range = parseDateRange(dateRange);
   const result = await analyticsAggregatorService.getGA4(range);
   if (!result.configured) {
-    return { configured: false, message: 'Google Analytics is not configured. GA4_PROPERTY_ID and GA4_SERVICE_ACCOUNT_KEY are required.' };
+    return { configured: false, message: 'Google Analytics is not configured. Complete the OAuth flow at /api/analytics/ga4/auth or set GA4_SERVICE_ACCOUNT_KEY.' };
   }
   if (!result.data) {
     return { configured: true, data: null, error: result.error || 'No data returned from GA4' };
