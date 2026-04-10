@@ -35,12 +35,9 @@ import { whatsappRouter } from './routes/whatsapp';
 import { gupshupRouter } from './routes/gupshup';
 import { calendarRouter } from './routes/calendar';
 import { agentChatRouter } from './routes/agent-chat';
-import { filesRouter } from './routes/files';
 import { healthRouter } from './routes/health';
-import { csrfTokenProvider, csrfProtection } from './middleware/csrf';
 import { matchScheduler } from './services/matchScheduler';
 import { agentScheduler } from './services/agentScheduler';
-import { ensureAgentTables } from './services/agentMigration';
 
 if (env.SENTRY_DSN) {
   Sentry.init({
@@ -97,9 +94,6 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-app.get('/api/csrf-token', csrfTokenProvider);
-app.use(csrfProtection);
-
 app.use('/api/auth', authRouter);
 app.use('/api/users', userRouter);
 app.use('/api/conversations', conversationRouter);
@@ -127,7 +121,6 @@ app.use('/api/whatsapp', whatsappRouter);
 app.use('/api/gupshup', gupshupRouter);
 app.use('/api/calendar', calendarRouter);
 app.use('/api/agent-chat', agentChatRouter);
-app.use('/api/files', filesRouter);
 app.use('/api/health', healthRouter);
 
 if (env.SENTRY_DSN) {
@@ -137,12 +130,9 @@ if (env.SENTRY_DSN) {
 app.use(errorHandler);
 
 const PORT = env.PORT;
-app.listen(PORT, '0.0.0.0', async () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Cleya.ai backend running on port ${PORT}`);
   console.log(`   Environment: ${env.NODE_ENV}`);
-  await ensureAgentTables().catch(err =>
-    console.error('[AgentMigration] Failed to run migrations:', err)
-  );
   matchScheduler.start();
   agentScheduler.start().catch(err =>
     console.error('[AgentScheduler] Failed to start:', err)
