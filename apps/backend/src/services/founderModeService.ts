@@ -42,7 +42,7 @@ export interface DailyBriefing {
 let aiService: ReturnType<typeof createAIService> | null = null;
 function getAI() {
   if (!aiService) {
-    if (!process.env.OPENAI_API_KEY) return null;
+    if (!process.env.OPENAI_API_KEY && !process.env.ANTHROPIC_API_KEY && !process.env.GOOGLE_AI_API_KEY) return null;
     aiService = createAIService({ provider: 'openai', model: 'gpt-4o-mini' });
   }
   return aiService;

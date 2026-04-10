@@ -19,6 +19,7 @@ import {
   sendWeeklyPerformanceReport,
   ensureSafetyTables,
 } from './founderSafetyService';
+import { routeModel, inferTaskType } from './modelRouter';
 
 const ORCHESTRATOR_SUB_AGENT_MAP: Record<string, string> = {
   mavenTasks: 'maven',
@@ -234,17 +235,26 @@ class AgentScheduler {
             const contentPillars = task.content_pillars || task.contentPillars || [];
             const targetDate = task.target_date || task.targetDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
+            let assignedModel = task.assignedModel || task.assigned_model;
+            if (!assignedModel) {
+              const taskType = inferTaskType(subAgentId, task.description || task.title);
+              const routing = routeModel({ agentId: subAgentId, taskType });
+              assignedModel = routing.primaryModel;
+            }
+
             await supabaseInsert('dm_agent_tasks', {
               agent_id: subAgentId,
               title: task.title || 'Orchestrator-assigned task',
               description: buildTaskDescription(task, subAgentId, platforms, contentPillars),
               priority: task.priority || 'medium',
+              assigned_model: assignedModel,
               status: 'pending',
               due_date: targetDate,
               output: {},
               created_at: new Date().toISOString(),
             });
             totalTasksCreated++;
+            console.log(`[AgentScheduler] Task for ${subAgentId}: "${task.title}" → model: ${assignedModel}`);
           } catch (err: any) {
             console.error(`[AgentScheduler] Failed to create task for ${subAgentId}:`, err.message);
           }

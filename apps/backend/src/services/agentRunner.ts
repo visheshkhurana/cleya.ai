@@ -1,4 +1,4 @@
-import { createAIService } from '@cleya/ai';
+import { createAIService, estimateCostUSD, type LLMConfig } from '@cleya/ai';
 import { prisma } from '@cleya/db';
 import { supabaseInsert, supabaseSelect, supabaseUpdate, supabaseUpsert } from './supabaseClient';
 import { notifyAgentCompletion } from './agentNotifier';
@@ -14,6 +14,7 @@ import {
   logExecution,
   logAudit,
 } from './guardrailsService';
+import { routeModel, inferTaskType, isHighCostTask, USD_TO_INR, HIGH_COST_THRESHOLD_INR, type RoutingInput } from './modelRouter';
 
 const AGENT_PROMPTS: Record<string, { name: string; codename: string; emoji: string; color: string; systemPrompt: string; contentType: string; channel: string }> = {
   'nexus': {
@@ -35,6 +36,14 @@ Each task object must include:
 - platforms: array of target platforms (e.g. ["linkedin", "instagram"] for Maven)
 - content_pillars: array of content pillars to cover (e.g. ["thought_leadership", "product_update"])
 - target_date: ISO date string for when the task should be completed
+- assignedModel: the best LLM model for this task
+
+For assignedModel, select the best model for the task:
+- "claude-sonnet-4-20250514" for long-form content, thought leadership, empathetic support replies
+- "gpt-4o" for financial analysis, technical reports, structured output, sales outreach
+- "gpt-4o-mini" for quick social captions, FAQs, simple tasks
+- "gemini-1.5-pro" for Indian language content, research synthesis
+- "gemini-1.5-flash" for cost-efficient simple tasks
 
 For Maven tasks specifically, include which platforms to post on and content pillars.
 For Closer tasks, include target companies or segments.
@@ -275,6 +284,10 @@ export async function hydrateAgentStatesFromDB(): Promise<void> {
       `ALTER TABLE dm_agent_state ADD COLUMN IF NOT EXISTS guardrails JSONB DEFAULT '{}'`
     ).catch(() => {});
 
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE dm_agent_tasks ADD COLUMN IF NOT EXISTS assigned_model TEXT DEFAULT NULL`
+    ).catch(() => {});
+
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS dm_execution_log (
         id SERIAL PRIMARY KEY,
@@ -374,24 +387,27 @@ async function persistAgentState(agentId: string): Promise<void> {
   }
 }
 
-let aiService: ReturnType<typeof createAIService> | null = null;
+let multiModelAI: ReturnType<typeof createAIService> | null = null;
 function getAI() {
-  if (!aiService) {
-    if (!process.env.OPENAI_API_KEY) return null;
-    aiService = createAIService({ provider: 'openai', model: 'gpt-4o-mini' });
+  if (!multiModelAI) {
+    if (!process.env.OPENAI_API_KEY && !process.env.ANTHROPIC_API_KEY && !process.env.GOOGLE_AI_API_KEY) return null;
+    multiModelAI = createAIService({
+      provider: 'openai',
+      model: 'gpt-4o-mini',
+    });
   }
-  return aiService;
+  return multiModelAI;
 }
 
 const MAX_RETRIES = 2;
 const BASE_DELAY_MS = 2000;
 
-async function executeWithRetry(agentId: string, taskContext?: string): Promise<AgentRunResult> {
+async function executeWithRetry(agentId: string, taskContext?: string, assignedModel?: string): Promise<AgentRunResult> {
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const result = await executeAgentOnce(agentId, taskContext);
+      const result = await executeAgentOnce(agentId, taskContext, assignedModel);
       if (result.status === 'success') {
         if (attempt > 0) {
           result.retryCount = attempt;
@@ -464,7 +480,7 @@ function parseStructuredContent(output: string): ContentItem[] | null {
   }
 }
 
-async function executeAgentOnce(agentId: string, taskContext?: string): Promise<AgentRunResult> {
+async function executeAgentOnce(agentId: string, taskContext?: string, assignedModel?: string): Promise<AgentRunResult> {
   const config = AGENT_PROMPTS[agentId];
   if (!config) {
     throw new Error(`Unknown agent: ${agentId}`);
@@ -474,8 +490,15 @@ async function executeAgentOnce(agentId: string, taskContext?: string): Promise<
 
   const ai = getAI();
   if (!ai) {
-    throw new Error('AI service not configured. Set OPENAI_API_KEY.');
+    throw new Error('AI service not configured. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_AI_API_KEY.');
   }
+
+  const taskType = inferTaskType(agentId, taskContext);
+  const routingInput: RoutingInput = { agentId, taskType };
+  const routing = routeModel(routingInput);
+
+  const primaryModel = assignedModel || routing.primaryModel;
+  const fallbackModel = routing.fallbackModel;
 
   let memoryPromptSection = '';
   try {
@@ -484,6 +507,7 @@ async function executeAgentOnce(agentId: string, taskContext?: string): Promise<
     await setWorkingMemory(agentId, {
       currentTask: taskContext || 'scheduled_run',
       startedAt: new Date().toISOString(),
+      assignedModel: primaryModel,
     });
   } catch (err) {
     console.log(`[AgentRunner] Memory retrieval skipped for ${agentId}:`, (err as Error).message);
@@ -502,10 +526,56 @@ async function executeAgentOnce(agentId: string, taskContext?: string): Promise<
     { role: 'user' as const, content: userPrompt },
   ];
 
-  const result = await ai.chat(messages);
+  let result;
+  let modelUsed = primaryModel;
+  let usedFallback = false;
+
+  try {
+    console.log(`[AgentRunner] ${agentId} using primary model: ${primaryModel} (${routing.reason})`);
+    result = await ai.chat(messages, { model: primaryModel });
+  } catch (primaryErr: any) {
+    console.warn(`[AgentRunner] Primary model ${primaryModel} failed for ${agentId}: ${primaryErr.message}`);
+    console.log(`[AgentRunner] Falling back to: ${fallbackModel}`);
+
+    try {
+      result = await ai.chat(messages, { model: fallbackModel });
+      modelUsed = fallbackModel;
+      usedFallback = true;
+    } catch (fallbackErr: any) {
+      throw new Error(`Both primary (${primaryModel}) and fallback (${fallbackModel}) models failed. Primary: ${primaryErr.message}. Fallback: ${fallbackErr.message}`);
+    }
+  }
+
   const content = result.content;
   const duration = Date.now() - startTime;
   const outputSummary = content.substring(0, 200) + (content.length > 200 ? '...' : '');
+
+  let apiCostUSD = 0;
+  if (result.usage) {
+    apiCostUSD = estimateCostUSD(modelUsed, result.usage.promptTokens, result.usage.completionTokens);
+  }
+
+  const costINR = apiCostUSD * USD_TO_INR;
+  if (isHighCostTask(apiCostUSD)) {
+    console.warn(`[AgentRunner] HIGH COST ALERT: ${agentId} task cost ₹${costINR.toFixed(2)} (${modelUsed}) — exceeds ₹${HIGH_COST_THRESHOLD_INR} threshold`);
+    try {
+      await supabaseInsert('dm_agent_logs', {
+        agent_id: 'ledger',
+        action: `HIGH_COST_ALERT: ${agentId} task`,
+        details: {
+          source_agent: agentId,
+          model_used: modelUsed,
+          api_cost_usd: apiCostUSD,
+          api_cost_inr: costINR,
+          threshold_inr: HIGH_COST_THRESHOLD_INR,
+          prompt_tokens: result.usage?.promptTokens,
+          completion_tokens: result.usage?.completionTokens,
+        },
+        status: 'warning',
+        created_at: new Date().toISOString(),
+      });
+    } catch {}
+  }
 
   const state = agentStates.get(agentId);
   const autonomyLevel = state?.autonomyLevel || 'manual';
@@ -648,19 +718,45 @@ async function executeAgentOnce(agentId: string, taskContext?: string): Promise<
     media_urls: [],
     scheduled_for: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     status: contentStatus,
-    metadata: { generated_by: 'agent_scheduler', task_context: taskContext || null, autonomy_level: autonomyLevel, risk_score: riskAssessment.score, risk_factors: riskAssessment.factors },
+    metadata: {
+      generated_by: 'agent_scheduler',
+      task_context: taskContext || null,
+      autonomy_level: autonomyLevel,
+      risk_score: riskAssessment.score,
+      risk_factors: riskAssessment.factors,
+      model_used: modelUsed,
+      model_provider: result.provider || 'unknown',
+      used_fallback: usedFallback,
+      primary_model: primaryModel,
+      fallback_model: fallbackModel,
+      routing_reason: routing.reason,
+    },
     created_at: new Date().toISOString(),
   });
 
   await logExecution({
     agentId,
     actionType: 'content_generation',
-    actionDescription: `Generated ${config.contentType} for ${config.channel}`,
+    actionDescription: `Generated ${config.contentType} for ${config.channel} using ${modelUsed}`,
     autonomyLevel,
     guardrailsChecked: ['max_actions_per_day', 'content_blocklist', 'risk_scoring'],
     guardrailResult: guardrailCheck.allowed ? 'passed' : (guardrailCheck.escalated ? 'escalated' : 'blocked'),
     executionResult: contentStatus === 'approved' ? 'success' : 'queued',
-    details: { contentType: config.contentType, channel: config.channel, autoApproved: contentStatus === 'approved', riskScore: riskAssessment.score },
+    details: {
+      contentType: config.contentType,
+      channel: config.channel,
+      autoApproved: contentStatus === 'approved',
+      riskScore: riskAssessment.score,
+      model_used: modelUsed,
+      primary_model: primaryModel,
+      fallback_model: fallbackModel,
+      used_fallback: usedFallback,
+      api_cost_usd: apiCostUSD,
+      api_cost_inr: costINR,
+      prompt_tokens: result.usage?.promptTokens,
+      completion_tokens: result.usage?.completionTokens,
+      total_tokens: result.usage?.totalTokens,
+    },
   });
 
   return {
@@ -673,7 +769,7 @@ async function executeAgentOnce(agentId: string, taskContext?: string): Promise<
   };
 }
 
-export async function runAgent(agentId: string, taskContext?: string): Promise<AgentRunResult> {
+export async function runAgent(agentId: string, taskContext?: string, assignedModel?: string): Promise<AgentRunResult> {
   const resolved = resolveAgentId(agentId);
   const config = AGENT_PROMPTS[resolved];
   if (!config) {
@@ -686,10 +782,10 @@ export async function runAgent(agentId: string, taskContext?: string): Promise<A
   await persistAgentState(resolved);
 
   const startTime = Date.now();
-  console.log(`[AgentRunner] Starting agent: ${config.name} (${resolved})`);
+  console.log(`[AgentRunner] Starting agent: ${config.name} (${resolved})${assignedModel ? ` [model: ${assignedModel}]` : ''}`);
 
   try {
-    const result = await executeWithRetry(resolved, taskContext);
+    const result = await executeWithRetry(resolved, taskContext, assignedModel);
     const duration = Date.now() - startTime;
 
     await supabaseInsert('dm_agent_logs', {
@@ -799,6 +895,7 @@ export async function processAgentTasks(agentId: string): Promise<number> {
       priority: string;
       status: string;
       due_date: string;
+      assigned_model?: string;
     }>('dm_agent_tasks', { agent_id: resolved, status: 'pending' }, {
       order: 'priority.desc,due_date.asc',
       limit: 5,
@@ -815,7 +912,7 @@ export async function processAgentTasks(agentId: string): Promise<number> {
           status: 'in_progress',
         });
 
-        const result = await runAgent(resolved, `Task: ${task.title}\n${task.description}`);
+        const result = await runAgent(resolved, `Task: ${task.title}\n${task.description}`, task.assigned_model);
 
         await supabaseUpdate('dm_agent_tasks', { id: String(task.id) }, {
           status: result.status === 'success' ? 'completed' : 'failed',
