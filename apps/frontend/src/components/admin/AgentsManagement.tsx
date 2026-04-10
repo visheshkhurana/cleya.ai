@@ -1921,9 +1921,9 @@ export function AgentsManagement() {
         await loadStatuses();
 
         const [tasksResult, contentResult, messagesResult] = await Promise.all([
-          api.getAgentDataTasks(),
-          api.getAgentDataContent(),
-          api.getAgentDataMessages(),
+          api.getAgentDataTasks().catch(() => ({ data: [] })),
+          api.getAgentDataContent().catch(() => ({ data: [] })),
+          api.getAgentDataMessages().catch(() => ({ data: [] })),
         ]);
 
         const allTasks = (Array.isArray(tasksResult) ? tasksResult : tasksResult?.data || []) as AgentTask[];
