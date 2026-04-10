@@ -426,7 +426,7 @@ adminRouter.get('/analytics/health', async (_req: Request, res: Response, next: 
       data: {
         ga4: {
           configured: ga4Service.isConfigured(),
-          requiredVars: ['GA4_PROPERTY_ID', 'GA4_SERVICE_ACCOUNT_KEY'],
+          requiredVars: ga4Service.isConfigured() ? [] : ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_ANALYTICS_REFRESH_TOKEN'],
         },
         instagram: {
           configured: instagramService.isConfigured(),

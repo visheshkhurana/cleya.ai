@@ -1,7 +1,12 @@
 import { env } from '../config/env';
+import { getAnalyticsSummary, getTopPages, getTrafficSources } from './analyticsService';
 
 const GA4_PROPERTY_ID = env.GA4_PROPERTY_ID;
 const GA4_SERVICE_ACCOUNT_KEY = env.GA4_SERVICE_ACCOUNT_KEY;
+
+const OAUTH_CLIENT_ID = process.env.GOOGLE_ADS_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '';
+const OAUTH_CLIENT_SECRET = process.env.GOOGLE_ADS_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || '';
+const OAUTH_REFRESH_TOKEN = process.env.GOOGLE_ANALYTICS_REFRESH_TOKEN || '';
 
 interface GA4Metrics {
   pageviews: number;
@@ -24,13 +29,67 @@ interface ServiceAccountCredentials {
   [key: string]: unknown;
 }
 
-function isConfigured(): boolean {
+function isServiceAccountConfigured(): boolean {
   return !!(GA4_PROPERTY_ID && GA4_SERVICE_ACCOUNT_KEY);
 }
 
-async function getMetrics(dateRange: '7d' | '30d' | '90d' = '30d'): Promise<GA4Metrics | null> {
-  if (!isConfigured()) return null;
+function isOAuthConfigured(): boolean {
+  return !!(OAUTH_CLIENT_ID && OAUTH_CLIENT_SECRET && OAUTH_REFRESH_TOKEN);
+}
 
+function isConfigured(): boolean {
+  return isServiceAccountConfigured() || isOAuthConfigured();
+}
+
+async function getMetricsViaOAuth(dateRange: '7d' | '30d' | '90d' = '30d'): Promise<GA4Metrics | null> {
+  const days = dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : 90;
+  const startDate = `${days}daysAgo`;
+  const endDate = 'today';
+
+  try {
+    const [summary, topPagesData, trafficData] = await Promise.all([
+      getAnalyticsSummary(),
+      getTopPages(startDate, endDate, 10),
+      getTrafficSources(startDate, endDate),
+    ]);
+
+    const s = summary as any;
+    const overview = s.overview || {};
+
+    return {
+      pageviews: overview.pageViews || 0,
+      sessions: overview.sessions || 0,
+      activeUsers: overview.totalUsers || 0,
+      bounceRate: Math.round((overview.bounceRate || 0) * 100) / 100,
+      topPages: (topPagesData || []).map((p: any) => ({
+        page: p.pagePath || '',
+        views: p.pageViews || 0,
+      })),
+      trafficSources: (trafficData || []).map((t: any) => ({
+        source: t.source || '(direct)',
+        sessions: t.sessions || 0,
+      })),
+      geoBreakdown: [],
+      dailyTrend: [],
+    };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('GA4 OAuth fetch error:', message);
+    throw error;
+  }
+}
+
+async function getMetrics(dateRange: '7d' | '30d' | '90d' = '30d'): Promise<GA4Metrics | null> {
+  if (isServiceAccountConfigured()) {
+    return getMetricsViaServiceAccount(dateRange);
+  }
+  if (isOAuthConfigured()) {
+    return getMetricsViaOAuth(dateRange);
+  }
+  return null;
+}
+
+async function getMetricsViaServiceAccount(dateRange: '7d' | '30d' | '90d' = '30d'): Promise<GA4Metrics | null> {
   try {
     let credentials: ServiceAccountCredentials | undefined;
     let keyFile: string | undefined;
