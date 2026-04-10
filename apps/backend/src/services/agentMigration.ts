@@ -33,6 +33,35 @@ export async function ensureAgentTables(): Promise<void> {
   await ensureContentCalendarTables();
   await ensureAuditAndSupportTables();
   await ensureCampaignMetricsTables();
+  await seedScoutAgent();
+}
+
+async function seedScoutAgent(): Promise<void> {
+  try {
+    await prisma.$executeRawUnsafe(`
+      INSERT INTO dm_agents (id, name, role, description, status, color, icon, tools)
+      VALUES (
+        'scout',
+        'Scout',
+        'SEO & GEO Specialist',
+        'SEO audits, keyword research, content optimization, GEO for AI search engines, local SEO across India, competitor analysis',
+        'idle',
+        'teal',
+        'search',
+        '["analyze_seo","keyword_research","analyze_competitors","generate_schema_markup","check_indexing","optimize_content"]'
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        name = EXCLUDED.name,
+        role = EXCLUDED.role,
+        description = EXCLUDED.description,
+        color = EXCLUDED.color,
+        icon = EXCLUDED.icon,
+        tools = EXCLUDED.tools;
+    `);
+    console.log('[AgentMigration] Scout agent seeded into dm_agents');
+  } catch (err: any) {
+    console.log(`[AgentMigration] Could not seed Scout agent (dm_agents table may not exist): ${err.message}`);
+  }
 }
 
 async function ensureAgentMessagesTables(): Promise<void> {

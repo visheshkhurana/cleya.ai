@@ -78,6 +78,7 @@ const AGENT_CONFIG: Record<string, { name: string; emoji: string; color: string 
   ally: { name: 'Ally', emoji: '💬', color: 'green' },
   catalyst: { name: 'Catalyst', emoji: '🚀', color: 'emerald' },
   closer: { name: 'Closer', emoji: '🤝', color: 'rose' },
+  scout: { name: 'Scout', emoji: '🔍', color: 'teal' },
 };
 
 const URGENCY_STYLES: Record<string, string> = {

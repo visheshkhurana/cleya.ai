@@ -5,7 +5,7 @@ import {
   Brain, Lightbulb, Share2, Mail, Target, Globe, Zap, BarChart3,
   Clock, AlertCircle, CheckCircle, ChevronRight, X, Send, Plus,
   Filter, Download, Eye, Check, XCircle, Loader, Database, Trash2, Shield, Octagon,
-  Upload, ScrollText
+  Upload, ScrollText, Search
 } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -146,6 +146,7 @@ const AGENT_ICONS: Record<string, React.ReactNode> = {
   'globe': <Globe size={20} />,
   'zap': <Zap size={20} />,
   'barChart3': <BarChart3 size={20} />,
+  'search': <Search size={20} />,
 };
 
 const AGENT_COLORS: Record<string, string> = {
@@ -157,6 +158,7 @@ const AGENT_COLORS: Record<string, string> = {
   'green': 'from-green-500/20 to-green-600/10 border-green-500/20',
   'yellow': 'from-yellow-500/20 to-yellow-600/10 border-yellow-500/20',
   'cyan': 'from-cyan-500/20 to-cyan-600/10 border-cyan-500/20',
+  'teal': 'from-teal-500/20 to-teal-600/10 border-teal-500/20',
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
