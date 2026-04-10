@@ -36,6 +36,7 @@ export async function ensureAgentTables(): Promise<void> {
   await ensureAgentChatHistoryTable();
   await ensureSharedMemoryTable();
   await ensureAgentCommsTable();
+  await ensureFilesTable();
 }
 
 async function ensureAgentMessagesTables(): Promise<void> {
@@ -400,6 +401,39 @@ async function ensureAgentCommsTable(): Promise<void> {
     console.log('[AgentMigration] dm_agent_comms table ensured');
   } catch (err: any) {
     console.log(`[AgentMigration] Could not create dm_agent_comms: ${err.message}`);
+  }
+}
+
+async function ensureFilesTable(): Promise<void> {
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS dm_files (
+        id SERIAL PRIMARY KEY,
+        file_id TEXT UNIQUE NOT NULL,
+        original_name TEXT NOT NULL,
+        stored_name TEXT NOT NULL,
+        mime_type TEXT NOT NULL DEFAULT 'application/octet-stream',
+        size_bytes INTEGER NOT NULL DEFAULT 0,
+        category TEXT NOT NULL DEFAULT 'upload',
+        created_by TEXT NOT NULL,
+        created_by_type TEXT NOT NULL DEFAULT 'user',
+        description TEXT DEFAULT '',
+        metadata JSONB DEFAULT '{}',
+        created_at TIMESTAMPTZ DEFAULT now()
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_files_file_id ON dm_files(file_id);
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_files_created_by ON dm_files(created_by, created_at DESC);
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_files_category ON dm_files(category);
+    `);
+    console.log('[AgentMigration] dm_files table ensured');
+  } catch (err: any) {
+    console.log(`[AgentMigration] Could not create dm_files: ${err.message}`);
   }
 }
 

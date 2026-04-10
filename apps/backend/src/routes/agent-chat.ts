@@ -9,6 +9,7 @@ import { getToolPromptForAgent } from '../prompts/masterPrompt';
 import { getOpenAIToolSchemas, executeTool, parseToolCallsFromResponse, AGENT_TOOLS } from '../services/agentTools';
 import { assembleMemoryContext, formatMemoryForPrompt, addShortTermMemory } from '../services/agentMemoryService';
 import { processAgentInbox, markMessagesRead } from '../services/agentCoordinationService';
+import { getFileById, FileRecord } from '../services/fileService';
 
 export const agentChatRouter = Router();
 
@@ -335,7 +336,7 @@ async function loadUserTier(req: Request, _res: Response, next: NextFunction) {
 
 agentChatRouter.post('/chat', authenticate, requireRole('ADMIN'), loadUserTier, promptInjectionGuard, aiRateLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { message, agentId } = req.body;
+    const { message, agentId, fileIds } = req.body;
     const userId = req.user?.userId;
 
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
@@ -368,13 +369,29 @@ agentChatRouter.post('/chat', authenticate, requireRole('ADMIN'), loadUserTier, 
       return;
     }
 
+    let fileContext = '';
+    if (Array.isArray(fileIds) && fileIds.length > 0) {
+      const attachedFiles: FileRecord[] = [];
+      for (const fid of fileIds.slice(0, 5)) {
+        const file = await getFileById(fid);
+        if (file) attachedFiles.push(file);
+      }
+      if (attachedFiles.length > 0) {
+        const fileDescriptions = attachedFiles.map(f =>
+          `- "${f.original_name}" (ID: ${f.file_id}, ${f.mime_type}, ${Math.round(f.size_bytes / 1024)}KB, download: /api/files/download/${f.file_id})${f.description ? ' — ' + f.description : ''}`
+        ).join('\n');
+        fileContext = `\n\n[User attached ${attachedFiles.length} file(s):\n${fileDescriptions}]`;
+      }
+    }
+
     const [dbHistory, memoryPrompt, inboxResult] = await Promise.all([
       loadChatHistory(agentId, userId, 40),
       buildMemoryPrompt(agentId, message.trim()),
       processAgentInbox(agentId),
     ]);
 
-    await saveChatMessage(agentId, 'user', message.trim(), userId);
+    const userMessageContent = message.trim() + fileContext;
+    await saveChatMessage(agentId, 'user', userMessageContent, userId, fileIds?.length ? { fileIds } : undefined);
 
     const basePrompt = AGENT_PROMPTS[agentId];
     const toolPrompt = agentHasTools ? getToolPromptForAgent(agentId) : '';
@@ -391,7 +408,7 @@ agentChatRouter.post('/chat', authenticate, requireRole('ADMIN'), loadUserTier, 
       const messages: OpenAI.ChatCompletionMessageParam[] = [
         { role: 'system', content: systemPrompt },
         ...conversationHistory.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
-        { role: 'user', content: message.trim() },
+        { role: 'user', content: userMessageContent },
       ];
 
       let response = await openai.chat.completions.create({
@@ -459,7 +476,7 @@ agentChatRouter.post('/chat', authenticate, requireRole('ADMIN'), loadUserTier, 
     const messages = [
       { role: 'system' as const, content: systemPrompt },
       ...conversationHistory,
-      { role: 'user' as const, content: message.trim() },
+      { role: 'user' as const, content: userMessageContent },
     ];
 
     const result = await ai!.chat(messages);

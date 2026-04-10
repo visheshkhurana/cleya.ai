@@ -386,7 +386,7 @@ function AdminDashboardInner() {
     return null;
   }, [channels]);
 
-  const handleSendMessage = useCallback(async (content: string, mentions?: string[], targetChannelId?: string) => {
+  const handleSendMessage = useCallback(async (content: string, mentions?: string[], targetChannelId?: string, fileIds?: string[]) => {
     const channelId = targetChannelId || activeChannelId;
     const userMsg: ChatMessage = {
       id: genId(),
@@ -405,7 +405,7 @@ function AdminDashboardInner() {
       const agentIds = Object.keys(currentMap);
       for (const agentId of agentIds) {
         try {
-          const result = await api.sendAgentMessage(agentId, content);
+          const result = await api.sendAgentMessage(agentId, content, fileIds);
           const agent = currentMap[agentId];
           addMessage(channelId, {
             id: genId(),
@@ -442,7 +442,7 @@ function AdminDashboardInner() {
     setAgentLoading(true);
     try {
       const currentMap = agentMapRef.current;
-      const result = await api.sendAgentMessage(targetAgentId, content);
+      const result = await api.sendAgentMessage(targetAgentId, content, fileIds);
       const agent = currentMap[targetAgentId];
       addMessage(channelId, {
         id: genId(),

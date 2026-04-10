@@ -15,6 +15,7 @@ import {
   sendAgentToAgentMessage, delegateTask, shareInsight,
   coordinateTask, getAgentInbox, getTeamUpdates,
 } from './agentCoordinationService';
+import { createFileFromContent, getFilesByCreator, getRecentFiles, getMimeType } from './fileService';
 
 // --- Tool definitions per agent ---
 
@@ -22,6 +23,10 @@ const ANALYTICS_TOOLS = [
   'get_posthog_insights', 'get_ga4_insights', 'get_analytics_overview',
   'get_platform_stats', 'get_user_growth_trend', 'get_funnel_metrics',
   'get_agent_performance',
+];
+
+const FILE_TOOLS = [
+  'create_file', 'list_files',
 ];
 
 const COORDINATION_TOOLS = [
@@ -36,13 +41,13 @@ const ORCHESTRATOR_TOOLS = [
 ];
 
 export const AGENT_TOOLS: Record<string, string[]> = {
-  maven: ['post_to_social', 'schedule_post', 'get_post_analytics', 'get_post_history', ...ANALYTICS_TOOLS, ...COORDINATION_TOOLS],
-  ledger: ['create_ad_campaign', 'get_campaign_stats', 'optimize_campaigns', ...ANALYTICS_TOOLS, ...COORDINATION_TOOLS],
-  catalyst: ['post_to_social', 'create_ad_campaign', 'schedule_post', ...ANALYTICS_TOOLS, ...COORDINATION_TOOLS],
-  nexus: ['post_to_social', 'send_email', 'schedule_post', ...ANALYTICS_TOOLS, ...ORCHESTRATOR_TOOLS],
-  sentinel: ['get_campaign_stats', 'get_post_analytics', ...ANALYTICS_TOOLS, ...COORDINATION_TOOLS],
-  ally: ['send_email', 'schedule_post', ...ANALYTICS_TOOLS, ...COORDINATION_TOOLS],
-  closer: ['send_email', 'create_ad_campaign', ...ANALYTICS_TOOLS, ...COORDINATION_TOOLS],
+  maven: ['post_to_social', 'schedule_post', 'get_post_analytics', 'get_post_history', ...ANALYTICS_TOOLS, ...COORDINATION_TOOLS, ...FILE_TOOLS],
+  ledger: ['create_ad_campaign', 'get_campaign_stats', 'optimize_campaigns', ...ANALYTICS_TOOLS, ...COORDINATION_TOOLS, ...FILE_TOOLS],
+  catalyst: ['post_to_social', 'create_ad_campaign', 'schedule_post', ...ANALYTICS_TOOLS, ...COORDINATION_TOOLS, ...FILE_TOOLS],
+  nexus: ['post_to_social', 'send_email', 'schedule_post', ...ANALYTICS_TOOLS, ...ORCHESTRATOR_TOOLS, ...FILE_TOOLS],
+  sentinel: ['get_campaign_stats', 'get_post_analytics', ...ANALYTICS_TOOLS, ...COORDINATION_TOOLS, ...FILE_TOOLS],
+  ally: ['send_email', 'schedule_post', ...ANALYTICS_TOOLS, ...COORDINATION_TOOLS, ...FILE_TOOLS],
+  closer: ['send_email', 'create_ad_campaign', ...ANALYTICS_TOOLS, ...COORDINATION_TOOLS, ...FILE_TOOLS],
 };
 
 // --- Tool parameter schemas (used in OpenAI function-calling format) ---
@@ -315,6 +320,32 @@ export const TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
       required: ['task', 'agents'],
     },
   },
+  create_file: {
+    name: 'create_file',
+    description: 'Create a file and make it available for download. Use for generating reports, CSV exports, markdown documents, analysis summaries, data exports, or any text-based content the user can download.',
+    parameters: {
+      type: 'object',
+      properties: {
+        filename: { type: 'string', description: 'The filename including extension (e.g., "weekly-report.md", "user-export.csv", "analysis.json", "strategy.txt")' },
+        content: { type: 'string', description: 'The full text content of the file' },
+        description: { type: 'string', description: 'Brief description of what this file contains' },
+        category: { type: 'string', enum: ['report', 'export', 'analysis', 'document', 'data', 'other'], description: 'File category (default: document)' },
+      },
+      required: ['filename', 'content'],
+    },
+  },
+  list_files: {
+    name: 'list_files',
+    description: 'List recently created files. Use to check what files have been generated or uploaded.',
+    parameters: {
+      type: 'object',
+      properties: {
+        creator: { type: 'string', description: 'Filter by creator ID (agent ID or user ID). Leave empty for all files.' },
+        limit: { type: 'number', description: 'Max number of files to return (default: 20)' },
+      },
+      required: [],
+    },
+  },
 };
 
 // --- Get OpenAI-format tool schemas for a specific agent ---
@@ -535,6 +566,49 @@ export async function executeTool(agentId: string, toolName: string, params: Rec
           agentId, params.task, params.agents, params.priority || 'normal'
         );
         break;
+
+      case 'create_file': {
+        const mimeType = getMimeType(params.filename);
+        const fileRecord = await createFileFromContent(
+          params.content,
+          params.filename,
+          mimeType,
+          agentId,
+          'agent',
+          params.description || '',
+          params.category || 'document'
+        );
+        result = {
+          success: true,
+          fileId: fileRecord.file_id,
+          filename: fileRecord.original_name,
+          mimeType: fileRecord.mime_type,
+          sizeBytes: fileRecord.size_bytes,
+          downloadUrl: `/api/files/download/${fileRecord.file_id}`,
+          viewUrl: `/api/files/view/${fileRecord.file_id}`,
+        };
+        break;
+      }
+
+      case 'list_files': {
+        const limit = Math.min(params.limit || 20, 50);
+        const files = params.creator
+          ? await getFilesByCreator(params.creator, limit)
+          : await getRecentFiles(limit);
+        result = files.map(f => ({
+          fileId: f.file_id,
+          filename: f.original_name,
+          mimeType: f.mime_type,
+          sizeBytes: f.size_bytes,
+          category: f.category,
+          createdBy: f.created_by,
+          createdByType: f.created_by_type,
+          description: f.description,
+          createdAt: f.created_at,
+          downloadUrl: `/api/files/download/${f.file_id}`,
+        }));
+        break;
+      }
 
       default:
         return { success: false, toolName, error: `Unknown tool: ${toolName}` };

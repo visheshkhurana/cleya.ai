@@ -613,11 +613,48 @@ class ApiClient {
     return this.fetch('/agent-chat/list');
   }
 
-  async sendAgentMessage(agentId: string, message: string) {
+  async sendAgentMessage(agentId: string, message: string, fileIds?: string[]) {
     return this.fetch('/agent-chat/chat', {
       method: 'POST',
-      body: JSON.stringify({ agentId, message }),
+      body: JSON.stringify({ agentId, message, fileIds }),
     });
+  }
+
+  async uploadFile(file: File, description?: string, category?: string) {
+    await this.ensureCsrfToken();
+    const formData = new FormData();
+    formData.append('file', file);
+    if (description) formData.append('description', description);
+    if (category) formData.append('category', category);
+
+    const headers: Record<string, string> = {};
+    if (this.csrfToken) {
+      headers['x-csrf-token'] = this.csrfToken;
+    }
+
+    const response = await fetch(`${API_BASE}/files/upload`, {
+      method: 'POST',
+      credentials: 'include',
+      headers,
+      body: formData,
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `Upload failed: ${response.status}`);
+    }
+    return response.json();
+  }
+
+  async listFiles(limit?: number) {
+    return this.fetch(`/files/list?limit=${limit || 50}`);
+  }
+
+  getFileDownloadUrl(fileId: string) {
+    return `${API_BASE}/files/download/${fileId}`;
+  }
+
+  getFileViewUrl(fileId: string) {
+    return `${API_BASE}/files/view/${fileId}`;
   }
 
   async getAgentChatHistory(agentId: string, limit: number = 100) {

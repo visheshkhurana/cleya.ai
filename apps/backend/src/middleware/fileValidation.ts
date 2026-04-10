@@ -94,12 +94,14 @@ export function fileUploadValidation(options: {
         return;
       }
 
-      if (f.buffer && !validateFileContent(f.buffer, f.mimetype)) {
-        res.status(400).json({
-          success: false,
-          error: { message: `File ${f.originalname} content does not match declared type ${f.mimetype}` },
-        });
-        return;
+      if (f.buffer && MAGIC_BYTES[f.mimetype] && MAGIC_BYTES[f.mimetype].length > 0) {
+        if (!validateFileContent(f.buffer, f.mimetype)) {
+          res.status(400).json({
+            success: false,
+            error: { message: `File ${f.originalname} content does not match declared type ${f.mimetype}` },
+          });
+          return;
+        }
       }
     }
 

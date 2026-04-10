@@ -102,7 +102,14 @@ Memory is assembled and injected into agent system prompts automatically before 
 
 **AgentNotifier** (`apps/backend/src/services/agentNotifier.ts`): Sends Slack alerts to `#all-cleya` on agent success/failure. Sends email via Resend to admin on agent failure. Non-blocking, errors logged silently.
 
-**AgentMigration** (`apps/backend/src/services/agentMigration.ts`): Auto-creates `dm_agent_state` table via Prisma `$executeRawUnsafe` on startup. Sends `NOTIFY pgrst, 'reload schema'` to refresh Supabase PostgREST cache.
+**File Upload & Creation** (`apps/backend/src/services/fileService.ts`, `apps/backend/src/routes/files.ts`): Full file management system for agents and users:
+- **User uploads**: `POST /api/files/upload` — multipart file upload (images, PDFs, text, CSV, JSON, XLSX, DOCX). Max 10MB. Stored on local disk with metadata in `dm_files` table. File content validated via magic bytes.
+- **Agent file creation**: `create_file` tool — agents can generate reports, CSV exports, markdown docs, analysis summaries, data exports. All 7 agents have `create_file` and `list_files` tools.
+- **File access**: `GET /api/files/download/:fileId` (download), `GET /api/files/view/:fileId` (inline view), `GET /api/files/list` (list all files). DELETE requires ADMIN role.
+- **Chat integration**: Users can attach files to agent chat messages (via paperclip button). File metadata is injected into agent context. Agent-created files generate download links rendered as clickable buttons in chat.
+- **Frontend**: Paperclip button in chat input bar, file preview chips with remove, upload progress indicator, download buttons rendered in agent responses.
+
+**AgentMigration** (`apps/backend/src/services/agentMigration.ts`): Auto-creates `dm_agent_state`, `dm_files`, `dm_shared_memory`, `dm_agent_comms`, `dm_agent_chat_history` tables via Prisma `$executeRawUnsafe` on startup. Sends `NOTIFY pgrst, 'reload schema'` to refresh Supabase PostgREST cache.
 
 **Smart Orchestrator Delegation**: When Nexus completes, scheduler parses its full JSON output for task keys (`mavenTasks`, `ledgerTasks`, `sentinelTasks`, `allyTasks`, `catalystTasks`, `closerTasks`), creates `dm_agent_tasks` entries for each sub-agent. Falls back to triggering all sub-agents if JSON parsing fails.
 

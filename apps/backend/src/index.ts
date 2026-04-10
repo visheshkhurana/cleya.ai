@@ -35,6 +35,7 @@ import { whatsappRouter } from './routes/whatsapp';
 import { gupshupRouter } from './routes/gupshup';
 import { calendarRouter } from './routes/calendar';
 import { agentChatRouter } from './routes/agent-chat';
+import { filesRouter } from './routes/files';
 import { healthRouter } from './routes/health';
 import { csrfTokenProvider, csrfProtection } from './middleware/csrf';
 import { matchScheduler } from './services/matchScheduler';
@@ -126,6 +127,7 @@ app.use('/api/whatsapp', whatsappRouter);
 app.use('/api/gupshup', gupshupRouter);
 app.use('/api/calendar', calendarRouter);
 app.use('/api/agent-chat', agentChatRouter);
+app.use('/api/files', filesRouter);
 app.use('/api/health', healthRouter);
 
 if (env.SENTRY_DSN) {

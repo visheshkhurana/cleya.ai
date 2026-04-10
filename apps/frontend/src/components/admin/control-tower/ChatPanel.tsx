@@ -3,11 +3,18 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ChatMessage, Channel, useAgentData, getAgentMap, Thread } from './types';
 import { useTheme, t } from '@/components/admin/ThemeContext';
+import { api } from '@/lib/api';
+
+interface AttachedFile {
+  fileId: string;
+  name: string;
+  size: number;
+}
 
 interface ChatPanelProps {
   channel: Channel;
   messages: ChatMessage[];
-  onSendMessage: (content: string, mentions?: string[]) => void;
+  onSendMessage: (content: string, mentions?: string[], targetChannelId?: string, fileIds?: string[]) => void;
   isLoading: boolean;
   thread: Thread | null;
   onOpenThread: (message: ChatMessage) => void;
@@ -31,9 +38,12 @@ export function ChatPanel({
   const [threadInput, setThreadInput] = useState('');
   const [showMentions, setShowMentions] = useState(false);
   const [mentionFilter, setMentionFilter] = useState('');
+  const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+  const [uploading, setUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const threadEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -82,11 +92,43 @@ export function ChatPanel({
     inputRef.current?.focus();
   };
 
+  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    try {
+      for (let i = 0; i < Math.min(files.length, 5); i++) {
+        const file = files[i];
+        const result = await api.uploadFile(file);
+        if (result?.data?.fileId) {
+          setAttachedFiles(prev => [...prev, {
+            fileId: result.data.fileId,
+            name: result.data.originalName || file.name,
+            size: result.data.sizeBytes || file.size,
+          }]);
+        }
+      }
+    } catch (err: any) {
+      console.error('File upload failed:', err.message);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }, []);
+
+  const removeAttachedFile = useCallback((fileId: string) => {
+    setAttachedFiles(prev => prev.filter(f => f.fileId !== fileId));
+  }, []);
+
   const handleSend = () => {
-    if (!input.trim() || isLoading) return;
+    if ((!input.trim() && attachedFiles.length === 0) || isLoading) return;
     const mentions = parseMentions(input);
-    onSendMessage(input.trim(), mentions.length > 0 ? mentions : undefined);
+    const fileIds = attachedFiles.length > 0 ? attachedFiles.map(f => f.fileId) : undefined;
+    const messageText = input.trim() || (attachedFiles.length > 0 ? `Shared ${attachedFiles.length} file(s): ${attachedFiles.map(f => f.name).join(', ')}` : '');
+    onSendMessage(messageText, mentions.length > 0 ? mentions : undefined, undefined, fileIds);
     setInput('');
+    setAttachedFiles([]);
     setShowMentions(false);
   };
 
@@ -163,7 +205,47 @@ export function ChatPanel({
               ))}
             </div>
           )}
+          {attachedFiles.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {attachedFiles.map(f => (
+                <div key={f.fileId} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs" style={{ background: t.bgInput(isDark), border: `1px solid ${t.borderInput(isDark)}` }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-indigo-400 flex-shrink-0">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                  <span className={t.textSecondary(isDark)}>{f.name}</span>
+                  <span className={`${t.textDimmed(isDark)}`}>({Math.round(f.size / 1024)}KB)</span>
+                  <button onClick={() => removeAttachedFile(f.fileId)} className="text-red-400 hover:text-red-300 ml-1">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {uploading && (
+            <div className={`flex items-center gap-2 mb-2 text-xs ${t.textDimmed(isDark)}`}>
+              <div className="w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+              Uploading file...
+            </div>
+          )}
           <div className="flex items-end gap-2 rounded-xl px-3 py-2" style={{ background: t.bgInput(isDark), border: `1px solid ${t.borderInput(isDark)}` }}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              onChange={handleFileSelect}
+              className="hidden"
+              accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.txt,.csv,.md,.json,.xlsx,.docx"
+              multiple
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading || isLoading}
+              className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition disabled:opacity-30 ${t.textMuted(isDark)} hover:bg-indigo-500/10`}
+              title="Attach file"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+              </svg>
+            </button>
             <textarea
               ref={inputRef}
               value={input}
@@ -176,7 +258,7 @@ export function ChatPanel({
             />
             <button
               onClick={handleSend}
-              disabled={!input.trim() || isLoading}
+              disabled={(!input.trim() && attachedFiles.length === 0) || isLoading}
               className="flex-shrink-0 w-8 h-8 rounded-lg bg-indigo-500 hover:bg-indigo-400 disabled:opacity-30 text-white flex items-center justify-center transition"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -257,7 +339,7 @@ function MessageBubble({ message, onOpenThread, isThreadParent, isDark }: { mess
 
   const renderContentWithMentions = (text: string) => {
     const parts: React.ReactNode[] = [];
-    const regex = /@(\w+)/g;
+    const regex = /(@\w+|\/api\/files\/download\/[a-f0-9-]+)/g;
     let lastIndex = 0;
     let match;
     let key = 0;
@@ -265,15 +347,27 @@ function MessageBubble({ message, onOpenThread, isThreadParent, isDark }: { mess
       if (match.index > lastIndex) {
         parts.push(text.slice(lastIndex, match.index));
       }
-      const name = match[1];
-      if (agentMap[name.toLowerCase()]) {
+      const token = match[0];
+      if (token.startsWith('@')) {
+        const name = token.slice(1);
+        if (agentMap[name.toLowerCase()]) {
+          parts.push(
+            <span key={key++} className="text-indigo-400 font-medium bg-indigo-500/10 px-1 rounded">{token}</span>
+          );
+        } else {
+          parts.push(token);
+        }
+      } else if (token.startsWith('/api/files/download/')) {
+        const fileId = token.replace('/api/files/download/', '');
         parts.push(
-          <span key={key++} className="text-indigo-400 font-medium bg-indigo-500/10 px-1 rounded">@{name}</span>
+          <a key={key++} href={token} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-2.5 py-1 my-0.5 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition text-xs font-medium no-underline">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download File
+          </a>
         );
-      } else {
-        parts.push(match[0]);
       }
       lastIndex = regex.lastIndex;
+      key++;
     }
     if (lastIndex < text.length) {
       parts.push(text.slice(lastIndex));
