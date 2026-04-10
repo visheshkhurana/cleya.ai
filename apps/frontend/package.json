@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --port 5000",
     "prebuild": "rm -rf .next",
-    "build": "NEXT_IGNORE_INCORRECT_LOCKFILE=1 NODE_ENV=production next build",
+    "build": "NEXT_IGNORE_INCORRECT_LOCKFILE=1 NEXT_TELEMETRY_DISABLED=1 NODE_OPTIONS='--max-old-space-size=3072' NODE_ENV=production next build",
     "start": "next start --port 5000"
   },
   "dependencies": {
