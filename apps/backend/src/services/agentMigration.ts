@@ -29,8 +29,54 @@ export async function ensureAgentTables(): Promise<void> {
   }
 
   await ensureFounderModeTables();
+  await ensureAgentMessagesTables();
   await ensureContentCalendarTables();
   await ensureAuditAndSupportTables();
+}
+
+async function ensureAgentMessagesTables(): Promise<void> {
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS dm_agent_messages (
+        id SERIAL PRIMARY KEY,
+        agent_id TEXT NOT NULL,
+        direction TEXT DEFAULT 'inbound',
+        message TEXT NOT NULL DEFAULT '',
+        message_type TEXT DEFAULT 'text',
+        read BOOLEAN DEFAULT false,
+        metadata JSONB DEFAULT '{}',
+        created_at TIMESTAMPTZ DEFAULT now()
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_agent_messages_agent ON dm_agent_messages(agent_id);
+    `);
+    console.log('[AgentMigration] dm_agent_messages table ensured');
+  } catch (err: any) {
+    console.log(`[AgentMigration] Could not create dm_agent_messages: ${err.message}`);
+  }
+
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS dm_code_changes (
+        id SERIAL PRIMARY KEY,
+        agent_id TEXT NOT NULL,
+        file_path TEXT DEFAULT '',
+        change_type TEXT DEFAULT 'modify',
+        description TEXT DEFAULT '',
+        diff_summary TEXT DEFAULT '',
+        status TEXT DEFAULT 'pending',
+        metadata JSONB DEFAULT '{}',
+        created_at TIMESTAMPTZ DEFAULT now()
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_code_changes_agent ON dm_code_changes(agent_id);
+    `);
+    console.log('[AgentMigration] dm_code_changes table ensured');
+  } catch (err: any) {
+    console.log(`[AgentMigration] Could not create dm_code_changes: ${err.message}`);
+  }
 }
 
 async function ensureContentCalendarTables(): Promise<void> {
