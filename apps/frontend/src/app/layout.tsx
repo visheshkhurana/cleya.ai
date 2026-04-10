@@ -102,8 +102,10 @@ export default function RootLayout({
             gtag('js', new Date());
             gtag('config', 'G-NQZFDW5CGZ');`}
         </Script>
-        <script
+        <Script
+          id="organization-schema"
           type="application/ld+json"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
@@ -138,8 +140,10 @@ export default function RootLayout({
             }),
           }}
         />
-        <script
+        <Script
+          id="software-schema"
           type="application/ld+json"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
@@ -179,8 +183,10 @@ export default function RootLayout({
             }),
           }}
         />
-        <script
+        <Script
+          id="faq-schema"
           type="application/ld+json"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
@@ -222,8 +228,10 @@ export default function RootLayout({
             }),
           }}
         />
-        <script
+        <Script
+          id="website-schema"
           type="application/ld+json"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
