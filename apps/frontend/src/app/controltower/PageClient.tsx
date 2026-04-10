@@ -96,6 +96,45 @@ function AdminDashboardInner() {
   }, []);
 
   useEffect(() => {
+    if (!authenticated) return;
+    const loadChatHistory = async () => {
+      try {
+        const allHistory = await api.getAllAgentChatHistory();
+        if (!allHistory) return;
+        const currentMap = agentMapRef.current;
+        const loadedMessages: Record<string, ChatMessage[]> = {};
+        for (const [agentId, msgs] of Object.entries(allHistory as Record<string, { role: string; content: string; timestamp: string }[]>)) {
+          const channelId = agentId;
+          const agent = currentMap[agentId];
+          loadedMessages[channelId] = msgs.map((m, i) => ({
+            id: `db-${agentId}-${i}`,
+            channelId,
+            sender: m.role === 'user' ? 'user' as const : 'agent' as const,
+            agentId: m.role === 'assistant' ? agentId : undefined,
+            agentName: m.role === 'assistant' ? (agent?.name || agentId) : undefined,
+            agentEmoji: m.role === 'assistant' ? agent?.emoji : undefined,
+            content: m.content,
+            timestamp: new Date(m.timestamp),
+            type: 'chat' as const,
+          }));
+        }
+        setMessages(prev => {
+          const merged = { ...prev };
+          for (const [channelId, msgs] of Object.entries(loadedMessages)) {
+            if (!merged[channelId] || merged[channelId].length === 0) {
+              merged[channelId] = msgs;
+            }
+          }
+          return merged;
+        });
+      } catch (err) {
+        console.error('Failed to load agent chat history:', err);
+      }
+    };
+    loadChatHistory();
+  }, [authenticated]);
+
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
@@ -328,8 +367,7 @@ function AdminDashboardInner() {
       const agentIds = Object.keys(currentMap);
       for (const agentId of agentIds) {
         try {
-          const history = agentChatHistory[agentId] || [];
-          const result = await api.sendAgentMessage(agentId, content, history);
+          const result = await api.sendAgentMessage(agentId, content);
           const agent = currentMap[agentId];
           addMessage(channelId, {
             id: genId(),
@@ -342,10 +380,6 @@ function AdminDashboardInner() {
             timestamp: new Date(),
             type: 'chat',
           });
-          setAgentChatHistory(prev => ({
-            ...prev,
-            [agentId]: [...(prev[agentId] || []), { role: 'user', content }, { role: 'assistant', content: result.content }],
-          }));
         } catch (err: any) {
           addMessage(channelId, {
             id: genId(),
@@ -370,8 +404,7 @@ function AdminDashboardInner() {
     setAgentLoading(true);
     try {
       const currentMap = agentMapRef.current;
-      const history = agentChatHistory[targetAgentId] || [];
-      const result = await api.sendAgentMessage(targetAgentId, content, history);
+      const result = await api.sendAgentMessage(targetAgentId, content);
       const agent = currentMap[targetAgentId];
       addMessage(channelId, {
         id: genId(),
@@ -384,10 +417,6 @@ function AdminDashboardInner() {
         timestamp: new Date(),
         type: 'chat',
       });
-      setAgentChatHistory(prev => ({
-        ...prev,
-        [targetAgentId]: [...(prev[targetAgentId] || []), { role: 'user', content }, { role: 'assistant', content: result.content }],
-      }));
     } catch (err: any) {
       const currentMap = agentMapRef.current;
       addMessage(channelId, {
@@ -403,7 +432,7 @@ function AdminDashboardInner() {
       });
     }
     setAgentLoading(false);
-  }, [activeChannelId, addMessage, resolveAgentId, agentChatHistory]);
+  }, [activeChannelId, addMessage, resolveAgentId]);
 
   const handleOpenThread = useCallback((message: ChatMessage) => {
     setActiveThread({
@@ -455,8 +484,7 @@ function AdminDashboardInner() {
     setAgentLoading(true);
     try {
       const currentMap = agentMapRef.current;
-      const history = agentChatHistory[targetAgentId] || [];
-      const result = await api.sendAgentMessage(targetAgentId, content, history);
+      const result = await api.sendAgentMessage(targetAgentId, content);
       const agent = currentMap[targetAgentId];
       const agentReply: ChatMessage = {
         id: genId(),
@@ -475,10 +503,6 @@ function AdminDashboardInner() {
         ...prev,
         [threadId]: [...(prev[threadId] || []), agentReply],
       }));
-      setAgentChatHistory(prev => ({
-        ...prev,
-        [targetAgentId]: [...(prev[targetAgentId] || []), { role: 'user', content }, { role: 'assistant', content: result.content }],
-      }));
     } catch (err: any) {
       const errorReply: ChatMessage = {
         id: genId(),
@@ -496,7 +520,7 @@ function AdminDashboardInner() {
       }));
     }
     setAgentLoading(false);
-  }, [activeThread, resolveAgentId, agentChatHistory]);
+  }, [activeThread, resolveAgentId]);
 
   const handleSelectChannel = useCallback((channelId: string) => {
     setActiveChannelId(channelId);

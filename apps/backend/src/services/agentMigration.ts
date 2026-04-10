@@ -33,6 +33,7 @@ export async function ensureAgentTables(): Promise<void> {
   await ensureContentCalendarTables();
   await ensureAuditAndSupportTables();
   await ensureCampaignMetricsTables();
+  await ensureAgentChatHistoryTable();
 }
 
 async function ensureAgentMessagesTables(): Promise<void> {
@@ -333,5 +334,30 @@ async function ensureCampaignMetricsTables(): Promise<void> {
     console.log('[AgentMigration] dm_campaign_metrics table ensured');
   } catch (err: any) {
     console.log(`[AgentMigration] Could not create dm_campaign_metrics: ${err.message}`);
+  }
+}
+
+async function ensureAgentChatHistoryTable(): Promise<void> {
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS dm_agent_chat_history (
+        id SERIAL PRIMARY KEY,
+        agent_id TEXT NOT NULL,
+        user_id TEXT,
+        role TEXT NOT NULL DEFAULT 'user',
+        content TEXT NOT NULL DEFAULT '',
+        metadata JSONB DEFAULT '{}',
+        created_at TIMESTAMPTZ DEFAULT now()
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_agent_chat_history_agent ON dm_agent_chat_history(agent_id, created_at DESC);
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_agent_chat_history_user ON dm_agent_chat_history(user_id, agent_id);
+    `);
+    console.log('[AgentMigration] dm_agent_chat_history table ensured');
+  } catch (err: any) {
+    console.log(`[AgentMigration] Could not create dm_agent_chat_history: ${err.message}`);
   }
 }

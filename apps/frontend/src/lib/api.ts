@@ -613,11 +613,19 @@ class ApiClient {
     return this.fetch('/agent-chat/list');
   }
 
-  async sendAgentMessage(agentId: string, message: string, history: { role: string; content: string }[] = []) {
+  async sendAgentMessage(agentId: string, message: string) {
     return this.fetch('/agent-chat/chat', {
       method: 'POST',
-      body: JSON.stringify({ agentId, message, history }),
+      body: JSON.stringify({ agentId, message }),
     });
+  }
+
+  async getAgentChatHistory(agentId: string, limit: number = 100) {
+    return this.fetch(`/agent-chat/history/${agentId}?limit=${limit}`);
+  }
+
+  async getAllAgentChatHistory() {
+    return this.fetch('/agent-chat/history');
   }
 
   async getAgentStatuses() {

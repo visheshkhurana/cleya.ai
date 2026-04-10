@@ -7,13 +7,10 @@ import { prisma } from '@cleya/db';
 import OpenAI from 'openai';
 import { getToolPromptForAgent } from '../prompts/masterPrompt';
 import { getOpenAIToolSchemas, executeTool, parseToolCallsFromResponse, AGENT_TOOLS } from '../services/agentTools';
+import { assembleMemoryContext, formatMemoryForPrompt, addShortTermMemory } from '../services/agentMemoryService';
 
 export const agentChatRouter = Router();
 
-/**
- * System prompts for each Cleya agent in the control tower.
- * Each agent has deep knowledge of Cleya.ai and its specific domain.
- */
 const CLEYA_CONTEXT = `You are an AI agent working for Cleya.ai — an AI-powered professional networking platform for India's startup ecosystem.
 
 ABOUT CLEYA:
@@ -25,7 +22,9 @@ ABOUT CLEYA:
 - Present in 49+ cities, 31+ industries, 1 Lakh+ (100,000+) connections
 
 TARGET USERS: Founders, Investors, Operators/Talent in India's startup ecosystem
-Be concise, actionable, and data-driven. Use Indian startup ecosystem context.`;
+Be concise, actionable, and data-driven. Use Indian startup ecosystem context.
+
+IMPORTANT: You have persistent memory. You remember all previous conversations with the founder/admin. Reference past discussions when relevant. Build on previous context rather than starting fresh each time.`;
 
 const AGENT_PROMPTS: Record<string, string> = {
   'cleya-marketing': `${CLEYA_CONTEXT}
@@ -176,9 +175,104 @@ function getOpenAIClient(): OpenAI | null {
   return openaiClient;
 }
 
-/** List available agents */
+interface ChatHistoryRow {
+  id: number;
+  agent_id: string;
+  user_id: string | null;
+  role: string;
+  content: string;
+  metadata: any;
+  created_at: Date;
+}
+
+async function saveChatMessage(agentId: string, role: string, content: string, userId?: string, metadata?: any): Promise<void> {
+  try {
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO dm_agent_chat_history (agent_id, user_id, role, content, metadata) VALUES ($1, $2, $3, $4, $5::jsonb)`,
+      agentId, userId || null, role, content.substring(0, 50000), JSON.stringify(metadata || {})
+    );
+  } catch (err: any) {
+    console.log(`[AgentChat] Failed to save chat message: ${err.message}`);
+  }
+}
+
+async function loadChatHistory(agentId: string, userId: string, limit: number = 50): Promise<{ role: string; content: string; created_at: Date }[]> {
+  try {
+    const rows = await prisma.$queryRawUnsafe<ChatHistoryRow[]>(
+      `SELECT role, content, created_at FROM dm_agent_chat_history
+       WHERE agent_id = $1 AND user_id = $2
+       ORDER BY created_at DESC
+       LIMIT $3`,
+      agentId, userId, limit
+    );
+    return rows.reverse().map(r => ({ role: r.role, content: r.content, created_at: r.created_at }));
+  } catch (err: any) {
+    console.log(`[AgentChat] Failed to load chat history: ${err.message}`);
+    return [];
+  }
+}
+
+async function loadAllAgentsChatHistory(userId: string): Promise<Record<string, { role: string; content: string; timestamp: string }[]>> {
+  try {
+    const rows = await prisma.$queryRawUnsafe<ChatHistoryRow[]>(
+      `SELECT agent_id, role, content, created_at FROM dm_agent_chat_history
+       WHERE user_id = $1
+       ORDER BY created_at ASC
+       LIMIT 2000`,
+      userId
+    );
+    const result: Record<string, { role: string; content: string; timestamp: string }[]> = {};
+    for (const row of rows) {
+      if (!result[row.agent_id]) result[row.agent_id] = [];
+      result[row.agent_id].push({
+        role: row.role,
+        content: row.content,
+        timestamp: new Date(row.created_at).toISOString(),
+      });
+    }
+    return result;
+  } catch (err: any) {
+    console.log(`[AgentChat] Failed to load all chat history: ${err.message}`);
+    return {};
+  }
+}
+
+async function buildMemoryPrompt(agentId: string, currentMessage: string): Promise<string> {
+  try {
+    const memoryCtx = await assembleMemoryContext(agentId, currentMessage);
+    return formatMemoryForPrompt(memoryCtx);
+  } catch (err: any) {
+    console.log(`[AgentChat] Memory assembly skipped for ${agentId}: ${err.message}`);
+    return '';
+  }
+}
+
 agentChatRouter.get('/list', authenticate, (_req: Request, res: Response) => {
   res.json({ success: true, data: AGENT_LIST });
+});
+
+agentChatRouter.get('/history/:agentId', authenticate, requireRole('MANAGER'), async (req: Request, res: Response) => {
+  try {
+    const { agentId } = req.params;
+    const userId = req.user?.userId;
+    if (!userId) { res.status(401).json({ success: false, error: { message: 'User not found' } }); return; }
+    const limit = Math.min(parseInt(req.query.limit as string) || 100, 500);
+    const history = await loadChatHistory(agentId, userId, limit);
+    res.json({ success: true, data: history });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+agentChatRouter.get('/history', authenticate, requireRole('MANAGER'), async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) { res.status(401).json({ success: false, error: { message: 'User not found' } }); return; }
+    const allHistory = await loadAllAgentsChatHistory(userId);
+    res.json({ success: true, data: allHistory });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: { message: err.message } });
+  }
 });
 
 async function loadUserTier(req: Request, _res: Response, next: NextFunction) {
@@ -196,11 +290,10 @@ async function loadUserTier(req: Request, _res: Response, next: NextFunction) {
   next();
 }
 
-/** Chat with a specific agent — supports tool calling for agents with tools */
 agentChatRouter.post('/chat', authenticate, requireRole('ADMIN'), loadUserTier, promptInjectionGuard, aiRateLimiter, async (req: Request, res: Response, next: NextFunction) => {
-  const startTime = Date.now();
   try {
-    const { message, agentId, history } = req.body;
+    const { message, agentId } = req.body;
+    const userId = req.user?.userId;
 
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
       res.status(400).json({ success: false, error: { message: 'Message is required' } });
@@ -227,24 +320,33 @@ agentChatRouter.post('/chat', authenticate, requireRole('ADMIN'), loadUserTier, 
       return;
     }
 
+    if (!userId) {
+      res.status(401).json({ success: false, error: { message: 'User not found' } });
+      return;
+    }
+
+    const [dbHistory, memoryPrompt] = await Promise.all([
+      loadChatHistory(agentId, userId, 40),
+      buildMemoryPrompt(agentId, message.trim()),
+    ]);
+
+    await saveChatMessage(agentId, 'user', message.trim(), userId);
+
     const basePrompt = AGENT_PROMPTS[agentId];
     const toolPrompt = agentHasTools ? getToolPromptForAgent(agentId) : '';
-    const systemPrompt = basePrompt + toolPrompt;
+    const systemPrompt = basePrompt + memoryPrompt + toolPrompt;
 
-    const validHistory = Array.isArray(history)
-      ? history.slice(-20).map((h: any) => ({
-          role: h.role === 'assistant' ? 'assistant' as const : 'user' as const,
-          content: String(h.content || ''),
-        }))
-      : [];
+    const conversationHistory = dbHistory.map(h => ({
+      role: h.role === 'assistant' ? 'assistant' as const : 'user' as const,
+      content: h.content,
+    }));
 
-    // If agent has tools AND we have OpenAI client, use native function calling
     if (agentHasTools && openai) {
       const toolSchemas = getOpenAIToolSchemas(agentId);
 
       const messages: OpenAI.ChatCompletionMessageParam[] = [
         { role: 'system', content: systemPrompt },
-        ...validHistory.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
+        ...conversationHistory.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
         { role: 'user', content: message.trim() },
       ];
 
@@ -260,26 +362,20 @@ agentChatRouter.post('/chat', authenticate, requireRole('ADMIN'), loadUserTier, 
       let assistantMessage = response.choices[0]?.message;
       const toolResults: Array<{ tool: string; result: any }> = [];
 
-      // Tool execution loop — max 3 iterations to prevent infinite loops
       let iterations = 0;
       while (assistantMessage?.tool_calls && assistantMessage.tool_calls.length > 0 && iterations < 3) {
         iterations++;
-
-        // Add assistant's message (with tool calls) to conversation
         messages.push(assistantMessage as any);
 
-        // Execute each tool call
         for (const toolCall of assistantMessage.tool_calls) {
           const args = typeof toolCall.function.arguments === 'string'
             ? JSON.parse(toolCall.function.arguments)
             : toolCall.function.arguments;
 
           console.log(`[AgentChat] ${agentId} calling tool: ${toolCall.function.name}`, args);
-
           const toolResult = await executeTool(agentId, toolCall.function.name, args);
           toolResults.push({ tool: toolCall.function.name, result: toolResult });
 
-          // Add tool result to conversation for the LLM
           messages.push({
             role: 'tool',
             tool_call_id: toolCall.id,
@@ -287,7 +383,6 @@ agentChatRouter.post('/chat', authenticate, requireRole('ADMIN'), loadUserTier, 
           });
         }
 
-        // Get follow-up response from LLM with tool results
         response = await openai.chat.completions.create({
           model: 'gpt-4o-mini',
           messages,
@@ -296,11 +391,15 @@ agentChatRouter.post('/chat', authenticate, requireRole('ADMIN'), loadUserTier, 
           temperature: 0.7,
           max_tokens: 2048,
         });
-
         assistantMessage = response.choices[0]?.message;
       }
 
       const content = assistantMessage?.content || '';
+
+      await saveChatMessage(agentId, 'assistant', content, userId, toolResults.length > 0 ? { toolCalls: toolResults } : undefined);
+
+      storeChatMemory(agentId, message.trim(), content).catch(() => {});
+
       res.json({
         success: true,
         data: {
@@ -312,16 +411,14 @@ agentChatRouter.post('/chat', authenticate, requireRole('ADMIN'), loadUserTier, 
       return;
     }
 
-    // Fallback: no tools — plain chat via AIService (original behavior)
     const messages = [
       { role: 'system' as const, content: systemPrompt },
-      ...validHistory,
+      ...conversationHistory,
       { role: 'user' as const, content: message.trim() },
     ];
 
     const result = await ai!.chat(messages);
 
-    // Check if the response contains a manual tool_call JSON block
     const manualToolCalls = parseToolCallsFromResponse(result.content);
     if (manualToolCalls.length > 0 && agentHasTools) {
       const toolResults: Array<{ tool: string; result: any }> = [];
@@ -330,7 +427,6 @@ agentChatRouter.post('/chat', authenticate, requireRole('ADMIN'), loadUserTier, 
         toolResults.push({ tool: tc.name, result: toolResult });
       }
 
-      // Get a follow-up response with tool results
       const toolResultSummary = toolResults.map(tr =>
         `Tool "${tr.tool}" result: ${JSON.stringify(tr.result)}`
       ).join('\n');
@@ -340,6 +436,10 @@ agentChatRouter.post('/chat', authenticate, requireRole('ADMIN'), loadUserTier, 
         { role: 'assistant' as const, content: result.content },
         { role: 'user' as const, content: `Tool execution results:\n${toolResultSummary}\n\nPlease summarize the outcome for the user.` },
       ]);
+
+      await saveChatMessage(agentId, 'assistant', followUp.content, userId, { toolCalls: toolResults });
+
+      storeChatMemory(agentId, message.trim(), followUp.content).catch(() => {});
 
       res.json({
         success: true,
@@ -352,8 +452,24 @@ agentChatRouter.post('/chat', authenticate, requireRole('ADMIN'), loadUserTier, 
       return;
     }
 
+    await saveChatMessage(agentId, 'assistant', result.content, userId);
+
+    storeChatMemory(agentId, message.trim(), result.content).catch(() => {});
+
     res.json({ success: true, data: { content: result.content, agentId } });
   } catch (error) {
     next(error);
   }
 });
+
+async function storeChatMemory(agentId: string, userMessage: string, agentResponse: string): Promise<void> {
+  try {
+    const summary = `Chat — User asked: "${userMessage.substring(0, 200)}". Agent responded: "${agentResponse.substring(0, 300)}"`;
+    await addShortTermMemory(agentId, 'chat_interaction', summary, {
+      userMessage: userMessage.substring(0, 500),
+      agentResponse: agentResponse.substring(0, 500),
+    });
+  } catch (err: any) {
+    console.log(`[AgentChat] Failed to store chat memory for ${agentId}: ${err.message}`);
+  }
+}
