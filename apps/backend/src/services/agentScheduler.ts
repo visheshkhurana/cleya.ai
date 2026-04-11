@@ -22,6 +22,17 @@ import {
 import { routeModel, inferTaskType } from './modelRouter';
 import { runDailySEORoutine } from './seoAutomation';
 import { runDailyQARoutine } from './qaAutomation';
+import {
+  runNexusDailyBrief,
+  runMavenContentPost,
+  runLedgerFinancialMonitor,
+  runLedgerWeeklyReview,
+  runSentinelHealthCheck,
+  runAllyEngagementCheck,
+  runCatalystGrowthAnalysis,
+  runCatalystWeeklyReview,
+  runCloserSalesPipeline,
+} from './autonomousWorkflows';
 
 const ORCHESTRATOR_SUB_AGENT_MAP: Record<string, string> = {
   mavenTasks: 'maven',
@@ -134,6 +145,29 @@ class AgentScheduler {
     this.tasks.push(weeklyReportJob);
     console.log('[AgentScheduler] Weekly performance report scheduled for Monday 7 AM IST');
 
+    // Maven autonomous content posting — 3x daily (9 AM, 1 PM, 6 PM IST)
+    const mavenMorningJob = cron.schedule('30 3 * * *', () => {
+      if (!isAgentEnabled('maven')) return;
+      this.runAutonomousWorkflow('maven', 'Morning Insight post', () => runMavenContentPost('morning'))
+        .catch(err => console.error('[AgentScheduler] Maven morning post failed:', err));
+    }, { timezone: 'UTC' });
+    this.tasks.push(mavenMorningJob);
+
+    const mavenAfternoonJob = cron.schedule('30 7 * * *', () => {
+      if (!isAgentEnabled('maven')) return;
+      this.runAutonomousWorkflow('maven', 'Founder Spotlight post', () => runMavenContentPost('afternoon'))
+        .catch(err => console.error('[AgentScheduler] Maven afternoon post failed:', err));
+    }, { timezone: 'UTC' });
+    this.tasks.push(mavenAfternoonJob);
+
+    const mavenEveningJob = cron.schedule('30 12 * * *', () => {
+      if (!isAgentEnabled('maven')) return;
+      this.runAutonomousWorkflow('maven', 'Evening Engagement post', () => runMavenContentPost('evening'))
+        .catch(err => console.error('[AgentScheduler] Maven evening post failed:', err));
+    }, { timezone: 'UTC' });
+    this.tasks.push(mavenEveningJob);
+    console.log('[AgentScheduler] Maven autonomous content posting: 9 AM, 1 PM, 6 PM IST');
+
     this.started = true;
     console.log('[AgentScheduler] All agent schedules initialized');
     console.log('[AgentScheduler] Task processing scheduled every 4 hours');
@@ -241,9 +275,79 @@ class AgentScheduler {
         }
       }
 
+      // Nexus: run daily operations brief after the LLM run
+      if (agentId === 'nexus') {
+        await this.runAutonomousWorkflow('nexus', 'Daily operations brief', runNexusDailyBrief);
+      }
+
+      // Ledger: run daily financial monitor after the LLM run
+      if (agentId === 'ledger') {
+        await this.runAutonomousWorkflow('ledger', 'Daily financial monitor', runLedgerFinancialMonitor);
+        // Weekly review on Mondays
+        if (new Date().getDay() === 1) {
+          await this.runAutonomousWorkflow('ledger', 'Weekly budget review', runLedgerWeeklyReview);
+        }
+      }
+
+      // Sentinel: run system health check after the LLM run
+      if (agentId === 'sentinel') {
+        await this.runAutonomousWorkflow('sentinel', 'System health check', runSentinelHealthCheck);
+      }
+
+      // Ally: run member engagement check after the LLM run
+      if (agentId === 'ally') {
+        await this.runAutonomousWorkflow('ally', 'Member engagement check', runAllyEngagementCheck);
+      }
+
+      // Catalyst: run growth analysis after the LLM run
+      if (agentId === 'catalyst') {
+        await this.runAutonomousWorkflow('catalyst', 'Daily growth analysis', runCatalystGrowthAnalysis);
+        // Weekly review on Wednesdays
+        if (new Date().getDay() === 3) {
+          await this.runAutonomousWorkflow('catalyst', 'Weekly growth review', runCatalystWeeklyReview);
+        }
+      }
+
+      // Closer: run sales pipeline after the LLM run
+      if (agentId === 'closer') {
+        await this.runAutonomousWorkflow('closer', 'Sales pipeline analysis', runCloserSalesPipeline);
+      }
+
       return result;
     } finally {
       this.running.delete(agentId);
+    }
+  }
+
+  private async runAutonomousWorkflow(
+    agentId: string,
+    actionName: string,
+    workflowFn: () => Promise<string>,
+  ): Promise<void> {
+    try {
+      console.log(`[AgentScheduler] Running ${agentId} autonomous workflow: ${actionName}...`);
+      const result = await workflowFn();
+      console.log(`[AgentScheduler] ${agentId} ${actionName} completed (${result.length} chars)`);
+
+      await supabaseInsert('dm_agent_logs', {
+        agent_id: agentId,
+        action: actionName,
+        details: {
+          result_length: result.length,
+          result_preview: result.substring(0, 500),
+        },
+        status: 'success',
+        created_at: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      console.error(`[AgentScheduler] ${agentId} ${actionName} failed:`, err.message);
+      await supabaseInsert('dm_agent_logs', {
+        agent_id: agentId,
+        action: `${actionName} failed`,
+        details: { error: err.message },
+        status: 'error',
+        created_at: new Date().toISOString(),
+      }).catch(() => {});
     }
   }
 
