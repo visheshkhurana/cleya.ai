@@ -266,6 +266,8 @@ export function CommandCenter() {
   const [loading, setLoading] = useState(true);
   const [showInsights, setShowInsights] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [sendingMessage, setSendingMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { agentMap, loading: agentDataLoading } = useAgentData();
@@ -317,10 +319,17 @@ export function CommandCenter() {
   ];
 
   // Build messages for current channel
+  const appendChatMessages = (msgs: ChatMessage[]): ChatMessage[] => {
+    const channelChatMsgs = chatMessages.filter(m => m.channel === activeChannel);
+    if (channelChatMsgs.length === 0) return msgs;
+    const combined = [...msgs, ...channelChatMsgs];
+    combined.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    return combined;
+  };
+
   const buildMessages = (): ChatMessage[] => {
     if (activeChannel === 'founder-room') {
-      // Show orchestrator brief + all agent summaries
-      return logs
+      const logMsgs = logs
         .filter(l => l.action.includes('orchestration') || l.action.includes('weekly'))
         .slice(0, 10)
         .map(l => ({
@@ -335,10 +344,11 @@ export function CommandCenter() {
           alerts: l.details?.alerts || l.details?.weekly_brief,
           tasks: l.details?.recommended_actions || l.details?.priority_actions,
         }));
+      return appendChatMessages(logMsgs);
     }
 
     if (activeChannel === 'alerts') {
-      return logs
+      const alertMsgs = logs
         .filter(l => l.status === 'error' || (l.details?.alerts && l.details.alerts.length > 0))
         .slice(0, 20)
         .map(l => ({
@@ -351,10 +361,11 @@ export function CommandCenter() {
           channel: 'alerts',
           alerts: l.details?.alerts,
         }));
+      return appendChatMessages(alertMsgs);
     }
 
     if (activeChannel === 'tasks') {
-      return tasks.map(t => ({
+      const taskMsgs = tasks.map(t => ({
         id: `task-${t.id}`,
         sender: agentName(t.agent_id),
         senderType: 'agent' as const,
@@ -364,6 +375,7 @@ export function CommandCenter() {
         channel: 'tasks',
         details: { priority: t.priority, status: t.status },
       }));
+      return appendChatMessages(taskMsgs);
     }
 
     // Agent-specific channel
@@ -400,7 +412,7 @@ export function CommandCenter() {
       });
     }
 
-    return messages;
+    return appendChatMessages(messages);
   };
 
   function formatLogMessage(log: AgentLog): string {
@@ -449,13 +461,69 @@ export function CommandCenter() {
       } catch (err) { console.error(err); }
     } else if (cmd === '/run-all') {
       handleRefresh();
+    } else if (!cmd.startsWith('/')) {
+      const targetChannel = channels.find(c => c.id === activeChannel);
+      const targetAgentId = targetChannel?.agentId;
+
+      if (!targetAgentId) {
+        const errorMsg: ChatMessage = {
+          id: `error-${Date.now()}`,
+          sender: 'System',
+          senderType: 'system',
+          avatar: '⚠️',
+          content: 'Please select an agent channel to send a message. System channels (founder-room, alerts, tasks) do not support chat.',
+          timestamp: new Date().toISOString(),
+          channel: activeChannel,
+        };
+        setChatMessages(prev => [...prev, errorMsg]);
+        return;
+      }
+
+      const userMsg: ChatMessage = {
+        id: `user-${Date.now()}`,
+        sender: 'You',
+        senderType: 'user',
+        avatar: '👤',
+        content: cmd,
+        timestamp: new Date().toISOString(),
+        channel: activeChannel,
+      };
+      setChatMessages(prev => [...prev, userMsg]);
+      setSendingMessage(true);
+
+      try {
+        const response = await api.sendAgentMessage(targetAgentId, cmd);
+        const agentReply: ChatMessage = {
+          id: `agent-reply-${Date.now()}`,
+          sender: agentName(targetAgentId),
+          senderType: 'agent',
+          avatar: agentEmoji(targetAgentId),
+          content: response?.content || response?.reply || response?.message || response?.response || 'Message received.',
+          timestamp: new Date().toISOString(),
+          channel: activeChannel,
+        };
+        setChatMessages(prev => [...prev, agentReply]);
+      } catch (err) {
+        const errorMsg: ChatMessage = {
+          id: `error-${Date.now()}`,
+          sender: 'System',
+          senderType: 'system',
+          avatar: '❌',
+          content: `Failed to send message: ${err instanceof Error ? err.message : 'Unknown error'}`,
+          timestamp: new Date().toISOString(),
+          channel: activeChannel,
+        };
+        setChatMessages(prev => [...prev, errorMsg]);
+      } finally {
+        setSendingMessage(false);
+      }
     }
   };
 
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [activeChannel, logs]);
+  }, [activeChannel, logs, chatMessages]);
 
   const messages = buildMessages();
   const currentChannel = channels.find(c => c.id === activeChannel);
@@ -683,6 +751,12 @@ export function CommandCenter() {
               </div>
             ))
           )}
+          {sendingMessage && (
+            <div className="flex items-center gap-2 text-xs text-slate-400 py-2">
+              <RefreshCw size={12} className="animate-spin" />
+              <span>Agent is thinking...</span>
+            </div>
+          )}
           <div ref={messagesEndRef} />
         </div>
 
@@ -694,13 +768,14 @@ export function CommandCenter() {
               type="text"
               value={commandInput}
               onChange={e => setCommandInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleCommand()}
+              onKeyDown={e => e.key === 'Enter' && !sendingMessage && handleCommand()}
+              disabled={sendingMessage}
               placeholder={`Message #${currentChannel?.name || activeChannel}   •   /run <agent-id>   •   /run-all`}
-              className="flex-1 bg-transparent text-sm text-white placeholder-slate-500 outline-none"
+              className="flex-1 bg-transparent text-sm text-white placeholder-slate-500 outline-none disabled:opacity-50"
             />
             <button
               onClick={handleCommand}
-              disabled={!commandInput.trim()}
+              disabled={!commandInput.trim() || sendingMessage}
               className="text-slate-400 hover:text-brand-violet disabled:opacity-30 transition-colors"
             >
               <Send size={16} />

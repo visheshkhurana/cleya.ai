@@ -771,7 +771,7 @@ function AdminDashboardInner() {
                 : `${t.textMuted(isDark)} hover:opacity-80`
             }`}
           >
-            Command Center
+            Chat
           </button>
           <button
             onClick={() => setViewMode('command')}
