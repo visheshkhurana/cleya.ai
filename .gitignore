@@ -11,4 +11,7 @@ backups/
 *.sql
 *.sql.gz
 *.tsbuildinfo
+<<<<<<< HEAD
 attached_assets/
+=======
+>>>>>>> origin/main
