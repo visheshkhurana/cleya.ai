@@ -1,0 +1,359 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.emailService = void 0;
+const env_1 = require("../config/env");
+const db_1 = require("@cleya/db");
+const resendClient_1 = require("./resendClient");
+const brandColor = '#0D9488';
+function plainEmailLayout(content) {
+    return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;padding:40px 20px;">
+<tr><td align="center">
+<table width="580" cellpadding="0" cellspacing="0" style="max-width:580px;text-align:left;">
+<tr><td style="padding-bottom:24px;">
+<span style="color:#111;font-size:16px;font-weight:600;">Cleya.ai</span>
+</td></tr>
+<tr><td style="color:#1a1a1a;font-size:15px;line-height:1.7;">
+${content}
+</td></tr>
+<tr><td style="padding-top:32px;border-top:1px solid #eee;margin-top:32px;">
+<p style="color:#999;font-size:12px;margin:16px 0 0;">Cleya.ai — AI Superconnector for India's startup ecosystem</p>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>`;
+}
+function link(text, url) {
+    return `<a href="${url}" style="color:${brandColor};text-decoration:underline;">${text}</a>`;
+}
+class EmailService {
+    resendAvailable = null;
+    async send(to, subject, html) {
+        try {
+            const { client, fromEmail } = await (0, resendClient_1.getUncachableResendClient)();
+            const senderEmail = fromEmail || env_1.env.FROM_EMAIL;
+            const from = `Cleya <${senderEmail}>`;
+            const result = await client.emails.send({
+                from,
+                to: [to],
+                subject,
+                html,
+            });
+            if (result.error) {
+                console.error(`📧 Resend error to ${to}:`, result.error);
+                return false;
+            }
+            console.log(`📧 Email sent to ${to}: ${subject} (id: ${result.data?.id})`);
+            this.resendAvailable = true;
+            return true;
+        }
+        catch (err) {
+            if (this.resendAvailable === null) {
+                console.log('📧 Resend not available, falling back to log-only mode');
+                this.resendAvailable = false;
+            }
+            console.error(`📧 Email send failed to ${to}:`, err?.message || err);
+            console.log(`📧 [FALLBACK] Email to ${to}: ${subject}`);
+            return false;
+        }
+    }
+    async sendWelcome(email) {
+        const html = plainEmailLayout(`
+      <p>Hey there,</p>
+      <p>Welcome to Cleya — I'm your AI superconnector for India's startup ecosystem.</p>
+      <p>Here's how I work: I personally get to know everyone in the network — your story, what you've built, and what you're looking for. Then I make warm, specific introductions where there's a genuine fit.</p>
+      <p>No spam. No random connects. Just the right people, at the right time.</p>
+      <p><strong>Your next step:</strong> ${link('Tell me about yourself', `${env_1.env.FRONTEND_URL}/chat`)} in a quick chat so I can start finding your best matches.</p>
+      <p>Looking forward to connecting you with some incredible people.</p>
+      <p>— Cleya</p>
+    `);
+        await this.send(email, 'Welcome to Cleya — let\'s find your people', html);
+    }
+    async sendMatchProposed(recipientEmail, recipientName, matchName, matchPersona, matchScore, matchDetails) {
+        const firstName = recipientName?.split(' ')[0] || 'there';
+        const scorePercent = Math.round(matchScore * 100);
+        let body = `<p>Hi ${firstName},</p>`;
+        body += `<p>Wanted to put <strong>${matchName}</strong> on your radar`;
+        if (matchDetails?.companyName && matchDetails?.raiseAmount) {
+            body += ` — ${matchName.split(' ')[0]} is ${matchDetails.raiseAmount.toLowerCase().includes('raising') ? '' : 'raising '}${matchDetails.raiseAmount}`;
+            if (matchDetails.companyName)
+                body += ` for ${matchDetails.companyName}`;
+            if (matchDetails.sector)
+                body += `, building in ${matchDetails.sector.replace(/_/g, ' ').toLowerCase()}`;
+            body += `.`;
+        }
+        else if (matchDetails?.companyName) {
+            body += ` — ${matchPersona.toLowerCase()} at ${matchDetails.companyName}`;
+            if (matchDetails.sector)
+                body += ` in ${matchDetails.sector.replace(/_/g, ' ').toLowerCase()}`;
+            body += `.`;
+        }
+        else {
+            body += ` — ${matchPersona.toLowerCase()}.`;
+        }
+        body += `</p>`;
+        if (matchDetails?.traction) {
+            body += `<p>${matchDetails.traction}</p>`;
+        }
+        if (matchDetails?.bio && !matchDetails?.traction) {
+            body += `<p>${matchDetails.bio}</p>`;
+        }
+        if (matchDetails?.matchReason) {
+            body += `<p>${matchDetails.matchReason}</p>`;
+        }
+        if (matchDetails?.linkedinUrl) {
+            body += `<p>Here's ${matchName.split(' ')[0]}'s LinkedIn if you want to take a closer look: ${link(matchDetails.linkedinUrl, matchDetails.linkedinUrl)}</p>`;
+        }
+        body += `<p>I matched you two at <strong>${scorePercent}%</strong> compatibility. ${link('Review this match →', `${env_1.env.FRONTEND_URL}/matches`)}</p>`;
+        body += `<p>— Cleya</p>`;
+        const html = plainEmailLayout(body);
+        const subject = `${firstName}, ${matchDetails?.sector ? matchDetails.sector.replace(/_/g, ' ').toLowerCase() + ' ' : ''}connection for you`;
+        await this.send(recipientEmail, subject, html);
+    }
+    async sendMatchAccepted(recipientEmail, recipientName, matchName, matchPersona, matchEmail, matchLinkedin) {
+        const firstName = recipientName?.split(' ')[0] || 'there';
+        let body = `<p>Hi ${firstName},</p>`;
+        body += `<p>Great news — both you and <strong>${matchName}</strong> (${matchPersona.toLowerCase()}) want to connect. I love it when this happens.</p>`;
+        body += `<p>Here are ${matchName.split(' ')[0]}'s details so you can reach out directly:</p>`;
+        body += `<p>📧 ${matchEmail}`;
+        if (matchLinkedin) {
+            body += `<br>🔗 ${link(matchLinkedin, matchLinkedin)}`;
+        }
+        body += `</p>`;
+        body += `<p>Pro tip: reach out within 48 hours while the connection is fresh. A simple "Hey, Cleya connected us — would love to chat" works great.</p>`;
+        body += `<p>— Cleya</p>`;
+        const html = plainEmailLayout(body);
+        await this.send(recipientEmail, `You and ${matchName} are connected!`, html);
+    }
+    async sendPasswordReset(email, token) {
+        const resetUrl = `${env_1.env.FRONTEND_URL}/reset-password?token=${token}`;
+        const html = plainEmailLayout(`
+      <p>Hi,</p>
+      <p>We received a request to reset your password. Click below to create a new one:</p>
+      <p>${link('Reset your password →', resetUrl)}</p>
+      <p>This link expires in 30 minutes. If you didn't request this, you can safely ignore this email.</p>
+      <p>— Cleya</p>
+    `);
+        await this.send(email, 'Reset your Cleya password', html);
+    }
+    async sendEmailVerification(email, token) {
+        const verifyUrl = `${env_1.env.FRONTEND_URL}/verify-email?token=${token}`;
+        const html = plainEmailLayout(`
+      <p>Hi,</p>
+      <p>Quick one — please verify your email to finish setting up your Cleya account:</p>
+      <p>${link('Verify email →', verifyUrl)}</p>
+      <p>This link expires in 24 hours.</p>
+      <p>— Cleya</p>
+    `);
+        await this.send(email, 'Verify your email — Cleya', html);
+    }
+    async sendNewMatch(email, matchName, matchScore) {
+        const scorePercent = Math.round(matchScore * 100);
+        const html = plainEmailLayout(`
+      <p>Hey,</p>
+      <p>Found someone great for you — <strong>${matchName}</strong>, ${scorePercent}% compatibility.</p>
+      <p>${link('Check them out →', `${env_1.env.FRONTEND_URL}/matches`)}</p>
+      <p>— Cleya</p>
+    `);
+        await this.send(email, `New match: ${matchName} (${scorePercent}%)`, html);
+    }
+    async sendWeeklyDigest(userId) {
+        const user = await db_1.prisma.user.findUnique({
+            where: { id: userId },
+            include: { profile: true },
+        });
+        if (!user)
+            return;
+        const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const [pendingMatches, newMatches, acceptedMatches] = await Promise.all([
+            db_1.prisma.match.count({
+                where: {
+                    OR: [
+                        { userAId: userId, userAResponse: 'PENDING' },
+                        { userBId: userId, userBResponse: 'PENDING' },
+                    ],
+                    status: { notIn: ['REJECTED', 'EXPIRED'] },
+                },
+            }),
+            db_1.prisma.match.count({
+                where: {
+                    OR: [{ userAId: userId }, { userBId: userId }],
+                    createdAt: { gte: oneWeekAgo },
+                },
+            }),
+            db_1.prisma.match.count({
+                where: {
+                    OR: [{ userAId: userId }, { userBId: userId }],
+                    status: 'ACCEPTED',
+                    updatedAt: { gte: oneWeekAgo },
+                },
+            }),
+        ]);
+        const name = user.name?.split(' ')[0] || user.profile?.currentRole || user.email.split('@')[0];
+        let body = `<p>Hi ${name},</p>`;
+        body += `<p>Here's your week in the Cleya network:</p>`;
+        body += `<ul style="padding-left:20px;">`;
+        body += `<li><strong>${newMatches}</strong> new match${newMatches !== 1 ? 'es' : ''} found</li>`;
+        body += `<li><strong>${acceptedMatches}</strong> connection${acceptedMatches !== 1 ? 's' : ''} made</li>`;
+        if (pendingMatches > 0) {
+            body += `<li><strong>${pendingMatches}</strong> match${pendingMatches !== 1 ? 'es' : ''} waiting for your review</li>`;
+        }
+        body += `</ul>`;
+        if (pendingMatches > 0) {
+            body += `<p>Don't leave them hanging — ${link('review your matches →', `${env_1.env.FRONTEND_URL}/matches`)}</p>`;
+        }
+        else {
+            body += `<p>${link('See your dashboard →', `${env_1.env.FRONTEND_URL}/dashboard`)}</p>`;
+        }
+        body += `<p>— Cleya</p>`;
+        const html = plainEmailLayout(body);
+        await this.send(user.email, `Your week: ${newMatches} new match${newMatches !== 1 ? 'es' : ''} on Cleya`, html);
+    }
+    async sendMeetingInvite(to, otherName, title, meetingTime, duration, meetingUrl) {
+        const timeStr = meetingTime.toLocaleDateString('en-IN', {
+            weekday: 'long', month: 'long', day: 'numeric',
+            hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata',
+        });
+        let body = `<p>Hi,</p>`;
+        body += `<p>You have a meeting coming up with <strong>${otherName}</strong>:</p>`;
+        body += `<p>📅 <strong>${title}</strong><br>`;
+        body += `🕐 ${timeStr} IST<br>`;
+        body += `⏱ ${duration} minutes`;
+        if (meetingUrl) {
+            body += `<br>🔗 ${link('Join meeting', meetingUrl)}`;
+        }
+        body += `</p>`;
+        body += `<p>— Cleya</p>`;
+        const html = plainEmailLayout(body);
+        await this.send(to, `Meeting with ${otherName} — ${timeStr}`, html);
+    }
+    async sendFollowup(to, subject, body) {
+        const html = plainEmailLayout(`
+      <div style="white-space:pre-line;line-height:1.7;">${body}</div>
+      <p style="margin-top:16px;">— Cleya</p>
+    `);
+        await this.send(to, subject, html);
+    }
+    async sendDailyDigest(to, digestContent) {
+        const html = plainEmailLayout(`
+      <p>Hey,</p>
+      <p>Here's what's new in your Cleya network today:</p>
+      <div style="white-space:pre-line;line-height:1.7;">${digestContent.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</div>
+      <p>${link('Open your dashboard →', `${env_1.env.FRONTEND_URL}/dashboard`)}</p>
+      <p>— Cleya</p>
+    `);
+        await this.send(to, `What's new in your network — Cleya`, html);
+    }
+    async sendIntroductionEmail(recipientEmail, recipientName, introPersonName, introBody, linkedinUrl) {
+        let body = `<p>Hi ${recipientName?.split(' ')[0] || 'there'},</p>`;
+        body += `<div style="white-space:pre-line;line-height:1.7;">${introBody}</div>`;
+        if (linkedinUrl) {
+            body += `<p>Here's ${introPersonName.split(' ')[0]}'s LinkedIn if you want to take a closer look: ${link(linkedinUrl, linkedinUrl)}</p>`;
+        }
+        body += `<p>— Cleya</p>`;
+        const html = plainEmailLayout(body);
+        await this.send(recipientEmail, `${recipientName?.split(' ')[0] || 'Hey'}, putting ${introPersonName.split(' ')[0]} on your radar`, html);
+    }
+    generateICS(title, start, durationMin, url) {
+        const end = new Date(start.getTime() + durationMin * 60000);
+        const fmt = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+        return [
+            'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Cleya.ai//Meeting//EN',
+            'BEGIN:VEVENT',
+            `DTSTART:${fmt(start)}`, `DTEND:${fmt(end)}`,
+            `SUMMARY:${title}`,
+            `DESCRIPTION:Scheduled via Cleya.ai`,
+            url ? `URL:${url}` : '',
+            'END:VEVENT', 'END:VCALENDAR',
+        ].filter(Boolean).join('\r\n');
+    }
+    async sendProfileNudge(email, name) {
+        const firstName = name?.split(' ')[0] || 'there';
+        const html = plainEmailLayout(`
+      <p>Hi ${firstName},</p>
+      <p>Quick reminder — you signed up for Cleya but haven't finished your profile yet.</p>
+      <p>The more I know about you, the better I can match you with the right people in the ecosystem. It takes about 2 minutes.</p>
+      <p><strong>${link('Complete your profile →', `${env_1.env.FRONTEND_URL}/chat`)}</strong></p>
+      <p>— Cleya</p>
+    `);
+        return this.send(email, `${firstName}, let's finish setting you up on Cleya`, html);
+    }
+    async sendHowMatchingWorks(email, name) {
+        const firstName = name?.split(' ')[0] || 'there';
+        const html = plainEmailLayout(`
+      <p>Hi ${firstName},</p>
+      <p>Wanted to give you a quick peek behind the scenes of how Cleya matches work:</p>
+      <ol style="padding-left:20px;line-height:2;">
+        <li><strong>I learn about you</strong> — your story, what you've built, and what you're looking for</li>
+        <li><strong>I find your people</strong> — using AI to surface the most relevant connections across the network</li>
+        <li><strong>You review & accept</strong> — no spam intros, you choose who you connect with</li>
+        <li><strong>I make the intro</strong> — once both sides say yes, I share contact details so you can take it from there</li>
+      </ol>
+      <p>The best matches happen when your profile is detailed and up to date.</p>
+      <p>${link('Check your matches →', `${env_1.env.FRONTEND_URL}/matches`)}</p>
+      <p>— Cleya</p>
+    `);
+        return this.send(email, 'How Cleya matching works — a quick explainer', html);
+    }
+    async sendMatchCheckIn(email, name) {
+        const firstName = name?.split(' ')[0] || 'there';
+        const html = plainEmailLayout(`
+      <p>Hi ${firstName},</p>
+      <p>It's been a week since you joined Cleya — time flies!</p>
+      <p>Have you checked your matches lately? I've been working behind the scenes to find the best people for you.</p>
+      <p>${link('See your matches →', `${env_1.env.FRONTEND_URL}/matches`)}</p>
+      <p>If you haven't received any matches yet, make sure your profile is complete — that's what powers my recommendations.</p>
+      <p>— Cleya</p>
+    `);
+        return this.send(email, `${firstName}, your matches are waiting`, html);
+    }
+    async sendPostIntroFollowUp(email, name, matchName) {
+        const firstName = name?.split(' ')[0] || 'there';
+        const matchFirst = matchName?.split(' ')[0] || 'your match';
+        const html = plainEmailLayout(`
+      <p>Hi ${firstName},</p>
+      <p>It's been a few days since I connected you with <strong>${matchFirst}</strong>. How did it go?</p>
+      <p>Whether it was a great conversation or didn't quite click — I'd love to hear. Your feedback helps me find even better matches for you.</p>
+      <p>${link('Share your feedback →', `${env_1.env.FRONTEND_URL}/matches`)}</p>
+      <p>— Cleya</p>
+    `);
+        return this.send(email, `How was your intro with ${matchFirst}?`, html);
+    }
+    async sendFeedbackRequest(email, name, matchName) {
+        const firstName = name?.split(' ')[0] || 'there';
+        const matchFirst = matchName?.split(' ')[0] || 'your recent match';
+        const html = plainEmailLayout(`
+      <p>Hi ${firstName},</p>
+      <p>Would you take 30 seconds to rate your connection with <strong>${matchFirst}</strong>?</p>
+      <p>A quick rating and a line or two of feedback goes a long way — it helps me learn what works for you and makes future matches even better.</p>
+      <p>${link('Rate this match →', `${env_1.env.FRONTEND_URL}/matches`)}</p>
+      <p>Thanks for helping make Cleya better for everyone.</p>
+      <p>— Cleya</p>
+    `);
+        return this.send(email, `Quick feedback on your match with ${matchFirst}?`, html);
+    }
+    async sendDigestToAll() {
+        const users = await db_1.prisma.user.findMany({
+            where: { role: 'USER', isActive: true },
+            select: { id: true },
+        });
+        let sent = 0;
+        let failed = 0;
+        for (const u of users) {
+            try {
+                await this.sendWeeklyDigest(u.id);
+                sent++;
+            }
+            catch (err) {
+                console.error(`Digest failed for ${u.id}:`, err);
+                failed++;
+            }
+        }
+        return { sent, failed, total: users.length };
+    }
+}
+exports.emailService = new EmailService();
+//# sourceMappingURL=email.js.map

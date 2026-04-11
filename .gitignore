@@ -1,5 +1,4 @@
 node_modules/
-dist/
 .next/
 .env
 .env.*
@@ -11,7 +10,4 @@ backups/
 *.sql
 *.sql.gz
 *.tsbuildinfo
-<<<<<<< HEAD
 attached_assets/
-=======
->>>>>>> origin/main

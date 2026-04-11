@@ -1,0 +1,22 @@
+export declare class CallService {
+    private ai;
+    initiateCall(userId: string, phoneNumber: string): Promise<null>;
+    updateCallStatus(callId: string, status: string, duration?: number): Promise<void>;
+    getCallHistory(userId: string): Promise<{
+        status: import(".prisma/client").$Enums.CallStatus;
+        id: string;
+        createdAt: Date;
+        phoneNumber: string;
+        userId: string;
+        scheduledAt: Date | null;
+        duration: number | null;
+        twilioCallSid: string | null;
+        direction: import(".prisma/client").$Enums.CallDirection;
+        transcript: import("@prisma/client/runtime/library").JsonValue | null;
+        extractedData: import("@prisma/client/runtime/library").JsonValue | null;
+        startedAt: Date | null;
+        endedAt: Date | null;
+    }[]>;
+}
+export declare const callService: CallService;
+//# sourceMappingURL=callService.d.ts.map

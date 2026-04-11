@@ -1,0 +1,1 @@
+{"version":3,"file":"matchScheduler.d.ts","sourceRoot":"","sources":["../../src/services/matchScheduler.ts"],"names":[],"mappings":"AASA,cAAM,cAAc;IAClB,OAAO,CAAC,KAAK,CAAuB;IACpC,OAAO,CAAC,OAAO,CAAS;IACxB,OAAO,CAAC,OAAO,CAAS;IAExB,KAAK;IAsCL,IAAI;IAOE,gBAAgB;;;;;;;;;;;;;IAyEhB,eAAe;;;;;IAkBf,qBAAqB;;;;;;CAiB5B;AAED,eAAO,MAAM,cAAc,gBAAuB,CAAC"}
