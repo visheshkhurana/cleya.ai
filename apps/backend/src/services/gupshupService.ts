@@ -156,12 +156,25 @@ export class GupshupService {
         body: body.toString(),
       });
 
-      const result = (await response.json()) as GupshupResponse;
+      let rawBody: string;
+      try {
+        rawBody = await response.text();
+      } catch {
+        rawBody = '';
+      }
+      let result: GupshupResponse;
+      try {
+        result = JSON.parse(rawBody) as GupshupResponse;
+      } catch {
+        result = { status: 'error', message: rawBody };
+      }
 
       if (!response.ok) {
+        console.error(`Gupshup sendWhatsApp failed: dest=${destination}, HTTP ${response.status}, response=${rawBody}`);
         throw new Error(result.message || `Gupshup HTTP error: ${response.status}`);
       }
       if (result.status !== 'submitted') {
+        console.error(`Gupshup sendWhatsApp rejected: dest=${destination}, status=${result.status}, response=${rawBody}`);
         throw new Error(result.message || `Gupshup rejected: status=${result.status}`);
       }
 
@@ -181,10 +194,10 @@ export class GupshupService {
     }
   }
 
-  async sendWhatsAppDirect(phoneNumber: string, message: string) {
+  async sendWhatsAppDirect(phoneNumber: string, message: string): Promise<{ success: boolean; error?: string; httpStatus?: number; response?: any }> {
     if (!this.isConfigured()) {
       console.warn('Gupshup not configured, WhatsApp direct skipped');
-      return;
+      return { success: false, error: 'Gupshup not configured' };
     }
 
     try {
@@ -211,14 +224,29 @@ export class GupshupService {
         body: body.toString(),
       });
 
-      const result = (await response.json()) as GupshupResponse;
-      if (!response.ok || result.status !== 'submitted') {
-        console.error(`Gupshup direct send failed to ${phoneNumber}: ${result.message}`);
-      } else {
-        console.log(`Gupshup WhatsApp direct sent to ${phoneNumber} (${result.messageId})`);
+      let rawBody: string;
+      try {
+        rawBody = await response.text();
+      } catch {
+        rawBody = '';
       }
+      let result: GupshupResponse;
+      try {
+        result = JSON.parse(rawBody) as GupshupResponse;
+      } catch {
+        result = { status: 'error', message: rawBody };
+      }
+
+      if (!response.ok || result.status !== 'submitted') {
+        console.error(`Gupshup direct send failed: dest=${destination}, HTTP ${response.status}, response=${rawBody}`);
+        return { success: false, error: result.message || `HTTP ${response.status}`, httpStatus: response.status, response: result };
+      }
+
+      console.log(`Gupshup WhatsApp direct sent to ${phoneNumber} (${result.messageId})`);
+      return { success: true, httpStatus: response.status, response: result };
     } catch (error: any) {
       console.error(`Gupshup WhatsApp direct failed to ${phoneNumber}:`, error.message);
+      return { success: false, error: error.message };
     }
   }
 
@@ -276,7 +304,7 @@ export class GupshupService {
         }
       }
 
-      console.log(`Gupshup sendTemplate: dest=${destination}, template=${templateId}, namespace=${this.templateNamespace || 'none'}, payload=${JSON.stringify(templateMessage)}`);
+      console.log(`Gupshup sendTemplate: dest=${destination}, template=${templateId}, namespace=${this.templateNamespace || 'none'}, params=${JSON.stringify(params)}, payload=${JSON.stringify(templateMessage)}`);
 
       const body = new URLSearchParams({
         channel: 'whatsapp',
@@ -295,12 +323,25 @@ export class GupshupService {
         body: body.toString(),
       });
 
-      const result = (await response.json()) as GupshupResponse;
+      let rawBody: string;
+      try {
+        rawBody = await response.text();
+      } catch {
+        rawBody = '';
+      }
+      let result: GupshupResponse;
+      try {
+        result = JSON.parse(rawBody) as GupshupResponse;
+      } catch {
+        result = { status: 'error', message: rawBody };
+      }
 
       if (!response.ok) {
+        console.error(`Gupshup sendTemplate failed: dest=${destination}, template=${templateId}, HTTP ${response.status}, response=${rawBody}`);
         throw new Error(result.message || `Gupshup HTTP error: ${response.status}`);
       }
       if (result.status !== 'submitted') {
+        console.error(`Gupshup sendTemplate rejected: dest=${destination}, template=${templateId}, status=${result.status}, response=${rawBody}`);
         throw new Error(result.message || `Gupshup template rejected: status=${result.status}`);
       }
 
@@ -310,6 +351,7 @@ export class GupshupService {
       });
       return { ...record, status: 'SENT', messageSid: result.messageId };
     } catch (error: any) {
+      console.error(`Gupshup sendTemplate error: dest=${phoneNumber}, template=${templateId}, error=${error.message}`);
       await prisma.messageRecord.update({
         where: { id: record.id },
         data: { status: 'FAILED', errorMessage: error.message },
@@ -366,12 +408,25 @@ export class GupshupService {
         body: body.toString(),
       });
 
-      const result = (await response.json()) as GupshupResponse;
+      let rawBody: string;
+      try {
+        rawBody = await response.text();
+      } catch {
+        rawBody = '';
+      }
+      let result: GupshupResponse;
+      try {
+        result = JSON.parse(rawBody) as GupshupResponse;
+      } catch {
+        result = { status: 'error', message: rawBody };
+      }
 
       if (!response.ok) {
+        console.error(`Gupshup sendImage failed: dest=${destination}, HTTP ${response.status}, response=${rawBody}`);
         throw new Error(result.message || `Gupshup HTTP error: ${response.status}`);
       }
       if (result.status !== 'submitted') {
+        console.error(`Gupshup sendImage rejected: dest=${destination}, status=${result.status}, response=${rawBody}`);
         throw new Error(result.message || `Gupshup image rejected: status=${result.status}`);
       }
 
@@ -381,6 +436,7 @@ export class GupshupService {
       });
       return { ...record, status: 'SENT', messageSid: result.messageId };
     } catch (error: any) {
+      console.error(`Gupshup sendImage error: dest=${phoneNumber}, error=${error.message}`);
       await prisma.messageRecord.update({
         where: { id: record.id },
         data: { status: 'FAILED', errorMessage: error.message },
@@ -409,8 +465,12 @@ export class GupshupService {
 
       const newStatus = statusMap[eventType] || eventType.toUpperCase();
 
+      const errorDetails = eventType === 'failed'
+        ? { code: eventPayload.errorCode, message: eventPayload.reason || eventPayload.errorMessage }
+        : undefined;
+
       if (gsId) {
-        await this.updateMessageStatus(gsId, newStatus);
+        await this.updateMessageStatus(gsId, newStatus, errorDetails);
       }
     }
 
@@ -438,8 +498,12 @@ export class GupshupService {
             };
             const newStatus = statusMap[s.status] || (s.status || '').toUpperCase();
 
+            const errorDetails = s.status === 'failed' && s.errors?.[0]
+              ? { code: s.errors[0].code, message: s.errors[0].error_data?.details || s.errors[0].message }
+              : undefined;
+
             if (s.gs_id) {
-              await this.updateMessageStatus(s.gs_id, newStatus);
+              await this.updateMessageStatus(s.gs_id, newStatus, errorDetails);
             }
 
             if (s.status === 'failed' && s.errors?.[0]) {
@@ -459,7 +523,7 @@ export class GupshupService {
     }
   }
 
-  private async updateMessageStatus(gsId: string, newStatus: string) {
+  async updateMessageStatus(gsId: string, newStatus: string, errorDetails?: { code?: string | number; message?: string }) {
     const validStatuses = ['QUEUED', 'SENT', 'DELIVERED', 'FAILED', 'READ'] as const;
     const status = validStatuses.find(s => s === newStatus);
     if (!status) {
@@ -471,9 +535,17 @@ export class GupshupService {
       where: { messageSid: gsId },
     });
     if (record) {
+      let errorMessage: string | undefined;
+      if (status === 'FAILED' && errorDetails) {
+        errorMessage = [
+          errorDetails.code ? `code=${errorDetails.code}` : '',
+          errorDetails.message || '',
+        ].filter(Boolean).join(': ') || 'Unknown error';
+        console.log(`Gupshup webhook: message ${gsId} FAILED — ${errorMessage}`);
+      }
       await prisma.messageRecord.update({
         where: { id: record.id },
-        data: { status },
+        data: errorMessage ? { status, errorMessage } : { status },
       });
       console.log(`Gupshup webhook: message ${gsId} -> ${status}`);
     }

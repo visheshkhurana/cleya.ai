@@ -8,6 +8,7 @@ export interface TemplateConfig {
   description: string;
   buildMessage: (params: Record<string, string>) => string;
   gupshupTemplateId?: string;
+  gupshupParamOrder?: string[];
 }
 
 const templates: Record<string, TemplateConfig> = {
@@ -15,7 +16,8 @@ const templates: Record<string, TemplateConfig> = {
     id: 'welcome',
     name: 'Welcome Message',
     description: 'Sent when a new user signs up',
-    gupshupTemplateId: 'cleya_meeting_reminder',
+    gupshupTemplateId: 'cleya_welcome',
+    gupshupParamOrder: ['name', 'profileUrl'],
     buildMessage: (p) =>
       `Hey! Welcome to Cleya 👋 I'm your AI superconnector. I personally talk to everyone in the network, learn their story, and then make warm introductions where there's a genuine fit.\n\nThe next step is a quick chat where I get to know you — what you've built, and what you're looking for. From there I can start matching you with the right people.\n\nReady? Tap here to get started: ${p.profileUrl || 'https://cleya.ai/chat'}`,
   },
@@ -24,7 +26,8 @@ const templates: Record<string, TemplateConfig> = {
     id: 'match_found',
     name: 'Match Found',
     description: 'Sent when AI finds a new match for the user',
-    gupshupTemplateId: 'cleya_introduction',
+    gupshupTemplateId: 'cleya_match_found',
+    gupshupParamOrder: ['name', 'matchName', 'matchRole', 'matchCompany', 'matchUrl'],
     buildMessage: (p) => {
       let msg = `Hey ${p.name || 'there'}! I found someone great for you.\n\n`;
       msg += `*${p.matchName}*`;
@@ -46,7 +49,8 @@ const templates: Record<string, TemplateConfig> = {
     id: 'match_accepted',
     name: 'Match Accepted',
     description: 'Sent when the other person accepts a match',
-    gupshupTemplateId: 'cleya_introduction',
+    gupshupTemplateId: 'cleya_match_accepted',
+    gupshupParamOrder: ['name', 'matchName', 'chatUrl'],
     buildMessage: (p) =>
       `Great news, ${p.name || 'there'}! 🤝\n\n*${p.matchName}* wants to connect with you too. I love it when this happens.\n\nYou can now see their contact details and reach out directly: ${p.chatUrl || 'https://cleya.ai/matches'}\n\nPro tip: reach out within 48 hours while the connection is fresh.`,
   },
@@ -55,7 +59,8 @@ const templates: Record<string, TemplateConfig> = {
     id: 'intro_sent',
     name: 'Introduction Sent',
     description: 'Sent when an introduction email is facilitated',
-    gupshupTemplateId: 'cleya_introduction',
+    gupshupTemplateId: 'cleya_intro_sent',
+    gupshupParamOrder: ['name', 'introName', 'introRole', 'introUrl'],
     buildMessage: (p) => {
       let msg = `Hey ${p.name || 'there'}! Wanted to put *${p.introName}* on your radar`;
       if (p.introRole) msg += ` — ${p.introRole}`;
@@ -70,7 +75,8 @@ const templates: Record<string, TemplateConfig> = {
     id: 'intro_accepted',
     name: 'Introduction Accepted',
     description: 'Sent when an introduction is accepted by the other party',
-    gupshupTemplateId: 'cleya_introduction',
+    gupshupTemplateId: 'cleya_intro_accepted',
+    gupshupParamOrder: ['name', 'introName', 'meetingUrl'],
     buildMessage: (p) =>
       `Hey ${p.name || 'there'}! *${p.introName}* accepted the intro and wants to connect. 🎉\n\nYou can reach out directly now: ${p.meetingUrl || 'https://cleya.ai/meetings'}\n\nA simple "Hey, Cleya connected us — would love to chat" works great.`,
   },
@@ -80,6 +86,7 @@ const templates: Record<string, TemplateConfig> = {
     name: 'Meeting Scheduled',
     description: 'Sent when a meeting is proposed',
     gupshupTemplateId: 'cleya_meeting_reminder',
+    gupshupParamOrder: ['meetingTitle', 'withName', 'proposedTime'],
     buildMessage: (p) =>
       `Heads up — you have a meeting coming up!\n\n📅 *${p.meetingTitle}*\n👤 With ${p.withName}\n🕐 ${p.proposedTime || 'Time pending'}\n\nI'll send you a reminder before it starts.`,
   },
@@ -89,6 +96,7 @@ const templates: Record<string, TemplateConfig> = {
     name: 'Meeting Confirmed',
     description: 'Sent when a meeting is confirmed',
     gupshupTemplateId: 'cleya_meeting_reminder',
+    gupshupParamOrder: ['meetingTitle', 'withName', 'confirmedTime'],
     buildMessage: (p) =>
       `Your meeting is confirmed! ✅\n\n📅 *${p.meetingTitle}*\n👤 With ${p.withName}\n🕐 ${p.confirmedTime}${p.location ? `\n📍 ${p.location}` : ''}\n\nI'll remind you an hour before.`,
   },
@@ -98,6 +106,7 @@ const templates: Record<string, TemplateConfig> = {
     name: 'Meeting Reminder',
     description: 'Sent 1 hour before a scheduled meeting',
     gupshupTemplateId: 'cleya_meeting_reminder',
+    gupshupParamOrder: ['meetingTitle', 'withName', 'timeUntil'],
     buildMessage: (p) =>
       `Quick reminder — your meeting starts in *${p.timeUntil || '1 hour'}*!\n\n📅 *${p.meetingTitle}*\n👤 With ${p.withName}${p.location ? `\n📍 ${p.location}` : ''}${p.meetingLink ? `\n🔗 Join: ${p.meetingLink}` : ''}`,
   },
@@ -107,6 +116,7 @@ const templates: Record<string, TemplateConfig> = {
     name: 'Profile Incomplete Nudge',
     description: 'Sent 24h after signup if profile is incomplete',
     gupshupTemplateId: 'cleya_reengagement',
+    gupshupParamOrder: ['name', 'profileUrl'],
     buildMessage: (p) =>
       `Hey ${p.name || 'there'}! Just checking in — I noticed you haven't finished telling me about yourself yet.\n\nOnce I know your story, I can start finding the right people for you. It only takes a few minutes: ${p.profileUrl || 'https://cleya.ai/chat'}`,
   },
@@ -116,6 +126,7 @@ const templates: Record<string, TemplateConfig> = {
     name: 'Weekly Digest',
     description: 'Weekly summary of matches and activity',
     gupshupTemplateId: 'cleya_reengagement',
+    gupshupParamOrder: ['name', 'dashboardUrl'],
     buildMessage: (p) =>
       `Hey ${p.name || 'there'}! Here's your week in the Cleya network:\n\n• ${p.newMatches || '0'} new matches found\n• ${p.introsSent || '0'} intros made\n• ${p.meetingsScheduled || '0'} meetings scheduled\n\nCheck your dashboard: ${p.dashboardUrl || 'https://cleya.ai/dashboard'}`,
   },
@@ -125,6 +136,7 @@ const templates: Record<string, TemplateConfig> = {
     name: 'Event Registration Confirmed',
     description: 'Sent when user registers for an event',
     gupshupTemplateId: 'cleya_meeting_reminder',
+    gupshupParamOrder: ['eventName', 'eventDate', 'eventLocation'],
     buildMessage: (p) =>
       `You're in! 🎟️\n\n📅 *${p.eventName}*\n🕐 ${p.eventDate}${p.eventLocation ? `\n📍 ${p.eventLocation}` : ''}\n\nI'll be working behind the scenes to find the best people for you to meet at the event.`,
   },
@@ -134,6 +146,7 @@ const templates: Record<string, TemplateConfig> = {
     name: 'Post-Event Follow-up',
     description: 'Sent after an event with match results',
     gupshupTemplateId: 'cleya_followup',
+    gupshupParamOrder: ['name', 'eventName', 'matchesUrl'],
     buildMessage: (p) =>
       `Hey ${p.name || 'there'}! Hope you had a great time at *${p.eventName}*.\n\nI found some people from the event you should connect with. Check your matches: ${p.matchesUrl || 'https://cleya.ai/matches'}`,
   },
@@ -143,6 +156,7 @@ const templates: Record<string, TemplateConfig> = {
     name: 'General Follow-up',
     description: 'Periodic check-in with inactive users',
     gupshupTemplateId: 'cleya_reengagement',
+    gupshupParamOrder: ['name', 'dashboardUrl'],
     buildMessage: (p) => {
       let msg = `Hey ${p.name || 'there'}! It's been a bit — just wanted to check in.`;
       if (p.pendingMatches && parseInt(p.pendingMatches) > 0) {
@@ -192,7 +206,14 @@ export class WhatsAppTemplateService {
 
     if (gupshupService.isConfigured() && template.gupshupTemplateId) {
       try {
-        const result = await gupshupService.sendTemplate(userId, resolvedPhone, template.gupshupTemplateId, Object.values(params));
+        let orderedParams: string[];
+        if (template.gupshupParamOrder) {
+          orderedParams = template.gupshupParamOrder.map(key => params[key] || '');
+        } else {
+          orderedParams = Object.values(params);
+        }
+        console.log(`WhatsAppTemplateService.sendTemplate: template=${templateId}, gupshupId=${template.gupshupTemplateId}, paramOrder=${JSON.stringify(template.gupshupParamOrder)}, orderedParams=${JSON.stringify(orderedParams)}`);
+        const result = await gupshupService.sendTemplate(userId, resolvedPhone, template.gupshupTemplateId, orderedParams);
         if (result.status !== 'FAILED') return result;
         console.warn(`Gupshup template ${template.gupshupTemplateId} failed, falling back to plain text`);
       } catch (error) {
