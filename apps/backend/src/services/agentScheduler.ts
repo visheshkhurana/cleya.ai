@@ -30,6 +30,7 @@ const ORCHESTRATOR_SUB_AGENT_MAP: Record<string, string> = {
   allyTasks: 'ally',
   catalystTasks: 'catalyst',
   closerTasks: 'closer',
+  outreachTasks: 'outreach',
 };
 
 class AgentScheduler {

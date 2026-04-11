@@ -50,6 +50,7 @@ export const AGENT_TOOLS: Record<string, string[]> = {
   closer: ['send_email', 'create_ad_campaign'],
   scout: ['analyze_seo', 'keyword_research', 'analyze_competitors', 'generate_schema_markup', 'check_indexing', 'optimize_content', 'get_analytics_summary', 'get_top_pages', 'get_traffic_sources'],
   probe: ['run_page_test', 'run_api_test', 'run_agent_test', 'run_full_qa', 'get_qa_report', 'get_analytics_summary'],
+  outreach: ['create_email_campaign', 'add_recipients', 'launch_campaign', 'get_campaign_analytics', 'get_recipient_list', 'pause_campaign', 'send_email'],
 };
 
 // --- Tool parameter schemas (used in OpenAI function-calling format) ---
@@ -146,15 +147,111 @@ export const TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
   },
   send_email: {
     name: 'send_email',
-    description: 'Send an email (placeholder — email integration not yet configured). Returns not_configured status.',
+    description: 'Send a single email to one recipient via Resend.',
     parameters: {
       type: 'object',
       properties: {
         to: { type: 'string', description: 'Recipient email address' },
         subject: { type: 'string', description: 'Email subject' },
-        body: { type: 'string', description: 'Email body content' },
+        body: { type: 'string', description: 'Email body content (HTML supported)' },
       },
       required: ['to', 'subject', 'body'],
+    },
+  },
+  create_email_campaign: {
+    name: 'create_email_campaign',
+    description: 'Create a new cold email outreach campaign. Campaign starts as draft. Add recipients and then launch.',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Campaign name (e.g. "Bangalore Founders Q2 Outreach")' },
+        subjectLine: { type: 'string', description: 'Email subject line. Supports {{first_name}}, {{company}}, {{role}} personalization.' },
+        emailBody: { type: 'string', description: 'Email body HTML. Supports {{first_name}}, {{last_name}}, {{company}}, {{role}}, {{full_name}} personalization.' },
+        targetSegment: { type: 'string', enum: ['founders', 'investors', 'operators', 'accelerators', 'coworking', 'all'], description: 'Target audience segment' },
+        sequenceSteps: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              delayDays: { type: 'number', description: 'Days after previous step to send' },
+              subjectLine: { type: 'string', description: 'Follow-up subject line' },
+              emailBody: { type: 'string', description: 'Follow-up email body' },
+            },
+          },
+          description: 'Optional follow-up sequence steps',
+        },
+      },
+      required: ['name', 'subjectLine', 'emailBody'],
+    },
+  },
+  add_recipients: {
+    name: 'add_recipients',
+    description: 'Add recipients to an outreach campaign. Automatically filters out unsubscribed emails.',
+    parameters: {
+      type: 'object',
+      properties: {
+        campaignId: { type: 'string', description: 'The campaign ID to add recipients to' },
+        recipients: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              email: { type: 'string', description: 'Recipient email' },
+              firstName: { type: 'string', description: 'First name for personalization' },
+              lastName: { type: 'string', description: 'Last name' },
+              company: { type: 'string', description: 'Company name' },
+              role: { type: 'string', description: 'Job title/role' },
+            },
+            required: ['email'],
+          },
+          description: 'Array of recipient objects',
+        },
+      },
+      required: ['campaignId', 'recipients'],
+    },
+  },
+  launch_campaign: {
+    name: 'launch_campaign',
+    description: 'Launch a draft campaign. Sends emails to all pending recipients with 200ms delay between sends.',
+    parameters: {
+      type: 'object',
+      properties: {
+        campaignId: { type: 'string', description: 'The campaign ID to launch' },
+      },
+      required: ['campaignId'],
+    },
+  },
+  get_campaign_analytics: {
+    name: 'get_campaign_analytics',
+    description: 'Get analytics and stats for outreach campaigns. Pass campaignId for a specific campaign, or omit for all campaigns.',
+    parameters: {
+      type: 'object',
+      properties: {
+        campaignId: { type: 'string', description: 'Optional campaign ID. Omit to get all campaigns.' },
+      },
+    },
+  },
+  get_recipient_list: {
+    name: 'get_recipient_list',
+    description: 'Get the recipient list for a campaign, optionally filtered by status.',
+    parameters: {
+      type: 'object',
+      properties: {
+        campaignId: { type: 'string', description: 'The campaign ID' },
+        status: { type: 'string', enum: ['pending', 'sent', 'opened', 'clicked', 'replied', 'bounced', 'failed'], description: 'Filter by recipient status' },
+      },
+      required: ['campaignId'],
+    },
+  },
+  pause_campaign: {
+    name: 'pause_campaign',
+    description: 'Pause an active or scheduled campaign.',
+    parameters: {
+      type: 'object',
+      properties: {
+        campaignId: { type: 'string', description: 'The campaign ID to pause' },
+      },
+      required: ['campaignId'],
     },
   },
   analyze_seo: {
@@ -350,7 +447,7 @@ export async function executeTool(agentId: string, toolName: string, params: Rec
   }
 
   // Run guardrails for action-type tools
-  const actionTools = ['post_to_social', 'schedule_post', 'create_ad_campaign', 'send_email'];
+  const actionTools = ['post_to_social', 'schedule_post', 'create_ad_campaign', 'send_email', 'launch_campaign'];
   if (actionTools.includes(toolName)) {
     const guardrails = getAgentGuardrails(agentId);
     const autonomyLevel = getAgentAutonomyLevel(agentId);
@@ -443,9 +540,62 @@ export async function executeTool(agentId: string, toolName: string, params: Rec
         result = await adsService.optimizeCampaigns(params.platform);
         break;
 
-      case 'send_email':
-        result = { status: 'not_configured', message: 'Email sending is not yet configured. Use the publishingService email flow or configure a dedicated email provider.' };
+      case 'send_email': {
+        const { getUncachableResendClient } = await import('./resendClient');
+        const { env: emailEnv } = await import('../config/env');
+        try {
+          const { client, fromEmail } = await getUncachableResendClient();
+          const senderEmail = fromEmail || emailEnv.FROM_EMAIL;
+          const emailResult = await client.emails.send({
+            from: `Cleya <${senderEmail}>`,
+            to: [params.to],
+            subject: params.subject,
+            html: params.body,
+          });
+          result = emailResult.error
+            ? { success: false, error: emailResult.error.message }
+            : { success: true, id: emailResult.data?.id, to: params.to, subject: params.subject };
+        } catch (emailErr: any) {
+          result = { success: false, error: emailErr.message };
+        }
         break;
+      }
+
+      case 'create_email_campaign': {
+        const { createCampaign } = await import('./outreachCampaignService');
+        result = await createCampaign(params as any);
+        break;
+      }
+
+      case 'add_recipients': {
+        const { addRecipients } = await import('./outreachCampaignService');
+        result = await addRecipients(params as any);
+        break;
+      }
+
+      case 'launch_campaign': {
+        const { launchCampaign } = await import('./outreachCampaignService');
+        result = await launchCampaign(params.campaignId);
+        break;
+      }
+
+      case 'get_campaign_analytics': {
+        const { getCampaignStats } = await import('./outreachCampaignService');
+        result = await getCampaignStats(params.campaignId);
+        break;
+      }
+
+      case 'get_recipient_list': {
+        const { getRecipientList } = await import('./outreachCampaignService');
+        result = await getRecipientList(params.campaignId, params.status);
+        break;
+      }
+
+      case 'pause_campaign': {
+        const { pauseCampaign } = await import('./outreachCampaignService');
+        result = await pauseCampaign(params.campaignId);
+        break;
+      }
 
       case 'analyze_seo':
         result = await executeAnalyzeSeo(params.url);

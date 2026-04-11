@@ -42,6 +42,7 @@ export async function ensureAgentTables(): Promise<void> {
   await ensureAgentsTable();
   await seedScoutAgent();
   await seedProbeAgent();
+  await seedOutreachAgent();
 }
 
 async function seedScoutAgent(): Promise<void> {
@@ -398,6 +399,37 @@ async function seedProbeAgent(): Promise<void> {
     console.log('[AgentMigration] Probe agent seeded into dm_agents');
   } catch (err: any) {
     console.log(`[AgentMigration] Could not seed Probe agent (dm_agents table may not exist): ${err.message}`);
+  }
+}
+
+async function seedOutreachAgent(): Promise<void> {
+  try {
+    const { ensureOutreachTables } = await import('./outreachCampaignService');
+    await ensureOutreachTables();
+
+    await prisma.$executeRawUnsafe(`
+      INSERT INTO dm_agents (id, name, role, description, status, color, icon, tools)
+      VALUES (
+        'outreach',
+        'Outreach',
+        'Cold Email Campaign',
+        'Cold bulk email marketing campaigns — drip sequences, personalization at scale, deliverability, lead lists, A/B testing, reply tracking',
+        'idle',
+        'violet',
+        'mail',
+        '{"create_email_campaign","add_recipients","launch_campaign","get_campaign_analytics","get_recipient_list","pause_campaign","send_email"}'
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        name = EXCLUDED.name,
+        role = EXCLUDED.role,
+        description = EXCLUDED.description,
+        color = EXCLUDED.color,
+        icon = EXCLUDED.icon,
+        tools = EXCLUDED.tools;
+    `);
+    console.log('[AgentMigration] Outreach agent seeded into dm_agents');
+  } catch (err: any) {
+    console.log(`[AgentMigration] Could not seed Outreach agent: ${err.message}`);
   }
 }
 
