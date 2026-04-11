@@ -1,8 +1,3 @@
-// ============================================
-// Cleya.ai — Database Schema
-// PostgreSQL + pgvector
-// ============================================
-
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
@@ -11,198 +6,133 @@ generator client {
 datasource db {
   provider   = "postgresql"
   url        = env("DATABASE_URL")
-  extensions = [pgvector(map: "vector", schema: "public")]
+  extensions = [vector(schema: "public")]
 }
 
-// ─────────────────────────────────────────────
-// USERS
-// ─────────────────────────────────────────────
-
 model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  phone         String?  @unique
-  name          String?
-  passwordHash  String
-  role          Role     @default(USER)
-  tier          UserTier @default(FREE)
-  isActive      Boolean  @default(true)
-  emailVerified Boolean  @default(false)
-  phoneVerified Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  profile       Profile?
-  conversations Conversation[]
-  sentMatches   Match[]        @relation("MatchUserA")
-  receivedMatches Match[]      @relation("MatchUserB")
-  calls         Call[]
-  notifications Notification[]
-  embeddings    UserEmbedding[]
-  messageRecords MessageRecord[]
-  scoutedDeals    DealTracking[] @relation("DealPartnerDeals")
-  foundedDeals    DealTracking[] @relation("FounderDeals")
-  organizedEvents Event[]
-  eventParticipations EventParticipant[]
-  matchFeedbacks MatchFeedback[]
-  introductionsAsA IntroductionRecord[] @relation("IntroUserA")
-  introductionsAsB IntroductionRecord[] @relation("IntroUserB")
+  id                      String                   @id @default(cuid())
+  email                   String                   @unique
+  phone                   String?                  @unique
+  passwordHash            String
+  role                    Role                     @default(USER)
+  isActive                Boolean                  @default(true)
+  emailVerified           Boolean                  @default(false)
+  phoneVerified           Boolean                  @default(false)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  utmCampaign             String?
+  utmMedium               String?
+  utmSource               String?
+  onboardingComplete      Boolean                  @default(false)
+  name                    String?
+  zoomAccessToken         String?
+  zoomRefreshToken        String?
+  zoomUserId              String?
+  whatsappOptedIn         Boolean                  @default(false)
+  whatsappPhone           String?
+  mfaEnabled              Boolean                  @default(false)
+  tier                    UserTier                 @default(FREE)
+  totpSecret              String?
+  activities              Activity[]
+  adminAuditLogs          AdminAuditLog[]          @relation("AuditActor")
+  adminAuditTargets       AdminAuditLog[]          @relation("AuditTarget")
+  calls                   Call[]
   communicationPreference CommunicationPreference?
-
-  onboardingComplete Boolean @default(false)
-
-  utmSource    String?
-  utmMedium    String?
-  utmCampaign  String?
-
-  inviteCodesCreated InviteCode[] @relation("InviteCodeCreator")
-  inviteCodeUsed     InviteCode?  @relation("InviteCodeUser")
-  activities         Activity[]
-
-  sentDirectMessages     DirectMessage[] @relation("DirectMessageSender")
-  receivedDirectMessages DirectMessage[] @relation("DirectMessageRecipient")
-  organizedMeetings      Meeting[]       @relation("MeetingOrganizer")
-  participantMeetings    Meeting[]       @relation("MeetingParticipant")
-
-  secretaryThreads       SecretaryMessage[]
-  googleCalendarToken    GoogleCalendarToken?
-
-  zoomAccessToken        String?
-  zoomRefreshToken       String?
-  zoomUserId             String?
-
-  whatsappOptedIn        Boolean  @default(false)
-  whatsappPhone          String?
-
-  totpSecret             String?
-  mfaEnabled             Boolean  @default(false)
-
-  adminAuditLogs         AdminAuditLog[] @relation("AuditActor")
-  adminAuditTargets      AdminAuditLog[] @relation("AuditTarget")
-  dripEmails             DripEmail[]
+  conversations           Conversation[]
+  scoutedDeals            DealTracking[]           @relation("DealPartnerDeals")
+  foundedDeals            DealTracking[]           @relation("FounderDeals")
+  receivedDirectMessages  DirectMessage[]          @relation("DirectMessageRecipient")
+  sentDirectMessages      DirectMessage[]          @relation("DirectMessageSender")
+  eventParticipations     EventParticipant[]
+  organizedEvents         Event[]
+  googleCalendarToken     GoogleCalendarToken?
+  introductionsAsA        IntroductionRecord[]     @relation("IntroUserA")
+  introductionsAsB        IntroductionRecord[]     @relation("IntroUserB")
+  inviteCodesCreated      InviteCode[]             @relation("InviteCodeCreator")
+  inviteCodeUsed          InviteCode?              @relation("InviteCodeUser")
+  matchFeedbacks          MatchFeedback[]
+  sentMatches             Match[]                  @relation("MatchUserA")
+  receivedMatches         Match[]                  @relation("MatchUserB")
+  organizedMeetings       Meeting[]                @relation("MeetingOrganizer")
+  participantMeetings     Meeting[]                @relation("MeetingParticipant")
+  messageRecords          MessageRecord[]
+  notifications           Notification[]
+  profile                 Profile?
+  secretaryThreads        SecretaryMessage[]
+  embeddings              UserEmbedding[]
 
   @@index([email])
   @@index([phone])
   @@map("users")
 }
 
-enum Role {
-  VIEWER
-  USER
-  MANAGER
-  ADMIN
-}
-
-enum UserTier {
-  FREE
-  PRO
-  ENTERPRISE
-}
-
-// ─────────────────────────────────────────────
-// PROFILES
-// ─────────────────────────────────────────────
-
 model Profile {
-  id               String       @id @default(cuid())
-  userId           String       @unique
-  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Core fields
-  persona          PersonaType?
-  headline         String?
-  bio              String?
-  avatarUrl        String?
-  companyName      String?
-  companyStage     CompanyStage?
-  currentRole      String?
-  location         String?
-  linkedinUrl      String?
-  websiteUrl       String?
-  phoneNumber      String?
-  yearsExperience  Int?
-
-  // Array fields
-  industries       String[]     @default([])
-  skills           String[]     @default([])
-  interests        String[]     @default([])
-  lookingFor       String[]     @default([])
-
-  // Founder-specific fields
-  priority         FounderPriority?
-  raiseAmount      String?
-  roundCloseDate   String?
-  amountRaisedToDate String?
+  id                  String                 @id @default(cuid())
+  userId              String                 @unique
+  persona             PersonaType?
+  headline            String?
+  bio                 String?
+  companyName         String?
+  companyStage        CompanyStage?
+  currentRole         String?
+  location            String?
+  linkedinUrl         String?
+  websiteUrl          String?
+  yearsExperience     Int?
+  industries          String[]               @default([])
+  skills              String[]               @default([])
+  interests           String[]               @default([])
+  lookingFor          String[]               @default([])
+  extraData           Json?
+  completenessScore   Float                  @default(0)
+  isComplete          Boolean                @default(false)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  accreditedInvestor  Boolean?
+  amountRaisedToDate  String?
   businessDescription String?
-  keyTractionPoints String?
-
-  // Investor-specific fields
-  investorType     String?
-  investmentAmount String?
-  accreditedInvestor Boolean?
-
-  // Founder traction fields
-  monthlyRevenue     String?
-  growthRate         String?
-  activeUsers        String?
-  burnRate           String?
-
-  // Investor portfolio fields
-  portfolioCompanies String[]     @default([])
-  dealsPerYear       Int?
-  leadsRounds        Boolean?
-
-  // Availability fields (all personas)
-  introPreference    IntroPreference?
-  openToMeeting      Boolean      @default(true)
-  maxIntrosPerWeek   Int?
-
-  // Talent-specific fields
-  targetRole       TalentTargetRole?
-  equityExpectation  String?
-  preferredStage     CompanyStage?
-  workStyle          WorkStyle?
-  functionalArea     String?
-
-  // Deal Partner enhanced fields
+  channelSource       String?
+  channelType         String?
+  cityBased           String?
+  exampleInvestment   String?
+  founderAccessPitch  String?
+  fundName            String?
+  fundSize            String?
+  industryFocus       String[]               @default([])
+  investmentAmount    String?
+  investmentRange     String?
+  investmentThesis    String?
+  investorType        String?
+  keyTractionPoints   String?
+  outreachMethod      String?
+  phoneNumber         String?
+  priority            FounderPriority?
+  raiseAmount         String?
+  roundCloseDate      String?
+  targetRole          TalentTargetRole?
+  trackedCompanies    String?
+  profileEmbedding    Unsupported("vector")?
+  linkedinVerified    Boolean                @default(false)
+  verificationScore   Float                  @default(0)
+  avatarUrl           String?
+  activeUsers         String?
+  burnRate            String?
+  checkSizeRange      String?
+  dealsPerYear        Int?
+  equityExpectation   String?
+  functionalArea      String?
+  growthRate          String?
+  introPreference     IntroPreference?
+  leadsRounds         Boolean?
+  maxIntrosPerWeek    Int?
+  monthlyRevenue      String?
+  openToMeeting       Boolean                @default(true)
+  portfolioCompanies  String[]               @default([])
+  preferredStage      CompanyStage?
   preferredStageRange String?
-  sectorFocus        String[]     @default([])
-  checkSizeRange     String?
-
-  // Venture Partner / Deal Partner fields
-  fundName         String?
-  fundSize         String?
-  investmentRange  String?
-  industryFocus    String[]     @default([])
-  investmentThesis String?
-
-  // Scout / Deal Partner fields
-  cityBased        String?
-  exampleInvestment String?
-  outreachMethod   String?
-  trackedCompanies String?
-  founderAccessPitch String?
-
-  // Attribution tracking
-  channelSource    String?
-  channelType      String?
-
-  // Polymorphic extension data (any additional persona-specific fields)
-  extraData        Json?        @db.JsonB
-
-  // AI matching — pgvector embedding
-  profileEmbedding Unsupported("vector(1536)")?
-
-  // Verification
-  linkedinVerified   Boolean    @default(false)
-  verificationScore  Float      @default(0)
-
-  // Computed
-  completenessScore Float       @default(0)
-  isComplete       Boolean      @default(false)
-
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  sectorFocus         String[]               @default([])
+  workStyle           WorkStyle?
+  user                User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([persona])
   @@index([companyStage])
@@ -211,77 +141,16 @@ model Profile {
   @@map("profiles")
 }
 
-enum PersonaType {
-  FOUNDER
-  INVESTOR
-  TALENT
-  DEAL_PARTNER
-  VENTURE_PARTNER
-  EVENT_PARTICIPANT
-  ADVISOR
-  OPERATOR
-  JOB_SEEKER
-  RECRUITER
-  FREELANCER
-  OTHER
-}
-
-enum FounderPriority {
-  FUNDRAISING
-  COFOUNDER
-  HIRING
-  MARKETING
-  SALES_BD
-  VENTURE_PARTNER_HIRE
-}
-
-enum TalentTargetRole {
-  FOUNDING_ENGINEER
-  FOUNDING_GTM
-  CHIEF_OF_STAFF
-  GROWTH_CONTENT
-  OPEN_APPLICATION
-  COFOUNDER
-}
-
-enum CompanyStage {
-  PRE_SEED
-  SEED
-  SERIES_A
-  SERIES_B
-  SERIES_C_PLUS
-  GROWTH
-  PUBLIC
-  BOOTSTRAPPED
-}
-
-enum IntroPreference {
-  WARM_ONLY
-  COLD_OK
-  OPEN_TO_BOTH
-}
-
-enum WorkStyle {
-  REMOTE
-  IN_OFFICE
-  HYBRID
-}
-
-// ─────────────────────────────────────────────
-// CONVERSATIONS
-// ─────────────────────────────────────────────
-
 model Conversation {
   id          String             @id @default(cuid())
   userId      String
-  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   flowId      String
   status      ConversationStatus @default(ACTIVE)
   currentNode String?
-  context     Json?              @db.JsonB
+  context     Json?
   startedAt   DateTime           @default(now())
   completedAt DateTime?
-
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages    Message[]
 
   @@index([userId])
@@ -289,65 +158,44 @@ model Conversation {
   @@map("conversations")
 }
 
-enum ConversationStatus {
-  ACTIVE
-  COMPLETED
-  ABANDONED
-  PAUSED
-}
-
 model Message {
-  id             String       @id @default(cuid())
+  id             String        @id @default(cuid())
   conversationId String
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender         MessageSender
   content        String
   nodeId         String?
-  metadata       Json?        @db.JsonB
-  createdAt      DateTime     @default(now())
+  metadata       Json?
+  createdAt      DateTime      @default(now())
+  conversation   Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([conversationId])
   @@index([createdAt])
   @@map("messages")
 }
 
-enum MessageSender {
-  USER
-  AI
-  SYSTEM
-}
-
-// ─────────────────────────────────────────────
-// MATCHES
-// ─────────────────────────────────────────────
-
 model Match {
-  id          String      @id @default(cuid())
-  userAId     String
-  userBId     String
-  userA       User        @relation("MatchUserA", fields: [userAId], references: [id])
-  userB       User        @relation("MatchUserB", fields: [userBId], references: [id])
-
-  status      MatchStatus @default(PROPOSED)
-  score       Float
-  scoreBreakdown Json?    @db.JsonB
-
-  userAResponse MatchResponse?
-  userBResponse MatchResponse?
+  id               String              @id @default(cuid())
+  userAId          String
+  userBId          String
+  status           MatchStatus         @default(PROPOSED)
+  score            Float
+  scoreBreakdown   Json?
+  userAResponse    MatchResponse?
+  userBResponse    MatchResponse?
   userARespondedAt DateTime?
   userBRespondedAt DateTime?
-  userAViewedAt DateTime?
-  userBViewedAt DateTime?
-
-  reason      String?
-  eventId     String?
-  event       Event?      @relation(fields: [eventId], references: [id], onDelete: SetNull)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  expiresAt   DateTime?
-
-  feedbacks   MatchFeedback[]
-  introduction IntroductionRecord?
+  reason           String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  expiresAt        DateTime?
+  eventId          String?
+  userAViewedAt    DateTime?
+  userBViewedAt    DateTime?
+  introduction     IntroductionRecord?
+  feedbacks        MatchFeedback[]
+  event            Event?              @relation(fields: [eventId], references: [id])
+  userA            User                @relation("MatchUserA", fields: [userAId], references: [id])
+  userB            User                @relation("MatchUserB", fields: [userBId], references: [id])
 
   @@unique([userAId, userBId])
   @@index([userAId])
@@ -361,12 +209,12 @@ model Match {
 model MatchFeedback {
   id        String   @id @default(cuid())
   matchId   String
-  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   rating    Int
   feedback  String?
   createdAt DateTime @default(now())
+  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([matchId, userId])
   @@index([matchId])
@@ -374,45 +222,26 @@ model MatchFeedback {
   @@map("match_feedbacks")
 }
 
-enum MatchStatus {
-  PROPOSED
-  PENDING_A
-  PENDING_B
-  ACCEPTED
-  REJECTED
-  EXPIRED
-}
-
-enum MatchResponse {
-  ACCEPTED
-  REJECTED
-  PENDING
-}
-
-// ─────────────────────────────────────────────
-// INTRODUCTIONS
-// ─────────────────────────────────────────────
-
 model IntroductionRecord {
-  id           String             @id @default(cuid())
-  matchId      String             @unique
-  match        Match              @relation(fields: [matchId], references: [id], onDelete: Cascade)
-  userAId      String
-  userA        User               @relation("IntroUserA", fields: [userAId], references: [id])
-  userBId      String
-  userB        User               @relation("IntroUserB", fields: [userBId], references: [id])
-  status       IntroductionStatus @default(SENT)
-  introText    String?
-  talkingPoints String[]          @default([])
-  sentVia      String?
-  sentAt       DateTime?
-  followUpAt   DateTime?
-  outcome      String?
-  outcomeNotes String?
-  scheduledAt  DateTime?
-  notes        String?
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
+  id            String             @id @default(cuid())
+  matchId       String             @unique
+  userAId       String
+  userBId       String
+  status        IntroductionStatus @default(SENT)
+  talkingPoints String[]           @default([])
+  scheduledAt   DateTime?
+  notes         String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  followUpAt    DateTime?
+  introText     String?
+  outcome       String?
+  outcomeNotes  String?
+  sentAt        DateTime?
+  sentVia       String?
+  match         Match              @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  userA         User               @relation("IntroUserA", fields: [userAId], references: [id])
+  userB         User               @relation("IntroUserB", fields: [userBId], references: [id])
 
   @@index([userAId])
   @@index([userBId])
@@ -420,51 +249,35 @@ model IntroductionRecord {
   @@map("introduction_records")
 }
 
-enum IntroductionStatus {
-  PENDING_APPROVAL
-  APPROVED
-  SENT
-  VIEWED
-  RESPONDED
-  MEETING_SCHEDULED
-  FOLLOWED_UP
-  COMPLETED
-  CANCELLED
-}
-
 model Activity {
   id        String   @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   type      String
   title     String
   metadata  Json?
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([createdAt])
   @@map("activities")
 }
 
-// ─────────────────────────────────────────────
-// CALLS (Voice AI)
-// ─────────────────────────────────────────────
-
 model Call {
-  id            String     @id @default(cuid())
+  id            String        @id @default(cuid())
   userId        String
-  user          User       @relation(fields: [userId], references: [id])
-  twilioCallSid String?    @unique
-  status        CallStatus @default(SCHEDULED)
+  twilioCallSid String?       @unique
+  status        CallStatus    @default(SCHEDULED)
   direction     CallDirection @default(OUTBOUND)
   phoneNumber   String
   duration      Int?
-  transcript    Json?      @db.JsonB
-  extractedData Json?      @db.JsonB
+  transcript    Json?
+  extractedData Json?
   scheduledAt   DateTime?
   startedAt     DateTime?
   endedAt       DateTime?
-  createdAt     DateTime   @default(now())
+  createdAt     DateTime      @default(now())
+  user          User          @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([status])
@@ -472,59 +285,32 @@ model Call {
   @@map("calls")
 }
 
-enum CallStatus {
-  SCHEDULED
-  IN_PROGRESS
-  COMPLETED
-  FAILED
-  NO_ANSWER
-}
-
-enum CallDirection {
-  INBOUND
-  OUTBOUND
-}
-
-// ─────────────────────────────────────────────
-// EMBEDDINGS (pgvector)
-// ─────────────────────────────────────────────
-
 model UserEmbedding {
-  id        String                       @id @default(cuid())
+  id        String                @id @default(cuid())
   userId    String
-  user      User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vector    Unsupported("vector(1536)")
+  vector    Unsupported("vector")
   source    EmbeddingSource
   content   String
-  createdAt DateTime                     @default(now())
-  updatedAt DateTime                     @updatedAt
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("user_embeddings")
 }
 
-enum EmbeddingSource {
-  PROFILE
-  CONVERSATION
-  CALL_TRANSCRIPT
-}
-
-// ─────────────────────────────────────────────
-// NOTIFICATIONS
-// ─────────────────────────────────────────────
-
 model Notification {
   id        String              @id @default(cuid())
   userId    String
-  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   channel   NotificationChannel
   event     NotificationEvent
   title     String
   body      String
-  metadata  Json?               @db.JsonB
+  metadata  Json?
   sentAt    DateTime?
   readAt    DateTime?
   createdAt DateTime            @default(now())
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([event])
@@ -532,44 +318,19 @@ model Notification {
   @@map("notifications")
 }
 
-enum NotificationChannel {
-  WHATSAPP
-  EMAIL
-  SMS
-  IN_APP
-}
-
-enum NotificationEvent {
-  MATCH_FOUND
-  INTRO_REQUEST
-  INTRO_PENDING
-  INTRO_ACCEPTED
-  INTRO_REJECTED
-  PROFILE_COMPLETE
-  CALL_SCHEDULED
-  CALL_REMINDER
-  MEETING_PROPOSED
-  MEETING_CONFIRMED
-  SECRETARY_DIGEST
-}
-
-// ─────────────────────────────────────────────
-// MESSAGE RECORDS (SMS, WhatsApp, Email)
-// ─────────────────────────────────────────────
-
 model MessageRecord {
-  id              String           @id @default(cuid())
-  userId          String
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  recipientPhone  String
-  channel         MessageChannel
-  content         String
-  status          MessageStatus    @default(QUEUED)
-  messageSid      String?
-  errorMessage    String?
-  provider        String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  id             String         @id @default(cuid())
+  userId         String
+  recipientPhone String
+  channel        MessageChannel
+  content        String
+  status         MessageStatus  @default(QUEUED)
+  messageSid     String?
+  errorMessage   String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  provider       String?
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([channel])
@@ -578,45 +339,25 @@ model MessageRecord {
   @@map("message_records")
 }
 
-enum MessageChannel {
-  SMS
-  WHATSAPP
-  EMAIL
-}
-
-enum MessageStatus {
-  QUEUED
-  SENT
-  DELIVERED
-  FAILED
-  READ
-}
-
-// ─────────────────────────────────────────────
-// DEAL TRACKING (Scout / Deal Partner flow)
-// ─────────────────────────────────────────────
-
 model DealTracking {
-  id              String          @id @default(cuid())
+  id              String        @id @default(cuid())
   dealPartnerId   String
-  dealPartner     User            @relation("DealPartnerDeals", fields: [dealPartnerId], references: [id], onDelete: Cascade)
   founderId       String
-  founder         User            @relation("FounderDeals", fields: [founderId], references: [id], onDelete: Cascade)
-
-  status          DealStatus      @default(OPEN)
+  status          DealStatus    @default(OPEN)
   industry        String?
   stage           CompanyStage?
   notes           String?
-  dealValue       Float?
-  carryPercentage Float?
-  introSent       Boolean         @default(false)
+  introSent       Boolean       @default(false)
   introSentAt     DateTime?
-  introDate       DateTime?
-  closeDate       DateTime?
   responseStatus  DealResponse?
-
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  carryPercentage Float?
+  closeDate       DateTime?
+  dealValue       Float?
+  introDate       DateTime?
+  dealPartner     User          @relation("DealPartnerDeals", fields: [dealPartnerId], references: [id], onDelete: Cascade)
+  founder         User          @relation("FounderDeals", fields: [founderId], references: [id], onDelete: Cascade)
 
   @@unique([dealPartnerId, founderId])
   @@index([dealPartnerId])
@@ -624,24 +365,6 @@ model DealTracking {
   @@index([status])
   @@map("deal_tracking")
 }
-
-enum DealStatus {
-  OPEN
-  INTRO_MADE
-  CLOSED_WON
-  CLOSED_LOST
-}
-
-enum DealResponse {
-  PENDING
-  INTERESTED
-  NOT_INTERESTED
-  MEETING_SCHEDULED
-}
-
-// ─────────────────────────────────────────────
-// EVENTS
-// ─────────────────────────────────────────────
 
 model Event {
   id           String             @id @default(cuid())
@@ -653,15 +376,13 @@ model Event {
   isVirtual    Boolean            @default(false)
   maxCapacity  Int?
   organizerId  String
-  organizer    User               @relation(fields: [organizerId], references: [id], onDelete: Cascade)
   status       EventStatus        @default(UPCOMING)
-  metadata     Json?              @db.JsonB
-
-  participants EventParticipant[]
-  matches      Match[]
-
+  metadata     Json?
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
+  participants EventParticipant[]
+  organizer    User               @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  matches      Match[]
 
   @@index([organizerId])
   @@index([date])
@@ -669,30 +390,22 @@ model Event {
   @@map("events")
 }
 
-enum EventStatus {
-  UPCOMING
-  ACTIVE
-  COMPLETED
-  CANCELLED
-}
-
 model EventParticipant {
-  id               String                  @id @default(cuid())
+  id               String                 @id @default(cuid())
   eventId          String
-  event            Event                   @relation(fields: [eventId], references: [id], onDelete: Cascade)
   userId           String
-  user             User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  status           EventParticipantStatus  @default(REGISTERED)
-  checkedIn        Boolean                 @default(false)
+  status           EventParticipantStatus @default(REGISTERED)
+  checkedIn        Boolean                @default(false)
   notes            String?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
   eventCode        String?
   eventName        String?
   pitchTopic       String?
-  preferredMentors String[]                @default([])
-  registeredAt     DateTime                @default(now())
-
-  createdAt DateTime                @default(now())
-  updatedAt DateTime                @updatedAt
+  preferredMentors String[]               @default([])
+  registeredAt     DateTime               @default(now())
+  event            Event                  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user             User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, userId])
   @@index([eventId])
@@ -700,82 +413,57 @@ model EventParticipant {
   @@map("event_participants")
 }
 
-enum EventParticipantStatus {
-  REGISTERED
-  CONFIRMED
-  WAITLISTED
-  CANCELLED
-  ATTENDED
-}
-
-// ─────────────────────────────────────────────
-// COMMUNICATION PREFERENCES
-// ─────────────────────────────────────────────
-
 model CommunicationPreference {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  emailEnabled    Boolean  @default(true)
-  smsEnabled      Boolean  @default(false)
-  whatsappEnabled Boolean  @default(false)
-  inAppEnabled    Boolean  @default(true)
-
-  matchNotify     Boolean  @default(true)
-  introNotify     Boolean  @default(true)
-  weeklyDigest    Boolean  @default(true)
-  marketingEmails Boolean  @default(false)
-
-  whatsappMatchNotify  Boolean @default(true)
-  whatsappIntroNotify  Boolean @default(true)
-  whatsappWeeklyDigest Boolean @default(true)
-
-  quietHoursStart String?
-  quietHoursEnd   String?
-  timezone        String?  @default("Asia/Kolkata")
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  emailEnabled         Boolean  @default(true)
+  smsEnabled           Boolean  @default(false)
+  whatsappEnabled      Boolean  @default(false)
+  inAppEnabled         Boolean  @default(true)
+  matchNotify          Boolean  @default(true)
+  introNotify          Boolean  @default(true)
+  weeklyDigest         Boolean  @default(true)
+  marketingEmails      Boolean  @default(false)
+  quietHoursStart      String?
+  quietHoursEnd        String?
+  timezone             String?  @default("Asia/Kolkata")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  whatsappIntroNotify  Boolean  @default(true)
+  whatsappMatchNotify  Boolean  @default(true)
+  whatsappWeeklyDigest Boolean  @default(true)
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("communication_preferences")
 }
-
-// ─────────────────────────────────────────────
-// INVITE CODES
-// ─────────────────────────────────────────────
 
 model InviteCode {
   id          String    @id @default(cuid())
   code        String    @unique
   createdById String
-  createdBy   User      @relation("InviteCodeCreator", fields: [createdById], references: [id], onDelete: Cascade)
   usedById    String?   @unique
-  usedBy      User?     @relation("InviteCodeUser", fields: [usedById], references: [id], onDelete: SetNull)
   usedAt      DateTime?
   expiresAt   DateTime?
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
+  createdBy   User      @relation("InviteCodeCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  usedBy      User?     @relation("InviteCodeUser", fields: [usedById], references: [id])
 
   @@index([code])
   @@index([createdById])
   @@map("invite_codes")
 }
 
-// ─────────────────────────────────────────────
-// DIRECT MESSAGES (P2P chat between matched users)
-// ─────────────────────────────────────────────
-
 model DirectMessage {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   senderId    String
-  sender      User     @relation("DirectMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
   recipientId String
-  recipient   User     @relation("DirectMessageRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
   matchId     String?
   content     String
   readAt      DateTime?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
+  recipient   User      @relation("DirectMessageRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  sender      User      @relation("DirectMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@index([senderId])
   @@index([recipientId])
@@ -784,16 +472,10 @@ model DirectMessage {
   @@map("direct_messages")
 }
 
-// ─────────────────────────────────────────────
-// MEETINGS (scheduling between matched users)
-// ─────────────────────────────────────────────
-
 model Meeting {
   id            String        @id @default(cuid())
   organizerId   String
-  organizer     User          @relation("MeetingOrganizer", fields: [organizerId], references: [id], onDelete: Cascade)
   participantId String
-  participant   User          @relation("MeetingParticipant", fields: [participantId], references: [id], onDelete: Cascade)
   matchId       String?
   title         String
   description   String?
@@ -802,11 +484,13 @@ model Meeting {
   duration      Int           @default(30)
   location      String?
   meetingUrl    String?
-  zoomMeetingId String?
   status        MeetingStatus @default(PROPOSED)
   notes         String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+  zoomMeetingId String?
+  organizer     User          @relation("MeetingOrganizer", fields: [organizerId], references: [id], onDelete: Cascade)
+  participant   User          @relation("MeetingParticipant", fields: [participantId], references: [id], onDelete: Cascade)
 
   @@index([organizerId])
   @@index([participantId])
@@ -814,35 +498,19 @@ model Meeting {
   @@map("meetings")
 }
 
-enum MeetingStatus {
-  PROPOSED
-  CONFIRMED
-  CANCELLED
-  COMPLETED
-  RESCHEDULED
-}
-
-// ─────────────────────────────────────────────
-// AI SECRETARY (per-user conversation history)
-// ─────────────────────────────────────────────
-
 model SecretaryMessage {
-  id        String   @id @default(cuid())
+  id        String        @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   role      MessageSender
   content   String
-  metadata  Json?    @db.JsonB
-  createdAt DateTime @default(now())
+  metadata  Json?
+  createdAt DateTime      @default(now())
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([createdAt])
   @@map("secretary_messages")
 }
-
-// ─────────────────────────────────────────────
-// GOOGLE CALENDAR TOKENS
-// ─────────────────────────────────────────────
 
 model GoogleCalendarToken {
   id           String   @id @default(cuid())
@@ -853,15 +521,10 @@ model GoogleCalendarToken {
   email        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("google_calendar_tokens")
 }
-
-// ─────────────────────────────────────────────
-// OAUTH STATE (persistent state for OAuth flows)
-// ─────────────────────────────────────────────
 
 model OAuthState {
   id        String   @id @default(cuid())
@@ -875,10 +538,6 @@ model OAuthState {
   @@index([expiresAt])
   @@map("oauth_states")
 }
-
-// ─────────────────────────────────────────────
-// AGENT RUN LOGS
-// ─────────────────────────────────────────────
 
 model AgentRunLog {
   id               String   @id @default(cuid())
@@ -896,20 +555,16 @@ model AgentRunLog {
   @@map("agent_run_logs")
 }
 
-// ─────────────────────────────────────────────
-// SECURITY AUDIT LOGS
-// ─────────────────────────────────────────────
-
 model SecurityLog {
-  id        String              @id @default(cuid())
-  timestamp DateTime            @default(now())
+  id        String           @id @default(cuid())
+  timestamp DateTime         @default(now())
   userId    String?
   action    SecurityAction
   result    SecurityResult
-  severity  SecuritySeverity    @default(INFO)
+  severity  SecuritySeverity @default(INFO)
   ipAddress String?
   userAgent String?
-  metadata  Json?               @db.JsonB
+  metadata  Json?
 
   @@index([timestamp])
   @@index([userId])
@@ -919,65 +574,17 @@ model SecurityLog {
   @@map("security_logs")
 }
 
-enum SecurityAction {
-  LOGIN_SUCCESS
-  LOGIN_FAILURE
-  SIGNUP
-  LOGOUT
-  PASSWORD_RESET_REQUEST
-  PASSWORD_RESET_COMPLETE
-  EMAIL_VERIFICATION
-  OAUTH_GOOGLE
-  OAUTH_LINKEDIN
-  TOKEN_REFRESH
-  TOKEN_INVALID
-  ACCESS_DENIED
-  ROLE_CHECK_FAILURE
-  PROFILE_VIEW
-  DATA_EXPORT
-  PII_ACCESS
-  ADMIN_DATA_QUERY
-  ROLE_CHANGE
-  CONFIG_CHANGE
-  RATE_LIMIT_HIT
-  REPEATED_AUTH_FAILURE
-  BLOCKED_INPUT
-  ACCOUNT_DELETION
-  PASSWORD_CHANGE
-  MFA_SETUP
-  MFA_ENABLED
-  MFA_VALIDATE
-  REAUTH
-  USER_MANAGEMENT
-}
-
-enum SecurityResult {
-  SUCCESS
-  FAILURE
-  BLOCKED
-}
-
-enum SecuritySeverity {
-  INFO
-  WARNING
-  CRITICAL
-}
-
-// ─────────────────────────────────────────────
-// ADMIN AUDIT LOG
-// ─────────────────────────────────────────────
-
 model AdminAuditLog {
-  id         String   @id @default(cuid())
-  timestamp  DateTime @default(now())
-  actorId    String
-  actor      User     @relation("AuditActor", fields: [actorId], references: [id], onDelete: Cascade)
-  action     String
-  targetId   String?
-  target     User?    @relation("AuditTarget", fields: [targetId], references: [id], onDelete: SetNull)
-  metadata   Json?    @db.JsonB
-  ipAddress  String?
-  userAgent  String?
+  id        String   @id @default(cuid())
+  timestamp DateTime @default(now())
+  actorId   String
+  action    String
+  targetId  String?
+  metadata  Json?
+  ipAddress String?
+  userAgent String?
+  actor     User     @relation("AuditActor", fields: [actorId], references: [id], onDelete: Cascade)
+  target    User?    @relation("AuditTarget", fields: [targetId], references: [id])
 
   @@index([actorId])
   @@index([targetId])
@@ -985,10 +592,6 @@ model AdminAuditLog {
   @@index([timestamp])
   @@map("admin_audit_logs")
 }
-
-// ─────────────────────────────────────────────
-// AI AUDIT & USAGE
-// ─────────────────────────────────────────────
 
 model AIAuditLog {
   id                      String   @id @default(cuid())
@@ -1038,10 +641,6 @@ model AIUsageDaily {
   @@map("ai_usage_daily")
 }
 
-// ─────────────────────────────────────────────
-// WAITLIST
-// ─────────────────────────────────────────────
-
 model Waitlist {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -1055,129 +654,733 @@ model Waitlist {
   @@map("waitlist")
 }
 
-// ─────────────────────────────────────────────
-// AGENT MEMORY SYSTEM (5-Layer)
-// ─────────────────────────────────────────────
-
-// ─────────────────────────────────────────────
-// DRIP EMAILS
-// ─────────────────────────────────────────────
-
-model DripEmail {
-  id           String          @id @default(cuid())
-  userId       String
-  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sequence     DripSequence
-  emailKey     String
-  status       DripEmailStatus @default(PENDING)
-  scheduledFor DateTime
-  sentAt       DateTime?
-  matchId      String?
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-
-  @@unique([userId, sequence, emailKey])
-  @@index([userId])
-  @@index([status, scheduledFor])
-  @@index([matchId])
-  @@map("drip_emails")
-}
-
-enum DripSequence {
-  ONBOARDING
-  MATCH_FOLLOWUP
-  FEEDBACK_REQUEST
-}
-
-enum DripEmailStatus {
-  PENDING
-  SENT
-  SKIPPED
-  FAILED
-}
-
 model AgentWorkingMemory {
-  id        String   @id @default(cuid())
-  agentId   String
+  id        String   @id @default(dbgenerated("(gen_random_uuid())::text"))
+  agentId   String   @unique(map: "agent_working_memory_agentid_key")
   sessionId String?
-  data      Json     @db.JsonB
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  data      Json     @default("{}")
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
-  @@unique([agentId])
-  @@index([agentId])
   @@map("agent_working_memory")
 }
 
 model AgentShortTermMemory {
-  id        String   @id @default(cuid())
+  id        String   @id @default(dbgenerated("(gen_random_uuid())::text"))
   agentId   String
   category  String
   content   String
-  metadata  Json?    @db.JsonB
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+  metadata  Json?    @default("{}")
+  expiresAt DateTime @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
 
-  @@index([agentId])
-  @@index([agentId, category])
-  @@index([expiresAt])
+  @@index([agentId], map: "agent_stm_agent_idx")
   @@map("agent_short_term_memory")
 }
 
 model AgentLongTermMemory {
-  id             String   @id @default(cuid())
-  agentId        String
-  category       String
-  pattern        String
-  evidence       String[]  @default([])
-  confidence     Float     @default(0.5)
+  id              String   @id @default(dbgenerated("(gen_random_uuid())::text"))
+  agentId         String
+  category        String
+  pattern         String
+  evidence        String[] @default([])
+  confidence      Float    @default(0.5)
   occurrenceCount Int      @default(1)
-  metadata       Json?    @db.JsonB
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  metadata        Json?    @default("{}")
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
-  @@index([agentId])
-  @@index([agentId, category])
+  @@index([agentId], map: "agent_ltm_agent_idx")
   @@map("agent_long_term_memory")
 }
 
 model AgentEpisodicMemory {
-  id          String   @id @default(cuid())
+  id          String   @id @default(dbgenerated("(gen_random_uuid())::text"))
   agentId     String
   eventType   String
   title       String
-  description String
+  description String?
   impact      String?
   tags        String[] @default([])
-  metadata    Json?    @db.JsonB
-  occurredAt  DateTime @default(now())
-  createdAt   DateTime @default(now())
+  metadata    Json?    @default("{}")
+  occurredAt  DateTime @default(now()) @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
 
-  @@index([agentId])
-  @@index([agentId, eventType])
-  @@index([occurredAt])
+  @@index([agentId], map: "agent_em_agent_idx")
   @@map("agent_episodic_memory")
 }
 
-model AgentSemanticMemory {
-  id        String                        @id @default(cuid())
-  agentId   String
-  content   String
-  category  String
-  embedding Unsupported("vector(1536)")
-  metadata  Json?                         @db.JsonB
-  createdAt DateTime                      @default(now())
-  updatedAt DateTime                      @updatedAt
-
-  @@index([agentId])
-  @@index([agentId, category])
-  @@map("agent_semantic_memory")
+model ad_performance {
+  id            Int       @id @default(autoincrement())
+  platform      String
+  campaign_name String    @default("")
+  ad_set        String?   @default("")
+  spend         Decimal?  @default(0) @db.Decimal
+  impressions   Int?      @default(0)
+  clicks        Int?      @default(0)
+  conversions   Int?      @default(0)
+  ctr           Decimal?  @default(0) @db.Decimal
+  cpc           Decimal?  @default(0) @db.Decimal
+  cpa           Decimal?  @default(0) @db.Decimal
+  roas          Decimal?  @default(0) @db.Decimal
+  date          DateTime  @default(dbgenerated("CURRENT_DATE")) @db.Date
+  metadata      Json?     @default("{}")
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
 }
 
-enum AgentMemoryLayer {
-  WORKING
-  SHORT_TERM
-  LONG_TERM
-  EPISODIC
-  SEMANTIC
+model audit_log {
+  id                 Int       @id @default(autoincrement())
+  agent_id           String
+  action_type        String
+  action_description String?   @default("")
+  entity_type        String?   @default("")
+  entity_id          String?   @default("")
+  risk_score         Int?      @default(1)
+  cost_amount        Decimal?  @default(0) @db.Decimal
+  cost_currency      String?   @default("USD")
+  input_summary      String?   @default("")
+  output_summary     String?   @default("")
+  status             String?   @default("success")
+  metadata           Json?     @default("{}")
+  created_at         DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([action_type], map: "idx_audit_log_action")
+  @@index([agent_id], map: "idx_audit_log_agent")
+}
+
+model content_calendar {
+  id                     Int                      @id @default(autoincrement())
+  agent_id               String
+  platform               String
+  content_type           String
+  title                  String                   @default("")
+  body                   String                   @default("")
+  media_urls             String[]                 @default([])
+  media_hints            String?                  @default("")
+  content_pillar         String?                  @default("")
+  hook                   String?                  @default("")
+  cta                    String?                  @default("")
+  target_audience        String?                  @default("")
+  funnel_stage           String?                  @default("")
+  scheduled_time         DateTime?                @db.Timestamptz(6)
+  published_at           DateTime?                @db.Timestamptz(6)
+  risk_score             Int?                     @default(1)
+  risk_factors           Json?                    @default("[]")
+  status                 String?                  @default("draft")
+  approval_notes         String?
+  publish_result         Json?                    @default("{}")
+  metadata               Json?                    @default("{}")
+  created_at             DateTime?                @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime?                @default(now()) @db.Timestamptz(6)
+  founder_approval_queue founder_approval_queue[]
+
+  @@index([agent_id], map: "idx_content_calendar_agent")
+  @@index([scheduled_time], map: "idx_content_calendar_scheduled")
+  @@index([status], map: "idx_content_calendar_status")
+}
+
+model dm_agent_chat_history {
+  id         Int       @id @default(autoincrement())
+  agent_id   String
+  user_id    String?
+  role       String    @default("user")
+  content    String    @default("")
+  metadata   Json?     @default("{}")
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([agent_id, created_at(sort: Desc)], map: "idx_agent_chat_history_agent")
+  @@index([user_id, agent_id], map: "idx_agent_chat_history_user")
+}
+
+model dm_agent_comms {
+  id            Int       @id @default(autoincrement())
+  from_agent_id String
+  to_agent_id   String
+  message_type  String    @default("message")
+  subject       String?   @default("")
+  content       String    @default("")
+  priority      String?   @default("normal")
+  status        String?   @default("unread")
+  parent_id     Int?
+  metadata      Json?     @default("{}")
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([from_agent_id, created_at(sort: Desc)], map: "idx_agent_comms_from")
+  @@index([to_agent_id, status, created_at(sort: Desc)], map: "idx_agent_comms_to")
+  @@index([message_type], map: "idx_agent_comms_type")
+}
+
+model dm_agent_logs {
+  id         Int       @id @default(autoincrement())
+  agent_id   String
+  action     String
+  details    Json?     @default("{}")
+  status     String?   @default("success")
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  dm_agents  dm_agents @relation(fields: [agent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model dm_agent_messages {
+  id           Int       @id @default(autoincrement())
+  agent_id     String
+  direction    String?   @default("inbound")
+  message      String    @default("")
+  message_type String?   @default("text")
+  read         Boolean?  @default(false)
+  metadata     Json?     @default("{}")
+  created_at   DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([agent_id], map: "idx_agent_messages_agent")
+}
+
+model dm_agent_state {
+  id                Int       @id @default(autoincrement())
+  agent_id          String    @unique
+  status            String?   @default("idle")
+  last_run_at       DateTime? @db.Timestamptz(6)
+  last_run_duration Int?
+  last_run_status   String?
+  enabled           Boolean?  @default(true)
+  cron_expression   String?
+  cron_description  String?
+  created_at        DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime? @default(now()) @db.Timestamptz(6)
+  autonomy_level    String?   @default("manual")
+  guardrails        Json?     @default("{}")
+}
+
+model dm_agent_tasks {
+  id             Int       @id @default(autoincrement())
+  agent_id       String
+  title          String
+  description    String?
+  status         String?   @default("pending")
+  priority       String?   @default("medium")
+  created_at     DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime? @default(now()) @db.Timestamptz(6)
+  assigned_model String?
+  dm_agents      dm_agents @relation(fields: [agent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model dm_agents {
+  id             String           @id
+  name           String
+  role           String?
+  description    String?
+  status         String?          @default("idle")
+  color          String?
+  icon           String?
+  tools          String[]         @default([])
+  schedule       String?
+  last_run_at    DateTime?        @db.Timestamptz(6)
+  created_at     DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime?        @default(now()) @db.Timestamptz(6)
+  dm_agent_logs  dm_agent_logs[]
+  dm_agent_tasks dm_agent_tasks[]
+}
+
+model dm_campaign_metrics {
+  id            Int       @id @default(autoincrement())
+  agent_id      String
+  campaign_name String?   @default("")
+  platform      String?   @default("")
+  status        String?   @default("active")
+  impressions   Int?      @default(0)
+  clicks        Int?      @default(0)
+  conversions   Int?      @default(0)
+  spend         Decimal?  @default(0) @db.Decimal
+  revenue       Decimal?  @default(0) @db.Decimal
+  roas          Decimal?  @default(0) @db.Decimal
+  start_date    DateTime? @db.Date
+  end_date      DateTime? @db.Date
+  metadata      Json?     @default("{}")
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model dm_code_changes {
+  id           Int       @id @default(autoincrement())
+  agent_id     String
+  file_path    String?   @default("")
+  change_type  String?   @default("modify")
+  description  String?   @default("")
+  diff_summary String?   @default("")
+  status       String?   @default("pending")
+  metadata     Json?     @default("{}")
+  created_at   DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([agent_id], map: "idx_code_changes_agent")
+}
+
+model dm_content_queue {
+  id            Int       @id @default(autoincrement())
+  agent_id      String
+  content_type  String
+  title         String?
+  content       String?
+  platform      String?
+  status        String?   @default("draft")
+  scheduled_for DateTime? @db.Timestamptz(6)
+  metadata      Json?     @default("{}")
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model dm_daily_briefings {
+  id            Int       @id @default(autoincrement())
+  briefing_date DateTime  @db.Date
+  content       Json      @default("{}")
+  generated_by  String?   @default("nexus")
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model dm_decision_debates {
+  id           Int          @id @default(autoincrement())
+  decision_id  Int
+  agent_id     String
+  agent_name   String
+  position     String?      @default("neutral")
+  argument     String       @default("")
+  data_points  Json?        @default("{}")
+  created_at   DateTime?    @default(now()) @db.Timestamptz(6)
+  dm_decisions dm_decisions @relation(fields: [decision_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model dm_decisions {
+  id                  Int                   @id @default(autoincrement())
+  title               String
+  context             String                @default("")
+  options             String[]              @default([])
+  requesting_agent    String
+  urgency             String?               @default("medium")
+  status              String?               @default("pending")
+  chosen_option       String?
+  outcome             String?
+  founder_notes       String?
+  created_at          DateTime?             @default(now()) @db.Timestamptz(6)
+  decided_at          DateTime?             @db.Timestamptz(6)
+  dm_decision_debates dm_decision_debates[]
+}
+
+model dm_execution_log {
+  id                 Int       @id @default(autoincrement())
+  agent_id           String
+  action_type        String
+  action_description String?
+  autonomy_level     String?   @default("manual")
+  guardrails_checked String[]  @default([])
+  guardrail_result   String?   @default("passed")
+  execution_result   String?   @default("success")
+  details            Json?     @default("{}")
+  spend_amount       Decimal?  @default(0) @db.Decimal
+  executed_at        DateTime? @default(now()) @db.Timestamptz(6)
+  created_at         DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model dm_files {
+  id              Int       @id @default(autoincrement())
+  file_id         String    @unique
+  original_name   String
+  stored_name     String
+  mime_type       String    @default("application/octet-stream")
+  size_bytes      Int       @default(0)
+  category        String    @default("upload")
+  created_by      String
+  created_by_type String    @default("user")
+  description     String?   @default("")
+  metadata        Json?     @default("{}")
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([category], map: "idx_files_category")
+  @@index([created_by, created_at(sort: Desc)], map: "idx_files_created_by")
+  @@index([file_id], map: "idx_files_file_id")
+}
+
+model dm_shared_memory {
+  id              Int       @id @default(autoincrement())
+  author_agent_id String
+  category        String    @default("general")
+  title           String    @default("")
+  content         String    @default("")
+  importance      String?   @default("normal")
+  tags            String[]  @default([])
+  metadata        Json?     @default("{}")
+  expires_at      DateTime? @db.Timestamptz(6)
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([author_agent_id], map: "idx_shared_memory_author")
+  @@index([category], map: "idx_shared_memory_category")
+  @@index([importance], map: "idx_shared_memory_importance")
+}
+
+model dm_system_flags {
+  key        String    @id
+  value      Json      @default("{}")
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model experiments {
+  id                  Int       @id @default(autoincrement())
+  agent_id            String?   @default("catalyst")
+  name                String
+  hypothesis          String?   @default("")
+  variant_a           String?   @default("")
+  variant_b           String?   @default("")
+  metric              String?   @default("")
+  target_sample_size  Int?      @default(100)
+  current_sample_size Int?      @default(0)
+  result_a            Decimal?  @db.Decimal
+  result_b            Decimal?  @db.Decimal
+  winner              String?
+  status              String?   @default("draft")
+  started_at          DateTime? @db.Timestamptz(6)
+  ended_at            DateTime? @db.Timestamptz(6)
+  metadata            Json?     @default("{}")
+  created_at          DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model faq_kb {
+  id            Int       @id @default(autoincrement())
+  question      String
+  answer        String    @default("")
+  category      String?   @default("general")
+  source        String?   @default("agent")
+  helpful_count Int?      @default(0)
+  view_count    Int?      @default(0)
+  status        String?   @default("active")
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model founder_approval_queue {
+  id                  Int               @id @default(autoincrement())
+  content_calendar_id Int?
+  agent_id            String
+  title               String            @default("")
+  summary             String?           @default("")
+  risk_score          Int?              @default(1)
+  risk_factors        Json?             @default("[]")
+  status              String?           @default("pending")
+  founder_notes       String?
+  decided_at          DateTime?         @db.Timestamptz(6)
+  created_at          DateTime?         @default(now()) @db.Timestamptz(6)
+  content_calendar    content_calendar? @relation(fields: [content_calendar_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([status], map: "idx_approval_queue_status")
+}
+
+model outreach_crm {
+  id                Int       @id @default(autoincrement())
+  agent_id          String?   @default("closer")
+  contact_name      String    @default("")
+  contact_email     String?   @default("")
+  contact_linkedin  String?   @default("")
+  company           String?   @default("")
+  role              String?   @default("")
+  stage             String?   @default("prospect")
+  last_contacted_at DateTime? @db.Timestamptz(6)
+  next_follow_up    DateTime? @db.Timestamptz(6)
+  sequence_step     Int?      @default(0)
+  notes             String?   @default("")
+  score             Int?      @default(0)
+  metadata          Json?     @default("{}")
+  created_at        DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model qa_daily_reports {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  report_date       DateTime  @unique @db.Date
+  summary           String?
+  full_report       Json?
+  total_tests       Int?
+  passed            Int?
+  failed            Int?
+  warnings          Int?
+  avg_response_time Decimal?  @db.Decimal(10, 2)
+  critical_failures Json?
+  created_at        DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([report_date], map: "idx_qa_reports_date")
+}
+
+model seo_daily_reports {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  report_date      DateTime  @unique @db.Date
+  summary          String?
+  full_report      Json?
+  pages_audited    Int?
+  critical_issues  Int?      @default(0)
+  high_issues      Int?      @default(0)
+  medium_issues    Int?      @default(0)
+  seo_score        Decimal?  @db.Decimal(5, 2)
+  geo_score        Decimal?  @db.Decimal(5, 2)
+  competitor_data  Json?
+  keyword_rankings Json?
+  recommendations  Json?
+  created_at       DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([report_date], map: "idx_seo_reports_date")
+}
+
+model tickets {
+  id             Int       @id @default(autoincrement())
+  user_id        String?
+  subject        String    @default("")
+  body           String?   @default("")
+  channel        String?   @default("email")
+  priority       String?   @default("medium")
+  status         String?   @default("open")
+  assigned_agent String?   @default("ally")
+  resolution     String?
+  resolved_at    DateTime? @db.Timestamptz(6)
+  metadata       Json?     @default("{}")
+  created_at     DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+enum Role {
+  USER
+  ADMIN
+  VIEWER
+  MANAGER
+}
+
+enum UserTier {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum PersonaType {
+  FOUNDER
+  INVESTOR
+  ADVISOR
+  OPERATOR
+  JOB_SEEKER
+  RECRUITER
+  FREELANCER
+  OTHER
+  TALENT
+  DEAL_PARTNER
+  VENTURE_PARTNER
+  EVENT_PARTICIPANT
+}
+
+enum FounderPriority {
+  FUNDRAISING
+  COFOUNDER
+  HIRING
+  MARKETING
+  SALES_BD
+  VENTURE_PARTNER_HIRE
+}
+
+enum TalentTargetRole {
+  FOUNDING_ENGINEER
+  FOUNDING_GTM
+  CHIEF_OF_STAFF
+  GROWTH_CONTENT
+  OPEN_APPLICATION
+  COFOUNDER
+}
+
+enum CompanyStage {
+  PRE_SEED
+  SEED
+  SERIES_A
+  SERIES_B
+  SERIES_C_PLUS
+  GROWTH
+  PUBLIC
+  BOOTSTRAPPED
+}
+
+enum IntroPreference {
+  WARM_ONLY
+  COLD_OK
+  OPEN_TO_BOTH
+}
+
+enum WorkStyle {
+  REMOTE
+  IN_OFFICE
+  HYBRID
+}
+
+enum ConversationStatus {
+  ACTIVE
+  COMPLETED
+  ABANDONED
+  PAUSED
+}
+
+enum MessageSender {
+  USER
+  AI
+  SYSTEM
+}
+
+enum MatchStatus {
+  PROPOSED
+  PENDING_A
+  PENDING_B
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum MatchResponse {
+  ACCEPTED
+  REJECTED
+  PENDING
+}
+
+enum IntroductionStatus {
+  SENT
+  VIEWED
+  RESPONDED
+  MEETING_SCHEDULED
+  PENDING_APPROVAL
+  APPROVED
+  FOLLOWED_UP
+  COMPLETED
+  CANCELLED
+}
+
+enum CallStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  NO_ANSWER
+}
+
+enum CallDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum EmbeddingSource {
+  PROFILE
+  CONVERSATION
+  CALL_TRANSCRIPT
+}
+
+enum NotificationChannel {
+  WHATSAPP
+  EMAIL
+  SMS
+  IN_APP
+}
+
+enum NotificationEvent {
+  MATCH_FOUND
+  INTRO_REQUEST
+  INTRO_ACCEPTED
+  INTRO_REJECTED
+  PROFILE_COMPLETE
+  CALL_SCHEDULED
+  CALL_REMINDER
+  INTRO_PENDING
+  MEETING_PROPOSED
+  MEETING_CONFIRMED
+  SECRETARY_DIGEST
+}
+
+enum MessageChannel {
+  SMS
+  WHATSAPP
+  EMAIL
+}
+
+enum MessageStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+  READ
+}
+
+enum DealStatus {
+  OPEN
+  INTRO_MADE
+  CLOSED_WON
+  CLOSED_LOST
+}
+
+enum DealResponse {
+  PENDING
+  INTERESTED
+  NOT_INTERESTED
+  MEETING_SCHEDULED
+}
+
+enum EventStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum EventParticipantStatus {
+  REGISTERED
+  CONFIRMED
+  WAITLISTED
+  CANCELLED
+  ATTENDED
+}
+
+enum MeetingStatus {
+  PROPOSED
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  RESCHEDULED
+}
+
+enum SecurityAction {
+  LOGIN_SUCCESS
+  LOGIN_FAILURE
+  SIGNUP
+  LOGOUT
+  PASSWORD_RESET_REQUEST
+  PASSWORD_RESET_COMPLETE
+  EMAIL_VERIFICATION
+  OAUTH_GOOGLE
+  OAUTH_LINKEDIN
+  TOKEN_REFRESH
+  TOKEN_INVALID
+  ACCESS_DENIED
+  ROLE_CHECK_FAILURE
+  PROFILE_VIEW
+  DATA_EXPORT
+  PII_ACCESS
+  ADMIN_DATA_QUERY
+  ROLE_CHANGE
+  CONFIG_CHANGE
+  RATE_LIMIT_HIT
+  REPEATED_AUTH_FAILURE
+  BLOCKED_INPUT
+  ACCOUNT_DELETION
+  PASSWORD_CHANGE
+  MFA_SETUP
+  MFA_ENABLED
+  MFA_VALIDATE
+  REAUTH
+  USER_MANAGEMENT
+}
+
+enum SecurityResult {
+  SUCCESS
+  FAILURE
+  BLOCKED
+}
+
+enum SecuritySeverity {
+  INFO
+  WARNING
+  CRITICAL
 }
