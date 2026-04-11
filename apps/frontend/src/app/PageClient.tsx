@@ -983,12 +983,12 @@ export default function Home() {
         }}
       >
         <div className={`max-w-[1400px] mx-auto px-6 sm:px-10 lg:px-16 flex items-center justify-between transition-[padding] duration-300 ${scrolled ? 'py-3' : 'py-5'}`}>
-          <div className="flex items-center gap-2.5">
+          <a href="/" className="flex items-center gap-2.5 no-underline">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}>
               <span className="text-white font-bold text-sm">C</span>
             </div>
             <span className="text-white font-bold text-lg tracking-tight">Cleya.ai</span>
-          </div>
+          </a>
 
           <div className="hidden md:flex items-center gap-1">
             <button onClick={() => scrollToSection('how-it-works')} className="px-4 py-2 text-sm text-white/50 hover:text-white transition-colors rounded-lg hover:bg-white/[0.03]">

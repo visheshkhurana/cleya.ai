@@ -111,11 +111,11 @@ export default function MobileNav() {
             style={{ background: '#080D1A' }}
           >
             <div className="flex items-center justify-between p-4 border-b border-white/5">
-              <div className="flex items-center gap-2">
+              <a href="/" className="flex items-center gap-2 no-underline">
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold"
                   style={{ background: '#6C63FF' }}>C</div>
                 <span className="text-white font-semibold text-[13px]">Cleya.ai</span>
-              </div>
+              </a>
               <div className="flex items-center gap-2">
                 <button
                   ref={closeRef}
