@@ -13,6 +13,7 @@ import { posthogService } from './posthogService';
 import { sentryService } from './sentryService';
 import { ayrshareService } from './ayrshareService';
 import { adsService } from './adsService';
+import { adCampaignAutomation } from './adCampaignAutomation';
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -880,4 +881,107 @@ Keep messages concise, value-focused. Aim for >15% reply rate.`;
 
   console.log(`[AutonomousWorkflows] Closer Sales Pipeline completed (${salesContent.length} chars)`);
   return salesContent;
+}
+
+// ---------------------------------------------------------------------------
+// 8. AD CAMPAIGN AUTOMATION — Autonomous Ad Management (Every 6 hours)
+// ---------------------------------------------------------------------------
+
+export async function runAdCampaignAutomation(): Promise<string> {
+  console.log('[AutonomousWorkflows] Running Ad Campaign Automation...');
+
+  // 1. Monitor & optimize all active campaigns
+  const optimizationResult = await safeQuery('ad optimization', () =>
+    adCampaignAutomation.monitorAndOptimize()
+  );
+
+  // 2. Generate cross-platform campaign report
+  const reportResult = await safeQuery('campaign report', () =>
+    adCampaignAutomation.generateCampaignReport()
+  );
+
+  // 3. Check if it's time to launch fresh campaigns (weekly — Mondays)
+  const isMonday = new Date().getDay() === 1;
+  let newCampaignResult: any = null;
+  if (isMonday) {
+    // Get Catalyst's latest growth recommendations to inform new campaigns
+    const growthReports = await safeQuery('growth reports', () =>
+      supabaseSelect<any>('growth_reports', {}, { order: 'report_date.desc', limit: 1 })
+    );
+
+    const growthContext = growthReports?.[0]?.summary || '';
+
+    const strategyPrompt = `You are Ledger, Cleya.ai's Finance Agent working with Catalyst's growth insights.
+
+Latest growth analysis: ${growthContext}
+
+Based on this data, what should be the primary advertising objective this week?
+Choose ONE from: BRAND_AWARENESS, LEAD_GENERATION, CONVERSIONS, TRAFFIC
+Reply with just the objective word.`;
+
+    const objectiveRaw = await llmGenerate('ledger', 'financial_report', strategyPrompt);
+    const objective = ['BRAND_AWARENESS', 'LEAD_GENERATION', 'CONVERSIONS', 'TRAFFIC'].find(
+      o => objectiveRaw.toUpperCase().includes(o)
+    ) || 'LEAD_GENERATION';
+
+    const strategy = await safeQuery('generate strategy', () =>
+      adCampaignAutomation.generateCampaignStrategy(objective, 30000, ['meta', 'linkedin', 'google'])
+    );
+
+    if (strategy) {
+      newCampaignResult = await safeQuery('launch campaigns', () =>
+        adCampaignAutomation.launchCampaign(strategy)
+      );
+    }
+  }
+
+  // 4. Build combined report
+  const summaryParts: string[] = [];
+
+  if (optimizationResult) {
+    summaryParts.push(`Optimization: ${optimizationResult.summary}`);
+    if (optimizationResult.actions.length > 0) {
+      for (const action of optimizationResult.actions) {
+        summaryParts.push(`  - ${action.action.toUpperCase()} ${action.platform}/${action.campaignName || action.campaignId}: ${action.reason}`);
+      }
+    }
+  } else {
+    summaryParts.push('Optimization: skipped (error)');
+  }
+
+  if (reportResult) {
+    summaryParts.push(`Report: generated (${reportResult.report.length} chars)`);
+  }
+
+  if (newCampaignResult) {
+    const successCount = newCampaignResult.results?.filter((r: any) => r.success).length || 0;
+    const totalCount = newCampaignResult.results?.length || 0;
+    summaryParts.push(`New campaigns: ${successCount}/${totalCount} launched successfully`);
+  }
+
+  const combinedSummary = summaryParts.join('\n');
+
+  // 5. Save to financial_daily_reports
+  await safeQuery('save automation report', () =>
+    supabaseInsert('financial_daily_reports', {
+      report_date: todayISO(),
+      report_type: 'ad_automation',
+      summary: combinedSummary.substring(0, 500),
+      full_report: {
+        content: combinedSummary,
+        optimization: optimizationResult,
+        campaignReport: reportResult?.report?.substring(0, 2000),
+        newCampaigns: newCampaignResult,
+        generated_at: new Date().toISOString(),
+      },
+      ad_spend: reportResult?.platformData || {},
+      campaign_performance: optimizationResult?.actions || [],
+      razorpay_summary: null,
+      recommendations: [],
+      created_at: new Date().toISOString(),
+    })
+  );
+
+  console.log(`[AutonomousWorkflows] Ad Campaign Automation completed (${combinedSummary.length} chars)`);
+  return combinedSummary;
 }
