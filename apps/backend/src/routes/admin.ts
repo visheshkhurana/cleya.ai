@@ -89,17 +89,35 @@ adminRouter.get('/users', async (req: Request, res: Response, next: NextFunction
       prisma.user.count(),
     ]);
 
+    const userIds = users.map(u => u.id);
+    const subscriptions = await prisma.subscription.findMany({
+      where: { userId: { in: userIds } },
+    });
+    const subMap = new Map(subscriptions.map(s => [s.userId, s]));
+
     res.json({
       success: true,
-      data: users.map((u) => ({
-        id: u.id,
-        email: u.email,
-        phone: u.phone,
-        role: u.role,
-        isActive: u.isActive,
-        createdAt: u.createdAt,
-        profile: u.profile,
-      })),
+      data: users.map((u) => {
+        const sub = subMap.get(u.id);
+        return {
+          id: u.id,
+          email: u.email,
+          phone: u.phone,
+          role: u.role,
+          tier: u.tier,
+          matchesUsed: u.matchesUsed,
+          isActive: u.isActive,
+          createdAt: u.createdAt,
+          profile: u.profile,
+          subscription: sub ? {
+            status: sub.status,
+            razorpaySubscriptionId: sub.razorpaySubscriptionId,
+            currentPeriodStart: sub.currentPeriodStart,
+            currentPeriodEnd: sub.currentPeriodEnd,
+            cancelledAt: sub.cancelledAt,
+          } : null,
+        };
+      }),
       meta: { page, limit, total },
     });
   } catch (error) {

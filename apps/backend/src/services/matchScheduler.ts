@@ -5,6 +5,7 @@ import { vectorMatchingService } from './vectorMatchingService';
 import { slackService } from './slackService';
 import { linkedinEnrichmentService } from './linkedinEnrichmentService';
 import { dripCampaignService } from './dripCampaignService';
+import { FREE_MATCH_LIMIT } from './razorpayService';
 
 class MatchScheduler {
   private tasks: ScheduledTask[] = [];
@@ -95,6 +96,14 @@ class MatchScheduler {
 
       for (const profile of profiles) {
         try {
+          const user = await prisma.user.findUnique({
+            where: { id: profile.userId },
+            select: { tier: true, matchesUsed: true },
+          });
+          if (user && user.tier === 'FREE' && user.matchesUsed >= FREE_MATCH_LIMIT) {
+            continue;
+          }
+
           const proposed = await matchingService.findAndAutoPropose(profile.userId, 3);
           totalProposed += proposed.length;
           usersProcessed++;

@@ -57,10 +57,12 @@ model User {
   participantMeetings     Meeting[]                @relation("MeetingParticipant")
   messageRecords          MessageRecord[]
   notifications           Notification[]
+  matchesUsed             Int                      @default(0)
   profile                 Profile?
   secretaryThreads        SecretaryMessage[]
   embeddings              UserEmbedding[]
   dripEmails              DripEmail[]
+  subscription            Subscription?
 
   @@index([email])
   @@index([phone])
@@ -1416,4 +1418,35 @@ model DripEmail {
   @@index([status, scheduledFor])
   @@index([userId])
   @@map("drip_emails")
+}
+
+model Subscription {
+  id                      String             @id @default(cuid())
+  userId                  String             @unique
+  razorpaySubscriptionId  String?            @unique
+  razorpayPlanId          String?
+  razorpayCustomerId      String?
+  status                  SubscriptionStatus @default(INACTIVE)
+  currentPeriodStart      DateTime?
+  currentPeriodEnd        DateTime?
+  cancelledAt             DateTime?
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+  user                    User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([razorpaySubscriptionId])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+enum SubscriptionStatus {
+  INACTIVE
+  CREATED
+  AUTHENTICATED
+  ACTIVE
+  PENDING
+  HALTED
+  CANCELLED
+  COMPLETED
+  EXPIRED
 }

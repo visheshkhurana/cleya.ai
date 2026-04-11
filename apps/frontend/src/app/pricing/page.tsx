@@ -7,7 +7,7 @@ const faqs = [
   },
   {
     q: 'Can I try before I pay?',
-    a: 'Yes. The Free plan gives you access to core features with a limited number of matches. Professional and Growth plans include a 14-day free trial so you can experience the full platform before committing.',
+    a: 'Yes! Every user gets 5 free matches to experience the platform. Once you\'ve used your free matches, you can subscribe to the Professional plan for unlimited matches and premium features.',
   },
   {
     q: 'What makes Cleya different from LinkedIn?',

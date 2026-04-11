@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { useState } from 'react';
 import PublicNav from '@/components/PublicNav';
 import AppShell from '@/components/AppShell';
+import { api } from '@/lib/api';
+import { useToast } from '@/components/Toast';
 
 const plans = [
   {
@@ -12,7 +14,7 @@ const plans = [
     description: 'Perfect for exploring the platform',
     features: [
       'AI-powered profile creation',
-      'Up to 3 matches per month',
+      '5 free matches (lifetime)',
       'Basic match insights',
       'Community access',
       'Email notifications',
@@ -20,6 +22,7 @@ const plans = [
     cta: 'Get Started',
     href: '/?action=signup',
     highlight: false,
+    isSubscription: false,
   },
   {
     name: 'Professional',
@@ -36,10 +39,11 @@ const plans = [
       'Advanced filters & search',
       'Weekly match digest',
     ],
-    cta: 'Start Free Trial',
+    cta: 'Subscribe Now',
     href: '/?action=signup',
     highlight: true,
     badge: 'Most Popular',
+    isSubscription: true,
   },
   {
     name: 'Growth',
@@ -56,9 +60,10 @@ const plans = [
       'API access (beta)',
       'Team collaboration (up to 3)',
     ],
-    cta: 'Start Free Trial',
+    cta: 'Coming Soon',
     href: '/?action=signup',
     highlight: false,
+    isSubscription: false,
   },
 ];
 
@@ -69,7 +74,7 @@ const faqs = [
   },
   {
     q: 'Can I try before I pay?',
-    a: 'Yes. The Free plan gives you access to core features with a limited number of matches. Professional and Growth plans include a 14-day free trial so you can experience the full platform before committing.',
+    a: 'Yes! Every user gets 5 free matches to experience the platform. Once you\'ve used your free matches, you can subscribe to the Professional plan for unlimited matches and premium features.',
   },
   {
     q: 'What makes Cleya different from LinkedIn?',
@@ -92,6 +97,51 @@ const faqs = [
 export default function PricingClient() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [annual, setAnnual] = useState(false);
+  const [subscribing, setSubscribing] = useState(false);
+  const toast = useToast();
+
+  const handleSubscribe = async () => {
+    setSubscribing(true);
+    try {
+      const data = await api.createSubscription();
+      if (data.subscriptionId && data.keyId && typeof window !== 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.onload = () => {
+          const options = {
+            key: data.keyId,
+            subscription_id: data.subscriptionId,
+            name: 'Cleya.ai',
+            description: 'Pro Subscription - Unlimited Matches',
+            handler: () => {
+              toast.success('Subscription activated! You now have unlimited matches.');
+              window.location.href = '/matches';
+            },
+            modal: {
+              ondismiss: () => {
+                setSubscribing(false);
+              },
+            },
+            theme: { color: '#6C63FF' },
+          };
+          const rzp = new (window as any).Razorpay(options);
+          rzp.open();
+        };
+        document.body.appendChild(script);
+      } else if (data.shortUrl) {
+        window.open(data.shortUrl, '_blank');
+      }
+    } catch (err: any) {
+      console.error('Subscription failed:', err);
+      if (err.message?.includes('Missing or invalid authorization') || err.message?.includes('Unauthorized')) {
+        window.location.href = '/?action=signup';
+      } else {
+        toast.error(err.message || 'Unable to start subscription. Please try again.');
+      }
+    } finally {
+      setSubscribing(false);
+    }
+  };
 
   return (
     <AppShell className="font-sans">
@@ -155,13 +205,23 @@ export default function PricingClient() {
                       </li>
                     ))}
                   </ul>
-                  <Link href={plan.href}
-                    className={`block text-center py-3 rounded-xl text-sm font-medium transition hover:scale-[1.02] ${
-                      plan.highlight ? 'text-white' : 'text-white border border-white/10 hover:border-white/20'
-                    }`}
-                    style={plan.highlight ? { background: '#6C63FF', boxShadow: '0 0 20px rgba(108,99,255,0.2)' } : {}}>
-                    {plan.cta}
-                  </Link>
+                  {plan.isSubscription ? (
+                    <button
+                      onClick={handleSubscribe}
+                      disabled={subscribing}
+                      className="block w-full text-center py-3 rounded-xl text-sm font-medium text-white transition hover:scale-[1.02] disabled:opacity-50"
+                      style={{ background: '#6C63FF', boxShadow: '0 0 20px rgba(108,99,255,0.2)' }}>
+                      {subscribing ? 'Setting up...' : plan.cta}
+                    </button>
+                  ) : (
+                    <Link href={plan.href}
+                      className={`block text-center py-3 rounded-xl text-sm font-medium transition hover:scale-[1.02] ${
+                        plan.highlight ? 'text-white' : 'text-white border border-white/10 hover:border-white/20'
+                      }`}
+                      style={plan.highlight ? { background: '#6C63FF', boxShadow: '0 0 20px rgba(108,99,255,0.2)' } : {}}>
+                      {plan.cta}
+                    </Link>
+                  )}
                 </div>
               );
             })}

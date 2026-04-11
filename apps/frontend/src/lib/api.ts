@@ -233,6 +233,14 @@ class ApiClient {
     });
   }
 
+  async getSubscriptionStatus() {
+    return this.fetch('/subscription/status');
+  }
+
+  async createSubscription() {
+    return this.fetch('/subscription/create', { method: 'POST' });
+  }
+
   // Notifications
   async getNotifications(limit = 20) {
     return this.fetch(`/notifications?limit=${limit}`);

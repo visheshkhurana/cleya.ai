@@ -31,6 +31,7 @@ Monorepo with:
 **Optional (graceful fallback):** `OPENAI_API_KEY` (AI chat → fallback responses), `ANTHROPIC_API_KEY` (Claude models for content/support), `GOOGLE_AI_API_KEY` (Gemini models for Indian language content/research), `GUPSHUP_API_KEY` + `GUPSHUP_APP_NAME` + `GUPSHUP_SOURCE_NUMBER` (Gupshup WhatsApp — sole messaging provider), `GUPSHUP_TEMPLATE_NAMESPACE` (Gupshup template messages), `GUPSHUP_WEBHOOK_SECRET` (optional webhook verification), `SMTP_*` (emails logged only), `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` + `GOOGLE_REDIRECT_URI` (Google Calendar + Google login), `LINKEDIN_CLIENT_ID` + `LINKEDIN_CLIENT_SECRET` (LinkedIn login hidden), `SENTRY_DSN` (backend error tracking), `NEXT_PUBLIC_SENTRY_DSN` (frontend error tracking via CDN), `NEXT_PUBLIC_POSTHOG_KEY` (PostHog analytics), `NEXT_PUBLIC_GA_MEASUREMENT_ID` (Google Analytics 4)
 **Admin Analytics Integrations (optional):** `GA4_PROPERTY_ID` + `GA4_SERVICE_ACCOUNT_KEY` (GA4 Data API — website traffic in Control Tower), `INSTAGRAM_ACCESS_TOKEN` + `INSTAGRAM_BUSINESS_ACCOUNT_ID` (Instagram Graph API — social metrics), `POSTHOG_API_KEY` + `POSTHOG_HOST` + `POSTHOG_PROJECT_ID` (PostHog API — product analytics), `SENTRY_AUTH_TOKEN` + `SENTRY_ORG` + `SENTRY_PROJECT` (Sentry API — error tracking analytics in Control Tower). All show "Not configured" UI when missing.
 **Publishing Integrations (optional):** `LINKEDIN_PAGE_ACCESS_TOKEN` + `LINKEDIN_ORG_ID` (LinkedIn UGC Posts API — content publishing). Email publishing uses existing Resend integration.
+**Razorpay (optional):** `RAZORPAY_KEY_ID` + `RAZORPAY_KEY_SECRET` + `RAZORPAY_PLAN_ID` + `RAZORPAY_WEBHOOK_SECRET` — payment gateway for subscription paywall. Without these, payment service gracefully reports "not configured".
 **Admin seed:** `ADMIN_EMAIL` + `ADMIN_PASSWORD` — both must be set to create admin; no defaults in code
 **CORS:** `CORS_ORIGIN` env var → defaults to `FRONTEND_URL`; locked to single origin (not wildcard)
 
@@ -40,6 +41,16 @@ Monorepo with:
 - **Frontend PostHog:** CDN-loaded in `BootstrapClient.tsx`. Consent-gated. Analytics helpers in `src/lib/posthog.ts`.
 - **Backend Sentry:** `@sentry/node` in `apps/backend/src/index.ts` + `errorHandler.ts`. Uses `SENTRY_DSN` env var.
 - **Cookie consent:** Banner in `BootstrapClient.tsx` (DOM-injected, not React-rendered). Stored as `cleo_cookie_consent` in localStorage. PostHog + GA4 only init after "Accept all"; Sentry loads regardless.
+
+## Subscription Paywall
+- **Model:** `Subscription` (`subscriptions` table) tracks Razorpay subscription per user — razorpaySubscriptionId, razorpayPlanId, status (INACTIVE/CREATED/AUTHENTICATED/ACTIVE/PENDING/HALTED/CANCELLED/COMPLETED/EXPIRED), currentPeriodStart/End. One-to-one with User.
+- **Free Tier:** 5 lifetime free accepted matches tracked via `User.matchesUsed` counter. After 5, paywall blocks accepting new matches (402 response with `PAYWALL_LIMIT_REACHED` code).
+- **PRO Tier:** Unlimited matches after Razorpay subscription activated. User.tier set to PRO on `subscription.activated`/`subscription.charged` webhook events.
+- **Enforcement:** Server-side in `POST /api/matches/:id/respond` (ACCEPTED only). Match scheduler skips free users at limit. Frontend shows remaining matches banner + paywall modal.
+- **Razorpay Integration:** `razorpayService.ts` — creates subscriptions via Razorpay API, verifies webhook signatures (HMAC SHA256), handles lifecycle events (activated, charged, cancelled, halted, expired → tier changes).
+- **Routes:** `POST /api/subscription/create` (creates Razorpay subscription), `GET /api/subscription/status` (returns tier, matches used/remaining), `POST /api/subscription/webhook` (Razorpay webhook handler).
+- **Frontend:** Paywall modal in MatchesPage, Razorpay Checkout.js integration. Pricing page links to real checkout flow.
+- **Admin:** Admin users endpoint includes tier, matchesUsed, subscription status per user.
 
 ## Matching Engine Intelligence
 The matching engine (`packages/matching/src/index.ts`) uses a three-layer hybrid approach: Rule-based (50%), Intent (20%), Semantic (30%). Enhanced with:

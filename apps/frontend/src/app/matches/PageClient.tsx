@@ -63,6 +63,11 @@ interface MatchStats {
   total: number;
   pending: number;
   accepted: number;
+  tier?: string;
+  matchesUsed?: number;
+  matchesRemaining?: number;
+  freeMatchLimit?: number;
+  paywallActive?: boolean;
 }
 
 export default function MatchesPage() {
@@ -78,6 +83,8 @@ export default function MatchesPage() {
   const [matchStats, setMatchStats] = useState<MatchStats>({ total: 0, pending: 0, accepted: 0 });
   const toast = useToast();
   const [searchQuery, setSearchQuery] = useState('');
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [creatingSubscription, setCreatingSubscription] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -122,11 +129,63 @@ export default function MatchesPage() {
       }
       setFeedbackPrompt({ matchId, rating: 0, text: '', action: response });
       await loadData();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Respond failed:', err);
-      toast.error('Something went wrong. Please try again.');
+      if (err.message?.includes('PAYWALL_LIMIT_REACHED') || err.message?.includes('Free match limit')) {
+        setShowPaywall(true);
+      } else {
+        toast.error('Something went wrong. Please try again.');
+      }
     } finally {
       setResponding(null);
+    }
+  };
+
+  const handleSubscribe = async () => {
+    setCreatingSubscription(true);
+    try {
+      const data = await api.createSubscription();
+      if (data.subscriptionId && data.keyId && typeof window !== 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.onload = () => {
+          const options = {
+            key: data.keyId,
+            subscription_id: data.subscriptionId,
+            name: 'Cleya.ai',
+            description: 'Pro Subscription - Unlimited Matches',
+            handler: async () => {
+              toast.success('Subscription activated! You now have unlimited matches.');
+              setShowPaywall(false);
+              await loadData();
+            },
+            modal: {
+              ondismiss: () => {
+                setCreatingSubscription(false);
+              },
+            },
+            theme: {
+              color: '#6C63FF',
+            },
+          };
+          const rzp = new (window as any).Razorpay(options);
+          rzp.open();
+        };
+        document.body.appendChild(script);
+      } else if (data.shortUrl) {
+        window.open(data.shortUrl, '_blank');
+      }
+    } catch (err: any) {
+      console.error('Subscription creation failed:', err);
+      if (err.message?.includes('already have an active subscription')) {
+        toast.info('You already have an active subscription. Refreshing...');
+        await loadData();
+        setShowPaywall(false);
+      } else {
+        toast.error('Unable to start subscription. Please try again.');
+      }
+    } finally {
+      setCreatingSubscription(false);
     }
   };
 
@@ -778,6 +837,40 @@ export default function MatchesPage() {
         </div>
 
       <div className="max-w-5xl mx-auto px-6 lg:px-8 py-6">
+        {matchStats.tier === 'FREE' && matchStats.matchesRemaining !== undefined && (
+          <div className="mb-5 rounded-xl p-4 border"
+            style={{
+              background: matchStats.paywallActive ? 'rgba(239,68,68,0.06)' : 'rgba(108,99,255,0.06)',
+              borderColor: matchStats.paywallActive ? 'rgba(239,68,68,0.15)' : 'rgba(108,99,255,0.12)',
+            }}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-lg">{matchStats.paywallActive ? '🔒' : '✨'}</span>
+                <div>
+                  <p className="text-sm font-medium text-white">
+                    {matchStats.paywallActive
+                      ? 'Free match limit reached'
+                      : `${matchStats.matchesRemaining} free match${matchStats.matchesRemaining !== 1 ? 'es' : ''} remaining`}
+                  </p>
+                  <p className="text-xs text-white/40 mt-0.5">
+                    {matchStats.paywallActive
+                      ? 'Subscribe to Pro for unlimited matches and introductions'
+                      : `${matchStats.matchesUsed} of ${matchStats.freeMatchLimit} free matches used`}
+                  </p>
+                </div>
+              </div>
+              {matchStats.paywallActive && (
+                <button
+                  onClick={() => setShowPaywall(true)}
+                  className="px-4 py-2 rounded-lg text-xs font-medium text-white transition hover:scale-[1.02]"
+                  style={{ background: '#6C63FF' }}>
+                  Upgrade to Pro
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="mb-5">
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 text-sm">🔍</span>
@@ -929,6 +1022,64 @@ export default function MatchesPage() {
                 {submittingFeedback ? 'Sending...' : 'Submit'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showPaywall && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}
+          onClick={() => setShowPaywall(false)}>
+          <div className="w-full max-w-md mx-4 rounded-2xl border border-white/10 p-8 fade-up"
+            style={{ background: 'rgba(15,22,41,0.95)' }}
+            onClick={(e) => e.stopPropagation()}>
+            <div className="text-center mb-6">
+              <span className="text-5xl block mb-4">🚀</span>
+              <h2 className="text-xl font-bold text-white mb-2">Upgrade to Pro</h2>
+              <p className="text-sm text-white/50">
+                {"You've used all 5 free matches. Subscribe to unlock unlimited matches, introductions, and premium features."}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-brand-violet/20 p-5 mb-6"
+              style={{ background: 'rgba(108,99,255,0.06)' }}>
+              <div className="flex items-baseline gap-1 mb-4">
+                <span className="text-sm text-white/50">&#8377;</span>
+                <span className="text-3xl font-bold text-white">999</span>
+                <span className="text-sm text-white/50">/month</span>
+              </div>
+              <ul className="space-y-2.5">
+                {[
+                  'Unlimited AI-powered matches',
+                  'Detailed match explanations',
+                  'Priority introductions',
+                  'In-app messaging',
+                  'Meeting scheduling',
+                  'Advanced filters & search',
+                  'Weekly match digest',
+                ].map((feature) => (
+                  <li key={feature} className="flex items-center gap-2 text-sm text-white/60">
+                    <svg className="w-4 h-4 flex-shrink-0" style={{ color: '#6C63FF' }} viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <button
+              onClick={handleSubscribe}
+              disabled={creatingSubscription}
+              className="w-full py-3 rounded-xl text-sm font-medium text-white transition hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+              style={{ background: '#6C63FF', boxShadow: '0 0 20px rgba(108,99,255,0.3)' }}>
+              {creatingSubscription ? 'Setting up...' : 'Subscribe Now'}
+            </button>
+
+            <button
+              onClick={() => setShowPaywall(false)}
+              className="w-full mt-3 py-2 text-sm text-white/30 hover:text-white/50 transition">
+              Maybe later
+            </button>
           </div>
         </div>
       )}

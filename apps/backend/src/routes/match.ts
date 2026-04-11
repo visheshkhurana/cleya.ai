@@ -5,6 +5,7 @@ import { vectorMatchingService } from '../services/vectorMatchingService';
 import { prisma } from '@cleya/db';
 import { matchProposalLimiter } from '../middleware/rateLimit';
 import { validate, matchResponseSchema, matchFeedbackSchema, matchProposeSchema } from '../middleware/validation';
+import { razorpayService, FREE_MATCH_LIMIT } from '../services/razorpayService';
 
 export const matchRouter = Router();
 
@@ -19,8 +20,21 @@ matchRouter.get('/', authenticate, async (req: Request, res: Response, next: Nex
 
 matchRouter.get('/stats', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const stats = await matchingService.getMatchStats(req.user!.userId);
-    res.json({ success: true, data: stats });
+    const [stats, paywall] = await Promise.all([
+      matchingService.getMatchStats(req.user!.userId),
+      razorpayService.checkPaywall(req.user!.userId),
+    ]);
+    res.json({
+      success: true,
+      data: {
+        ...stats,
+        tier: paywall.tier,
+        matchesUsed: paywall.matchesUsed,
+        matchesRemaining: paywall.matchesRemaining,
+        freeMatchLimit: FREE_MATCH_LIMIT,
+        paywallActive: !paywall.allowed,
+      },
+    });
   } catch (error) {
     next(error);
   }
@@ -152,11 +166,33 @@ matchRouter.get('/pending-feedback', authenticate, async (req: Request, res: Res
 matchRouter.post('/:id/respond', authenticate, validate(matchResponseSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { response } = req.body;
+
+    if (response === 'ACCEPTED') {
+      const paywall = await razorpayService.checkPaywall(req.user!.userId);
+      if (!paywall.allowed) {
+        return res.status(402).json({
+          success: false,
+          error: {
+            message: 'Free match limit reached. Subscribe to accept more matches.',
+            code: 'PAYWALL_LIMIT_REACHED',
+            matchesUsed: paywall.matchesUsed,
+            matchesRemaining: 0,
+            freeMatchLimit: FREE_MATCH_LIMIT,
+          },
+        });
+      }
+    }
+
     const match = await matchingService.respondToMatch(
       req.params.id,
       req.user!.userId,
       response
     );
+
+    if (response === 'ACCEPTED') {
+      await razorpayService.incrementMatchesUsed(req.user!.userId);
+    }
+
     res.json({ success: true, data: match });
   } catch (error) {
     next(error);
