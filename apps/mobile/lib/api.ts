@@ -413,6 +413,70 @@ export const api = {
       body: JSON.stringify({ email }),
     });
   },
+
+  async resetPassword(token: string, password: string) {
+    return apiFetch('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    });
+  },
+
+  async verifyEmail(token: string) {
+    return apiFetch('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+  },
+
+  async sendVerification() {
+    return apiFetch('/auth/send-verification', { method: 'POST' });
+  },
+
+  async validateInvite(code: string) {
+    return apiFetch<{ valid: boolean; inviterName?: string; inviterTitle?: string }>(`/invites/validate/${code}`);
+  },
+
+  async useInviteCode(code: string) {
+    return apiFetch(`/invites/use/${code}`, { method: 'POST' });
+  },
+
+  async exportData(format: 'json' | 'csv' = 'json') {
+    const token = await getToken();
+    const headers: Record<string, string> = {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+    const res = await fetch(`${API_BASE}/api/users/export?format=${format}`, { headers });
+    if (!res.ok) throw new Error('Failed to export data');
+    if (format === 'csv') {
+      return res.text();
+    }
+    const json = await res.json();
+    return json.data;
+  },
+
+  async zoomStatus() {
+    return apiFetch<{ configured: boolean; connected: boolean }>('/zoom/status');
+  },
+
+  async zoomConnect() {
+    return apiFetch<{ authUrl: string }>('/zoom/connect');
+  },
+
+  async zoomDisconnect() {
+    return apiFetch('/zoom/disconnect', { method: 'POST' });
+  },
+
+  async calendarStatus() {
+    return apiFetch<{ configured: boolean; connected: boolean; email?: string }>('/calendar/status');
+  },
+
+  async calendarConnect() {
+    return apiFetch<{ authUrl: string }>('/calendar/connect');
+  },
+
+  async calendarDisconnect() {
+    return apiFetch('/calendar/disconnect', { method: 'DELETE' });
+  },
 };
 
 export { getApiUrl, API_BASE };

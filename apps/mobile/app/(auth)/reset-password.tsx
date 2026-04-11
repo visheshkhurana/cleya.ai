@@ -10,41 +10,90 @@ import {
   KeyboardAvoidingView,
   ScrollView,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/api';
 import { Colors } from '@/constants/colors';
 
-export default function LoginScreen() {
-  const [email, setEmail] = useState('');
+export default function ResetPasswordScreen() {
+  const { token: tokenParam } = useLocalSearchParams<{ token?: string }>();
+  const [token, setToken] = useState(tokenParam || '');
   const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const [success, setSuccess] = useState(false);
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const handleLogin = async () => {
-    if (!email.trim() || !password) {
-      setError('Please enter your email and password');
+  const handleSubmit = async () => {
+    if (!token.trim()) {
+      setError('Missing reset token');
+      return;
+    }
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+    if (password !== confirm) {
+      setError('Passwords do not match');
       return;
     }
     setError('');
     setLoading(true);
     try {
-      await login(email.trim().toLowerCase(), password);
+      await api.resetPassword(token.trim(), password);
       if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace('/(tabs)');
+      setSuccess(true);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to reset password');
       if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setLoading(false);
     }
   };
+
+  if (success) {
+    return (
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingTop: Platform.OS === 'web' ? 67 : insets.top + 20,
+              paddingBottom: Platform.OS === 'web' ? 34 : insets.bottom + 20,
+            },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <View style={[styles.logoContainer, { backgroundColor: Colors.success }]}>
+              <Ionicons name="checkmark" size={28} color="#fff" />
+            </View>
+            <Text style={styles.title}>Password Reset!</Text>
+            <Text style={styles.subtitle}>
+              Your password has been reset successfully. You can now log in.
+            </Text>
+          </View>
+          <View style={styles.form}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => router.replace('/(auth)/login')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.buttonText}>Go to Login</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -64,10 +113,10 @@ export default function LoginScreen() {
       >
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>C</Text>
+            <Ionicons name="lock-open-outline" size={28} color="#fff" />
           </View>
-          <Text style={styles.title}>Welcome back</Text>
-          <Text style={styles.subtitle}>Sign in to your Cleya.ai account</Text>
+          <Text style={styles.title}>Reset Password</Text>
+          <Text style={styles.subtitle}>Enter your new password below</Text>
         </View>
 
         <View style={styles.form}>
@@ -78,39 +127,36 @@ export default function LoginScreen() {
             </View>
           ) : null}
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={18} color={Colors.textMuted} style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="you@example.com"
-                placeholderTextColor={Colors.textMuted}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-                textContentType="emailAddress"
-                returnKeyType="next"
-              />
+          {!tokenParam ? (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Reset Token</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="key-outline" size={18} color={Colors.textMuted} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  value={token}
+                  onChangeText={setToken}
+                  placeholder="Paste your reset token"
+                  placeholderTextColor={Colors.textMuted}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
             </View>
-          </View>
+          ) : null}
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password</Text>
+            <Text style={styles.label}>New Password</Text>
             <View style={styles.inputContainer}>
               <Ionicons name="lock-closed-outline" size={18} color={Colors.textMuted} style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, { flex: 1 }]}
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Enter your password"
+                placeholder="Min 8 characters"
                 placeholderTextColor={Colors.textMuted}
                 secureTextEntry={!showPassword}
-                textContentType="password"
-                returnKeyType="done"
-                onSubmitEditing={handleLogin}
+                textContentType="newPassword"
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
                 <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={Colors.textMuted} />
@@ -118,30 +164,39 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          <TouchableOpacity
-            onPress={() => router.push('/(auth)/forgot-password')}
-            style={styles.forgotPassword}
-          >
-            <Text style={styles.forgotPasswordText}>Forgot password?</Text>
-          </TouchableOpacity>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Confirm Password</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="lock-closed-outline" size={18} color={Colors.textMuted} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                value={confirm}
+                onChangeText={setConfirm}
+                placeholder="Confirm password"
+                placeholderTextColor={Colors.textMuted}
+                secureTextEntry={!showPassword}
+                returnKeyType="done"
+                onSubmitEditing={handleSubmit}
+              />
+            </View>
+          </View>
 
           <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleLogin}
+            onPress={handleSubmit}
             disabled={loading}
             activeOpacity={0.8}
           >
             {loading ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={styles.buttonText}>Sign In</Text>
+              <Text style={styles.buttonText}>Reset Password</Text>
             )}
           </TouchableOpacity>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account?</Text>
-            <TouchableOpacity onPress={() => router.push('/(auth)/signup')}>
-              <Text style={styles.footerLink}> Sign Up</Text>
+            <TouchableOpacity onPress={() => router.replace('/(auth)/login')}>
+              <Text style={styles.footerLink}>Back to Login</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -178,11 +233,6 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
-  logoText: {
-    fontSize: 28,
-    fontFamily: 'Inter_700Bold',
-    color: '#fff',
-  },
   title: {
     fontSize: 28,
     fontFamily: 'Inter_700Bold',
@@ -193,6 +243,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: 'Inter_400Regular',
     color: Colors.textTertiary,
+    textAlign: 'center',
+    paddingHorizontal: 20,
   },
   form: {
     gap: 16,
@@ -246,14 +298,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 14,
   },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-  },
-  forgotPasswordText: {
-    color: Colors.accent,
-    fontSize: 13,
-    fontFamily: 'Inter_500Medium',
-  },
   button: {
     backgroundColor: Colors.primary,
     borderRadius: 14,
@@ -278,11 +322,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 16,
-  },
-  footerText: {
-    color: Colors.textTertiary,
-    fontSize: 14,
-    fontFamily: 'Inter_400Regular',
   },
   footerLink: {
     color: Colors.accent,

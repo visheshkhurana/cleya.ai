@@ -6,6 +6,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Linking from 'expo-linking';
+import { useRouter } from 'expo-router';
 import {
   useFonts,
   Inter_400Regular,
@@ -18,6 +20,39 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { Colors } from '@/constants/colors';
 
 SplashScreen.preventAutoHideAsync();
+
+function DeepLinkHandler() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const handleUrl = (event: { url: string }) => {
+      const parsed = Linking.parse(event.url);
+      const path = parsed.path || '';
+      const params = parsed.queryParams || {};
+
+      if (path.startsWith('reset-password')) {
+        router.push({ pathname: '/(auth)/reset-password', params: { token: params.token as string } });
+      } else if (path.startsWith('verify-email')) {
+        router.push({ pathname: '/(auth)/verify-email', params: { token: params.token as string } });
+      } else if (path.startsWith('join/') || path.startsWith('join')) {
+        const code = path.replace('join/', '').replace('join', '') || (params.code as string);
+        if (code) {
+          router.push({ pathname: '/(auth)/join', params: { code } });
+        }
+      }
+    };
+
+    const subscription = Linking.addEventListener('url', handleUrl);
+
+    Linking.getInitialURL().then((url) => {
+      if (url) handleUrl({ url });
+    });
+
+    return () => subscription.remove();
+  }, [router]);
+
+  return null;
+}
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -42,6 +77,7 @@ export default function RootLayout() {
           <QueryClientProvider client={queryClient}>
             <AuthProvider>
               <StatusBar style="light" />
+              <DeepLinkHandler />
               <Stack
                 screenOptions={{
                   headerShown: false,

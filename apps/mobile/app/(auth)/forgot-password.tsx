@@ -14,37 +14,75 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/api';
 import { Colors } from '@/constants/colors';
 
-export default function LoginScreen() {
+export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const [sent, setSent] = useState(false);
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const handleLogin = async () => {
-    if (!email.trim() || !password) {
-      setError('Please enter your email and password');
+  const handleSubmit = async () => {
+    if (!email.trim()) {
+      setError('Please enter your email');
       return;
     }
     setError('');
     setLoading(true);
     try {
-      await login(email.trim().toLowerCase(), password);
+      await api.forgotPassword(email.trim().toLowerCase());
       if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace('/(tabs)');
+      setSent(true);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to send reset link');
       if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setLoading(false);
     }
   };
+
+  if (sent) {
+    return (
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingTop: Platform.OS === 'web' ? 67 : insets.top + 20,
+              paddingBottom: Platform.OS === 'web' ? 34 : insets.bottom + 20,
+            },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <View style={[styles.logoContainer, { backgroundColor: Colors.success }]}>
+              <Ionicons name="checkmark" size={28} color="#fff" />
+            </View>
+            <Text style={styles.title}>Check Your Email</Text>
+            <Text style={styles.subtitle}>
+              If an account exists with that email, a reset link has been sent.
+            </Text>
+          </View>
+          <View style={styles.form}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => router.back()}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.buttonText}>Back to Login</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -64,10 +102,12 @@ export default function LoginScreen() {
       >
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>C</Text>
+            <Ionicons name="key-outline" size={28} color="#fff" />
           </View>
-          <Text style={styles.title}>Welcome back</Text>
-          <Text style={styles.subtitle}>Sign in to your Cleya.ai account</Text>
+          <Text style={styles.title}>Forgot Password?</Text>
+          <Text style={styles.subtitle}>
+            Enter your email and we'll send you a reset link
+          </Text>
         </View>
 
         <View style={styles.form}>
@@ -92,56 +132,29 @@ export default function LoginScreen() {
                 autoCorrect={false}
                 keyboardType="email-address"
                 textContentType="emailAddress"
-                returnKeyType="next"
-              />
-            </View>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={18} color={Colors.textMuted} style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, { flex: 1 }]}
-                value={password}
-                onChangeText={setPassword}
-                placeholder="Enter your password"
-                placeholderTextColor={Colors.textMuted}
-                secureTextEntry={!showPassword}
-                textContentType="password"
                 returnKeyType="done"
-                onSubmitEditing={handleLogin}
+                onSubmitEditing={handleSubmit}
               />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
-                <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={Colors.textMuted} />
-              </TouchableOpacity>
             </View>
           </View>
-
-          <TouchableOpacity
-            onPress={() => router.push('/(auth)/forgot-password')}
-            style={styles.forgotPassword}
-          >
-            <Text style={styles.forgotPasswordText}>Forgot password?</Text>
-          </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleLogin}
+            onPress={handleSubmit}
             disabled={loading}
             activeOpacity={0.8}
           >
             {loading ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={styles.buttonText}>Sign In</Text>
+              <Text style={styles.buttonText}>Send Reset Link</Text>
             )}
           </TouchableOpacity>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account?</Text>
-            <TouchableOpacity onPress={() => router.push('/(auth)/signup')}>
-              <Text style={styles.footerLink}> Sign Up</Text>
+            <Text style={styles.footerText}>Remember your password?</Text>
+            <TouchableOpacity onPress={() => router.back()}>
+              <Text style={styles.footerLink}> Sign In</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -178,11 +191,6 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
-  logoText: {
-    fontSize: 28,
-    fontFamily: 'Inter_700Bold',
-    color: '#fff',
-  },
   title: {
     fontSize: 28,
     fontFamily: 'Inter_700Bold',
@@ -193,6 +201,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: 'Inter_400Regular',
     color: Colors.textTertiary,
+    textAlign: 'center',
+    paddingHorizontal: 20,
   },
   form: {
     gap: 16,
@@ -241,18 +251,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
     paddingVertical: 14,
     paddingHorizontal: 12,
-  },
-  eyeButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-  },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-  },
-  forgotPasswordText: {
-    color: Colors.accent,
-    fontSize: 13,
-    fontFamily: 'Inter_500Medium',
   },
   button: {
     backgroundColor: Colors.primary,

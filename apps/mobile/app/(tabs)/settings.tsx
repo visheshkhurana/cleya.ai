@@ -16,8 +16,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '@/contexts/AuthContext';
-import { api, UserSettings, WhatsAppStatus } from '@/lib/api';
+import { api, UserSettings, WhatsAppStatus, API_BASE } from '@/lib/api';
 import { Colors } from '@/constants/colors';
 
 export default function SettingsScreen() {
@@ -49,6 +52,24 @@ export default function SettingsScreen() {
   const [whatsappLoading, setWhatsappLoading] = useState(false);
   const [whatsappMsg, setWhatsappMsg] = useState('');
   const [whatsappError, setWhatsappError] = useState('');
+  const [exportLoading, setExportLoading] = useState<'json' | 'csv' | null>(null);
+  const [exportMsg, setExportMsg] = useState('');
+  const [exportError, setExportError] = useState('');
+
+  const { data: zoomData, refetch: refetchZoom } = useQuery<{ configured: boolean; connected: boolean }>({
+    queryKey: ['zoom-status'],
+    queryFn: () => api.zoomStatus(),
+  });
+
+  const { data: calendarData, refetch: refetchCalendar } = useQuery<{ configured: boolean; connected: boolean; email?: string }>({
+    queryKey: ['calendar-status'],
+    queryFn: () => api.calendarStatus(),
+  });
+
+  const [zoomLoading, setZoomLoading] = useState(false);
+  const [calendarLoading, setCalendarLoading] = useState(false);
+  const [integrationMsg, setIntegrationMsg] = useState('');
+  const [integrationError, setIntegrationError] = useState('');
 
   useEffect(() => {
     if (whatsappStatus?.whatsappPhone) {
@@ -128,6 +149,105 @@ export default function SettingsScreen() {
       setPasswordError(err instanceof Error ? err.message : 'Failed to change password');
     } finally {
       setChangingPassword(false);
+    }
+  };
+
+  const handleExportData = async (format: 'json' | 'csv') => {
+    setExportLoading(format);
+    setExportError('');
+    setExportMsg('');
+    try {
+      const data = await api.exportData(format);
+      const content = format === 'csv' ? (data as string) : JSON.stringify(data, null, 2);
+      const filename = `cleya-data-export.${format}`;
+      const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+      await FileSystem.writeAsStringAsync(fileUri, content, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: format === 'csv' ? 'text/csv' : 'application/json',
+          dialogTitle: 'Export your Cleya data',
+        });
+      } else {
+        setExportMsg('File saved. Sharing is not available on this device.');
+        return;
+      }
+      if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setExportMsg('Data exported successfully');
+      setTimeout(() => setExportMsg(''), 3000);
+    } catch (err: unknown) {
+      setExportError(err instanceof Error ? err.message : 'Failed to export data');
+    } finally {
+      setExportLoading(null);
+    }
+  };
+
+  const handleOAuthConnect = async (
+    service: 'zoom' | 'calendar',
+    connectFn: () => Promise<{ authUrl: string }>,
+    refetchFn: () => Promise<unknown>,
+    setLoadingFn: (v: boolean) => void,
+  ) => {
+    setLoadingFn(true);
+    setIntegrationError('');
+    try {
+      const data = await connectFn();
+      if (data.authUrl) {
+        const returnUrl = `${API_BASE}/api/${service === 'zoom' ? 'zoom' : 'calendar'}/callback`;
+        const result = await WebBrowser.openAuthSessionAsync(data.authUrl, returnUrl);
+        await refetchFn();
+        if (result.type === 'success' || result.type === 'dismiss') {
+          const freshStatus = await (service === 'zoom' ? api.zoomStatus() : api.calendarStatus());
+          if (freshStatus.connected) {
+            setIntegrationMsg(`${service === 'zoom' ? 'Zoom' : 'Google Calendar'} connected successfully`);
+            setTimeout(() => setIntegrationMsg(''), 3000);
+          }
+        }
+      }
+    } catch (err: unknown) {
+      setIntegrationError(err instanceof Error ? err.message : `Failed to connect ${service === 'zoom' ? 'Zoom' : 'Google Calendar'}`);
+    } finally {
+      setLoadingFn(false);
+    }
+  };
+
+  const handleZoomConnect = () =>
+    handleOAuthConnect('zoom', api.zoomConnect, refetchZoom, setZoomLoading);
+
+  const handleZoomDisconnect = async () => {
+    setZoomLoading(true);
+    setIntegrationError('');
+    try {
+      await api.zoomDisconnect();
+      if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setIntegrationMsg('Zoom disconnected');
+      await refetchZoom();
+      setTimeout(() => setIntegrationMsg(''), 3000);
+    } catch (err: unknown) {
+      setIntegrationError(err instanceof Error ? err.message : 'Failed to disconnect Zoom');
+    } finally {
+      setZoomLoading(false);
+    }
+  };
+
+  const handleCalendarConnect = () =>
+    handleOAuthConnect('calendar', api.calendarConnect, refetchCalendar, setCalendarLoading);
+
+  const handleCalendarDisconnect = async () => {
+    setCalendarLoading(true);
+    setIntegrationError('');
+    try {
+      await api.calendarDisconnect();
+      if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setIntegrationMsg('Google Calendar disconnected');
+      await refetchCalendar();
+      setTimeout(() => setIntegrationMsg(''), 3000);
+    } catch (err: unknown) {
+      setIntegrationError(err instanceof Error ? err.message : 'Failed to disconnect Google Calendar');
+    } finally {
+      setCalendarLoading(false);
     }
   };
 
@@ -352,6 +472,159 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Export Data</Text>
+          <Text style={styles.exportDesc}>
+            Download a copy of all your data
+          </Text>
+          {exportError ? (
+            <View style={styles.errorBox}>
+              <Ionicons name="alert-circle" size={14} color={Colors.error} />
+              <Text style={styles.errorText}>{exportError}</Text>
+            </View>
+          ) : null}
+          {exportMsg ? (
+            <View style={styles.successBox}>
+              <Ionicons name="checkmark-circle" size={14} color={Colors.success} />
+              <Text style={styles.successText}>{exportMsg}</Text>
+            </View>
+          ) : null}
+          <View style={styles.exportButtonRow}>
+            <TouchableOpacity
+              style={[styles.exportButton, exportLoading === 'json' && styles.changeButtonDisabled]}
+              onPress={() => handleExportData('json')}
+              disabled={!!exportLoading}
+              activeOpacity={0.8}
+            >
+              {exportLoading === 'json' ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="code-slash-outline" size={16} color="#fff" />
+                  <Text style={styles.exportButtonText}>JSON</Text>
+                </>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.exportButton, exportLoading === 'csv' && styles.changeButtonDisabled]}
+              onPress={() => handleExportData('csv')}
+              disabled={!!exportLoading}
+              activeOpacity={0.8}
+            >
+              {exportLoading === 'csv' ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="document-text-outline" size={16} color="#fff" />
+                  <Text style={styles.exportButtonText}>CSV</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Integrations</Text>
+          {integrationError ? (
+            <View style={styles.errorBox}>
+              <Ionicons name="alert-circle" size={14} color={Colors.error} />
+              <Text style={styles.errorText}>{integrationError}</Text>
+            </View>
+          ) : null}
+          {integrationMsg ? (
+            <View style={styles.successBox}>
+              <Ionicons name="checkmark-circle" size={14} color={Colors.success} />
+              <Text style={styles.successText}>{integrationMsg}</Text>
+            </View>
+          ) : null}
+
+          <View style={styles.integrationRow}>
+            <View style={styles.integrationInfo}>
+              <Ionicons name="videocam-outline" size={20} color={Colors.textTertiary} />
+              <View>
+                <Text style={styles.integrationLabel}>Zoom</Text>
+                <Text style={styles.integrationStatus}>
+                  {zoomData?.connected ? 'Connected' : zoomData?.configured ? 'Not connected' : 'Not configured'}
+                </Text>
+              </View>
+            </View>
+            {zoomData?.configured ? (
+              zoomData.connected ? (
+                <TouchableOpacity
+                  style={styles.disconnectButton}
+                  onPress={handleZoomDisconnect}
+                  disabled={zoomLoading}
+                  activeOpacity={0.7}
+                >
+                  {zoomLoading ? (
+                    <ActivityIndicator size="small" color={Colors.error} />
+                  ) : (
+                    <Text style={styles.disconnectText}>Disconnect</Text>
+                  )}
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.connectButton}
+                  onPress={handleZoomConnect}
+                  disabled={zoomLoading}
+                  activeOpacity={0.7}
+                >
+                  {zoomLoading ? (
+                    <ActivityIndicator size="small" color={Colors.primary} />
+                  ) : (
+                    <Text style={styles.connectText}>Connect</Text>
+                  )}
+                </TouchableOpacity>
+              )
+            ) : null}
+          </View>
+
+          <View style={styles.integrationDivider} />
+
+          <View style={styles.integrationRow}>
+            <View style={styles.integrationInfo}>
+              <Ionicons name="calendar-outline" size={20} color={Colors.textTertiary} />
+              <View>
+                <Text style={styles.integrationLabel}>Google Calendar</Text>
+                <Text style={styles.integrationStatus}>
+                  {calendarData?.connected
+                    ? calendarData.email ? `Connected (${calendarData.email})` : 'Connected'
+                    : calendarData?.configured ? 'Not connected' : 'Not configured'}
+                </Text>
+              </View>
+            </View>
+            {calendarData?.configured ? (
+              calendarData.connected ? (
+                <TouchableOpacity
+                  style={styles.disconnectButton}
+                  onPress={handleCalendarDisconnect}
+                  disabled={calendarLoading}
+                  activeOpacity={0.7}
+                >
+                  {calendarLoading ? (
+                    <ActivityIndicator size="small" color={Colors.error} />
+                  ) : (
+                    <Text style={styles.disconnectText}>Disconnect</Text>
+                  )}
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.connectButton}
+                  onPress={handleCalendarConnect}
+                  disabled={calendarLoading}
+                  activeOpacity={0.7}
+                >
+                  {calendarLoading ? (
+                    <ActivityIndicator size="small" color={Colors.primary} />
+                  ) : (
+                    <Text style={styles.connectText}>Connect</Text>
+                  )}
+                </TouchableOpacity>
+              )
+            ) : null}
+          </View>
+        </View>
+
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.7}>
           <Ionicons name="log-out-outline" size={20} color={Colors.text} />
           <Text style={styles.logoutText}>Sign Out</Text>
@@ -569,6 +842,80 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(239,68,68,0.3)',
   },
   whatsappOptOutText: {
+    fontSize: 12,
+    fontFamily: 'Inter_500Medium',
+    color: Colors.error,
+  },
+  exportDesc: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    color: Colors.textMuted,
+  },
+  exportButtonRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  exportButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    paddingVertical: 12,
+  },
+  exportButtonText: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#fff',
+  },
+  integrationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  integrationInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  integrationLabel: {
+    fontSize: 14,
+    fontFamily: 'Inter_500Medium',
+    color: Colors.textSecondary,
+  },
+  integrationStatus: {
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
+    color: Colors.textMuted,
+  },
+  integrationDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+  },
+  connectButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(13,148,136,0.4)',
+    backgroundColor: 'rgba(13,148,136,0.1)',
+  },
+  connectText: {
+    fontSize: 12,
+    fontFamily: 'Inter_600SemiBold',
+    color: Colors.primary,
+  },
+  disconnectButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.3)',
+  },
+  disconnectText: {
     fontSize: 12,
     fontFamily: 'Inter_500Medium',
     color: Colors.error,
