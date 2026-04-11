@@ -7,6 +7,7 @@
 
 import { ayrshareService } from './ayrshareService';
 import { adsService } from './adsService';
+import { adCampaignAutomation } from './adCampaignAutomation';
 import { getAnalyticsSummary, getTopPages, getTrafficSources } from './analyticsService';
 import { logExecution, logAudit, scoreContentRisk, checkGuardrails, shouldAutoExecute, type AutonomyLevel } from './guardrailsService';
 import { getAgentGuardrails, getAgentAutonomyLevel } from './agentRunner';
@@ -42,12 +43,12 @@ const ORCHESTRATOR_TOOLS = [
 
 export const AGENT_TOOLS: Record<string, string[]> = {
   maven: ['post_to_social', 'schedule_post', 'get_post_analytics', 'get_post_history'],
-  ledger: ['create_ad_campaign', 'get_campaign_stats', 'optimize_campaigns'],
-  catalyst: ['post_to_social', 'create_ad_campaign', 'schedule_post'],
+  ledger: ['create_ad_campaign', 'get_campaign_stats', 'optimize_campaigns', 'launch_full_campaign', 'activate_ad_campaign', 'pause_ad_campaign', 'adjust_ad_budget', 'generate_ad_copy', 'get_campaign_report'],
+  catalyst: ['post_to_social', 'create_ad_campaign', 'schedule_post', 'launch_full_campaign', 'generate_ad_copy', 'get_campaign_report'],
   nexus: ['post_to_social', 'send_email', 'schedule_post'],
   sentinel: ['get_campaign_stats', 'get_post_analytics', 'get_analytics_summary', 'get_top_pages', 'get_traffic_sources'],
   ally: ['send_email', 'schedule_post'],
-  closer: ['send_email', 'create_ad_campaign'],
+  closer: ['send_email', 'create_ad_campaign', 'launch_full_campaign', 'activate_ad_campaign', 'pause_ad_campaign', 'generate_ad_copy', 'get_campaign_report'],
   scout: ['analyze_seo', 'keyword_research', 'analyze_competitors', 'generate_schema_markup', 'check_indexing', 'optimize_content', 'get_analytics_summary', 'get_top_pages', 'get_traffic_sources'],
   probe: ['run_page_test', 'run_api_test', 'run_agent_test', 'run_full_qa', 'get_qa_report', 'get_analytics_summary'],
   outreach: ['create_email_campaign', 'add_recipients', 'launch_campaign', 'get_campaign_analytics', 'get_recipient_list', 'pause_campaign', 'send_email'],
@@ -143,6 +144,80 @@ export const TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
         platform: { type: 'string', enum: ['meta', 'linkedin', 'google'], description: 'Ad platform to optimize' },
       },
       required: ['platform'],
+    },
+  },
+  launch_full_campaign: {
+    name: 'launch_full_campaign',
+    description: 'Launch a full ad campaign (campaign + ad set + creatives) across selected platforms in one shot. Creates everything PAUSED with a 1-hour activation hold. Targets Cleya audiences (founders, investors, operators) in India.',
+    parameters: {
+      type: 'object',
+      properties: {
+        objective: { type: 'string', description: 'Campaign objective (e.g. BRAND_AWARENESS, LEAD_GENERATION, CONVERSIONS, TRAFFIC)' },
+        totalBudget: { type: 'number', description: 'Total daily budget in INR across all platforms (max ₹50,000)' },
+        platforms: { type: 'array', items: { type: 'string', enum: ['meta', 'linkedin', 'google'] }, description: 'Platforms to launch on' },
+      },
+      required: ['objective', 'totalBudget', 'platforms'],
+    },
+  },
+  activate_ad_campaign: {
+    name: 'activate_ad_campaign',
+    description: 'Activate a paused ad campaign. Requires the campaign to be at least 1 hour old, have ad sets/groups, and creatives. Safety guardrails enforced.',
+    parameters: {
+      type: 'object',
+      properties: {
+        platform: { type: 'string', enum: ['meta', 'linkedin', 'google'], description: 'Ad platform' },
+        campaignId: { type: 'string', description: 'Campaign ID or resource name to activate' },
+      },
+      required: ['platform', 'campaignId'],
+    },
+  },
+  pause_ad_campaign: {
+    name: 'pause_ad_campaign',
+    description: 'Pause an active ad campaign on any platform.',
+    parameters: {
+      type: 'object',
+      properties: {
+        platform: { type: 'string', enum: ['meta', 'linkedin', 'google'], description: 'Ad platform' },
+        campaignId: { type: 'string', description: 'Campaign ID or resource name to pause' },
+      },
+      required: ['platform', 'campaignId'],
+    },
+  },
+  adjust_ad_budget: {
+    name: 'adjust_ad_budget',
+    description: 'Adjust the daily budget of an ad campaign. Max ₹10,000/day per campaign, ₹50,000/day total across platforms.',
+    parameters: {
+      type: 'object',
+      properties: {
+        platform: { type: 'string', enum: ['meta', 'linkedin', 'google'], description: 'Ad platform' },
+        resourceId: { type: 'string', description: 'Campaign ID (Meta/LinkedIn) or budget resource name (Google)' },
+        newBudget: { type: 'number', description: 'New daily budget in INR (max ₹10,000)' },
+      },
+      required: ['platform', 'resourceId', 'newBudget'],
+    },
+  },
+  generate_ad_copy: {
+    name: 'generate_ad_copy',
+    description: 'Generate AI-optimized ad copy for a specific platform and audience. Returns headline, body, CTA, and 2 variations.',
+    parameters: {
+      type: 'object',
+      properties: {
+        product: { type: 'string', description: 'Product/service description (e.g. "Cleya.ai — members-only AI networking")' },
+        audience: { type: 'string', enum: ['founders', 'investors', 'operators'], description: 'Target audience segment' },
+        platform: { type: 'string', enum: ['meta', 'linkedin', 'google'], description: 'Platform to optimize copy for' },
+      },
+      required: ['product', 'audience', 'platform'],
+    },
+  },
+  get_campaign_report: {
+    name: 'get_campaign_report',
+    description: 'Generate a comprehensive cross-platform ad campaign performance report. Covers Meta, Google, and LinkedIn with spend, CTR, CPC, ROAS analysis.',
+    parameters: {
+      type: 'object',
+      properties: {
+        startDate: { type: 'string', description: 'Start date (YYYY-MM-DD). Defaults to 7 days ago.' },
+        endDate: { type: 'string', description: 'End date (YYYY-MM-DD). Defaults to today.' },
+      },
     },
   },
   send_email: {
@@ -447,7 +522,7 @@ export async function executeTool(agentId: string, toolName: string, params: Rec
   }
 
   // Run guardrails for action-type tools
-  const actionTools = ['post_to_social', 'schedule_post', 'create_ad_campaign', 'send_email', 'launch_campaign'];
+  const actionTools = ['post_to_social', 'schedule_post', 'create_ad_campaign', 'send_email', 'launch_campaign', 'launch_full_campaign', 'activate_ad_campaign', 'pause_ad_campaign', 'adjust_ad_budget'];
   if (actionTools.includes(toolName)) {
     const guardrails = getAgentGuardrails(agentId);
     const autonomyLevel = getAgentAutonomyLevel(agentId);
@@ -539,6 +614,44 @@ export async function executeTool(agentId: string, toolName: string, params: Rec
       case 'optimize_campaigns':
         result = await adsService.optimizeCampaigns(params.platform);
         break;
+
+      case 'launch_full_campaign': {
+        const strategy = await adCampaignAutomation.generateCampaignStrategy(
+          params.objective,
+          params.totalBudget,
+          params.platforms,
+        );
+        const launchResult = await adCampaignAutomation.launchCampaign(strategy);
+        result = { success: launchResult.success, data: launchResult };
+        break;
+      }
+
+      case 'activate_ad_campaign':
+        result = await adsService.activateCampaign(params.platform, params.campaignId);
+        break;
+
+      case 'pause_ad_campaign':
+        result = await adsService.pauseCampaign(params.platform, params.campaignId);
+        break;
+
+      case 'adjust_ad_budget':
+        result = await adsService.updateBudget(params.platform, params.resourceId, params.newBudget);
+        break;
+
+      case 'generate_ad_copy': {
+        const copy = await adCampaignAutomation.generateAdCopy(params.product, params.audience, params.platform);
+        result = { success: true, data: copy };
+        break;
+      }
+
+      case 'get_campaign_report': {
+        const dateRange = params.startDate && params.endDate
+          ? { start: params.startDate, end: params.endDate }
+          : undefined;
+        const report = await adCampaignAutomation.generateCampaignReport(dateRange);
+        result = { success: report.success, data: { report: report.report, platformData: report.platformData } };
+        break;
+      }
 
       case 'send_email': {
         const { getUncachableResendClient } = await import('./resendClient');

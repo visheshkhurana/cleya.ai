@@ -32,6 +32,7 @@ import {
   runCatalystGrowthAnalysis,
   runCatalystWeeklyReview,
   runCloserSalesPipeline,
+  runAdCampaignAutomation,
 } from './autonomousWorkflows';
 
 const ORCHESTRATOR_SUB_AGENT_MAP: Record<string, string> = {
@@ -168,6 +169,15 @@ class AgentScheduler {
     this.tasks.push(mavenEveningJob);
     console.log('[AgentScheduler] Maven autonomous content posting: 9 AM, 1 PM, 6 PM IST');
 
+    // Ad Campaign Automation — every 6 hours (2 AM, 8 AM, 2 PM, 8 PM IST)
+    const adCampaignJob = cron.schedule('30 */6 * * *', () => {
+      if (!isAgentEnabled('ledger')) return;
+      this.runAutonomousWorkflow('ledger', 'Ad campaign automation', runAdCampaignAutomation)
+        .catch(err => console.error('[AgentScheduler] Ad campaign automation failed:', err));
+    }, { timezone: 'Asia/Kolkata' });
+    this.tasks.push(adCampaignJob);
+    console.log('[AgentScheduler] Ad campaign automation scheduled every 6 hours');
+
     this.started = true;
     console.log('[AgentScheduler] All agent schedules initialized');
     console.log('[AgentScheduler] Task processing scheduled every 4 hours');
@@ -280,9 +290,10 @@ class AgentScheduler {
         await this.runAutonomousWorkflow('nexus', 'Daily operations brief', runNexusDailyBrief);
       }
 
-      // Ledger: run daily financial monitor after the LLM run
+      // Ledger: run daily financial monitor + ad campaign automation after the LLM run
       if (agentId === 'ledger') {
         await this.runAutonomousWorkflow('ledger', 'Daily financial monitor', runLedgerFinancialMonitor);
+        await this.runAutonomousWorkflow('ledger', 'Ad campaign automation', runAdCampaignAutomation);
         // Weekly review on Mondays
         if (new Date().getDay() === 1) {
           await this.runAutonomousWorkflow('ledger', 'Weekly budget review', runLedgerWeeklyReview);
