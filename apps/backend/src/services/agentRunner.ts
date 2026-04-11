@@ -326,15 +326,15 @@ const agentStates = new Map<string, {
 }>();
 
 const DEFAULT_SCHEDULES: Record<string, { cron: string; desc: string }> = {
-  'nexus': { cron: '0 7 * * *', desc: 'Daily at 7:00 AM IST' },
-  'maven': { cron: '30 7 * * 1', desc: 'Mondays at 7:30 AM IST' },
-  'ledger': { cron: '0 8 * * 1', desc: 'Mondays at 8:00 AM IST' },
-  'sentinel': { cron: '0 9 * * 1,4', desc: 'Mon/Thu at 9:00 AM IST' },
-  'ally': { cron: '0 10 * * 1,3,5', desc: 'Mon/Wed/Fri at 10:00 AM IST' },
-  'catalyst': { cron: '0 11 * * 2', desc: 'Tuesdays at 11:00 AM IST' },
-  'closer': { cron: '0 11 * * 4', desc: 'Thursdays at 11:00 AM IST' },
-  'scout': { cron: '0 6 * * *', desc: 'Daily at 6:00 AM IST' },
-  'probe': { cron: '0 7 * * *', desc: 'Daily at 7:00 AM IST' },
+  'nexus': { cron: '30 2 * * *', desc: 'Daily at 8:00 AM IST' },        // 2:30 UTC = 8:00 AM IST
+  'maven': { cron: '30 3 * * *', desc: '9 AM, 1 PM, 6 PM IST' },       // Primary schedule; additional crons in scheduler
+  'ledger': { cron: '30 4 * * *', desc: 'Daily at 10:00 AM IST' },      // 4:30 UTC = 10:00 AM IST
+  'sentinel': { cron: '0 0,6,12,18 * * *', desc: 'Every 6 hours' },     // 5:30 AM, 11:30 AM, 5:30 PM, 11:30 PM IST
+  'ally': { cron: '0 3,5,7,9,11,13 * * *', desc: 'Every 2hrs, 8:30AM-6:30PM IST' }, // Business hours IST
+  'catalyst': { cron: '30 5 * * *', desc: 'Daily at 11:00 AM IST' },    // 5:30 UTC = 11:00 AM IST
+  'closer': { cron: '0 4 * * *', desc: 'Daily at 9:30 AM IST' },        // 4:00 UTC = 9:30 AM IST
+  'scout': { cron: '0 0 * * *', desc: 'Daily at 5:30 AM IST' },         // 0:00 UTC = 5:30 AM IST
+  'probe': { cron: '30 1 * * *', desc: 'Daily at 7:00 AM IST' },        // 1:30 UTC = 7:00 AM IST
 };
 
 function initAgentState(agentId: string) {

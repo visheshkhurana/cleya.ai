@@ -35,6 +35,7 @@ export async function ensureAgentTables(): Promise<void> {
   await ensureCampaignMetricsTables();
   await ensureSEOReportsTables();
   await ensureQAReportsTables();
+  await ensureAutonomousWorkflowTables();
   await seedScoutAgent();
   await seedProbeAgent();
 }
@@ -421,6 +422,182 @@ async function ensureQAReportsTables(): Promise<void> {
     console.log('[AgentMigration] qa_daily_reports table ensured');
   } catch (err: any) {
     console.log(`[AgentMigration] Could not create qa_daily_reports: ${err.message}`);
+  }
+}
+
+async function ensureAutonomousWorkflowTables(): Promise<void> {
+  // Nexus daily operations briefs
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS daily_ops_briefs (
+        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+        report_date DATE NOT NULL UNIQUE,
+        summary TEXT,
+        full_report JSONB,
+        agent_statuses JSONB,
+        system_health JSONB,
+        metrics_summary JSONB,
+        critical_issues JSONB,
+        priorities JSONB,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_daily_ops_briefs_date ON daily_ops_briefs(report_date);
+    `);
+    console.log('[AgentMigration] daily_ops_briefs table ensured');
+  } catch (err: any) {
+    console.log(`[AgentMigration] Could not create daily_ops_briefs: ${err.message}`);
+  }
+
+  // Maven content posts log
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS content_posts_log (
+        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+        post_date DATE NOT NULL,
+        time_slot TEXT NOT NULL,
+        platform TEXT NOT NULL,
+        content TEXT,
+        hashtags TEXT,
+        post_type TEXT,
+        theme TEXT,
+        ayrshare_response JSONB,
+        status TEXT DEFAULT 'pending',
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_content_posts_log_date ON content_posts_log(post_date);
+    `);
+    console.log('[AgentMigration] content_posts_log table ensured');
+  } catch (err: any) {
+    console.log(`[AgentMigration] Could not create content_posts_log: ${err.message}`);
+  }
+
+  // Ledger financial daily reports
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS financial_daily_reports (
+        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+        report_date DATE NOT NULL UNIQUE,
+        report_type TEXT DEFAULT 'daily',
+        summary TEXT,
+        full_report JSONB,
+        ad_spend JSONB,
+        campaign_performance JSONB,
+        razorpay_summary JSONB,
+        recommendations JSONB,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_financial_daily_reports_date ON financial_daily_reports(report_date);
+    `);
+    console.log('[AgentMigration] financial_daily_reports table ensured');
+  } catch (err: any) {
+    console.log(`[AgentMigration] Could not create financial_daily_reports: ${err.message}`);
+  }
+
+  // Sentinel system health reports
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS system_health_reports (
+        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+        report_timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        summary TEXT,
+        full_report JSONB,
+        endpoints_status JSONB,
+        ga4_metrics JSONB,
+        posthog_metrics JSONB,
+        sentry_metrics JSONB,
+        response_times JSONB,
+        alerts JSONB,
+        overall_status TEXT DEFAULT 'healthy',
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_system_health_reports_ts ON system_health_reports(report_timestamp);
+    `);
+    console.log('[AgentMigration] system_health_reports table ensured');
+  } catch (err: any) {
+    console.log(`[AgentMigration] Could not create system_health_reports: ${err.message}`);
+  }
+
+  // Ally member engagement reports
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS member_engagement_reports (
+        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+        report_date DATE NOT NULL,
+        report_type TEXT DEFAULT 'daily',
+        summary TEXT,
+        full_report JSONB,
+        new_applications INTEGER DEFAULT 0,
+        approved_members INTEGER DEFAULT 0,
+        inactive_members INTEGER DEFAULT 0,
+        welcome_messages_drafted INTEGER DEFAULT 0,
+        reengagement_messages_drafted INTEGER DEFAULT 0,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_member_engagement_reports_date ON member_engagement_reports(report_date);
+    `);
+    console.log('[AgentMigration] member_engagement_reports table ensured');
+  } catch (err: any) {
+    console.log(`[AgentMigration] Could not create member_engagement_reports: ${err.message}`);
+  }
+
+  // Catalyst growth reports
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS growth_reports (
+        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+        report_date DATE NOT NULL,
+        report_type TEXT DEFAULT 'daily',
+        summary TEXT,
+        full_report JSONB,
+        funnel_metrics JSONB,
+        conversion_rates JSONB,
+        drop_off_analysis JSONB,
+        experiment_ideas JSONB,
+        recommendations JSONB,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_growth_reports_date ON growth_reports(report_date);
+    `);
+    console.log('[AgentMigration] growth_reports table ensured');
+  } catch (err: any) {
+    console.log(`[AgentMigration] Could not create growth_reports: ${err.message}`);
+  }
+
+  // Closer sales pipeline reports
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS sales_pipeline_reports (
+        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+        report_date DATE NOT NULL,
+        report_type TEXT DEFAULT 'daily',
+        summary TEXT,
+        full_report JSONB,
+        pipeline_status JSONB,
+        high_value_leads JSONB,
+        outreach_drafted INTEGER DEFAULT 0,
+        conversion_metrics JSONB,
+        revenue_metrics JSONB,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS idx_sales_pipeline_reports_date ON sales_pipeline_reports(report_date);
+    `);
+    console.log('[AgentMigration] sales_pipeline_reports table ensured');
+  } catch (err: any) {
+    console.log(`[AgentMigration] Could not create sales_pipeline_reports: ${err.message}`);
   }
 }
 
