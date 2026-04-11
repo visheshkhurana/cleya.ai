@@ -70,6 +70,13 @@ const envSchema = z.object({
 
   LINKEDIN_PAGE_ACCESS_TOKEN: z.string().optional(),
   LINKEDIN_ORG_ID: z.string().optional(),
+
+  AYRSHARE_API_KEY: z.string().optional(),
+  META_ADS_ACCESS_TOKEN: z.string().optional(),
+  META_AD_ACCOUNT_ID: z.string().optional(),
+  LINKEDIN_AD_ACCOUNT_ID: z.string().optional(),
+  GOOGLE_ADS_DEVELOPER_TOKEN: z.string().optional(),
+  GOOGLE_ADS_CUSTOMER_ID: z.string().optional(),
 });
 
 function validateEnv() {

@@ -3,6 +3,9 @@ import { getAnalyticsSummary, getTopPages, getTrafficSources } from './analytics
 
 const GA4_PROPERTY_ID = env.GA4_PROPERTY_ID;
 const GA4_SERVICE_ACCOUNT_KEY = env.GA4_SERVICE_ACCOUNT_KEY;
+const GOOGLE_ANALYTICS_REFRESH_TOKEN = env.GOOGLE_ANALYTICS_REFRESH_TOKEN;
+const GOOGLE_CLIENT_ID = env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = env.GOOGLE_CLIENT_SECRET;
 
 const OAUTH_CLIENT_ID = process.env.GOOGLE_ADS_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '';
 const OAUTH_CLIENT_SECRET = process.env.GOOGLE_ADS_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || '';
@@ -39,6 +42,12 @@ function isOAuthConfigured(): boolean {
 
 function isConfigured(): boolean {
   return isServiceAccountConfigured() || isOAuthConfigured();
+}
+
+function getAuthMethod(): 'oauth' | 'service_account' | 'none' {
+  if (OAUTH_REFRESH_TOKEN || GOOGLE_ANALYTICS_REFRESH_TOKEN) return 'oauth';
+  if (GA4_SERVICE_ACCOUNT_KEY) return 'service_account';
+  return 'none';
 }
 
 async function getMetricsViaOAuth(dateRange: '7d' | '30d' | '90d' = '30d'): Promise<GA4Metrics | null> {
@@ -91,25 +100,34 @@ async function getMetrics(dateRange: '7d' | '30d' | '90d' = '30d'): Promise<GA4M
 
 async function getMetricsViaServiceAccount(dateRange: '7d' | '30d' | '90d' = '30d'): Promise<GA4Metrics | null> {
   try {
-    let credentials: ServiceAccountCredentials | undefined;
-    let keyFile: string | undefined;
-
-    try {
-      const parsed: unknown = JSON.parse(GA4_SERVICE_ACCOUNT_KEY!);
-      if (typeof parsed === 'object' && parsed !== null) {
-        credentials = parsed as ServiceAccountCredentials;
-      }
-    } catch {
-      keyFile = GA4_SERVICE_ACCOUNT_KEY!;
-    }
-
     const { google } = await import('googleapis');
 
-    const auth = new google.auth.GoogleAuth({
-      credentials,
-      keyFile,
-      scopes: ['https://www.googleapis.com/auth/analytics.readonly'],
-    });
+    let auth;
+    if (GOOGLE_ANALYTICS_REFRESH_TOKEN && GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
+      const oauth2Client = new google.auth.OAuth2(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET);
+      oauth2Client.setCredentials({ refresh_token: GOOGLE_ANALYTICS_REFRESH_TOKEN });
+      auth = oauth2Client;
+    } else if (GA4_SERVICE_ACCOUNT_KEY) {
+      let credentials: ServiceAccountCredentials | undefined;
+      let keyFile: string | undefined;
+
+      try {
+        const parsed: unknown = JSON.parse(GA4_SERVICE_ACCOUNT_KEY);
+        if (typeof parsed === 'object' && parsed !== null) {
+          credentials = parsed as ServiceAccountCredentials;
+        }
+      } catch {
+        keyFile = GA4_SERVICE_ACCOUNT_KEY;
+      }
+
+      auth = new google.auth.GoogleAuth({
+        credentials,
+        keyFile,
+        scopes: ['https://www.googleapis.com/auth/analytics.readonly'],
+      });
+    } else {
+      return null;
+    }
 
     const analyticsData = google.analyticsdata({ version: 'v1beta', auth });
 
@@ -210,7 +228,8 @@ async function getMetricsViaServiceAccount(dateRange: '7d' | '30d' | '90d' = '30
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     if (message.includes('invalid_grant') || message.includes('Invalid JWT') || message.includes('PERMISSION_DENIED')) {
-      console.error('GA4 authentication failed — check that GA4_SERVICE_ACCOUNT_KEY is valid JSON and the service account has access to property', GA4_PROPERTY_ID, ':', message);
+      const method = getAuthMethod();
+      console.error(`GA4 authentication failed (method: ${method}) — check credentials for property`, GA4_PROPERTY_ID, ':', message);
     } else {
       console.error('GA4 fetch error:', message);
     }
@@ -218,5 +237,5 @@ async function getMetricsViaServiceAccount(dateRange: '7d' | '30d' | '90d' = '30
   }
 }
 
-export const ga4Service = { isConfigured, getMetrics };
+export const ga4Service = { isConfigured, getAuthMethod, getMetrics };
 export type { GA4Metrics };

@@ -871,6 +871,11 @@ export function ClassicDashboard() {
                   <span className="text-lg">🌐</span>
                   <h3 className="text-white text-sm font-semibold">Website Traffic</h3>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-violet/10 text-brand-violet-hover/50">GA4</span>
+                  {analyticsHealth?.ga4?.configured && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-300/60">
+                      {analyticsHealth.ga4.method === 'oauth' ? 'OAuth' : 'Service Account'}
+                    </span>
+                  )}
                 </div>
                 <span className="text-brand-violet-hover/30 text-sm">{collapsedSections['ga4'] ? '▶' : '▼'}</span>
               </button>
@@ -882,9 +887,7 @@ export function ClassicDashboard() {
                     <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-4">
                       <p className="text-yellow-300/80 text-sm font-medium mb-1">Not Configured</p>
                       <p className="text-yellow-300/50 text-xs">
-                        {analyticsHealth?.ga4?.requiredVars
-                          ? <>Set {analyticsHealth.ga4.requiredVars.map((v: string, i: number) => <><code key={v} className="bg-yellow-500/10 px-1 rounded">{v}</code>{i < analyticsHealth.ga4.requiredVars.length - 1 ? ' and ' : ''}</>)} environment variables to enable Google Analytics data.</>
-                          : <>Set <code className="bg-yellow-500/10 px-1 rounded">GA4_PROPERTY_ID</code> and <code className="bg-yellow-500/10 px-1 rounded">GA4_SERVICE_ACCOUNT_KEY</code> environment variables to enable Google Analytics data.</>}
+                        Set <code className="bg-yellow-500/10 px-1 rounded">GA4_PROPERTY_ID</code> and either <code className="bg-yellow-500/10 px-1 rounded">GOOGLE_ANALYTICS_REFRESH_TOKEN</code> (OAuth) or <code className="bg-yellow-500/10 px-1 rounded">GA4_SERVICE_ACCOUNT_KEY</code> (Service Account) to enable Google Analytics data.
                       </p>
                     </div>
                   ) : ga4Data?.data ? (
@@ -967,7 +970,12 @@ export function ClassicDashboard() {
                 <div className="flex items-center gap-3">
                   <span className="text-lg">📸</span>
                   <h3 className="text-white text-sm font-semibold">Instagram</h3>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300/50">Graph API</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300/50">
+                    {analyticsHealth?.instagram?.method === 'ayrshare' ? 'Ayrshare' : analyticsHealth?.instagram?.method === 'meta_ads' ? 'Meta Token' : 'Graph API'}
+                  </span>
+                  {analyticsHealth?.instagram?.configured && analyticsHealth?.instagram?.method === 'ayrshare' && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-300/60">Connected via Ayrshare</span>
+                  )}
                 </div>
                 <span className="text-brand-violet-hover/30 text-sm">{collapsedSections['instagram'] ? '▶' : '▼'}</span>
               </button>
@@ -975,13 +983,18 @@ export function ClassicDashboard() {
                 <div className="px-5 pb-5 space-y-4">
                   {instagramLoading ? (
                     <div className="text-center py-8 text-brand-violet-hover/40 text-sm">Loading Instagram data...</div>
-                  ) : !instagramData?.configured ? (
+                  ) : !instagramData?.configured && !analyticsHealth?.instagram?.configured ? (
                     <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-4">
                       <p className="text-yellow-300/80 text-sm font-medium mb-1">Not Configured</p>
                       <p className="text-yellow-300/50 text-xs">
-                        {analyticsHealth?.instagram?.requiredVars
-                          ? <>Set {analyticsHealth.instagram.requiredVars.map((v: string, i: number) => <><code key={v} className="bg-yellow-500/10 px-1 rounded">{v}</code>{i < analyticsHealth.instagram.requiredVars.length - 1 ? ' and ' : ''}</>)} environment variables.</>
-                          : <>Set <code className="bg-yellow-500/10 px-1 rounded">INSTAGRAM_ACCESS_TOKEN</code> and <code className="bg-yellow-500/10 px-1 rounded">INSTAGRAM_BUSINESS_ACCOUNT_ID</code> environment variables.</>}
+                        Set <code className="bg-yellow-500/10 px-1 rounded">INSTAGRAM_ACCESS_TOKEN</code> + <code className="bg-yellow-500/10 px-1 rounded">INSTAGRAM_BUSINESS_ACCOUNT_ID</code>, or <code className="bg-yellow-500/10 px-1 rounded">META_ADS_ACCESS_TOKEN</code>, or <code className="bg-yellow-500/10 px-1 rounded">AYRSHARE_API_KEY</code>.
+                      </p>
+                    </div>
+                  ) : analyticsHealth?.instagram?.configured && analyticsHealth?.instagram?.method === 'ayrshare' && !instagramData?.data ? (
+                    <div className="rounded-lg border border-green-500/20 bg-green-500/5 p-4">
+                      <p className="text-green-300/80 text-sm font-medium mb-1">Connected via Ayrshare</p>
+                      <p className="text-green-300/50 text-xs">
+                        Instagram is connected through Ayrshare for posting. Direct Graph API analytics require linking the Instagram account to your Facebook Page in Business Manager.
                       </p>
                     </div>
                   ) : instagramData?.data ? (
@@ -1235,6 +1248,112 @@ export function ClassicDashboard() {
                   ) : (
                     <div className="text-center py-6 text-brand-violet-hover/30 text-xs">{sentryData?.error || 'Failed to load Sentry data.'}</div>
                   )}
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-xl border border-brand-violet/10 overflow-hidden" style={{ background: 'rgba(8,13,26,0.8)' }}>
+              <button onClick={() => toggleSection('integrations')} className="w-full flex items-center justify-between p-5 hover:bg-brand-violet/5 transition">
+                <div className="flex items-center gap-3">
+                  <span className="text-lg">🔗</span>
+                  <h3 className="text-white text-sm font-semibold">Social & Ads Integrations</h3>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-violet/10 text-brand-violet-hover/50">Connected</span>
+                </div>
+                <span className="text-brand-violet-hover/30 text-sm">{collapsedSections['integrations'] ? '▶' : '▼'}</span>
+              </button>
+              {!collapsedSections['integrations'] && (
+                <div className="px-5 pb-5 space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {/* Ayrshare */}
+                    <div className="rounded-lg border border-brand-violet/10 p-4" style={{ background: 'rgba(108,99,255,0.03)' }}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm">🔄</span>
+                        <span className="text-white text-xs font-semibold">Ayrshare</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full ml-auto ${analyticsHealth?.ayrshare?.configured ? 'bg-green-500/10 text-green-300/60' : 'bg-yellow-500/10 text-yellow-300/60'}`}>
+                          {analyticsHealth?.ayrshare?.configured ? 'Connected' : 'Not Configured'}
+                        </span>
+                      </div>
+                      {analyticsHealth?.ayrshare?.configured ? (
+                        <p className="text-brand-violet-hover/40 text-[11px]">
+                          Platforms: {analyticsHealth.ayrshare.platforms?.map((p: string) => p.charAt(0).toUpperCase() + p.slice(1)).join(', ')}
+                        </p>
+                      ) : (
+                        <p className="text-yellow-300/40 text-[11px]">Set <code className="bg-yellow-500/10 px-1 rounded text-[10px]">AYRSHARE_API_KEY</code></p>
+                      )}
+                    </div>
+
+                    {/* LinkedIn (via Ayrshare) */}
+                    <div className="rounded-lg border border-blue-500/10 p-4" style={{ background: 'rgba(59,130,246,0.03)' }}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm">💼</span>
+                        <span className="text-white text-xs font-semibold">LinkedIn</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full ml-auto ${analyticsHealth?.ayrshare?.configured ? 'bg-green-500/10 text-green-300/60' : 'bg-yellow-500/10 text-yellow-300/60'}`}>
+                          {analyticsHealth?.ayrshare?.configured ? 'Connected via Ayrshare' : 'Not Configured'}
+                        </span>
+                      </div>
+                      <p className="text-brand-violet-hover/40 text-[11px]">Social posting via Ayrshare integration</p>
+                    </div>
+
+                    {/* Facebook (via Ayrshare) */}
+                    <div className="rounded-lg border border-blue-600/10 p-4" style={{ background: 'rgba(37,99,235,0.03)' }}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm">📘</span>
+                        <span className="text-white text-xs font-semibold">Facebook</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full ml-auto ${analyticsHealth?.ayrshare?.configured ? 'bg-green-500/10 text-green-300/60' : 'bg-yellow-500/10 text-yellow-300/60'}`}>
+                          {analyticsHealth?.ayrshare?.configured ? 'Connected via Ayrshare' : 'Not Configured'}
+                        </span>
+                      </div>
+                      <p className="text-brand-violet-hover/40 text-[11px]">Social posting via Ayrshare integration</p>
+                    </div>
+
+                    {/* Meta Ads */}
+                    <div className="rounded-lg border border-blue-500/10 p-4" style={{ background: 'rgba(59,130,246,0.03)' }}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm">📢</span>
+                        <span className="text-white text-xs font-semibold">Meta Ads</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full ml-auto ${analyticsHealth?.metaAds?.configured ? 'bg-green-500/10 text-green-300/60' : 'bg-yellow-500/10 text-yellow-300/60'}`}>
+                          {analyticsHealth?.metaAds?.configured ? 'Configured' : 'Not Configured'}
+                        </span>
+                      </div>
+                      {analyticsHealth?.metaAds?.configured ? (
+                        <p className="text-brand-violet-hover/40 text-[11px]">Account: {analyticsHealth.metaAds.accountId}</p>
+                      ) : (
+                        <p className="text-yellow-300/40 text-[11px]">Set <code className="bg-yellow-500/10 px-1 rounded text-[10px]">META_ADS_ACCESS_TOKEN</code> + <code className="bg-yellow-500/10 px-1 rounded text-[10px]">META_AD_ACCOUNT_ID</code></p>
+                      )}
+                    </div>
+
+                    {/* LinkedIn Ads */}
+                    <div className="rounded-lg border border-amber-500/10 p-4" style={{ background: 'rgba(245,158,11,0.03)' }}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm">📊</span>
+                        <span className="text-white text-xs font-semibold">LinkedIn Ads</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full ml-auto ${analyticsHealth?.linkedinAds?.configured ? 'bg-amber-500/10 text-amber-300/60' : 'bg-yellow-500/10 text-yellow-300/60'}`}>
+                          {analyticsHealth?.linkedinAds?.configured ? 'Pending Approval' : 'Not Configured'}
+                        </span>
+                      </div>
+                      {analyticsHealth?.linkedinAds?.configured ? (
+                        <p className="text-amber-300/40 text-[11px]">LinkedIn Advertising API approval pending</p>
+                      ) : (
+                        <p className="text-yellow-300/40 text-[11px]">Set <code className="bg-yellow-500/10 px-1 rounded text-[10px]">LINKEDIN_CLIENT_ID</code></p>
+                      )}
+                    </div>
+
+                    {/* Google Ads */}
+                    <div className="rounded-lg border border-green-500/10 p-4" style={{ background: 'rgba(34,197,94,0.03)' }}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm">🎯</span>
+                        <span className="text-white text-xs font-semibold">Google Ads</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full ml-auto ${analyticsHealth?.googleAds?.configured ? 'bg-green-500/10 text-green-300/60' : 'bg-yellow-500/10 text-yellow-300/60'}`}>
+                          {analyticsHealth?.googleAds?.configured ? `Configured (${analyticsHealth.googleAds.accessLevel === 'test' ? 'Test' : 'Live'})` : 'Not Configured'}
+                        </span>
+                      </div>
+                      {analyticsHealth?.googleAds?.configured ? (
+                        <p className="text-brand-violet-hover/40 text-[11px]">Customer ID: {analyticsHealth.googleAds.customerId || 'Not set'}</p>
+                      ) : (
+                        <p className="text-yellow-300/40 text-[11px]">Set <code className="bg-yellow-500/10 px-1 rounded text-[10px]">GOOGLE_ADS_DEVELOPER_TOKEN</code></p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

@@ -426,11 +426,32 @@ adminRouter.get('/analytics/health', async (_req: Request, res: Response, next: 
       data: {
         ga4: {
           configured: ga4Service.isConfigured(),
+          method: ga4Service.getAuthMethod(),
+          propertyId: process.env.GA4_PROPERTY_ID || null,
           requiredVars: ga4Service.isConfigured() ? [] : ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_ANALYTICS_REFRESH_TOKEN'],
         },
         instagram: {
           configured: instagramService.isConfigured(),
-          requiredVars: ['INSTAGRAM_ACCESS_TOKEN', 'INSTAGRAM_BUSINESS_ACCOUNT_ID'],
+          method: instagramService.getConnectionMethod(),
+          requiredVars: ['INSTAGRAM_ACCESS_TOKEN + INSTAGRAM_BUSINESS_ACCOUNT_ID', 'or META_ADS_ACCESS_TOKEN', 'or AYRSHARE_API_KEY'],
+        },
+        ayrshare: {
+          configured: !!process.env.AYRSHARE_API_KEY,
+          platforms: process.env.AYRSHARE_API_KEY ? ['linkedin', 'facebook', 'instagram'] : [],
+        },
+        metaAds: {
+          configured: !!(process.env.META_ADS_ACCESS_TOKEN && process.env.META_AD_ACCOUNT_ID),
+          accountId: process.env.META_AD_ACCOUNT_ID || null,
+        },
+        linkedinAds: {
+          configured: !!process.env.LINKEDIN_CLIENT_ID,
+          status: 'pending_approval',
+          accountId: process.env.LINKEDIN_AD_ACCOUNT_ID || null,
+        },
+        googleAds: {
+          configured: !!process.env.GOOGLE_ADS_DEVELOPER_TOKEN,
+          accessLevel: 'test',
+          customerId: process.env.GOOGLE_ADS_CUSTOMER_ID || null,
         },
         posthog: {
           configured: posthogService.isConfigured(),
