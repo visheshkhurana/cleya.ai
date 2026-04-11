@@ -48,6 +48,14 @@ The matching engine (`packages/matching/src/index.ts`) uses a three-layer hybrid
 - **Availability filtering**: Users not open to meeting or over their weekly intro cap are deprioritized (data from `extraData` JSON field)
 - **Talent preference matching**: Equity preference, work style, functional area alignment
 - **Feedback-driven re-ranking**: MatchFeedback ratings and IntroductionRecord outcomes (accept rates, positive outcome rates) are used as multipliers on hybrid scores (min 3 feedbacks to activate)
+
+## Email Drip Campaign System
+- **Model:** `DripEmail` (`drip_emails` table) tracks drip email state per user — sequence, emailKey, status (PENDING/SENT/SKIPPED/FAILED), scheduledFor, matchId. Unique constraint on (userId, sequence, emailKey) prevents duplicates.
+- **Sequences:** ONBOARDING (Day 1: profile nudge, Day 3: how matching works, Day 7: match check-in), MATCH_FOLLOWUP (Day 3 post-acceptance: post-intro follow-up), FEEDBACK_REQUEST (Day 5 post-acceptance: feedback request with link).
+- **Service:** `dripCampaignService` (`apps/backend/src/services/dripCampaignService.ts`) — enrolls users into sequences, processes due emails with smart skipping (skip profile nudge if profile complete, skip feedback request if feedback already submitted).
+- **Cron:** Daily at 10:00 IST via `matchScheduler.runDripCampaign()`.
+- **Hooks:** Auto-enrolls on signup (email/Google/LinkedIn via `authService`), auto-enrolls match follow-up + feedback request on match acceptance (`matchingService.respondToMatch`).
+- **Templates:** `emailService` methods: `sendProfileNudge`, `sendHowMatchingWorks`, `sendMatchCheckIn`, `sendPostIntroFollowUp`, `sendFeedbackRequest`. All use existing Cleya brand template.
 - **Dynamic intent signal**: Recent accept/decline patterns infer current intent (e.g., founder declining investors → NOT_FUNDRAISING) and adjust scores
 - **Structured compatibility signals**: LLM match reasoning receives data (sector overlap %, stage fit, check size alignment, traction highlights) for specific introductions
 - **LinkedIn enrichment**: Background job (`linkedinEnrichmentService.ts`) extracts career history, domain expertise, notable companies, exits from profile data + LinkedIn URL via LLM, stores in `profile.extraData.enrichedData`. Runs daily at 3:00 AM IST and on new profile completion.

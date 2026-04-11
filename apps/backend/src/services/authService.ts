@@ -76,6 +76,12 @@ export class AuthService {
       );
     });
 
+    import('./dripCampaignService').then(({ dripCampaignService }) => {
+      dripCampaignService.enrollOnboarding(user.id).catch((e) =>
+        console.log('[Auth] Drip campaign enrollment failed:', e.message)
+      );
+    });
+
     return {
       user: {
         id: user.id,
@@ -303,6 +309,12 @@ export class AuthService {
       include: { profile: true },
     });
 
+    import('./dripCampaignService').then(({ dripCampaignService }) => {
+      dripCampaignService.enrollOnboarding(user!.id).catch((e) =>
+        console.log('[Auth] Drip campaign enrollment failed (Google):', e.message)
+      );
+    });
+
     const token = this.generateToken(user);
     return {
       user: {
@@ -417,6 +429,12 @@ export class AuthService {
         },
       },
       include: { profile: true },
+    });
+
+    import('./dripCampaignService').then(({ dripCampaignService }) => {
+      dripCampaignService.enrollOnboarding(user!.id).catch((e) =>
+        console.log('[Auth] Drip campaign enrollment failed (LinkedIn):', e.message)
+      );
     });
 
     const token = this.generateToken(user);

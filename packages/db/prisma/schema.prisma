@@ -79,6 +79,7 @@ model User {
 
   adminAuditLogs         AdminAuditLog[] @relation("AuditActor")
   adminAuditTargets      AdminAuditLog[] @relation("AuditTarget")
+  dripEmails             DripEmail[]
 
   @@index([email])
   @@index([phone])
@@ -1057,6 +1058,43 @@ model Waitlist {
 // ─────────────────────────────────────────────
 // AGENT MEMORY SYSTEM (5-Layer)
 // ─────────────────────────────────────────────
+
+// ─────────────────────────────────────────────
+// DRIP EMAILS
+// ─────────────────────────────────────────────
+
+model DripEmail {
+  id           String          @id @default(cuid())
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sequence     DripSequence
+  emailKey     String
+  status       DripEmailStatus @default(PENDING)
+  scheduledFor DateTime
+  sentAt       DateTime?
+  matchId      String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@unique([userId, sequence, emailKey])
+  @@index([userId])
+  @@index([status, scheduledFor])
+  @@index([matchId])
+  @@map("drip_emails")
+}
+
+enum DripSequence {
+  ONBOARDING
+  MATCH_FOLLOWUP
+  FEEDBACK_REQUEST
+}
+
+enum DripEmailStatus {
+  PENDING
+  SENT
+  SKIPPED
+  FAILED
+}
 
 model AgentWorkingMemory {
   id        String   @id @default(cuid())

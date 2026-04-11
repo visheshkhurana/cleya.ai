@@ -4,6 +4,7 @@ import { matchingService } from './matchingService';
 import { vectorMatchingService } from './vectorMatchingService';
 import { slackService } from './slackService';
 import { linkedinEnrichmentService } from './linkedinEnrichmentService';
+import { dripCampaignService } from './dripCampaignService';
 
 class MatchScheduler {
   private tasks: ScheduledTask[] = [];
@@ -34,11 +35,18 @@ class MatchScheduler {
       );
     }, { timezone: 'Asia/Kolkata' });
 
-    this.tasks.push(matchJob, dailyReportJob, enrichmentJob);
+    const dripJob = cron.schedule('0 10 * * *', () => {
+      this.runDripCampaign().catch(err =>
+        console.error('[MatchScheduler] Drip campaign failed:', err)
+      );
+    }, { timezone: 'Asia/Kolkata' });
+
+    this.tasks.push(matchJob, dailyReportJob, enrichmentJob, dripJob);
     this.started = true;
     console.log('[MatchScheduler] Scheduled batch matching at 8:00, 14:00, 20:00 IST');
     console.log('[MatchScheduler] Scheduled daily Slack report at 21:00 IST');
     console.log('[MatchScheduler] Scheduled LinkedIn enrichment at 3:00 IST');
+    console.log('[MatchScheduler] Scheduled drip campaign processing at 10:00 IST');
   }
 
   stop() {
@@ -110,6 +118,24 @@ class MatchScheduler {
       return { usersProcessed, totalProposed, errors: errors.length, duration: `${duration}s` };
     } finally {
       this.running = false;
+    }
+  }
+
+  async runDripCampaign() {
+    console.log('[MatchScheduler] Starting drip campaign processing...');
+    const startTime = Date.now();
+
+    try {
+      const result = await dripCampaignService.processDue();
+      const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.log(
+        `[MatchScheduler] Drip campaign complete in ${duration}s: ` +
+        `${result.sent} sent, ${result.skipped} skipped, ${result.failed} failed`
+      );
+      return result;
+    } catch (err) {
+      console.error('[MatchScheduler] Drip campaign batch failed:', err);
+      throw err;
     }
   }
 

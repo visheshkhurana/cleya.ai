@@ -208,6 +208,21 @@ export class MatchingService {
       this.scheduleFeedbackPrompt(matchId, updated.userAId, updated.userBId).catch((e) =>
         console.log('[MatchingService] Feedback prompt scheduling failed:', e)
       );
+
+      import('./dripCampaignService').then(({ dripCampaignService }) => {
+        dripCampaignService.enrollMatchFollowUp(updated.userAId, matchId).catch((e) =>
+          console.log('[MatchingService] Drip match follow-up enrollment (A) failed:', e)
+        );
+        dripCampaignService.enrollMatchFollowUp(updated.userBId, matchId).catch((e) =>
+          console.log('[MatchingService] Drip match follow-up enrollment (B) failed:', e)
+        );
+        dripCampaignService.enrollFeedbackRequest(updated.userAId, matchId).catch((e) =>
+          console.log('[MatchingService] Drip feedback request enrollment (A) failed:', e)
+        );
+        dripCampaignService.enrollFeedbackRequest(updated.userBId, matchId).catch((e) =>
+          console.log('[MatchingService] Drip feedback request enrollment (B) failed:', e)
+        );
+      });
     }
 
     return updated;
