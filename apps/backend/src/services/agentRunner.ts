@@ -378,14 +378,14 @@ const agentStates = new Map<string, {
 }>();
 
 const DEFAULT_SCHEDULES: Record<string, { cron: string; desc: string }> = {
-  'nexus': { cron: '0 7 * * *', desc: 'Daily at 7:00 AM IST' },
-  'maven': { cron: '30 7 * * 1', desc: 'Mondays at 7:30 AM IST' },
+  'nexus': { cron: '0 7 * * 1', desc: 'Weekly on Monday at 7:00 AM IST' },
+  'maven': { cron: '0 10 * * 1,3,5', desc: 'Mon/Wed/Fri at 10:00 AM IST' },
   'ledger': { cron: '0 8 * * 1', desc: 'Mondays at 8:00 AM IST' },
   'sentinel': { cron: '0 9 * * 1,4', desc: 'Mon/Thu at 9:00 AM IST' },
   'ally': { cron: '0 10 * * 1,3,5', desc: 'Mon/Wed/Fri at 10:00 AM IST' },
   'catalyst': { cron: '0 11 * * 2', desc: 'Tuesdays at 11:00 AM IST' },
   'closer': { cron: '0 11 * * 4', desc: 'Thursdays at 11:00 AM IST' },
-  'scout': { cron: '0 6 * * *', desc: 'Daily at 6:00 AM IST' },
+  'scout': { cron: '0 6 * * 1', desc: 'Weekly on Monday at 6:00 AM IST' },
   'probe': { cron: '0 7 * * *', desc: 'Daily at 7:00 AM IST' },
   'outreach': { cron: '0 10 * * 2,4', desc: 'Tue/Thu at 10:00 AM IST' },
 };

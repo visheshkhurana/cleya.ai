@@ -139,6 +139,7 @@ Memory is assembled and injected into agent system prompts automatically before 
 - `GET /api/admin/agents/:id/run-history?limit=30` — paginated run history logs
 - `GET /api/admin/agents/:id/accountability` — accountability stats (success rate, total runs, avg duration, generated content)
 - `PATCH /api/admin/agents/:id/config` — update enabled state, cron expression (validated), cron description, autonomy_level, guardrails; triggers schedule reload
+- `POST /api/admin/agents/activate-workforce` — configures and activates 5 high-impact agents (Probe, Maven, Scout, Nexus, Outreach) with tailored task contexts, schedules (Probe: daily 7am IST, Maven: MWF 10am IST, Scout: weekly Mon 6am IST, Nexus: weekly Mon 7am IST, Outreach: Tue/Thu 10am IST), manual autonomy, and sensible guardrails (maxActionsPerDay: 10, maxPostsPerDay: 5, maxSpendPerDay: 0). Agent runs execute in the background; returns immediately with config status. Frontend "Activate Workforce" button in AgentsManagement.tsx.
 - `POST /api/admin/agents/emergency-stop` — emergency kill switch, disables all agents and sets to manual
 - `POST /api/admin/content/:id/publish` — publish a single approved content item to its channel
 - `POST /api/admin/content/publish-approved` — batch publish all approved content

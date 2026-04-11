@@ -720,6 +720,10 @@ class ApiClient {
     });
   }
 
+  async activateWorkforce() {
+    return this.fetch('/admin/agents/activate-workforce', { method: 'POST' });
+  }
+
   async emergencyStopAllAgents() {
     return this.fetch('/admin/agents/emergency-stop', { method: 'POST' });
   }

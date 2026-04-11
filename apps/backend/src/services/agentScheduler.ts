@@ -154,7 +154,7 @@ class AgentScheduler {
     await this.start();
   }
 
-  async executeAgent(agentId: string): Promise<any> {
+  async executeAgent(agentId: string, taskContext?: string): Promise<any> {
     if (this.running.has(agentId)) {
       console.log(`[AgentScheduler] ${agentId} already running, skipping`);
       return { skipped: true };
@@ -173,7 +173,7 @@ class AgentScheduler {
         console.log(`[AgentScheduler] Processed ${tasksProcessed} tasks for ${agentId}`);
       }
 
-      const result = await runAgent(agentId);
+      const result = await runAgent(agentId, taskContext);
 
       if (agentId === 'nexus' && result.status === 'success') {
         await this.handleOrchestratorDelegation(result.fullOutput || result.outputSummary);

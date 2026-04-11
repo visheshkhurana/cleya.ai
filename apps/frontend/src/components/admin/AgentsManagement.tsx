@@ -1882,6 +1882,24 @@ export function AgentsManagement() {
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [agentStatuses, setAgentStatuses] = useState<AgentStatusInfo[]>([]);
   const [emergencyStopping, setEmergencyStopping] = useState(false);
+  const [activating, setActivating] = useState(false);
+  const [activationResult, setActivationResult] = useState<any>(null);
+
+  const handleActivateWorkforce = useCallback(async () => {
+    if (!confirm('This will configure and run 5 agents (Probe, Maven, Scout, Nexus, Outreach) with real use cases. This may take a few minutes. Continue?')) return;
+    setActivating(true);
+    setActivationResult(null);
+    try {
+      const result = await api.activateWorkforce();
+      setActivationResult(result?.data || result);
+      await loadStatuses();
+    } catch (err) {
+      console.error('Workforce activation failed:', err);
+      setActivationResult({ error: err instanceof Error ? err.message : 'Activation failed' });
+    } finally {
+      setActivating(false);
+    }
+  }, []);
 
   const loadStatuses = useCallback(async () => {
     try {
@@ -1956,6 +1974,14 @@ export function AgentsManagement() {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-white">AI Agent Workforce</h2>
         <div className="flex gap-2 items-center">
+          <button
+            onClick={handleActivateWorkforce}
+            disabled={activating}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 disabled:opacity-50"
+          >
+            <Zap size={16} />
+            {activating ? 'Activating...' : 'Activate Workforce'}
+          </button>
           {hasAutonomousAgents && (
             <button
               onClick={handleEmergencyStop}
@@ -1985,6 +2011,52 @@ export function AgentsManagement() {
           ))}
         </div>
       </div>
+
+      {activating && (
+        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 flex items-center gap-3">
+          <Loader className="animate-spin text-emerald-400" size={20} />
+          <span className="text-emerald-300 text-sm">Activating workforce agents... This may take several minutes as each agent generates content.</span>
+        </div>
+      )}
+
+      {activationResult && !activating && (
+        <div className={`border rounded-xl p-4 ${activationResult.error ? 'bg-red-500/10 border-red-500/20' : 'bg-emerald-500/10 border-emerald-500/20'}`}>
+          {activationResult.error ? (
+            <div className="flex items-center gap-3 text-red-300 text-sm">
+              <AlertCircle size={20} />
+              <span>Activation failed: {activationResult.error}</span>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-emerald-300 text-sm font-medium">
+                  Workforce activated: {activationResult.configured || activationResult.successful || 0}/{activationResult.totalAgents || 0} agents configured and running
+                </span>
+                <button onClick={() => setActivationResult(null)} className="text-slate-400 hover:text-white">
+                  <X size={16} />
+                </button>
+              </div>
+              {activationResult.message && (
+                <p className="text-xs text-slate-400 mt-1">{activationResult.message}</p>
+              )}
+              {activationResult.agents && (
+                <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 mt-2">
+                  {activationResult.agents.map((a: any) => (
+                    <div key={a.agentId} className={`rounded-lg px-3 py-2 text-xs ${
+                      a.runResult?.status === 'queued' ? 'bg-amber-500/10 text-amber-300' :
+                      a.runResult?.status === 'success' ? 'bg-green-500/10 text-green-300' :
+                      a.configUpdated ? 'bg-blue-500/10 text-blue-300' :
+                      'bg-red-500/10 text-red-300'
+                    }`}>
+                      <span className="font-medium capitalize">{a.agentId}</span>: {a.runResult?.status || (a.configUpdated ? 'configured' : 'error')}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {view === 'overview' && (
         <div className="space-y-6">

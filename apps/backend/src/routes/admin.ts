@@ -1130,6 +1130,185 @@ adminRouter.patch('/agents/:id/config', async (req: Request, res: Response, next
   }
 });
 
+adminRouter.post('/agents/activate-workforce', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const agentConfigs: Array<{
+      id: string;
+      cronExpression: string;
+      cronDescription: string;
+      guardrails: { maxActionsPerDay: number; maxPostsPerDay: number; maxSpendPerDay: number; contentBlocklist: string[] };
+      taskContext: string;
+    }> = [
+      {
+        id: 'probe',
+        cronExpression: '0 7 * * *',
+        cronDescription: 'Daily at 7:00 AM IST',
+        guardrails: { maxActionsPerDay: 10, maxPostsPerDay: 5, maxSpendPerDay: 0, contentBlocklist: [] },
+        taskContext: `Run a comprehensive QA sweep for Cleya.ai. Test the following:
+1. Page loads: Landing page, About page, Pricing page, Login page, Signup page, Dashboard
+2. API health: /api/health, /api/auth endpoints, /api/matches, /api/profiles
+3. Authentication flows: Login with email, session management, token refresh
+4. Agent chat functionality: Verify each agent responds to messages
+5. Security headers: Check HTTPS, CSP, X-Frame-Options
+6. Performance: Measure page load times and API response times
+7. Navigation: Verify all internal links resolve correctly
+Report all findings as structured QA items with pass/fail/warning status and priority levels.`,
+      },
+      {
+        id: 'maven',
+        cronExpression: '0 10 * * 1,3,5',
+        cronDescription: 'Mon/Wed/Fri at 10:00 AM IST',
+        guardrails: { maxActionsPerDay: 10, maxPostsPerDay: 5, maxSpendPerDay: 0, contentBlocklist: [] },
+        taskContext: `Generate 3-5 social media posts for Cleya.ai, an AI-powered networking platform for India's startup ecosystem. Current stage: ~24 users, early traction, members-only.
+
+Content themes to cover:
+1. LinkedIn post about how AI-powered warm introductions are changing startup networking in India (thought leadership)
+2. LinkedIn post highlighting the power of curated, quality connections vs mass networking (education)  
+3. Instagram post about the Indian startup ecosystem's growth and why founders need better networking tools (awareness)
+4. LinkedIn post about Cleya.ai's AI matchmaking — how it works and why it's different from LinkedIn (product update)
+5. Optional: A community-focused post celebrating early adopters or sharing a networking tip
+
+Each post should feel authentic to a founder's voice, reference Indian cities (Bangalore, Delhi NCR, Mumbai), and include relevant hashtags. Do NOT generate more than 5 posts. Queue everything for founder approval.`,
+      },
+      {
+        id: 'scout',
+        cronExpression: '0 6 * * 1',
+        cronDescription: 'Weekly on Monday at 6:00 AM IST',
+        guardrails: { maxActionsPerDay: 10, maxPostsPerDay: 5, maxSpendPerDay: 0, contentBlocklist: [] },
+        taskContext: `Run a comprehensive SEO audit and keyword research for Cleya.ai. Focus areas:
+
+1. TECHNICAL SEO AUDIT:
+   - Audit the landing page (https://cleya.ai), about page, and pricing page
+   - Check meta tags, headings hierarchy, structured data, image alt tags
+   - Evaluate page speed and mobile-friendliness
+   - Check robots.txt and sitemap.xml
+
+2. SCHEMA MARKUP:
+   - Generate JSON-LD Organization schema for Cleya.ai
+   - Generate WebSite schema with search action
+   - Generate FAQPage schema for common questions about AI networking
+
+3. KEYWORD RESEARCH (10-15 target keywords):
+   - "startup networking India"
+   - "AI matchmaking founders investors"
+   - "professional networking platform India"
+   - "founder investor matching AI"
+   - "startup ecosystem India networking"
+   - "AI-powered introductions"
+   - "venture capital networking India"
+   - "Bangalore startup networking"
+   - "Delhi NCR founder community"
+   - "Mumbai startup connections"
+   - Plus 3-5 related long-tail keywords
+
+4. GEO OPTIMIZATION: Recommend content structure for AI search engine citability (ChatGPT, Perplexity, Gemini).
+
+Store all results for review.`,
+      },
+      {
+        id: 'nexus',
+        cronExpression: '0 7 * * 1',
+        cronDescription: 'Weekly on Monday at 7:00 AM IST',
+        guardrails: { maxActionsPerDay: 10, maxPostsPerDay: 5, maxSpendPerDay: 0, contentBlocklist: [] },
+        taskContext: `Generate a weekly operational plan for Cleya.ai's AI agent workforce. Current context:
+- Platform: AI-powered networking for India's startup ecosystem
+- Stage: Early stage, ~24 users, members-only
+- Active agents: Maven (Marketing), Scout (SEO), Probe (QA), Outreach (Cold Email)
+- Focus: Build awareness, grow user base organically, maintain platform quality
+
+Weekly plan should include:
+1. Maven tasks: 3 LinkedIn posts (Mon/Wed/Fri), 2 Instagram posts, focus on thought leadership and product awareness
+2. Scout tasks: Monitor keyword rankings, check for new SEO opportunities, update schema markup if needed
+3. Probe tasks: Daily QA sweep, report any regressions or new issues
+4. Outreach tasks: Draft personalized outreach emails for 5-10 target founders in Bangalore and Delhi NCR
+
+Assign appropriate models to each task. Prioritize quality over quantity. All content must go through founder approval before publishing.`,
+      },
+      {
+        id: 'outreach',
+        cronExpression: '0 10 * * 2,4',
+        cronDescription: 'Tue/Thu at 10:00 AM IST (as-needed)',
+        guardrails: { maxActionsPerDay: 10, maxPostsPerDay: 5, maxSpendPerDay: 0, contentBlocklist: [] },
+        taskContext: `Draft a 3-email drip sequence targeting startup founders in India for Cleya.ai. This is for DRAFTING ONLY — do not send or launch. Store as campaign drafts for founder approval.
+
+EMAIL 1 — Introduction (Day 0):
+- Subject: Something personal and curiosity-driven (4-7 words)
+- Body: Introduce Cleya.ai as an AI-powered networking platform. Mention the problem: founders waste hours on cold outreach and irrelevant connections. Cleya uses AI to match founders with the right investors, co-founders, and advisors. Under 120 words. CTA: "Would love to show you how it works — worth a quick look?"
+
+EMAIL 2 — Value of Warm Intros (Day 3):
+- Subject: Reference the value of warm introductions
+- Body: Share a stat or insight about how warm intros lead to 3x higher response rates. Explain how Cleya.ai's AI identifies the best matches based on stage, sector, and goals. Mention early traction in Bangalore/Delhi NCR. Under 120 words. CTA: "Reply and I'll send you an invite."
+
+EMAIL 3 — Invite to Join (Day 7):
+- Subject: Exclusive/scarcity-driven
+- Body: Final touch. Mention that Cleya is currently members-only with limited spots. Reference the growing community of founders and investors. Under 100 words. CTA: "Claim your spot: {{invite_link}}"
+
+Target segment: founders (Seed to Series B). Use personalization fields: {{first_name}}, {{company}}, {{role}}.`,
+      },
+    ];
+
+    const configResults: Array<{ agentId: string; configUpdated: boolean; error?: string }> = [];
+
+    for (const agentConfig of agentConfigs) {
+      try {
+        await updateAgentConfig(agentConfig.id, {
+          enabled: true,
+          cronExpression: agentConfig.cronExpression,
+          cronDescription: agentConfig.cronDescription,
+          autonomyLevel: 'manual',
+          guardrails: agentConfig.guardrails,
+        });
+        configResults.push({ agentId: agentConfig.id, configUpdated: true });
+      } catch (configErr: any) {
+        configResults.push({ agentId: agentConfig.id, configUpdated: false, error: configErr.message });
+      }
+    }
+
+    await agentScheduler.reload();
+
+    const configuredAgents = agentConfigs.filter(ac =>
+      configResults.find(cr => cr.agentId === ac.id && cr.configUpdated)
+    );
+
+    (async () => {
+      for (const agentConfig of configuredAgents) {
+        try {
+          console.log(`[WorkforceActivation] Running ${agentConfig.id} via scheduler...`);
+          const result = await agentScheduler.executeAgent(agentConfig.id, agentConfig.taskContext);
+          if (result.blocked) {
+            console.log(`[WorkforceActivation] ${agentConfig.id} blocked: ${result.reason}`);
+          } else if (result.skipped) {
+            console.log(`[WorkforceActivation] ${agentConfig.id} skipped (already running)`);
+          } else {
+            console.log(`[WorkforceActivation] ${agentConfig.id} completed: ${result.status} (${(result.duration / 1000).toFixed(1)}s)`);
+          }
+        } catch (err: any) {
+          console.error(`[WorkforceActivation] ${agentConfig.id} failed: ${err.message}`);
+        }
+      }
+      console.log(`[WorkforceActivation] All agent runs completed`);
+    })().catch(err => console.error('[WorkforceActivation] Background execution failed:', err));
+
+    const summary = {
+      totalAgents: configResults.length,
+      configured: configResults.filter(r => r.configUpdated).length,
+      configFailed: configResults.filter(r => !r.configUpdated).length,
+      agents: configResults.map(cr => ({
+        agentId: cr.agentId,
+        configUpdated: cr.configUpdated,
+        runResult: cr.configUpdated ? { status: 'queued' } : null,
+        error: cr.error,
+      })),
+      message: 'Agents configured and runs queued. Check agent status and run history for results.',
+    };
+
+    const allConfigured = configResults.every(r => r.configUpdated);
+    res.json({ success: allConfigured, data: summary });
+  } catch (error) {
+    next(error);
+  }
+});
+
 adminRouter.post('/agents/emergency-stop', async (req: Request, res: Response, next: NextFunction) => {
   try {
     agentScheduler.stop();
