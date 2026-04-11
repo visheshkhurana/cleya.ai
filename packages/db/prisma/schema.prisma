@@ -60,6 +60,7 @@ model User {
   profile                 Profile?
   secretaryThreads        SecretaryMessage[]
   embeddings              UserEmbedding[]
+  dripEmails              DripEmail[]
 
   @@index([email])
   @@index([phone])
@@ -1383,4 +1384,36 @@ enum SecuritySeverity {
   INFO
   WARNING
   CRITICAL
+}
+
+enum DripSequence {
+  ONBOARDING
+  MATCH_FOLLOWUP
+  FEEDBACK_REQUEST
+}
+
+enum DripEmailStatus {
+  PENDING
+  SENT
+  SKIPPED
+  FAILED
+}
+
+model DripEmail {
+  id           String          @id @default(cuid())
+  userId       String
+  sequence     DripSequence
+  emailKey     String
+  status       DripEmailStatus @default(PENDING)
+  scheduledFor DateTime
+  sentAt       DateTime?
+  matchId      String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  user         User            @relation(fields: [userId], references: [id])
+
+  @@unique([userId, sequence, emailKey])
+  @@index([status, scheduledFor])
+  @@index([userId])
+  @@map("drip_emails")
 }
