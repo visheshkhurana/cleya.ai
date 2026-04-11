@@ -43,12 +43,12 @@ const ORCHESTRATOR_TOOLS = [
 
 export const AGENT_TOOLS: Record<string, string[]> = {
   maven: ['post_to_social', 'schedule_post', 'get_post_analytics', 'get_post_history'],
-  ledger: ['create_ad_campaign', 'get_campaign_stats', 'optimize_campaigns', 'launch_full_campaign', 'activate_ad_campaign', 'pause_ad_campaign', 'adjust_ad_budget', 'generate_ad_copy', 'get_campaign_report'],
-  catalyst: ['post_to_social', 'create_ad_campaign', 'schedule_post', 'launch_full_campaign', 'generate_ad_copy', 'get_campaign_report'],
+  ledger: ['create_ad_campaign', 'get_campaign_stats', 'optimize_campaigns', 'launch_campaign', 'activate_campaign', 'pause_campaign', 'adjust_budget', 'generate_ad_copy', 'get_campaign_report'],
+  catalyst: ['post_to_social', 'create_ad_campaign', 'schedule_post', 'launch_campaign', 'generate_ad_copy', 'get_campaign_report'],
   nexus: ['post_to_social', 'send_email', 'schedule_post'],
   sentinel: ['get_campaign_stats', 'get_post_analytics', 'get_analytics_summary', 'get_top_pages', 'get_traffic_sources'],
   ally: ['send_email', 'schedule_post'],
-  closer: ['send_email', 'create_ad_campaign', 'launch_full_campaign', 'activate_ad_campaign', 'pause_ad_campaign', 'generate_ad_copy', 'get_campaign_report'],
+  closer: ['send_email', 'create_ad_campaign', 'launch_campaign', 'activate_campaign', 'pause_campaign', 'generate_ad_copy', 'get_campaign_report'],
   scout: ['analyze_seo', 'keyword_research', 'analyze_competitors', 'generate_schema_markup', 'check_indexing', 'optimize_content', 'get_analytics_summary', 'get_top_pages', 'get_traffic_sources'],
   probe: ['run_page_test', 'run_api_test', 'run_agent_test', 'run_full_qa', 'get_qa_report', 'get_analytics_summary'],
   outreach: ['create_email_campaign', 'add_recipients', 'launch_campaign', 'get_campaign_analytics', 'get_recipient_list', 'pause_campaign', 'send_email'],
@@ -146,21 +146,22 @@ export const TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
       required: ['platform'],
     },
   },
-  launch_full_campaign: {
-    name: 'launch_full_campaign',
-    description: 'Launch a full ad campaign (campaign + ad set + creatives) across selected platforms in one shot. Creates everything PAUSED with a 1-hour activation hold. Targets Cleya audiences (founders, investors, operators) in India.',
+  launch_campaign: {
+    name: 'launch_campaign',
+    description: 'Launch a full ad campaign (campaign + ad set + creatives) across selected platforms in one shot. Creates everything PAUSED with a 1-hour activation hold. Targets Cleya audiences (founders, investors, operators) in India. For email outreach campaigns, pass campaignId instead.',
     parameters: {
       type: 'object',
       properties: {
-        objective: { type: 'string', description: 'Campaign objective (e.g. BRAND_AWARENESS, LEAD_GENERATION, CONVERSIONS, TRAFFIC)' },
+        objective: { type: 'string', description: 'Ad campaign objective (e.g. BRAND_AWARENESS, LEAD_GENERATION, CONVERSIONS, TRAFFIC)' },
         totalBudget: { type: 'number', description: 'Total daily budget in INR across all platforms (max ₹50,000)' },
         platforms: { type: 'array', items: { type: 'string', enum: ['meta', 'linkedin', 'google'] }, description: 'Platforms to launch on' },
+        campaignId: { type: 'string', description: 'For email outreach: the campaign ID to launch' },
       },
-      required: ['objective', 'totalBudget', 'platforms'],
+      required: [],
     },
   },
-  activate_ad_campaign: {
-    name: 'activate_ad_campaign',
+  activate_campaign: {
+    name: 'activate_campaign',
     description: 'Activate a paused ad campaign. Requires the campaign to be at least 1 hour old, have ad sets/groups, and creatives. Safety guardrails enforced.',
     parameters: {
       type: 'object',
@@ -171,20 +172,20 @@ export const TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
       required: ['platform', 'campaignId'],
     },
   },
-  pause_ad_campaign: {
-    name: 'pause_ad_campaign',
-    description: 'Pause an active ad campaign on any platform.',
+  pause_campaign: {
+    name: 'pause_campaign',
+    description: 'Pause an active ad campaign or email outreach campaign. For ad campaigns, provide platform + campaignId. For email outreach, provide campaignId only.',
     parameters: {
       type: 'object',
       properties: {
-        platform: { type: 'string', enum: ['meta', 'linkedin', 'google'], description: 'Ad platform' },
+        platform: { type: 'string', enum: ['meta', 'linkedin', 'google'], description: 'Ad platform (omit for email outreach campaigns)' },
         campaignId: { type: 'string', description: 'Campaign ID or resource name to pause' },
       },
-      required: ['platform', 'campaignId'],
+      required: ['campaignId'],
     },
   },
-  adjust_ad_budget: {
-    name: 'adjust_ad_budget',
+  adjust_budget: {
+    name: 'adjust_budget',
     description: 'Adjust the daily budget of an ad campaign. Max ₹10,000/day per campaign, ₹50,000/day total across platforms.',
     parameters: {
       type: 'object',
@@ -285,17 +286,6 @@ export const TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
       required: ['campaignId', 'recipients'],
     },
   },
-  launch_campaign: {
-    name: 'launch_campaign',
-    description: 'Launch a draft campaign. Sends emails to all pending recipients with 200ms delay between sends.',
-    parameters: {
-      type: 'object',
-      properties: {
-        campaignId: { type: 'string', description: 'The campaign ID to launch' },
-      },
-      required: ['campaignId'],
-    },
-  },
   get_campaign_analytics: {
     name: 'get_campaign_analytics',
     description: 'Get analytics and stats for outreach campaigns. Pass campaignId for a specific campaign, or omit for all campaigns.',
@@ -314,17 +304,6 @@ export const TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
       properties: {
         campaignId: { type: 'string', description: 'The campaign ID' },
         status: { type: 'string', enum: ['pending', 'sent', 'opened', 'clicked', 'replied', 'bounced', 'failed'], description: 'Filter by recipient status' },
-      },
-      required: ['campaignId'],
-    },
-  },
-  pause_campaign: {
-    name: 'pause_campaign',
-    description: 'Pause an active or scheduled campaign.',
-    parameters: {
-      type: 'object',
-      properties: {
-        campaignId: { type: 'string', description: 'The campaign ID to pause' },
       },
       required: ['campaignId'],
     },
@@ -522,7 +501,7 @@ export async function executeTool(agentId: string, toolName: string, params: Rec
   }
 
   // Run guardrails for action-type tools
-  const actionTools = ['post_to_social', 'schedule_post', 'create_ad_campaign', 'send_email', 'launch_campaign', 'launch_full_campaign', 'activate_ad_campaign', 'pause_ad_campaign', 'adjust_ad_budget'];
+  const actionTools = ['post_to_social', 'schedule_post', 'create_ad_campaign', 'send_email', 'launch_campaign', 'activate_campaign', 'pause_campaign', 'adjust_budget'];
   if (actionTools.includes(toolName)) {
     const guardrails = getAgentGuardrails(agentId);
     const autonomyLevel = getAgentAutonomyLevel(agentId);
@@ -615,26 +594,11 @@ export async function executeTool(agentId: string, toolName: string, params: Rec
         result = await adsService.optimizeCampaigns(params.platform);
         break;
 
-      case 'launch_full_campaign': {
-        const strategy = await adCampaignAutomation.generateCampaignStrategy(
-          params.objective,
-          params.totalBudget,
-          params.platforms,
-        );
-        const launchResult = await adCampaignAutomation.launchCampaign(strategy);
-        result = { success: launchResult.success, data: launchResult };
-        break;
-      }
-
-      case 'activate_ad_campaign':
+      case 'activate_campaign':
         result = await adsService.activateCampaign(params.platform, params.campaignId);
         break;
 
-      case 'pause_ad_campaign':
-        result = await adsService.pauseCampaign(params.platform, params.campaignId);
-        break;
-
-      case 'adjust_ad_budget':
+      case 'adjust_budget':
         result = await adsService.updateBudget(params.platform, params.resourceId, params.newBudget);
         break;
 
@@ -687,8 +651,20 @@ export async function executeTool(agentId: string, toolName: string, params: Rec
       }
 
       case 'launch_campaign': {
-        const { launchCampaign } = await import('./outreachCampaignService');
-        result = await launchCampaign(params.campaignId);
+        if (params.platforms && Array.isArray(params.platforms)) {
+          // Ad campaign launch (multi-platform)
+          const strategy = await adCampaignAutomation.generateCampaignStrategy(
+            params.objective,
+            params.totalBudget,
+            params.platforms,
+          );
+          const launchResult = await adCampaignAutomation.launchCampaign(strategy);
+          result = { success: launchResult.success, data: launchResult };
+        } else {
+          // Email outreach campaign launch
+          const { launchCampaign } = await import('./outreachCampaignService');
+          result = await launchCampaign(params.campaignId);
+        }
         break;
       }
 
@@ -705,8 +681,14 @@ export async function executeTool(agentId: string, toolName: string, params: Rec
       }
 
       case 'pause_campaign': {
-        const { pauseCampaign } = await import('./outreachCampaignService');
-        result = await pauseCampaign(params.campaignId);
+        if (params.platform) {
+          // Ad campaign pause (platform-specific)
+          result = await adsService.pauseCampaign(params.platform, params.campaignId);
+        } else {
+          // Email outreach campaign pause
+          const { pauseCampaign } = await import('./outreachCampaignService');
+          result = await pauseCampaign(params.campaignId);
+        }
         break;
       }
 

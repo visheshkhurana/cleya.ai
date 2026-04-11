@@ -449,6 +449,96 @@ export async function monitorAndOptimize(): Promise<{
     }
   }
 
+  // --- A/B test: pause losing ad variations after 72 hours ---
+  // Query ad_audit_log for creatives created per campaign to find multi-variation ad sets
+  const recentCreatives = await safeQuery('ab test creatives', () =>
+    supabaseSelect<any>('ad_audit_log', { action_type: 'ad_created' }, { order: 'created_at.desc', limit: 100 }),
+  );
+
+  if (recentCreatives && recentCreatives.length > 0) {
+    // Group creatives by campaign (via adSetId in details)
+    const adSetGroups: Record<string, Array<{ adId: string; createdAt: string; campaignId: string }>> = {};
+    for (const log of recentCreatives) {
+      const adSetId = log.details?.adSetId || log.details?.adGroupResourceName || '';
+      if (!adSetId) continue;
+      if (!adSetGroups[adSetId]) adSetGroups[adSetId] = [];
+      adSetGroups[adSetId].push({
+        adId: log.campaign_id || log.details?.adId || '',
+        createdAt: log.created_at,
+        campaignId: log.details?.campaignId || '',
+      });
+    }
+
+    // For ad sets with 2+ variations that are older than 72 hours, run A/B analysis
+    const AB_TEST_HOURS = 72;
+    for (const [adSetId, ads] of Object.entries(adSetGroups)) {
+      if (ads.length < 2) continue;
+
+      const oldestCreated = new Date(ads[0].createdAt).getTime();
+      const hoursRunning = (Date.now() - oldestCreated) / (1000 * 60 * 60);
+      if (hoursRunning < AB_TEST_HOURS) continue;
+
+      // Fetch per-ad insights from Meta (primary A/B testing platform)
+      const adInsights: Array<{ adId: string; ctr: number; cpc: number; spend: number; impressions: number }> = [];
+      for (const ad of ads) {
+        if (!ad.adId) continue;
+        const insights = await safeQuery(`ad insights ${ad.adId}`, async () => {
+          const res = await fetch(
+            `https://graph.facebook.com/v19.0/${ad.adId}/insights?fields=ctr,cpc,spend,impressions&date_preset=last_7d&access_token=${process.env.META_ADS_ACCESS_TOKEN || ''}`,
+          );
+          const data: any = await res.json();
+          return data?.data?.[0] || null;
+        });
+
+        if (insights) {
+          adInsights.push({
+            adId: ad.adId,
+            ctr: parseFloat(insights.ctr || '0'),
+            cpc: parseFloat(insights.cpc || '999'),
+            spend: parseFloat(insights.spend || '0'),
+            impressions: parseInt(insights.impressions || '0', 10),
+          });
+        }
+      }
+
+      // Need at least 2 ads with data to compare
+      if (adInsights.length < 2) continue;
+
+      // Find the winner (highest CTR) and pause the rest
+      const sorted = adInsights.sort((a, b) => b.ctr - a.ctr);
+      const winner = sorted[0];
+      const losers = sorted.slice(1);
+
+      for (const loser of losers) {
+        if (loser.impressions < 100) continue; // not enough data yet
+
+        // Pause the losing ad
+        await safeQuery(`pause loser ad ${loser.adId}`, async () => {
+          await fetch(
+            `https://graph.facebook.com/v19.0/${loser.adId}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                access_token: process.env.META_ADS_ACCESS_TOKEN || '',
+                status: 'PAUSED',
+              }),
+            },
+          );
+        });
+
+        actions.push({
+          platform: 'meta',
+          campaignId: loser.adId,
+          campaignName: `Ad in set ${adSetId}`,
+          action: 'ab_test_pause',
+          reason: `A/B test loser: CTR ${loser.ctr.toFixed(2)}% vs winner ${winner.ctr.toFixed(2)}% after ${Math.round(hoursRunning)}h`,
+          details: { loserCtr: loser.ctr, winnerCtr: winner.ctr, loserAdId: loser.adId, winnerAdId: winner.adId, hoursRunning },
+        });
+      }
+    }
+  }
+
   // Generate summary
   const summary = actions.length === 0
     ? 'No optimization actions needed — all campaigns within thresholds.'
