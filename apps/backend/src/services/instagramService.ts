@@ -2,6 +2,8 @@ import { env } from '../config/env';
 
 const INSTAGRAM_ACCESS_TOKEN = env.INSTAGRAM_ACCESS_TOKEN;
 const INSTAGRAM_BUSINESS_ACCOUNT_ID = env.INSTAGRAM_BUSINESS_ACCOUNT_ID;
+const META_ADS_ACCESS_TOKEN = env.META_ADS_ACCESS_TOKEN;
+const AYRSHARE_API_KEY = env.AYRSHARE_API_KEY;
 
 const IG_BASE = 'https://graph.facebook.com/v19.0';
 
@@ -73,7 +75,18 @@ interface IGDemoMetric {
 }
 
 function isConfigured(): boolean {
-  return !!(INSTAGRAM_ACCESS_TOKEN && INSTAGRAM_BUSINESS_ACCOUNT_ID);
+  return !!(
+    (INSTAGRAM_ACCESS_TOKEN && INSTAGRAM_BUSINESS_ACCOUNT_ID) ||
+    META_ADS_ACCESS_TOKEN ||
+    AYRSHARE_API_KEY
+  );
+}
+
+function getConnectionMethod(): 'graph_api' | 'meta_ads' | 'ayrshare' | 'none' {
+  if (INSTAGRAM_ACCESS_TOKEN && INSTAGRAM_BUSINESS_ACCOUNT_ID) return 'graph_api';
+  if (META_ADS_ACCESS_TOKEN) return 'meta_ads';
+  if (AYRSHARE_API_KEY) return 'ayrshare';
+  return 'none';
 }
 
 async function igFetch<T = Record<string, unknown>>(url: string): Promise<T> {
@@ -283,5 +296,5 @@ async function publishTextPost(caption: string): Promise<InstagramPublishResult>
   return { success: false, error: 'Instagram does not support text-only posts. An image URL is required.' };
 }
 
-export const instagramService = { isConfigured, getMetrics, publishSingleImage, publishCarousel, publishTextPost };
+export const instagramService = { isConfigured, getConnectionMethod, getMetrics, publishSingleImage, publishCarousel, publishTextPost };
 export type { InstagramMetrics, InstagramPublishResult };
