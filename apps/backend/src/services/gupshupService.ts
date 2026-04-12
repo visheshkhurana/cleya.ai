@@ -42,71 +42,74 @@ export class GupshupService {
     return cleaned;
   }
 
+  /**
+   * Opt-in a user for WhatsApp messaging by updating the local database.
+   *
+   * The Gupshup opt-in API (https://api.gupshup.io/sm/api/v1/app/opt/in/{appName})
+   * was deprecated as of September 1, 2024. Gupshup no longer manages opt-in/opt-out
+   * state and no longer checks it when sending messages.
+   * See: https://support.gupshup.io/hc/en-us/articles/35183519921689-Prepare-for-Sunset-of-Optin-Optout-service-by-Gupshup-before-31st-Aug-2024
+   */
   async optInUser(phoneNumber: string): Promise<{ success: boolean; error?: string }> {
-    if (!this.isConfigured()) {
-      return { success: false, error: 'Gupshup not configured' };
-    }
-
     try {
       const formattedPhone = this.formatPhone(phoneNumber);
 
-      const body = new URLSearchParams({
-        user: formattedPhone,
-      });
-
-      const response = await fetch(`https://api.gupshup.io/sm/api/v1/app/opt/in/${this.appName}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'apikey': this.apiKey!,
+      const user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { phone: { contains: formattedPhone.slice(-10) } },
+            { whatsappPhone: { contains: formattedPhone.slice(-10) } },
+          ],
         },
-        body: body.toString(),
       });
 
-      let result: any;
-      const rawText = await response.text();
-      try { result = JSON.parse(rawText); } catch { result = rawText; }
-
-      if (response.ok && (result?.status === 'success' || result?.status === 'true')) {
-        console.log(`Gupshup opt-in success for ${formattedPhone}`);
-        return { success: true };
+      if (user) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { whatsappOptedIn: true, whatsappPhone: formattedPhone },
+        });
       }
 
-      const msg = typeof result === 'string' ? result : result?.message || JSON.stringify(result);
-      console.warn(`Gupshup opt-in failed for ${formattedPhone}: HTTP ${response.status} — ${msg}`);
-      return { success: false, error: msg };
+      console.log(`WhatsApp opt-in (local) for ${formattedPhone}${user ? ` (user ${user.id})` : ' (no matching user found)'}`);
+      return { success: true };
     } catch (error: any) {
-      console.error(`Gupshup opt-in failed for ${phoneNumber}:`, error.message);
+      console.error(`WhatsApp opt-in failed for ${phoneNumber}:`, error.message);
       return { success: false, error: error.message };
     }
   }
 
+  /**
+   * Opt-out a user from WhatsApp messaging by updating the local database.
+   *
+   * The Gupshup opt-out API (https://api.gupshup.io/sm/api/v1/app/opt/out/{appName})
+   * was deprecated as of September 1, 2024. Gupshup no longer manages opt-in/opt-out
+   * state and no longer checks it when sending messages.
+   * See: https://support.gupshup.io/hc/en-us/articles/35183519921689-Prepare-for-Sunset-of-Optin-Optout-service-by-Gupshup-before-31st-Aug-2024
+   */
   async optOutUser(phoneNumber: string): Promise<{ success: boolean; error?: string }> {
-    if (!this.isConfigured()) {
-      return { success: false, error: 'Gupshup not configured' };
-    }
-
     try {
       const formattedPhone = this.formatPhone(phoneNumber);
 
-      const body = new URLSearchParams({
-        user: formattedPhone,
-      });
-
-      const response = await fetch(`https://api.gupshup.io/sm/api/v1/app/opt/out/${this.appName}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'apikey': this.apiKey!,
+      const user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { phone: { contains: formattedPhone.slice(-10) } },
+            { whatsappPhone: { contains: formattedPhone.slice(-10) } },
+          ],
         },
-        body: body.toString(),
       });
 
-      const result = await response.json() as any;
-      console.log(`Gupshup opt-out for ${formattedPhone}:`, result);
+      if (user) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { whatsappOptedIn: false },
+        });
+      }
+
+      console.log(`WhatsApp opt-out (local) for ${formattedPhone}${user ? ` (user ${user.id})` : ' (no matching user found)'}`);
       return { success: true };
     } catch (error: any) {
-      console.error(`Gupshup opt-out failed for ${phoneNumber}:`, error.message);
+      console.error(`WhatsApp opt-out failed for ${phoneNumber}:`, error.message);
       return { success: false, error: error.message };
     }
   }
