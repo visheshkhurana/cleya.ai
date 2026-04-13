@@ -38,6 +38,7 @@ import { gupshupRouter } from './routes/gupshup';
 import { calendarRouter } from './routes/calendar';
 import { agentChatRouter } from './routes/agent-chat';
 import { healthRouter } from './routes/health';
+import { subscriptionRouter } from './routes/subscription';
 import { matchScheduler } from './services/matchScheduler';
 import { agentScheduler } from './services/agentScheduler';
 
@@ -92,7 +93,15 @@ app.use(helmet({
 }));
 app.use(compression());
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({
+  limit: '10mb',
+  verify: (req: any, _res, buf) => {
+    // Preserve raw body for Razorpay webhook signature verification
+    if (req.originalUrl === '/api/subscription/webhook') {
+      req.rawBody = buf.toString();
+    }
+  },
+}));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
@@ -125,6 +134,7 @@ app.use('/api/gupshup', gupshupRouter);
 app.use('/api/calendar', calendarRouter);
 app.use('/api/agent-chat', agentChatRouter);
 app.use('/api/health', healthRouter);
+app.use('/api/subscription', subscriptionRouter);
 
 if (env.SENTRY_DSN) {
   Sentry.setupExpressErrorHandler(app);
