@@ -5,6 +5,7 @@ const db_1 = require("@cleya/db");
 const ai_1 = require("@cleya/ai");
 const messagingService_1 = require("./messagingService");
 const activityService_1 = require("./activityService");
+const email_1 = require("./email");
 class IntroductionService {
     ai = (0, ai_1.createAIService)();
     async generateIntroduction(matchId) {
@@ -124,6 +125,29 @@ class IntroductionService {
             sendToUser(userA.id, userA.phone, introForA),
             sendToUser(userB.id, userB.phone, introForB),
         ]);
+        const matchReason = intro.match?.reason || '';
+        const profA = userA.profile;
+        const profB = userB.profile;
+        const nameA = userA.name || profA?.currentRole || userA.email.split('@')[0];
+        const nameB = userB.name || profB?.currentRole || userB.email.split('@')[0];
+        email_1.emailService.sendIntroductionEmail(userA.email, nameA, nameB, intro.introText, profB?.linkedinUrl || undefined, {
+            headline: profB?.headline || profB?.currentRole || undefined,
+            companyName: profB?.companyName || undefined,
+            sector: profB?.industries?.[0] || undefined,
+            location: profB?.location || undefined,
+            traction: profB?.keyTractionPoints || undefined,
+            matchReason,
+            partnerUserId: userB.id,
+        }).catch(() => { });
+        email_1.emailService.sendIntroductionEmail(userB.email, nameB, nameA, intro.introText, profA?.linkedinUrl || undefined, {
+            headline: profA?.headline || profA?.currentRole || undefined,
+            companyName: profA?.companyName || undefined,
+            sector: profA?.industries?.[0] || undefined,
+            location: profA?.location || undefined,
+            traction: profA?.keyTractionPoints || undefined,
+            matchReason,
+            partnerUserId: userA.id,
+        }).catch(() => { });
         try {
             await db_1.prisma.notification.createMany({
                 data: [

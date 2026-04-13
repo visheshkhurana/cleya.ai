@@ -110,6 +110,7 @@ app.use('/api/messaging', messagingRouter);
 app.use('/api/referrals', referralRouter);
 app.use('/api/verification', verificationRouter);
 app.use('/api/direct-messages', directMessageRouter);
+app.use('/api/dm', directMessageRouter);
 app.use('/api/invites', inviteRouter);
 app.use('/api/activity', activityRouter);
 app.use('/api/secretary', secretaryRouter);

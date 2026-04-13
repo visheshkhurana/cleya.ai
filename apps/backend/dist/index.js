@@ -142,6 +142,7 @@ app.use('/api/messaging', messaging_1.messagingRouter);
 app.use('/api/referrals', referral_1.referralRouter);
 app.use('/api/verification', verification_1.verificationRouter);
 app.use('/api/direct-messages', directMessage_1.directMessageRouter);
+app.use('/api/dm', directMessage_1.directMessageRouter);
 app.use('/api/invites', invite_1.inviteRouter);
 app.use('/api/activity', activity_1.activityRouter);
 app.use('/api/secretary', secretary_1.secretaryRouter);

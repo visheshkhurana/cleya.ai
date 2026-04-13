@@ -54,6 +54,7 @@ function MessagesContent() {
   const [typing, setTyping] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const deepLinkedRef = useRef(false);
+  const selectedPartnerRef = useRef<string | null>(null);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -76,7 +77,10 @@ function MessagesContent() {
         const data = JSON.parse(event.data);
         if (data.type === 'dm:new' && data.payload?.message) {
           const msg = data.payload.message;
-          setMessages(prev => [...prev, msg]);
+          const currentPartner = selectedPartnerRef.current;
+          if (currentPartner && msg.senderId === currentPartner) {
+            setMessages(prev => [...prev, msg]);
+          }
           loadConversations();
         }
         if (data.type === 'dm:typing') setTyping(true);
@@ -126,6 +130,7 @@ function MessagesContent() {
 
   const selectPartner = (partnerId: string) => {
     setSelectedPartner(partnerId);
+    selectedPartnerRef.current = partnerId;
     loadMessages(partnerId);
   };
 
@@ -270,7 +275,7 @@ function MessagesContent() {
           ) : (
             <>
               <div className="p-3 border-b border-white/5 flex items-center gap-3">
-                <button onClick={() => setSelectedPartner(null)} className="sm:hidden text-white/30 hover:text-white/60">
+                <button onClick={() => { setSelectedPartner(null); selectedPartnerRef.current = null; }} className="sm:hidden text-white/30 hover:text-white/60">
                   ←
                 </button>
                 {selectedConvo?.partner.profile?.avatarUrl ? (
