@@ -4,7 +4,12 @@ import { razorpayService } from '../services/razorpayService';
 
 export const subscriptionRouter = Router();
 
-subscriptionRouter.post('/create', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+subscriptionRouter.post('/create', (req: Request, _res: Response, next: NextFunction) => {
+  console.log('[Subscription] POST /create - cookies:', JSON.stringify(req.cookies));
+  console.log('[Subscription] POST /create - auth header:', req.headers.authorization);
+  console.log('[Subscription] POST /create - origin:', req.headers.origin);
+  next();
+}, authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await razorpayService.createSubscription(
       req.user!.userId,
