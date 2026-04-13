@@ -51,8 +51,13 @@ const templates: Record<string, TemplateConfig> = {
     description: 'Sent when the other person accepts a match',
     gupshupTemplateId: 'cleya_match_accepted',
     gupshupParamOrder: ['name', 'matchName', 'chatUrl'],
-    buildMessage: (p) =>
-      `Great news, ${p.name || 'there'}! 🤝\n\n*${p.matchName}* wants to connect with you too. I love it when this happens.\n\nYou can now see their contact details and reach out directly: ${p.chatUrl || 'https://cleya.ai/matches'}\n\nPro tip: reach out within 48 hours while the connection is fresh.`,
+    buildMessage: (p) => {
+      let msg = `Great news, ${p.name || 'there'}! 🤝\n\n*${p.matchName}* wants to connect with you too.\n\n`;
+      if (p.reason) msg += `Why I matched you: ${p.reason}\n\n`;
+      if (p.linkedin) msg += `🔗 LinkedIn: ${p.linkedin}\n\n`;
+      msg += `Start chatting now: ${p.chatUrl || 'https://cleya.ai/messages'}\n\nPro tip: reach out within 48 hours while the connection is fresh.`;
+      return msg;
+    },
   },
 
   intro_sent: {
@@ -305,6 +310,7 @@ export class WhatsAppTemplateService {
       matchName: matchDesc ? `${matchName} — ${matchDesc}` : matchName,
       chatUrl: `https://cleya.ai/messages?partner=${matchUserId}`,
       reason: reason,
+      linkedin: matchUser.profile?.linkedinUrl || '',
     });
   }
 

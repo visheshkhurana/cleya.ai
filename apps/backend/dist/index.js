@@ -37,6 +37,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const http_1 = require("http");
 const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
 const morgan_1 = __importDefault(require("morgan"));
@@ -45,6 +46,7 @@ const compression_1 = __importDefault(require("compression"));
 const Sentry = __importStar(require("@sentry/node"));
 const env_1 = require("./config/env");
 const errorHandler_1 = require("./middleware/errorHandler");
+const server_1 = require("./websocket/server");
 const auth_1 = require("./routes/auth");
 const user_1 = require("./routes/user");
 const conversation_1 = require("./routes/conversation");
@@ -160,7 +162,9 @@ if (env_1.env.SENTRY_DSN) {
 }
 app.use(errorHandler_1.errorHandler);
 const PORT = env_1.env.PORT;
-app.listen(PORT, '0.0.0.0', () => {
+const server = (0, http_1.createServer)(app);
+(0, server_1.setupWebSocket)(server);
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Cleya.ai backend running on port ${PORT}`);
     console.log(`   Environment: ${env_1.env.NODE_ENV}`);
     matchScheduler_1.matchScheduler.start();

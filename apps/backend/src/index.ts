@@ -1,4 +1,5 @@
 import express from 'express';
+import { createServer } from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -7,6 +8,7 @@ import compression from 'compression';
 import * as Sentry from '@sentry/node';
 import { env } from './config/env';
 import { errorHandler } from './middleware/errorHandler';
+import { setupWebSocket } from './websocket/server';
 
 import { authRouter } from './routes/auth';
 import { userRouter } from './routes/user';
@@ -131,7 +133,10 @@ if (env.SENTRY_DSN) {
 app.use(errorHandler);
 
 const PORT = env.PORT;
-app.listen(PORT, '0.0.0.0', () => {
+const server = createServer(app);
+setupWebSocket(server);
+
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Cleya.ai backend running on port ${PORT}`);
   console.log(`   Environment: ${env.NODE_ENV}`);
   matchScheduler.start();
