@@ -83,8 +83,8 @@ function MessagesContent() {
           }
           loadConversations();
         }
-        if (data.type === 'dm:typing') setTyping(true);
-        if (data.type === 'dm:stop_typing') setTyping(false);
+        if (data.type === 'dm:typing' && data.payload?.userId === selectedPartnerRef.current) setTyping(true);
+        if (data.type === 'dm:stop_typing' && data.payload?.userId === selectedPartnerRef.current) setTyping(false);
         if (data.type === 'dm:read') {
           setMessages(prev => prev.map(m => ({ ...m, readAt: m.readAt || new Date().toISOString() })));
         }
