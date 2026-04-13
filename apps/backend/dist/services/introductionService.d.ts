@@ -5,8 +5,8 @@ export declare class IntroductionService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userBId: string;
         userAId: string;
+        userBId: string;
         sentAt: Date | null;
         matchId: string;
         scheduledAt: Date | null;
@@ -24,8 +24,8 @@ export declare class IntroductionService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userBId: string;
         userAId: string;
+        userBId: string;
         sentAt: Date | null;
         matchId: string;
         scheduledAt: Date | null;
@@ -229,8 +229,8 @@ export declare class IntroductionService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userBId: string;
         userAId: string;
+        userBId: string;
         sentAt: Date | null;
         matchId: string;
         scheduledAt: Date | null;
@@ -249,8 +249,8 @@ export declare class IntroductionService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        userBId: string;
         userAId: string;
+        userBId: string;
         sentAt: Date | null;
         matchId: string;
         scheduledAt: Date | null;

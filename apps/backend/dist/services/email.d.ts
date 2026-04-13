@@ -19,6 +19,7 @@ declare class EmailService {
         companyName?: string;
         sector?: string;
         location?: string;
+        traction?: string;
         matchReason?: string;
         matchUserId?: string;
     }): Promise<void>;
@@ -29,7 +30,15 @@ declare class EmailService {
     sendMeetingInvite(to: string, otherName: string, title: string, meetingTime: Date, duration: number, meetingUrl: string | null): Promise<void>;
     sendFollowup(to: string, subject: string, body: string): Promise<void>;
     sendDailyDigest(to: string, digestContent: string): Promise<void>;
-    sendIntroductionEmail(recipientEmail: string, recipientName: string, introPersonName: string, introBody: string, linkedinUrl?: string): Promise<void>;
+    sendIntroductionEmail(recipientEmail: string, recipientName: string, introPersonName: string, introBody: string, linkedinUrl?: string, introDetails?: {
+        headline?: string;
+        companyName?: string;
+        sector?: string;
+        location?: string;
+        traction?: string;
+        matchReason?: string;
+        partnerUserId?: string;
+    }): Promise<void>;
     private generateICS;
     sendProfileNudge(email: string, name?: string): Promise<boolean>;
     sendHowMatchingWorks(email: string, name?: string): Promise<boolean>;

@@ -264,6 +264,7 @@ class MatchingService {
             companyName: userB.profile?.companyName || undefined,
             sector: userB.profile?.industries?.[0] || undefined,
             location: userB.profile?.location || undefined,
+            traction: userB.profile?.keyTractionPoints || undefined,
             matchReason: matchReason,
             matchUserId: userB.id,
         }).catch(() => { });
@@ -272,6 +273,7 @@ class MatchingService {
             companyName: userA.profile?.companyName || undefined,
             sector: userA.profile?.industries?.[0] || undefined,
             location: userA.profile?.location || undefined,
+            traction: userA.profile?.keyTractionPoints || undefined,
             matchReason: matchReason,
             matchUserId: userA.id,
         }).catch(() => { });

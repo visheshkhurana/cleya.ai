@@ -136,6 +136,9 @@ class EmailService {
         if (meta.length) {
             body += `<p style="margin:0 0 12px;font-size:13px;color:#94a3b8;">${meta.join(' · ')}</p>`;
         }
+        if (matchDetails?.traction) {
+            body += `<p style="margin:0 0 8px;font-size:13px;color:#334155;">📈 ${matchDetails.traction}</p>`;
+        }
         if (matchDetails?.matchReason) {
             body += `<p style="margin:0 0 12px;font-size:14px;color:#334155;line-height:1.5;">${matchDetails.matchReason}</p>`;
         }
@@ -275,12 +278,41 @@ class EmailService {
     `);
         await this.send(to, `What's new in your network — Cleya`, html);
     }
-    async sendIntroductionEmail(recipientEmail, recipientName, introPersonName, introBody, linkedinUrl) {
+    async sendIntroductionEmail(recipientEmail, recipientName, introPersonName, introBody, linkedinUrl, introDetails) {
         let body = `<p>Hi ${recipientName?.split(' ')[0] || 'there'},</p>`;
         body += `<div style="white-space:pre-line;line-height:1.7;">${introBody}</div>`;
-        if (linkedinUrl) {
-            body += `<p>Here's ${introPersonName.split(' ')[0]}'s LinkedIn if you want to take a closer look: ${link(linkedinUrl, linkedinUrl)}</p>`;
+        body += `<table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">`;
+        body += `<tr><td style="padding:20px;">`;
+        body += `<p style="margin:0 0 4px;font-size:18px;font-weight:600;color:#1e293b;">${introPersonName}</p>`;
+        if (introDetails?.headline) {
+            body += `<p style="margin:0 0 4px;font-size:14px;color:#64748b;">${introDetails.headline}</p>`;
         }
+        const meta = [];
+        if (introDetails?.companyName)
+            meta.push(introDetails.companyName);
+        if (introDetails?.sector)
+            meta.push(introDetails.sector.replace(/_/g, ' '));
+        if (introDetails?.location)
+            meta.push(introDetails.location);
+        if (meta.length) {
+            body += `<p style="margin:0 0 8px;font-size:13px;color:#94a3b8;">${meta.join(' · ')}</p>`;
+        }
+        if (introDetails?.traction) {
+            body += `<p style="margin:0 0 8px;font-size:13px;color:#334155;">${introDetails.traction}</p>`;
+        }
+        if (introDetails?.matchReason) {
+            body += `<p style="margin:0 0 8px;font-size:14px;color:#334155;line-height:1.5;">${introDetails.matchReason}</p>`;
+        }
+        if (linkedinUrl) {
+            body += `<p style="margin:0;font-size:13px;">🔗 ${link(linkedinUrl, linkedinUrl)}</p>`;
+        }
+        body += `</td></tr></table>`;
+        const chatUrl = introDetails?.partnerUserId
+            ? `${env_1.env.FRONTEND_URL}/messages?partner=${introDetails.partnerUserId}`
+            : `${env_1.env.FRONTEND_URL}/messages`;
+        body += `<table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;"><tr><td align="center">`;
+        body += `<a href="${chatUrl}" style="display:inline-block;padding:12px 32px;background:${brandColor};color:#fff;font-weight:600;font-size:15px;border-radius:8px;text-decoration:none;">Start Chatting →</a>`;
+        body += `</td></tr></table>`;
         body += `<p>— Cleya</p>`;
         const html = plainEmailLayout(body);
         await this.send(recipientEmail, `${recipientName?.split(' ')[0] || 'Hey'}, putting ${introPersonName.split(' ')[0]} on your radar`, html);

@@ -119,10 +119,19 @@ export default function MatchesPage() {
   const handleRespond = async (matchId: string, response: 'ACCEPTED' | 'REJECTED') => {
     setResponding(matchId);
     try {
-      await api.respondToMatch(matchId, response);
+      const result = await api.respondToMatch(matchId, response);
       if (response === 'ACCEPTED') {
         analytics.matchAccepted(matchId);
-        toast.success('Match accepted! An introduction will be facilitated.');
+        const matchData = result?.data || result;
+        if (matchData?.status === 'ACCEPTED') {
+          const partnerId = matchData.userAId === me?.id ? matchData.userBId : matchData.userAId;
+          toast.success('Match accepted! You can now chat with your connection.');
+          setTimeout(() => {
+            router.push(`/messages?partner=${partnerId}`);
+          }, 1500);
+        } else {
+          toast.success('Match accepted! Waiting for the other person to respond.');
+        }
       } else {
         analytics.matchRejected(matchId);
         toast.info('Match passed.');
