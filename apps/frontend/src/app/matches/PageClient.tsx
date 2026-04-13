@@ -1053,7 +1053,7 @@ export default function MatchesPage() {
               style={{ background: 'rgba(108,99,255,0.06)' }}>
               <div className="flex items-baseline gap-1 mb-4">
                 <span className="text-sm text-white/50">&#8377;</span>
-                <span className="text-3xl font-bold text-white">999</span>
+                <span className="text-3xl font-bold text-white">2,999</span>
                 <span className="text-sm text-white/50">/month</span>
               </div>
               <ul className="space-y-2.5">
