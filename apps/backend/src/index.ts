@@ -1,0 +1,142 @@
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
+import compression from 'compression';
+import * as Sentry from '@sentry/node';
+import { env } from './config/env';
+import { errorHandler } from './middleware/errorHandler';
+
+import { authRouter } from './routes/auth';
+import { userRouter } from './routes/user';
+import { conversationRouter } from './routes/conversation';
+import { matchRouter } from './routes/match';
+import { callRouter } from './routes/call';
+import { notificationRouter } from './routes/notification';
+import { searchRouter } from './routes/search';
+import { adminRouter } from './routes/admin';
+import { analyticsRouter } from './routes/analytics';
+import { eventRouter } from './routes/event';
+import { introductionRouter } from './routes/introduction';
+import { meetingRouter } from './routes/meeting';
+import { messagingRouter } from './routes/messaging';
+import { referralRouter } from './routes/referral';
+import { verificationRouter } from './routes/verification';
+import { directMessageRouter } from './routes/directMessage';
+import { inviteRouter } from './routes/invite';
+import { activityRouter } from './routes/activity';
+import { secretaryRouter } from './routes/secretary';
+import { zoomRouter } from './routes/zoom';
+import { dealRouter } from './routes/deal';
+import { aiChatRouter } from './routes/aiChat';
+import { twilioRouter } from './routes/twilio';
+import { whatsappRouter } from './routes/whatsapp';
+import { gupshupRouter } from './routes/gupshup';
+import { calendarRouter } from './routes/calendar';
+import { agentChatRouter } from './routes/agent-chat';
+import { healthRouter } from './routes/health';
+import { matchScheduler } from './services/matchScheduler';
+import { agentScheduler } from './services/agentScheduler';
+
+if (env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: env.SENTRY_DSN,
+    environment: env.NODE_ENV,
+    tracesSampleRate: env.NODE_ENV === 'production' ? 0.1 : 1.0,
+  });
+}
+
+const app = express();
+app.set('trust proxy', 1);
+
+const ALLOWED_HOSTS = [
+  env.FRONTEND_URL,
+  env.CORS_ORIGIN,
+  'https://cleya.ai',
+  'https://www.cleya.ai',
+  'https://boardy-ai-platform.replit.app',
+].filter(Boolean) as string[];
+
+const REPLIT_DEV_DOMAIN = process.env.REPLIT_DEV_DOMAIN;
+const REPLIT_DOMAINS = process.env.REPLIT_DOMAINS;
+const BACKEND_URL = process.env.BACKEND_URL;
+
+if (REPLIT_DEV_DOMAIN) ALLOWED_HOSTS.push(`https://${REPLIT_DEV_DOMAIN}`);
+if (BACKEND_URL) ALLOWED_HOSTS.push(BACKEND_URL);
+if (REPLIT_DOMAINS) {
+  REPLIT_DOMAINS.split(',').forEach(d => {
+    const trimmed = d.trim();
+    if (trimmed) ALLOWED_HOSTS.push(`https://${trimmed}`);
+  });
+}
+
+const allowedOrigins = new Set(ALLOWED_HOSTS);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.has(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+}));
+
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+}));
+app.use(compression());
+app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+app.use('/api/auth', authRouter);
+app.use('/api/users', userRouter);
+app.use('/api/conversations', conversationRouter);
+app.use('/api/matches', matchRouter);
+app.use('/api/calls', callRouter);
+app.use('/api/notifications', notificationRouter);
+app.use('/api/search', searchRouter);
+app.use('/api/admin', adminRouter);
+app.use('/api/analytics', analyticsRouter);
+app.use('/api/events', eventRouter);
+app.use('/api/introductions', introductionRouter);
+app.use('/api/meetings', meetingRouter);
+app.use('/api/messaging', messagingRouter);
+app.use('/api/referrals', referralRouter);
+app.use('/api/verification', verificationRouter);
+app.use('/api/direct-messages', directMessageRouter);
+app.use('/api/invites', inviteRouter);
+app.use('/api/activity', activityRouter);
+app.use('/api/secretary', secretaryRouter);
+app.use('/api/zoom', zoomRouter);
+app.use('/api/deals', dealRouter);
+app.use('/api/ai-chat', aiChatRouter);
+app.use('/api/twilio', twilioRouter);
+app.use('/api/whatsapp', whatsappRouter);
+app.use('/api/gupshup', gupshupRouter);
+app.use('/api/calendar', calendarRouter);
+app.use('/api/agent-chat', agentChatRouter);
+app.use('/api/health', healthRouter);
+
+if (env.SENTRY_DSN) {
+  Sentry.setupExpressErrorHandler(app);
+}
+
+app.use(errorHandler);
+
+const PORT = env.PORT;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Cleya.ai backend running on port ${PORT}`);
+  console.log(`   Environment: ${env.NODE_ENV}`);
+  matchScheduler.start();
+  agentScheduler.start().catch(err =>
+    console.error('[AgentScheduler] Failed to start:', err)
+  );
+});
+
+export default app;
