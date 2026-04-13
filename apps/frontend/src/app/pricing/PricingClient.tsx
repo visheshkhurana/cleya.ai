@@ -25,8 +25,8 @@ const plans = [
     isSubscription: false,
   },
   {
-    name: 'Professional',
-    price: '999',
+    name: 'Pro',
+    price: '2,999',
     period: '/month',
     description: 'For founders and investors actively networking',
     features: [
@@ -45,26 +45,6 @@ const plans = [
     badge: 'Most Popular',
     isSubscription: true,
   },
-  {
-    name: 'Growth',
-    price: '2,999',
-    period: '/month',
-    description: 'For power networkers and deal partners',
-    features: [
-      'Everything in Professional',
-      'Unlimited introductions',
-      'Deal tracking dashboard',
-      'Custom matching criteria',
-      'Priority support',
-      'Analytics & reporting',
-      'API access (beta)',
-      'Team collaboration (up to 3)',
-    ],
-    cta: 'Coming Soon',
-    href: '/?action=signup',
-    highlight: false,
-    isSubscription: false,
-  },
 ];
 
 const faqs = [
@@ -74,7 +54,7 @@ const faqs = [
   },
   {
     q: 'Can I try before I pay?',
-    a: 'Yes! Every user gets 5 free matches to experience the platform. Once you\'ve used your free matches, you can subscribe to the Professional plan for unlimited matches and premium features.',
+    a: 'Yes! Every user gets 5 free matches to experience the platform. Once you\'ve used your free matches, you can subscribe to the Pro plan for unlimited matches and premium features.',
   },
   {
     q: 'What makes Cleya different from LinkedIn?',
