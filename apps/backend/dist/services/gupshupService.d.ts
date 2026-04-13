@@ -2,8 +2,8 @@ export declare class GupshupService {
     private apiKey;
     private appName;
     private sourceNumber;
-    private templateNamespace;
     private baseUrl;
+    private static readonly TEMPLATE_UUIDS;
     constructor();
     isConfigured(): boolean;
     private formatPhone;

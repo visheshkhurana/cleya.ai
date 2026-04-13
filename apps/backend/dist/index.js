@@ -75,6 +75,7 @@ const gupshup_1 = require("./routes/gupshup");
 const calendar_1 = require("./routes/calendar");
 const agent_chat_1 = require("./routes/agent-chat");
 const health_1 = require("./routes/health");
+const subscription_1 = require("./routes/subscription");
 const matchScheduler_1 = require("./services/matchScheduler");
 const agentScheduler_1 = require("./services/agentScheduler");
 if (env_1.env.SENTRY_DSN) {
@@ -125,7 +126,15 @@ app.use((0, helmet_1.default)({
 }));
 app.use((0, compression_1.default)());
 app.use((0, morgan_1.default)(env_1.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
-app.use(express_1.default.json({ limit: '10mb' }));
+app.use(express_1.default.json({
+    limit: '10mb',
+    verify: (req, _res, buf) => {
+        // Preserve raw body for Razorpay webhook signature verification
+        if (req.originalUrl === '/api/subscription/webhook') {
+            req.rawBody = buf.toString();
+        }
+    },
+}));
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use((0, cookie_parser_1.default)());
 app.use('/api/auth', auth_1.authRouter);
@@ -157,6 +166,7 @@ app.use('/api/gupshup', gupshup_1.gupshupRouter);
 app.use('/api/calendar', calendar_1.calendarRouter);
 app.use('/api/agent-chat', agent_chat_1.agentChatRouter);
 app.use('/api/health', health_1.healthRouter);
+app.use('/api/subscription', subscription_1.subscriptionRouter);
 if (env_1.env.SENTRY_DSN) {
     Sentry.setupExpressErrorHandler(app);
 }

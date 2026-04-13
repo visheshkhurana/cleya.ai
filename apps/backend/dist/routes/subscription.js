@@ -29,8 +29,15 @@ exports.subscriptionRouter.post('/webhook', async (req, res, next) => {
         if (!signature) {
             return res.status(400).json({ success: false, error: { message: 'Missing signature' } });
         }
-        const rawBody = JSON.stringify(req.body);
-        const isValid = razorpayService_1.razorpayService.verifyWebhookSignature(rawBody, signature);
+        const rawBody = req.rawBody || JSON.stringify(req.body);
+        let isValid = false;
+        try {
+            isValid = razorpayService_1.razorpayService.verifyWebhookSignature(rawBody, signature);
+        }
+        catch {
+            // timingSafeEqual throws if buffer lengths differ — treat as invalid
+            isValid = false;
+        }
         if (!isValid) {
             console.log('[Subscription Webhook] Invalid signature');
             return res.status(400).json({ success: false, error: { message: 'Invalid signature' } });
@@ -41,6 +48,8 @@ exports.subscriptionRouter.post('/webhook', async (req, res, next) => {
     }
     catch (error) {
         console.error('[Subscription Webhook] Error:', error);
+        // Return 200 to prevent Razorpay from retrying on internal errors
+        // Signature was already verified at this point
         res.status(200).json({ success: true });
     }
 });
