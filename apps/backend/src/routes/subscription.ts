@@ -33,7 +33,7 @@ subscriptionRouter.post('/webhook', async (req: Request, res: Response, next: Ne
       return res.status(400).json({ success: false, error: { message: 'Missing signature' } });
     }
 
-    const rawBody = JSON.stringify(req.body);
+    const rawBody = (req as any).rawBody || JSON.stringify(req.body);
     const isValid = razorpayService.verifyWebhookSignature(rawBody, signature);
 
     if (!isValid) {
