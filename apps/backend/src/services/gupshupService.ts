@@ -11,14 +11,22 @@ export class GupshupService {
   private apiKey: string | null;
   private appName: string | null;
   private sourceNumber: string | null;
-  private templateNamespace: string | null;
   private baseUrl = 'https://api.gupshup.io/wa/api/v1';
+
+  // Approved Gupshup template element names → UUIDs
+  private static readonly TEMPLATE_UUIDS: Record<string, string> = {
+    'cleya_account_update': 'd8836460-aa37-404e-8592-d977921debe4',
+    'cleya_meeting_reminder': '2aa6b160-76d1-4512-8eae-8041445e342a',
+    'cleya_welcome': '7fa0c55a-dd7b-4b88-b3d6-cca87a24a756',
+    'cleya_introduction': '1d49c6df-810e-4f2d-93ff-0f8a0e36ee51',
+    'cleya_followup': '7a7535a3-7d6b-45f2-92d5-136490f70039',
+    'cleya_reengagement': '8dc315f9-9266-42ca-a94e-f350343f5287',
+  };
 
   constructor() {
     this.apiKey = env.GUPSHUP_API_KEY || null;
     this.appName = env.GUPSHUP_APP_NAME || null;
     this.sourceNumber = env.GUPSHUP_SOURCE_NUMBER || null;
-    this.templateNamespace = env.GUPSHUP_TEMPLATE_NAMESPACE || null;
   }
 
   isConfigured(): boolean {
@@ -114,6 +122,8 @@ export class GupshupService {
     }
   }
 
+  // Sends a session (free-form text) message via /wa/api/v1/msg.
+  // Only works within the 24-hour session window after the user last messaged.
   async sendWhatsApp(userId: string, phoneNumber: string, message: string) {
     const record = await prisma.messageRecord.create({
       data: {
@@ -197,6 +207,8 @@ export class GupshupService {
     }
   }
 
+  // Sends a session (free-form text) message directly via /wa/api/v1/msg.
+  // Only works within the 24-hour session window after the user last messaged.
   async sendWhatsAppDirect(phoneNumber: string, message: string): Promise<{ success: boolean; error?: string; httpStatus?: number; response?: any }> {
     if (!this.isConfigured()) {
       console.warn('Gupshup not configured, WhatsApp direct skipped');
@@ -277,47 +289,27 @@ export class GupshupService {
       const destination = this.formatPhone(phoneNumber);
       const source = this.formatPhone(this.sourceNumber!);
 
-      let templateMessage: any;
-
-      if (this.templateNamespace) {
-        templateMessage = {
-          type: 'template',
-          template: {
-            namespace: this.templateNamespace,
-            name: templateId,
-            language: {
-              code: 'en',
-              policy: 'deterministic',
-            },
-            components: params.length > 0
-              ? [{
-                  type: 'body',
-                  parameters: params.map(p => ({ type: 'text', text: p })),
-                }]
-              : [],
-          },
-        };
-      } else {
-        templateMessage = {
-          id: templateId,
-          type: 'template',
-        };
-        if (params.length > 0) {
-          templateMessage.params = params;
-        }
+      const uuid = GupshupService.TEMPLATE_UUIDS[templateId];
+      if (!uuid) {
+        console.warn(`Gupshup sendTemplate: no UUID for template "${templateId}", cannot send via /template/msg`);
+        throw new Error(`No Gupshup UUID registered for template "${templateId}"`);
       }
 
-      console.log(`Gupshup sendTemplate: dest=${destination}, template=${templateId}, namespace=${this.templateNamespace || 'none'}, params=${JSON.stringify(params)}, payload=${JSON.stringify(templateMessage)}`);
+      const templatePayload: { id: string; params?: string[] } = { id: uuid };
+      if (params.length > 0) {
+        templatePayload.params = params;
+      }
+
+      console.log(`Gupshup sendTemplate: dest=${destination}, template=${templateId}, uuid=${uuid}, params=${JSON.stringify(params)}, payload=${JSON.stringify(templatePayload)}`);
 
       const body = new URLSearchParams({
-        channel: 'whatsapp',
         source,
         destination,
         'src.name': this.appName!,
-        message: JSON.stringify(templateMessage),
+        template: JSON.stringify(templatePayload),
       });
 
-      const response = await fetch(`${this.baseUrl}/msg`, {
+      const response = await fetch(`${this.baseUrl}/template/msg`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
