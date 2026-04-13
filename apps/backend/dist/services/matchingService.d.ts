@@ -22,15 +22,15 @@ export declare class MatchingService {
         createdAt: Date;
         updatedAt: Date;
         reason: string | null;
-        userAId: string;
         userBId: string;
-        expiresAt: Date | null;
-        score: number;
-        scoreBreakdown: import("@prisma/client/runtime/library").JsonValue | null;
+        userAId: string;
         userAResponse: import(".prisma/client").$Enums.MatchResponse | null;
         userBResponse: import(".prisma/client").$Enums.MatchResponse | null;
+        score: number;
+        scoreBreakdown: import("@prisma/client/runtime/library").JsonValue | null;
         userARespondedAt: Date | null;
         userBRespondedAt: Date | null;
+        expiresAt: Date | null;
         eventId: string | null;
         userAViewedAt: Date | null;
         userBViewedAt: Date | null;
@@ -41,15 +41,15 @@ export declare class MatchingService {
         createdAt: Date;
         updatedAt: Date;
         reason: string | null;
-        userAId: string;
         userBId: string;
-        expiresAt: Date | null;
-        score: number;
-        scoreBreakdown: import("@prisma/client/runtime/library").JsonValue | null;
+        userAId: string;
         userAResponse: import(".prisma/client").$Enums.MatchResponse | null;
         userBResponse: import(".prisma/client").$Enums.MatchResponse | null;
+        score: number;
+        scoreBreakdown: import("@prisma/client/runtime/library").JsonValue | null;
         userARespondedAt: Date | null;
         userBRespondedAt: Date | null;
+        expiresAt: Date | null;
         eventId: string | null;
         userAViewedAt: Date | null;
         userBViewedAt: Date | null;
@@ -58,8 +58,8 @@ export declare class MatchingService {
     getMatchesForUser(userId: string): Promise<({
         userA: {
             id: string;
-            email: string;
             name: string | null;
+            email: string;
             profile: {
                 persona: import(".prisma/client").$Enums.PersonaType | null;
                 headline: string | null;
@@ -84,8 +84,8 @@ export declare class MatchingService {
         };
         userB: {
             id: string;
-            email: string;
             name: string | null;
+            email: string;
             profile: {
                 persona: import(".prisma/client").$Enums.PersonaType | null;
                 headline: string | null;
@@ -114,15 +114,15 @@ export declare class MatchingService {
         createdAt: Date;
         updatedAt: Date;
         reason: string | null;
-        userAId: string;
         userBId: string;
-        expiresAt: Date | null;
-        score: number;
-        scoreBreakdown: import("@prisma/client/runtime/library").JsonValue | null;
+        userAId: string;
         userAResponse: import(".prisma/client").$Enums.MatchResponse | null;
         userBResponse: import(".prisma/client").$Enums.MatchResponse | null;
+        score: number;
+        scoreBreakdown: import("@prisma/client/runtime/library").JsonValue | null;
         userARespondedAt: Date | null;
         userBRespondedAt: Date | null;
+        expiresAt: Date | null;
         eventId: string | null;
         userAViewedAt: Date | null;
         userBViewedAt: Date | null;
@@ -133,15 +133,15 @@ export declare class MatchingService {
         createdAt: Date;
         updatedAt: Date;
         reason: string | null;
-        userAId: string;
         userBId: string;
-        expiresAt: Date | null;
-        score: number;
-        scoreBreakdown: import("@prisma/client/runtime/library").JsonValue | null;
+        userAId: string;
         userAResponse: import(".prisma/client").$Enums.MatchResponse | null;
         userBResponse: import(".prisma/client").$Enums.MatchResponse | null;
+        score: number;
+        scoreBreakdown: import("@prisma/client/runtime/library").JsonValue | null;
         userARespondedAt: Date | null;
         userBRespondedAt: Date | null;
+        expiresAt: Date | null;
         eventId: string | null;
         userAViewedAt: Date | null;
         userBViewedAt: Date | null;
@@ -168,11 +168,11 @@ export declare class MatchingService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        stage: import(".prisma/client").$Enums.CompanyStage | null;
         notes: string | null;
-        dealPartnerId: string;
         founderId: string;
+        dealPartnerId: string;
         industry: string | null;
+        stage: import(".prisma/client").$Enums.CompanyStage | null;
         introSent: boolean;
         introSentAt: Date | null;
         responseStatus: import(".prisma/client").$Enums.DealResponse | null;

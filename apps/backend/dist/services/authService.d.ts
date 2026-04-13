@@ -17,9 +17,9 @@ export declare class AuthService {
             role: import(".prisma/client").$Enums.Role;
             emailVerified: boolean;
             profile: {
+                userId: string;
                 id: string;
-                createdAt: Date;
-                updatedAt: Date;
+                isComplete: boolean;
                 persona: import(".prisma/client").$Enums.PersonaType | null;
                 headline: string | null;
                 bio: string | null;
@@ -36,7 +36,8 @@ export declare class AuthService {
                 lookingFor: string[];
                 extraData: import("@prisma/client/runtime/library").JsonValue | null;
                 completenessScore: number;
-                isComplete: boolean;
+                createdAt: Date;
+                updatedAt: Date;
                 accreditedInvestor: boolean | null;
                 amountRaisedToDate: string | null;
                 businessDescription: string | null;
@@ -80,7 +81,6 @@ export declare class AuthService {
                 preferredStageRange: string | null;
                 sectorFocus: string[];
                 workStyle: import(".prisma/client").$Enums.WorkStyle | null;
-                userId: string;
             } | null;
         };
         token: string;
@@ -97,9 +97,9 @@ export declare class AuthService {
             role: import(".prisma/client").$Enums.Role;
             emailVerified: boolean;
             profile: {
+                userId: string;
                 id: string;
-                createdAt: Date;
-                updatedAt: Date;
+                isComplete: boolean;
                 persona: import(".prisma/client").$Enums.PersonaType | null;
                 headline: string | null;
                 bio: string | null;
@@ -116,7 +116,8 @@ export declare class AuthService {
                 lookingFor: string[];
                 extraData: import("@prisma/client/runtime/library").JsonValue | null;
                 completenessScore: number;
-                isComplete: boolean;
+                createdAt: Date;
+                updatedAt: Date;
                 accreditedInvestor: boolean | null;
                 amountRaisedToDate: string | null;
                 businessDescription: string | null;
@@ -160,7 +161,6 @@ export declare class AuthService {
                 preferredStageRange: string | null;
                 sectorFocus: string[];
                 workStyle: import(".prisma/client").$Enums.WorkStyle | null;
-                userId: string;
             } | null;
         };
         token: string;
@@ -175,9 +175,9 @@ export declare class AuthService {
             role: import(".prisma/client").$Enums.Role;
             emailVerified: boolean;
             profile: {
+                userId: string;
                 id: string;
-                createdAt: Date;
-                updatedAt: Date;
+                isComplete: boolean;
                 persona: import(".prisma/client").$Enums.PersonaType | null;
                 headline: string | null;
                 bio: string | null;
@@ -194,7 +194,8 @@ export declare class AuthService {
                 lookingFor: string[];
                 extraData: import("@prisma/client/runtime/library").JsonValue | null;
                 completenessScore: number;
-                isComplete: boolean;
+                createdAt: Date;
+                updatedAt: Date;
                 accreditedInvestor: boolean | null;
                 amountRaisedToDate: string | null;
                 businessDescription: string | null;
@@ -238,7 +239,6 @@ export declare class AuthService {
                 preferredStageRange: string | null;
                 sectorFocus: string[];
                 workStyle: import(".prisma/client").$Enums.WorkStyle | null;
-                userId: string;
             } | null;
         };
         token: string;
@@ -262,9 +262,9 @@ export declare class AuthService {
         emailVerified: boolean;
         mfaEnabled: boolean;
         profile: {
+            userId: string;
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
+            isComplete: boolean;
             persona: import(".prisma/client").$Enums.PersonaType | null;
             headline: string | null;
             bio: string | null;
@@ -281,7 +281,8 @@ export declare class AuthService {
             lookingFor: string[];
             extraData: import("@prisma/client/runtime/library").JsonValue | null;
             completenessScore: number;
-            isComplete: boolean;
+            createdAt: Date;
+            updatedAt: Date;
             accreditedInvestor: boolean | null;
             amountRaisedToDate: string | null;
             businessDescription: string | null;
@@ -325,7 +326,6 @@ export declare class AuthService {
             preferredStageRange: string | null;
             sectorFocus: string[];
             workStyle: import(".prisma/client").$Enums.WorkStyle | null;
-            userId: string;
         } | null;
         createdAt: Date;
     }>;
@@ -341,9 +341,9 @@ export declare class AuthService {
             role: import(".prisma/client").$Enums.Role;
             emailVerified: boolean;
             profile: {
+                userId: string;
                 id: string;
-                createdAt: Date;
-                updatedAt: Date;
+                isComplete: boolean;
                 persona: import(".prisma/client").$Enums.PersonaType | null;
                 headline: string | null;
                 bio: string | null;
@@ -360,7 +360,8 @@ export declare class AuthService {
                 lookingFor: string[];
                 extraData: import("@prisma/client/runtime/library").JsonValue | null;
                 completenessScore: number;
-                isComplete: boolean;
+                createdAt: Date;
+                updatedAt: Date;
                 accreditedInvestor: boolean | null;
                 amountRaisedToDate: string | null;
                 businessDescription: string | null;
@@ -404,7 +405,6 @@ export declare class AuthService {
                 preferredStageRange: string | null;
                 sectorFocus: string[];
                 workStyle: import(".prisma/client").$Enums.WorkStyle | null;
-                userId: string;
             } | null;
         };
         token: string;
@@ -429,9 +429,9 @@ export declare class AuthService {
             role: import(".prisma/client").$Enums.Role;
             emailVerified: boolean;
             profile: {
+                userId: string;
                 id: string;
-                createdAt: Date;
-                updatedAt: Date;
+                isComplete: boolean;
                 persona: import(".prisma/client").$Enums.PersonaType | null;
                 headline: string | null;
                 bio: string | null;
@@ -448,7 +448,8 @@ export declare class AuthService {
                 lookingFor: string[];
                 extraData: import("@prisma/client/runtime/library").JsonValue | null;
                 completenessScore: number;
-                isComplete: boolean;
+                createdAt: Date;
+                updatedAt: Date;
                 accreditedInvestor: boolean | null;
                 amountRaisedToDate: string | null;
                 businessDescription: string | null;
@@ -492,7 +493,6 @@ export declare class AuthService {
                 preferredStageRange: string | null;
                 sectorFocus: string[];
                 workStyle: import(".prisma/client").$Enums.WorkStyle | null;
-                userId: string;
             } | null;
         };
         token: string;
@@ -500,20 +500,20 @@ export declare class AuthService {
     }>;
     findUserByEmail(email: string): Promise<{
         id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        name: string | null;
+        role: import(".prisma/client").$Enums.Role;
         email: string;
         phone: string | null;
         passwordHash: string;
-        role: import(".prisma/client").$Enums.Role;
         isActive: boolean;
         emailVerified: boolean;
         phoneVerified: boolean;
-        createdAt: Date;
-        updatedAt: Date;
         utmCampaign: string | null;
         utmMedium: string | null;
         utmSource: string | null;
         onboardingComplete: boolean;
-        name: string | null;
         zoomAccessToken: string | null;
         zoomRefreshToken: string | null;
         zoomUserId: string | null;

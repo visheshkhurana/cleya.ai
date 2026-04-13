@@ -1,11 +1,12 @@
 'use client';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { api } from '@/lib/api';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import AppNav from '@/components/AppNav';
 import AppFooter from '@/components/AppFooter';
 import AppShell from '@/components/AppShell';
 import { useTranslation } from '@/lib/i18n';
+import { Suspense } from 'react';
 
 interface Partner {
   id: string;
@@ -17,13 +18,14 @@ interface Partner {
     companyName?: string;
     currentRole?: string;
     location?: string;
+    avatarUrl?: string;
   };
 }
 
 interface ConversationItem {
   partnerId: string;
   partner: Partner;
-  lastMessage: string;
+  lastMessage: string | null;
   lastMessageAt: string;
   unreadCount: number;
 }
@@ -37,8 +39,9 @@ interface DirectMsg {
   sender: { id: string; name?: string; email: string };
 }
 
-export default function MessagesPage() {
+function MessagesContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [selectedPartner, setSelectedPartner] = useState<string | null>(null);
   const [messages, setMessages] = useState<DirectMsg[]>([]);
@@ -50,6 +53,7 @@ export default function MessagesPage() {
   const wsRef = useRef<WebSocket | null>(null);
   const [typing, setTyping] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const deepLinkedRef = useRef(false);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -80,6 +84,9 @@ export default function MessagesPage() {
         if (data.type === 'dm:read') {
           setMessages(prev => prev.map(m => ({ ...m, readAt: m.readAt || new Date().toISOString() })));
         }
+        if (data.type === 'match:accepted') {
+          loadConversations();
+        }
       } catch {}
     };
 
@@ -95,6 +102,14 @@ export default function MessagesPage() {
       const result = await api.getConversations();
       const convos = Array.isArray(result) ? result : (result?.data || result || []);
       setConversations(convos);
+
+      if (!deepLinkedRef.current) {
+        const partnerParam = searchParams.get('partner');
+        if (partnerParam) {
+          deepLinkedRef.current = true;
+          selectPartner(partnerParam);
+        }
+      }
     } catch {}
     setLoading(false);
   };
@@ -139,8 +154,34 @@ export default function MessagesPage() {
     }
   };
 
-  const getPartnerDisplay = (partner: Partner) => {
-    return partner.profile?.currentRole || partner.name || partner.email.split('@')[0];
+  const getPartnerName = (partner: Partner) => {
+    return partner.name || partner.profile?.currentRole || partner.email.split('@')[0];
+  };
+
+  const getPartnerSubtitle = (partner: Partner) => {
+    const parts: string[] = [];
+    if (partner.profile?.headline) return partner.profile.headline;
+    if (partner.profile?.currentRole) parts.push(partner.profile.currentRole);
+    if (partner.profile?.companyName) parts.push(partner.profile.companyName);
+    return parts.join(' at ') || partner.profile?.persona || '';
+  };
+
+  const getPartnerInitials = (partner: Partner) => {
+    const name = partner.name || partner.profile?.currentRole || partner.email;
+    const parts = name.split(' ');
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return name[0]?.toUpperCase() || '?';
+  };
+
+  const formatTime = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return d.toLocaleDateString('en-IN', { weekday: 'short' });
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
   };
 
   const selectedConvo = conversations.find(c => c.partnerId === selectedPartner);
@@ -183,21 +224,33 @@ export default function MessagesPage() {
                     selectedPartner === convo.partnerId ? 'bg-white/[0.04]' : ''
                   }`}>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                      style={{ background: 'rgba(108,99,255,0.15)', color: '#9B95FF' }}>
-                      {getPartnerDisplay(convo.partner)[0]?.toUpperCase()}
-                    </div>
+                    {convo.partner.profile?.avatarUrl ? (
+                      <img src={convo.partner.profile.avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                        style={{ background: 'rgba(108,99,255,0.15)', color: '#9B95FF' }}>
+                        {getPartnerInitials(convo.partner)}
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-white truncate">{getPartnerDisplay(convo.partner)}</p>
-                        {convo.unreadCount > 0 && (
-                          <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
-                            style={{ background: '#6C63FF' }}>
-                            {convo.unreadCount}
-                          </span>
-                        )}
+                        <p className="text-sm font-medium text-white truncate">{getPartnerName(convo.partner)}</p>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <span className="text-[10px]" style={{ color: '#64748B' }}>{formatTime(convo.lastMessageAt)}</span>
+                          {convo.unreadCount > 0 && (
+                            <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                              style={{ background: '#6C63FF' }}>
+                              {convo.unreadCount}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-xs truncate mt-0.5" style={{ color: '#94A3B8' }}>{convo.lastMessage}</p>
+                      {getPartnerSubtitle(convo.partner) && (
+                        <p className="text-[11px] truncate" style={{ color: '#64748B' }}>{getPartnerSubtitle(convo.partner)}</p>
+                      )}
+                      <p className="text-xs truncate mt-0.5" style={{ color: '#94A3B8' }}>
+                        {convo.lastMessage || 'No messages yet — say hello!'}
+                      </p>
                     </div>
                   </div>
                 </button>
@@ -220,15 +273,23 @@ export default function MessagesPage() {
                 <button onClick={() => setSelectedPartner(null)} className="sm:hidden text-white/30 hover:text-white/60">
                   ←
                 </button>
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
-                  style={{ background: 'rgba(108,99,255,0.15)', color: '#9B95FF' }}>
-                  {selectedConvo ? getPartnerDisplay(selectedConvo.partner)[0]?.toUpperCase() : '?'}
-                </div>
+                {selectedConvo?.partner.profile?.avatarUrl ? (
+                  <img src={selectedConvo.partner.profile.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
+                    style={{ background: 'rgba(108,99,255,0.15)', color: '#9B95FF' }}>
+                    {selectedConvo ? getPartnerInitials(selectedConvo.partner) : '?'}
+                  </div>
+                )}
                 <div>
                   <p className="text-sm font-medium text-white">
-                    {selectedConvo ? getPartnerDisplay(selectedConvo.partner) : ''}
+                    {selectedConvo ? getPartnerName(selectedConvo.partner) : ''}
                   </p>
-                  {typing && <p className="text-[10px]" style={{ color: '#9B95FF' }}>{t('messages.typing')}</p>}
+                  {typing ? (
+                    <p className="text-[10px]" style={{ color: '#9B95FF' }}>{t('messages.typing')}</p>
+                  ) : selectedConvo && getPartnerSubtitle(selectedConvo.partner) ? (
+                    <p className="text-[11px]" style={{ color: '#64748B' }}>{getPartnerSubtitle(selectedConvo.partner)}</p>
+                  ) : null}
                 </div>
               </div>
 
@@ -280,5 +341,17 @@ export default function MessagesPage() {
       </div>
       <AppFooter />
     </AppShell>
+  );
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense fallback={
+      <AppShell className="flex items-center justify-center">
+        <div className="w-10 h-10 border-2 border-brand-violet border-t-transparent rounded-full animate-spin" />
+      </AppShell>
+    }>
+      <MessagesContent />
+    </Suspense>
   );
 }

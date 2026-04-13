@@ -10,27 +10,27 @@ interface NotificationPayload {
 }
 export declare class NotificationService {
     send(payload: NotificationPayload): Promise<{
-        id: string;
-        createdAt: Date;
-        channel: import(".prisma/client").$Enums.NotificationChannel;
+        body: string;
         userId: string;
+        id: string;
+        channel: import(".prisma/client").$Enums.NotificationChannel;
+        createdAt: Date;
         metadata: import("@prisma/client/runtime/library").JsonValue | null;
+        sentAt: Date | null;
         event: import(".prisma/client").$Enums.NotificationEvent;
         title: string;
-        body: string;
-        sentAt: Date | null;
         readAt: Date | null;
     }>;
     sendMultiChannel(userId: string, event: NotifEvent, title: string, body: string, metadata?: Record<string, any>): Promise<PromiseSettledResult<{
-        id: string;
-        createdAt: Date;
-        channel: import(".prisma/client").$Enums.NotificationChannel;
+        body: string;
         userId: string;
+        id: string;
+        channel: import(".prisma/client").$Enums.NotificationChannel;
+        createdAt: Date;
         metadata: import("@prisma/client/runtime/library").JsonValue | null;
+        sentAt: Date | null;
         event: import(".prisma/client").$Enums.NotificationEvent;
         title: string;
-        body: string;
-        sentAt: Date | null;
         readAt: Date | null;
     }>[]>;
     private sendInApp;
@@ -38,15 +38,15 @@ export declare class NotificationService {
     private sendSMS;
     private sendEmail;
     getNotifications(userId: string, limit?: number): Promise<{
-        id: string;
-        createdAt: Date;
-        channel: import(".prisma/client").$Enums.NotificationChannel;
+        body: string;
         userId: string;
+        id: string;
+        channel: import(".prisma/client").$Enums.NotificationChannel;
+        createdAt: Date;
         metadata: import("@prisma/client/runtime/library").JsonValue | null;
+        sentAt: Date | null;
         event: import(".prisma/client").$Enums.NotificationEvent;
         title: string;
-        body: string;
-        sentAt: Date | null;
         readAt: Date | null;
     }[]>;
     markRead(notificationId: string, userId: string): Promise<import(".prisma/client").Prisma.BatchPayload>;

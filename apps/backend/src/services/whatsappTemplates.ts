@@ -281,10 +281,15 @@ export class WhatsAppTemplateService {
     ]);
     if (!user || !matchUser) return null;
 
+    const matchName = matchUser.name || matchUser.profile?.currentRole || 'Your match';
+    const matchRole = matchUser.profile?.headline || matchUser.profile?.currentRole || '';
+    const matchCompany = matchUser.profile?.companyName || '';
+    const matchDesc = [matchRole, matchCompany].filter(Boolean).join(' at ');
+
     return this.sendTemplate(userId, user.phone!, 'match_accepted', {
       name: user.name?.split(' ')[0] || user.email.split('@')[0],
-      matchName: matchUser.name || matchUser.profile?.currentRole || 'Your match',
-      chatUrl: 'https://cleya.ai/matches',
+      matchName: matchDesc ? `${matchName} (${matchDesc})` : matchName,
+      chatUrl: `https://cleya.ai/messages?partner=${matchUserId}`,
     });
   }
 

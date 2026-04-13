@@ -73,7 +73,6 @@ const gupshup_1 = require("./routes/gupshup");
 const calendar_1 = require("./routes/calendar");
 const agent_chat_1 = require("./routes/agent-chat");
 const health_1 = require("./routes/health");
-const subscription_1 = require("./routes/subscription");
 const matchScheduler_1 = require("./services/matchScheduler");
 const agentScheduler_1 = require("./services/agentScheduler");
 if (env_1.env.SENTRY_DSN) {
@@ -155,7 +154,6 @@ app.use('/api/gupshup', gupshup_1.gupshupRouter);
 app.use('/api/calendar', calendar_1.calendarRouter);
 app.use('/api/agent-chat', agent_chat_1.agentChatRouter);
 app.use('/api/health', health_1.healthRouter);
-app.use('/api/subscription', subscription_1.subscriptionRouter);
 if (env_1.env.SENTRY_DSN) {
     Sentry.setupExpressErrorHandler(app);
 }

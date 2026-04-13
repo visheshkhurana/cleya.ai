@@ -113,17 +113,45 @@ class EmailService {
         const subject = `${firstName}, ${matchDetails?.sector ? matchDetails.sector.replace(/_/g, ' ').toLowerCase() + ' ' : ''}connection for you`;
         await this.send(recipientEmail, subject, html);
     }
-    async sendMatchAccepted(recipientEmail, recipientName, matchName, matchPersona, matchEmail, matchLinkedin) {
+    async sendMatchAccepted(recipientEmail, recipientName, matchName, matchPersona, matchEmail, matchLinkedin, matchDetails) {
         const firstName = recipientName?.split(' ')[0] || 'there';
+        const matchFirstName = matchName?.split(' ')[0] || 'your match';
         let body = `<p>Hi ${firstName},</p>`;
-        body += `<p>Great news — both you and <strong>${matchName}</strong> (${matchPersona.toLowerCase()}) want to connect. I love it when this happens.</p>`;
-        body += `<p>Here are ${matchName.split(' ')[0]}'s details so you can reach out directly:</p>`;
-        body += `<p>📧 ${matchEmail}`;
+        body += `<p>Great news — both you and <strong>${matchName}</strong> want to connect!</p>`;
+        body += `<table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">`;
+        body += `<tr><td style="padding:20px;">`;
+        body += `<p style="margin:0 0 4px;font-size:18px;font-weight:600;color:#1e293b;">${matchName}</p>`;
+        if (matchDetails?.headline) {
+            body += `<p style="margin:0 0 4px;font-size:14px;color:#64748b;">${matchDetails.headline}</p>`;
+        }
+        const meta = [];
+        if (matchPersona)
+            meta.push(matchPersona);
+        if (matchDetails?.companyName)
+            meta.push(matchDetails.companyName);
+        if (matchDetails?.sector)
+            meta.push(matchDetails.sector.replace(/_/g, ' '));
+        if (matchDetails?.location)
+            meta.push(matchDetails.location);
+        if (meta.length) {
+            body += `<p style="margin:0 0 12px;font-size:13px;color:#94a3b8;">${meta.join(' · ')}</p>`;
+        }
+        if (matchDetails?.matchReason) {
+            body += `<p style="margin:0 0 12px;font-size:14px;color:#334155;line-height:1.5;">${matchDetails.matchReason}</p>`;
+        }
+        body += `<p style="margin:0;font-size:13px;">📧 <a href="mailto:${matchEmail}" style="color:${brandColor};">${matchEmail}</a>`;
         if (matchLinkedin) {
             body += `<br>🔗 ${link(matchLinkedin, matchLinkedin)}`;
         }
         body += `</p>`;
-        body += `<p>Pro tip: reach out within 48 hours while the connection is fresh. A simple "Hey, Cleya connected us — would love to chat" works great.</p>`;
+        body += `</td></tr></table>`;
+        const chatUrl = matchDetails?.matchUserId
+            ? `${env_1.env.FRONTEND_URL}/messages?partner=${matchDetails.matchUserId}`
+            : `${env_1.env.FRONTEND_URL}/messages`;
+        body += `<table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;"><tr><td align="center">`;
+        body += `<a href="${chatUrl}" style="display:inline-block;padding:12px 32px;background:${brandColor};color:#fff;font-weight:600;font-size:15px;border-radius:8px;text-decoration:none;">Start Chatting →</a>`;
+        body += `</td></tr></table>`;
+        body += `<p style="font-size:13px;color:#94a3b8;">Pro tip: reach out within 48 hours while the connection is fresh.</p>`;
         body += `<p>— Cleya</p>`;
         const html = plainEmailLayout(body);
         await this.send(recipientEmail, `You and ${matchName} are connected!`, html);

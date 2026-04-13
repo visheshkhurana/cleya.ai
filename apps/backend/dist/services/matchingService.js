@@ -234,28 +234,61 @@ class MatchingService {
             return;
         (0, server_1.sendToUser)(match.userAId, 'match:accepted', {
             matchId: match.id,
+            partnerId: userB.id,
             contact: {
-                name: `${userB.profile?.currentRole} at ${userB.profile?.companyName}`,
+                name: userB.name || `${userB.profile?.currentRole} at ${userB.profile?.companyName}`,
                 email: userB.email,
                 linkedin: userB.profile?.linkedinUrl,
                 headline: userB.profile?.headline,
+                companyName: userB.profile?.companyName,
             },
         });
         (0, server_1.sendToUser)(match.userBId, 'match:accepted', {
             matchId: match.id,
+            partnerId: userA.id,
             contact: {
-                name: `${userA.profile?.currentRole} at ${userA.profile?.companyName}`,
+                name: userA.name || `${userA.profile?.currentRole} at ${userA.profile?.companyName}`,
                 email: userA.email,
                 linkedin: userA.profile?.linkedinUrl,
                 headline: userA.profile?.headline,
+                companyName: userA.profile?.companyName,
             },
         });
         const nameA = userA.name || userA.profile?.currentRole || userA.email.split('@')[0];
         const nameB = userB.name || userB.profile?.currentRole || userB.email.split('@')[0];
         const personaA = userA.profile?.persona || 'Professional';
         const personaB = userB.profile?.persona || 'Professional';
-        email_1.emailService.sendMatchAccepted(userA.email, nameA, nameB, personaB, userB.email, userB.profile?.linkedinUrl || undefined).catch(() => { });
-        email_1.emailService.sendMatchAccepted(userB.email, nameB, nameA, personaA, userA.email, userA.profile?.linkedinUrl || undefined).catch(() => { });
+        const matchReason = match.reason || '';
+        email_1.emailService.sendMatchAccepted(userA.email, nameA, nameB, personaB, userB.email, userB.profile?.linkedinUrl || undefined, {
+            headline: userB.profile?.headline || userB.profile?.currentRole || undefined,
+            companyName: userB.profile?.companyName || undefined,
+            sector: userB.profile?.industries?.[0] || undefined,
+            location: userB.profile?.location || undefined,
+            matchReason: matchReason,
+            matchUserId: userB.id,
+        }).catch(() => { });
+        email_1.emailService.sendMatchAccepted(userB.email, nameB, nameA, personaA, userA.email, userA.profile?.linkedinUrl || undefined, {
+            headline: userA.profile?.headline || userA.profile?.currentRole || undefined,
+            companyName: userA.profile?.companyName || undefined,
+            sector: userA.profile?.industries?.[0] || undefined,
+            location: userA.profile?.location || undefined,
+            matchReason: matchReason,
+            matchUserId: userA.id,
+        }).catch(() => { });
+        const welcomeContent = `Hey! Cleya just connected us — excited to chat with you! 👋`;
+        try {
+            await db_1.prisma.directMessage.create({
+                data: {
+                    senderId: match.userAId,
+                    recipientId: match.userBId,
+                    matchId: match.id,
+                    content: welcomeContent,
+                },
+            });
+        }
+        catch (e) {
+            console.log('[MatchingService] Auto-welcome DM failed:', e);
+        }
     }
     async getMatchesForUser(userId) {
         const profileSelect = {

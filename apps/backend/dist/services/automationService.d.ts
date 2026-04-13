@@ -11,27 +11,27 @@ export declare class AutomationService {
     triggerMessageForUser(userId: string, phoneNumber: string, channel: 'SMS' | 'WHATSAPP', message: string): Promise<{
         status: string;
         messageSid: string | undefined;
+        userId: string;
         id: string;
+        channel: import(".prisma/client").$Enums.MessageChannel;
         createdAt: Date;
         updatedAt: Date;
-        provider: string | null;
-        channel: import(".prisma/client").$Enums.MessageChannel;
-        userId: string;
-        errorMessage: string | null;
-        content: string;
         recipientPhone: string;
+        content: string;
+        errorMessage: string | null;
+        provider: string | null;
     } | {
         status: string;
         errorMessage: any;
+        userId: string;
         id: string;
+        channel: import(".prisma/client").$Enums.MessageChannel;
         createdAt: Date;
         updatedAt: Date;
-        provider: string | null;
-        channel: import(".prisma/client").$Enums.MessageChannel;
-        userId: string;
-        content: string;
         recipientPhone: string;
+        content: string;
         messageSid: string | null;
+        provider: string | null;
     }>;
 }
 export declare const automationService: AutomationService;

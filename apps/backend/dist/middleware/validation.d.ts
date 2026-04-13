@@ -198,11 +198,11 @@ export declare const matchProposeSchema: z.ZodObject<{
     userAId: z.ZodString;
     userBId: z.ZodString;
 }, "strip", z.ZodTypeAny, {
-    userAId: string;
     userBId: string;
+    userAId: string;
 }, {
-    userAId: string;
     userBId: string;
+    userAId: string;
 }>;
 export declare const introductionStatusSchema: z.ZodObject<{
     status: z.ZodEnum<["VIEWED", "RESPONDED", "MEETING_SCHEDULED"]>;

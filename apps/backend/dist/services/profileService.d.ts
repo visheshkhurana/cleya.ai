@@ -1,9 +1,9 @@
 export declare class ProfileService {
     private ai;
     getProfile(userId: string): Promise<{
+        userId: string;
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+        isComplete: boolean;
         persona: import(".prisma/client").$Enums.PersonaType | null;
         headline: string | null;
         bio: string | null;
@@ -20,7 +20,8 @@ export declare class ProfileService {
         lookingFor: string[];
         extraData: import("@prisma/client/runtime/library").JsonValue | null;
         completenessScore: number;
-        isComplete: boolean;
+        createdAt: Date;
+        updatedAt: Date;
         accreditedInvestor: boolean | null;
         amountRaisedToDate: string | null;
         businessDescription: string | null;
@@ -64,12 +65,11 @@ export declare class ProfileService {
         preferredStageRange: string | null;
         sectorFocus: string[];
         workStyle: import(".prisma/client").$Enums.WorkStyle | null;
-        userId: string;
     }>;
     updateProfile(userId: string, data: Record<string, any>): Promise<{
+        userId: string;
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+        isComplete: boolean;
         persona: import(".prisma/client").$Enums.PersonaType | null;
         headline: string | null;
         bio: string | null;
@@ -86,7 +86,8 @@ export declare class ProfileService {
         lookingFor: string[];
         extraData: import("@prisma/client/runtime/library").JsonValue | null;
         completenessScore: number;
-        isComplete: boolean;
+        createdAt: Date;
+        updatedAt: Date;
         accreditedInvestor: boolean | null;
         amountRaisedToDate: string | null;
         businessDescription: string | null;
@@ -130,12 +131,11 @@ export declare class ProfileService {
         preferredStageRange: string | null;
         sectorFocus: string[];
         workStyle: import(".prisma/client").$Enums.WorkStyle | null;
-        userId: string;
     }>;
     updateFromConversation(userId: string, context: Record<string, any>): Promise<{
+        userId: string;
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+        isComplete: boolean;
         persona: import(".prisma/client").$Enums.PersonaType | null;
         headline: string | null;
         bio: string | null;
@@ -152,7 +152,8 @@ export declare class ProfileService {
         lookingFor: string[];
         extraData: import("@prisma/client/runtime/library").JsonValue | null;
         completenessScore: number;
-        isComplete: boolean;
+        createdAt: Date;
+        updatedAt: Date;
         accreditedInvestor: boolean | null;
         amountRaisedToDate: string | null;
         businessDescription: string | null;
@@ -196,7 +197,6 @@ export declare class ProfileService {
         preferredStageRange: string | null;
         sectorFocus: string[];
         workStyle: import(".prisma/client").$Enums.WorkStyle | null;
-        userId: string;
     }>;
     generateEmbedding(userId: string, profile: any): Promise<void>;
     calculateCompleteness(data: Record<string, any>): number;

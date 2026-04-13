@@ -20,24 +20,24 @@ export declare class WhatsAppBotService {
         messages: ({
             user: {
                 id: string;
+                name: string | null;
                 email: string;
                 phone: string | null;
-                name: string | null;
                 whatsappOptedIn: boolean;
                 whatsappPhone: string | null;
             };
         } & {
             status: import(".prisma/client").$Enums.MessageStatus;
+            userId: string;
             id: string;
+            channel: import(".prisma/client").$Enums.MessageChannel;
             createdAt: Date;
             updatedAt: Date;
-            provider: string | null;
-            channel: import(".prisma/client").$Enums.MessageChannel;
-            userId: string;
-            errorMessage: string | null;
-            content: string;
             recipientPhone: string;
+            content: string;
             messageSid: string | null;
+            errorMessage: string | null;
+            provider: string | null;
         })[];
         stats: {
             optedInUsers: number;
@@ -52,10 +52,10 @@ export declare class WhatsAppBotService {
     getWhatsAppUsers(): Promise<{
         messageCount: number;
         id: string;
-        email: string;
-        phone: string | null;
         createdAt: Date;
         name: string | null;
+        email: string;
+        phone: string | null;
         whatsappOptedIn: boolean;
         whatsappPhone: string | null;
         messageRecords: {

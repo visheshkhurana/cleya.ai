@@ -14,7 +14,14 @@ declare class EmailService {
         bio?: string;
         matchReason?: string;
     }): Promise<void>;
-    sendMatchAccepted(recipientEmail: string, recipientName: string, matchName: string, matchPersona: string, matchEmail: string, matchLinkedin?: string): Promise<void>;
+    sendMatchAccepted(recipientEmail: string, recipientName: string, matchName: string, matchPersona: string, matchEmail: string, matchLinkedin?: string, matchDetails?: {
+        headline?: string;
+        companyName?: string;
+        sector?: string;
+        location?: string;
+        matchReason?: string;
+        matchUserId?: string;
+    }): Promise<void>;
     sendPasswordReset(email: string, token: string): Promise<void>;
     sendEmailVerification(email: string, token: string): Promise<void>;
     sendNewMatch(email: string, matchName: string, matchScore: number): Promise<void>;

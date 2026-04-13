@@ -10,16 +10,29 @@ directMessageRouter.get('/conversations', authenticate, async (req: Request, res
   try {
     const userId = req.user!.userId;
 
-    const messages = await prisma.directMessage.findMany({
-      where: {
-        OR: [{ senderId: userId }, { recipientId: userId }],
-      },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        sender: { select: { id: true, email: true, name: true, profile: { select: { persona: true, headline: true, companyName: true, currentRole: true, location: true } } } },
-        recipient: { select: { id: true, email: true, name: true, profile: { select: { persona: true, headline: true, companyName: true, currentRole: true, location: true } } } },
-      },
-    });
+    const profileSelect = { persona: true, headline: true, companyName: true, currentRole: true, location: true, avatarUrl: true } as const;
+    const userSelect = { id: true, email: true, name: true, profile: { select: profileSelect } } as const;
+
+    const [messages, acceptedMatches] = await Promise.all([
+      prisma.directMessage.findMany({
+        where: { OR: [{ senderId: userId }, { recipientId: userId }] },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          sender: { select: userSelect },
+          recipient: { select: userSelect },
+        },
+      }),
+      prisma.match.findMany({
+        where: {
+          status: 'ACCEPTED',
+          OR: [{ userAId: userId }, { userBId: userId }],
+        },
+        include: {
+          userA: { select: userSelect },
+          userB: { select: userSelect },
+        },
+      }),
+    ]);
 
     const conversationMap = new Map<string, any>();
     for (const msg of messages) {
@@ -35,6 +48,21 @@ directMessageRouter.get('/conversations', authenticate, async (req: Request, res
           lastMessage: msg.content,
           lastMessageAt: msg.createdAt,
           unreadCount,
+        });
+      }
+    }
+
+    for (const match of acceptedMatches) {
+      const isA = match.userAId === userId;
+      const partnerId = isA ? match.userBId : match.userAId;
+      if (!conversationMap.has(partnerId)) {
+        const partner = isA ? match.userB : match.userA;
+        conversationMap.set(partnerId, {
+          partnerId,
+          partner,
+          lastMessage: null,
+          lastMessageAt: match.updatedAt,
+          unreadCount: 0,
         });
       }
     }

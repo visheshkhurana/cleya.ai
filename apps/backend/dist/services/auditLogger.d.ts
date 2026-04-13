@@ -13,23 +13,23 @@ export declare function getAuditLogs(options: {
     logs: ({
         actor: {
             id: string;
-            email: string;
-            role: import(".prisma/client").$Enums.Role;
             name: string | null;
+            role: import(".prisma/client").$Enums.Role;
+            email: string;
         };
         target: {
             id: string;
-            email: string;
-            role: import(".prisma/client").$Enums.Role;
             name: string | null;
+            role: import(".prisma/client").$Enums.Role;
+            email: string;
         } | null;
     } & {
         id: string;
         timestamp: Date;
-        metadata: import("@prisma/client/runtime/library").JsonValue | null;
         action: string;
         ipAddress: string | null;
         userAgent: string | null;
+        metadata: import("@prisma/client/runtime/library").JsonValue | null;
         actorId: string;
         targetId: string | null;
     })[];
