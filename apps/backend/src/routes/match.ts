@@ -5,7 +5,7 @@ import { vectorMatchingService } from '../services/vectorMatchingService';
 import { prisma } from '@cleya/db';
 import { matchProposalLimiter } from '../middleware/rateLimit';
 import { validate, matchResponseSchema, matchFeedbackSchema, matchProposeSchema } from '../middleware/validation';
-import { razorpayService, FREE_MATCH_LIMIT } from '../services/razorpayService';
+import { razorpayService } from '../services/razorpayService';
 
 export const matchRouter = Router();
 
@@ -31,7 +31,8 @@ matchRouter.get('/stats', authenticate, async (req: Request, res: Response, next
         tier: paywall.tier,
         matchesUsed: paywall.matchesUsed,
         matchesRemaining: paywall.matchesRemaining,
-        freeMatchLimit: FREE_MATCH_LIMIT,
+        freeMatchLimit: paywall.freeMatchLimit,
+        bonusMatches: paywall.bonusMatches,
         paywallActive: !paywall.allowed,
       },
     });
@@ -177,7 +178,7 @@ matchRouter.post('/:id/respond', authenticate, validate(matchResponseSchema), as
             code: 'PAYWALL_LIMIT_REACHED',
             matchesUsed: paywall.matchesUsed,
             matchesRemaining: 0,
-            freeMatchLimit: FREE_MATCH_LIMIT,
+            freeMatchLimit: paywall.freeMatchLimit,
           },
         });
       }
