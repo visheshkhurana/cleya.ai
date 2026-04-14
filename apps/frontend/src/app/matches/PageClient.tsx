@@ -67,6 +67,7 @@ interface MatchStats {
   matchesUsed?: number;
   matchesRemaining?: number;
   freeMatchLimit?: number;
+  bonusMatches?: number;
   paywallActive?: boolean;
 }
 
@@ -864,19 +865,26 @@ export default function MatchesPage() {
                   <p className="text-xs text-white/40 mt-0.5">
                     {matchStats.paywallActive
                       ? 'Subscribe to Pro for unlimited matches and introductions'
-                      : `${matchStats.matchesUsed} of ${matchStats.freeMatchLimit} free matches used`}
+                      : `${matchStats.matchesUsed} of ${matchStats.freeMatchLimit} free matches used${matchStats.bonusMatches ? ` (includes ${matchStats.bonusMatches} bonus from referrals)` : ''}`}
                   </p>
                 </div>
               </div>
-              {matchStats.paywallActive && (
-                <button
-                  onClick={() => setShowPaywall(true)}
-                  className="px-4 py-2 rounded-lg text-xs font-medium text-white transition hover:scale-[1.02]"
-                  style={{ background: '#6C63FF' }}>
-                  Upgrade to Pro
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {matchStats.paywallActive && (
+                  <button
+                    onClick={() => setShowPaywall(true)}
+                    className="px-4 py-2 rounded-lg text-xs font-medium text-white transition hover:scale-[1.02]"
+                    style={{ background: '#6C63FF' }}>
+                    Upgrade to Pro
+                  </button>
+                )}
+              </div>
             </div>
+            {!!matchStats.bonusMatches && matchStats.bonusMatches > 0 && (
+              <p className="text-xs mt-2 font-medium" style={{ color: '#4ECDC4' }}>
+                You earned {matchStats.bonusMatches} bonus intros from referrals!
+              </p>
+            )}
           </div>
         )}
 

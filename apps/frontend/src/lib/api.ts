@@ -931,6 +931,22 @@ class ApiClient {
   async sendWeeklyReport() {
     return this.fetch('/admin/founder/weekly-report', { method: 'POST' });
   }
+
+  // Referral
+  async getReferralInfo() {
+    return this.fetch<{ referralCode: string; referralLink: string; totalReferrals: number; bonusMatches: number }>('/referral/info');
+  }
+
+  async getReferralHistory() {
+    return this.fetch<Array<{ id: string; refereeName: string; refereeJoinedAt: string; rewardGranted: boolean }>>('/referral/history');
+  }
+
+  async applyReferralCode(referralCode: string) {
+    return this.fetch<{ applied?: boolean; alreadyReferred?: boolean }>('/referral/apply', {
+      method: 'POST',
+      body: JSON.stringify({ referralCode }),
+    });
+  }
 }
 
 export const api = new ApiClient();
