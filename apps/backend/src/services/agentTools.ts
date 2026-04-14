@@ -44,14 +44,14 @@ const ORCHESTRATOR_TOOLS = [
 export const AGENT_TOOLS: Record<string, string[]> = {
   maven: ['web_search', 'browse_webpage', 'create_file', 'post_to_social', 'schedule_post', 'get_post_analytics', 'get_post_history'],
   ledger: ['web_search', 'browse_webpage', 'create_file', 'create_ad_campaign', 'get_campaign_stats', 'optimize_campaigns', 'launch_campaign', 'activate_campaign', 'pause_campaign', 'adjust_budget', 'generate_ad_copy', 'get_campaign_report'],
-  catalyst: ['web_search', 'browse_webpage', 'create_file', 'download_file', 'post_to_social', 'create_ad_campaign', 'schedule_post', 'launch_campaign', 'generate_ad_copy', 'get_campaign_report'],
-  nexus: ['web_search', 'browse_webpage', 'create_file', 'download_file', 'collect_emails', 'send_bulk_email', 'post_to_social', 'send_email', 'schedule_post'],
+  catalyst: ['web_search', 'browse_webpage', 'create_file', 'download_file', 'post_to_social', 'create_ad_campaign', 'schedule_post', 'launch_campaign', 'generate_ad_copy', 'get_campaign_report', 'lemlist_add_lead', 'lemlist_get_lead', 'get_contact_lists', 'get_list_contacts', 'import_list_to_campaign'],
+  nexus: ['web_search', 'browse_webpage', 'create_file', 'download_file', 'collect_emails', 'send_bulk_email', 'post_to_social', 'send_email', 'schedule_post', 'lemlist_add_lead', 'lemlist_get_lead', 'create_contact_list', 'add_to_contact_list', 'get_contact_lists', 'get_list_contacts', 'import_list_to_campaign', 'delete_contact_list'],
   sentinel: ['web_search', 'browse_webpage', 'create_file', 'get_campaign_stats', 'get_post_analytics', 'get_analytics_summary', 'get_top_pages', 'get_traffic_sources'],
   ally: ['web_search', 'browse_webpage', 'create_file', 'send_email', 'send_bulk_email', 'schedule_post'],
-  closer: ['web_search', 'browse_webpage', 'create_file', 'download_file', 'collect_emails', 'enrich_contact', 'send_email', 'send_bulk_email', 'create_ad_campaign', 'launch_campaign', 'activate_campaign', 'pause_campaign', 'generate_ad_copy', 'get_campaign_report'],
+  closer: ['web_search', 'browse_webpage', 'create_file', 'download_file', 'collect_emails', 'enrich_contact', 'send_email', 'send_bulk_email', 'create_ad_campaign', 'launch_campaign', 'activate_campaign', 'pause_campaign', 'generate_ad_copy', 'get_campaign_report', 'lemlist_add_lead', 'lemlist_get_lead', 'lemlist_mark_interested', 'lemlist_mark_not_interested', 'create_contact_list', 'add_to_contact_list', 'get_contact_lists', 'get_list_contacts', 'import_list_to_campaign'],
   scout: ['web_search', 'browse_webpage', 'create_file', 'download_file', 'enrich_contact', 'analyze_seo', 'keyword_research', 'analyze_competitors', 'generate_schema_markup', 'check_indexing', 'optimize_content', 'get_analytics_summary', 'get_top_pages', 'get_traffic_sources'],
   probe: ['web_search', 'browse_webpage', 'run_page_test', 'run_api_test', 'run_agent_test', 'run_full_qa', 'get_qa_report', 'get_analytics_summary'],
-  outreach: ['web_search', 'browse_webpage', 'create_file', 'download_file', 'collect_emails', 'enrich_contact', 'send_bulk_email', 'create_email_campaign', 'add_recipients', 'launch_campaign', 'get_campaign_analytics', 'get_recipient_list', 'pause_campaign', 'send_email'],
+  outreach: ['web_search', 'browse_webpage', 'create_file', 'download_file', 'collect_emails', 'enrich_contact', 'send_bulk_email', 'create_email_campaign', 'add_recipients', 'launch_campaign', 'get_campaign_analytics', 'get_recipient_list', 'pause_campaign', 'send_email', 'lemlist_add_lead', 'lemlist_get_lead', 'lemlist_mark_interested', 'lemlist_mark_not_interested', 'lemlist_unsubscribe', 'lemlist_pause_lead', 'lemlist_resume_lead', 'create_contact_list', 'add_to_contact_list', 'get_contact_lists', 'get_list_contacts', 'import_list_to_campaign', 'delete_contact_list'],
 };
 
 // --- Tool parameter schemas (used in OpenAI function-calling format) ---
@@ -566,6 +566,188 @@ export const TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
       required: ['subject', 'htmlContent', 'recipients'],
     },
   },
+
+  // --- Lemlist tools ---
+
+  lemlist_add_lead: {
+    name: 'lemlist_add_lead',
+    description: 'Add a lead to a Lemlist email campaign with personalization. Lemlist handles warm-up, deliverability, and multi-step sequences automatically.',
+    parameters: {
+      type: 'object',
+      properties: {
+        campaignId: { type: 'string', description: 'Lemlist campaign ID' },
+        email: { type: 'string', description: 'Lead email address' },
+        firstName: { type: 'string', description: 'Lead first name' },
+        lastName: { type: 'string', description: 'Lead last name' },
+        companyName: { type: 'string', description: 'Lead company name' },
+        linkedinUrl: { type: 'string', description: 'Lead LinkedIn profile URL' },
+        icebreaker: { type: 'string', description: 'Personalized icebreaker text' },
+        phone: { type: 'string', description: 'Lead phone number' },
+      },
+      required: ['campaignId', 'email'],
+    },
+  },
+  lemlist_get_lead: {
+    name: 'lemlist_get_lead',
+    description: 'Get all info about a lead by email across all Lemlist campaigns.',
+    parameters: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', description: 'Lead email address to look up' },
+      },
+      required: ['email'],
+    },
+  },
+  lemlist_mark_interested: {
+    name: 'lemlist_mark_interested',
+    description: 'Mark a lead as interested in a specific Lemlist campaign (stops the sequence for that lead).',
+    parameters: {
+      type: 'object',
+      properties: {
+        campaignId: { type: 'string', description: 'Lemlist campaign ID' },
+        email: { type: 'string', description: 'Lead email address' },
+      },
+      required: ['campaignId', 'email'],
+    },
+  },
+  lemlist_mark_not_interested: {
+    name: 'lemlist_mark_not_interested',
+    description: 'Mark a lead as not interested in a specific Lemlist campaign.',
+    parameters: {
+      type: 'object',
+      properties: {
+        campaignId: { type: 'string', description: 'Lemlist campaign ID' },
+        email: { type: 'string', description: 'Lead email address' },
+      },
+      required: ['campaignId', 'email'],
+    },
+  },
+  lemlist_unsubscribe: {
+    name: 'lemlist_unsubscribe',
+    description: 'Unsubscribe a lead from all Lemlist campaigns.',
+    parameters: {
+      type: 'object',
+      properties: {
+        campaignId: { type: 'string', description: 'Lemlist campaign ID' },
+        email: { type: 'string', description: 'Lead email address' },
+      },
+      required: ['campaignId', 'email'],
+    },
+  },
+  lemlist_pause_lead: {
+    name: 'lemlist_pause_lead',
+    description: 'Pause a lead across all Lemlist campaigns.',
+    parameters: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', description: 'Lead email address to pause' },
+      },
+      required: ['email'],
+    },
+  },
+  lemlist_resume_lead: {
+    name: 'lemlist_resume_lead',
+    description: 'Resume a paused lead across all Lemlist campaigns.',
+    parameters: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', description: 'Lead email address to resume' },
+      },
+      required: ['email'],
+    },
+  },
+
+  // --- Contact List tools ---
+
+  create_contact_list: {
+    name: 'create_contact_list',
+    description: 'Create a new reusable contact list for organizing leads and contacts.',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Name of the contact list' },
+        description: { type: 'string', description: 'Optional description' },
+        tags: { type: 'array', items: { type: 'string' }, description: 'Optional tags for categorization' },
+      },
+      required: ['name'],
+    },
+  },
+  add_to_contact_list: {
+    name: 'add_to_contact_list',
+    description: 'Add contacts to a contact list. Deduplicates by email.',
+    parameters: {
+      type: 'object',
+      properties: {
+        listId: { type: 'string', description: 'Contact list ID' },
+        contacts: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              email: { type: 'string', description: 'Contact email' },
+              firstName: { type: 'string', description: 'First name' },
+              lastName: { type: 'string', description: 'Last name' },
+              company: { type: 'string', description: 'Company name' },
+              role: { type: 'string', description: 'Job title/role' },
+              phone: { type: 'string', description: 'Phone number' },
+              linkedinUrl: { type: 'string', description: 'LinkedIn profile URL' },
+              tags: { type: 'array', items: { type: 'string' }, description: 'Tags' },
+              customFields: { type: 'object', description: 'Custom key-value pairs' },
+            },
+            required: ['email'],
+          },
+          description: 'Array of contacts to add',
+        },
+      },
+      required: ['listId', 'contacts'],
+    },
+  },
+  get_contact_lists: {
+    name: 'get_contact_lists',
+    description: 'Get all contact lists, optionally filtered by tag.',
+    parameters: {
+      type: 'object',
+      properties: {
+        tag: { type: 'string', description: 'Optional tag to filter lists by' },
+      },
+    },
+  },
+  get_list_contacts: {
+    name: 'get_list_contacts',
+    description: 'Get contacts from a contact list with pagination.',
+    parameters: {
+      type: 'object',
+      properties: {
+        listId: { type: 'string', description: 'Contact list ID' },
+        limit: { type: 'number', description: 'Max contacts to return (default 100)' },
+        offset: { type: 'number', description: 'Offset for pagination (default 0)' },
+      },
+      required: ['listId'],
+    },
+  },
+  import_list_to_campaign: {
+    name: 'import_list_to_campaign',
+    description: 'Import all contacts from a contact list into an outreach campaign as recipients. Automatically filters out unsubscribed emails.',
+    parameters: {
+      type: 'object',
+      properties: {
+        listId: { type: 'string', description: 'Contact list ID to import from' },
+        campaignId: { type: 'string', description: 'Campaign ID to import contacts into' },
+      },
+      required: ['listId', 'campaignId'],
+    },
+  },
+  delete_contact_list: {
+    name: 'delete_contact_list',
+    description: 'Delete a contact list and all its entries.',
+    parameters: {
+      type: 'object',
+      properties: {
+        listId: { type: 'string', description: 'Contact list ID to delete' },
+      },
+      required: ['listId'],
+    },
+  },
 };
 
 // --- Get OpenAI-format tool schemas for a specific agent ---
@@ -604,7 +786,7 @@ export async function executeTool(agentId: string, toolName: string, params: Rec
   }
 
   // Run guardrails for action-type tools
-  const actionTools = ['post_to_social', 'schedule_post', 'create_ad_campaign', 'send_email', 'send_bulk_email', 'launch_campaign', 'activate_campaign', 'pause_campaign', 'adjust_budget'];
+  const actionTools = ['post_to_social', 'schedule_post', 'create_ad_campaign', 'send_email', 'send_bulk_email', 'launch_campaign', 'activate_campaign', 'pause_campaign', 'adjust_budget', 'lemlist_add_lead', 'lemlist_mark_interested', 'lemlist_mark_not_interested', 'lemlist_unsubscribe', 'lemlist_pause_lead', 'lemlist_resume_lead', 'import_list_to_campaign', 'delete_contact_list'];
   if (actionTools.includes(toolName)) {
     const guardrails = getAgentGuardrails(agentId);
     const autonomyLevel = getAgentAutonomyLevel(agentId);
@@ -895,6 +1077,88 @@ export async function executeTool(agentId: string, toolName: string, params: Rec
 
       case 'send_bulk_email': {
         result = await executeSendBulkEmail(params as any);
+        break;
+      }
+
+      // --- Lemlist tools ---
+
+      case 'lemlist_add_lead': {
+        const { addLead } = await import('./lemlistService');
+        result = await addLead(params as any);
+        break;
+      }
+
+      case 'lemlist_get_lead': {
+        const { getLead } = await import('./lemlistService');
+        result = await getLead(params.email);
+        break;
+      }
+
+      case 'lemlist_mark_interested': {
+        const { markInterested } = await import('./lemlistService');
+        result = await markInterested(params.campaignId, params.email);
+        break;
+      }
+
+      case 'lemlist_mark_not_interested': {
+        const { markNotInterested } = await import('./lemlistService');
+        result = await markNotInterested(params.campaignId, params.email);
+        break;
+      }
+
+      case 'lemlist_unsubscribe': {
+        const { unsubscribeLead } = await import('./lemlistService');
+        result = await unsubscribeLead(params.campaignId, params.email);
+        break;
+      }
+
+      case 'lemlist_pause_lead': {
+        const { pauseLead } = await import('./lemlistService');
+        result = await pauseLead(params.email);
+        break;
+      }
+
+      case 'lemlist_resume_lead': {
+        const { resumeLead } = await import('./lemlistService');
+        result = await resumeLead(params.email);
+        break;
+      }
+
+      // --- Contact List tools ---
+
+      case 'create_contact_list': {
+        const { createContactList } = await import('./contactListService');
+        result = await createContactList(params as any);
+        break;
+      }
+
+      case 'add_to_contact_list': {
+        const { addToContactList } = await import('./contactListService');
+        result = await addToContactList(params as any);
+        break;
+      }
+
+      case 'get_contact_lists': {
+        const { getContactLists } = await import('./contactListService');
+        result = await getContactLists(params.tag);
+        break;
+      }
+
+      case 'get_list_contacts': {
+        const { getListContacts } = await import('./contactListService');
+        result = await getListContacts(params as any);
+        break;
+      }
+
+      case 'import_list_to_campaign': {
+        const { importListToCampaign } = await import('./contactListService');
+        result = await importListToCampaign(params as any);
+        break;
+      }
+
+      case 'delete_contact_list': {
+        const { deleteContactList } = await import('./contactListService');
+        result = await deleteContactList(params.listId);
         break;
       }
 

@@ -94,6 +94,43 @@ export async function ensureOutreachTables(): Promise<void> {
     await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS idx_outreach_recipients_campaign ON outreach_recipients(campaign_id);`);
     await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS idx_outreach_recipients_email ON outreach_recipients(email);`);
     await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS idx_outreach_recipients_status ON outreach_recipients(status);`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE outreach_recipients ADD COLUMN IF NOT EXISTS resend_email_id TEXT;`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS idx_outreach_recipients_resend_id ON outreach_recipients(resend_email_id);`);
+
+    // Contact list tables
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS contact_lists (
+        id SERIAL PRIMARY KEY,
+        list_id TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        description TEXT DEFAULT '',
+        tags TEXT[] DEFAULT '{}',
+        contact_count INTEGER DEFAULT 0,
+        created_by TEXT DEFAULT 'system',
+        created_at TIMESTAMPTZ DEFAULT now(),
+        updated_at TIMESTAMPTZ DEFAULT now()
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS contact_list_entries (
+        id SERIAL PRIMARY KEY,
+        list_id TEXT NOT NULL,
+        email TEXT NOT NULL,
+        first_name TEXT DEFAULT '',
+        last_name TEXT DEFAULT '',
+        company TEXT DEFAULT '',
+        role TEXT DEFAULT '',
+        phone TEXT DEFAULT '',
+        linkedin_url TEXT DEFAULT '',
+        tags TEXT[] DEFAULT '{}',
+        custom_fields JSONB DEFAULT '{}',
+        source TEXT DEFAULT 'manual',
+        created_at TIMESTAMPTZ DEFAULT now(),
+        UNIQUE(list_id, email)
+      );
+    `);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS idx_contact_list_entries_list ON contact_list_entries(list_id);`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS idx_contact_list_entries_email ON contact_list_entries(email);`);
 
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS outreach_unsubscribes (
@@ -290,8 +327,8 @@ export async function launchCampaign(campaignId: string): Promise<any> {
           failCount++;
         } else {
           await prisma.$executeRawUnsafe(
-            `UPDATE outreach_recipients SET status = 'sent', sent_at = now(), current_step = 1 WHERE id = $1`,
-            recipient.id,
+            `UPDATE outreach_recipients SET status = 'sent', sent_at = now(), current_step = 1, resend_email_id = $1 WHERE id = $2`,
+            result.data?.id || null, recipient.id,
           );
           sentCount++;
         }
