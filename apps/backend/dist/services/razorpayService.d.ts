@@ -19,6 +19,7 @@ declare class RazorpayService {
         matchesUsed: number;
         matchesRemaining: number;
         freeMatchLimit: number;
+        bonusMatches: number;
         subscription: {
             status: import(".prisma/client").$Enums.SubscriptionStatus;
             currentPeriodStart: Date | null;
@@ -33,6 +34,8 @@ declare class RazorpayService {
         matchesUsed: number;
         matchesRemaining: number;
         tier: string;
+        freeMatchLimit: number;
+        bonusMatches: number;
     }>;
     incrementMatchesUsed(userId: string): Promise<void>;
 }

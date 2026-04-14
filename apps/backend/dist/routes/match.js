@@ -32,7 +32,8 @@ exports.matchRouter.get('/stats', auth_1.authenticate, async (req, res, next) =>
                 tier: paywall.tier,
                 matchesUsed: paywall.matchesUsed,
                 matchesRemaining: paywall.matchesRemaining,
-                freeMatchLimit: razorpayService_1.FREE_MATCH_LIMIT,
+                freeMatchLimit: paywall.freeMatchLimit,
+                bonusMatches: paywall.bonusMatches,
                 paywallActive: !paywall.allowed,
             },
         });
@@ -177,7 +178,7 @@ exports.matchRouter.post('/:id/respond', auth_1.authenticate, (0, validation_1.v
                         code: 'PAYWALL_LIMIT_REACHED',
                         matchesUsed: paywall.matchesUsed,
                         matchesRemaining: 0,
-                        freeMatchLimit: razorpayService_1.FREE_MATCH_LIMIT,
+                        freeMatchLimit: paywall.freeMatchLimit,
                     },
                 });
             }

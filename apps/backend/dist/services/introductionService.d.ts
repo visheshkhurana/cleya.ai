@@ -130,6 +130,9 @@ export declare class IntroductionService {
             tier: import(".prisma/client").$Enums.UserTier;
             totpSecret: string | null;
             matchesUsed: number;
+            referralCode: string | null;
+            referredBy: string | null;
+            bonusMatches: number;
         };
         userB: {
             profile: {
@@ -223,6 +226,9 @@ export declare class IntroductionService {
             tier: import(".prisma/client").$Enums.UserTier;
             totpSecret: string | null;
             matchesUsed: number;
+            referralCode: string | null;
+            referredBy: string | null;
+            bonusMatches: number;
         };
     } & {
         status: import(".prisma/client").$Enums.IntroductionStatus;

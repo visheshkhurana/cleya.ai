@@ -523,6 +523,9 @@ export declare class AuthService {
         tier: import(".prisma/client").$Enums.UserTier;
         totpSecret: string | null;
         matchesUsed: number;
+        referralCode: string | null;
+        referredBy: string | null;
+        bonusMatches: number;
     } | null>;
     resetPassword(email: string, newPassword: string): Promise<void>;
     verifyEmail(userId: string): Promise<void>;
