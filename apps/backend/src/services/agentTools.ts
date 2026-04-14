@@ -42,16 +42,16 @@ const ORCHESTRATOR_TOOLS = [
 ];
 
 export const AGENT_TOOLS: Record<string, string[]> = {
-  maven: ['post_to_social', 'schedule_post', 'get_post_analytics', 'get_post_history'],
-  ledger: ['create_ad_campaign', 'get_campaign_stats', 'optimize_campaigns', 'launch_campaign', 'activate_campaign', 'pause_campaign', 'adjust_budget', 'generate_ad_copy', 'get_campaign_report'],
-  catalyst: ['post_to_social', 'create_ad_campaign', 'schedule_post', 'launch_campaign', 'generate_ad_copy', 'get_campaign_report'],
-  nexus: ['post_to_social', 'send_email', 'schedule_post'],
-  sentinel: ['get_campaign_stats', 'get_post_analytics', 'get_analytics_summary', 'get_top_pages', 'get_traffic_sources'],
-  ally: ['send_email', 'schedule_post'],
-  closer: ['send_email', 'create_ad_campaign', 'launch_campaign', 'activate_campaign', 'pause_campaign', 'generate_ad_copy', 'get_campaign_report'],
-  scout: ['analyze_seo', 'keyword_research', 'analyze_competitors', 'generate_schema_markup', 'check_indexing', 'optimize_content', 'get_analytics_summary', 'get_top_pages', 'get_traffic_sources'],
-  probe: ['run_page_test', 'run_api_test', 'run_agent_test', 'run_full_qa', 'get_qa_report', 'get_analytics_summary'],
-  outreach: ['create_email_campaign', 'add_recipients', 'launch_campaign', 'get_campaign_analytics', 'get_recipient_list', 'pause_campaign', 'send_email'],
+  maven: ['web_search', 'browse_webpage', 'create_file', 'post_to_social', 'schedule_post', 'get_post_analytics', 'get_post_history'],
+  ledger: ['web_search', 'browse_webpage', 'create_file', 'create_ad_campaign', 'get_campaign_stats', 'optimize_campaigns', 'launch_campaign', 'activate_campaign', 'pause_campaign', 'adjust_budget', 'generate_ad_copy', 'get_campaign_report'],
+  catalyst: ['web_search', 'browse_webpage', 'create_file', 'download_file', 'post_to_social', 'create_ad_campaign', 'schedule_post', 'launch_campaign', 'generate_ad_copy', 'get_campaign_report'],
+  nexus: ['web_search', 'browse_webpage', 'create_file', 'download_file', 'collect_emails', 'send_bulk_email', 'post_to_social', 'send_email', 'schedule_post'],
+  sentinel: ['web_search', 'browse_webpage', 'create_file', 'get_campaign_stats', 'get_post_analytics', 'get_analytics_summary', 'get_top_pages', 'get_traffic_sources'],
+  ally: ['web_search', 'browse_webpage', 'create_file', 'send_email', 'send_bulk_email', 'schedule_post'],
+  closer: ['web_search', 'browse_webpage', 'create_file', 'download_file', 'collect_emails', 'enrich_contact', 'send_email', 'send_bulk_email', 'create_ad_campaign', 'launch_campaign', 'activate_campaign', 'pause_campaign', 'generate_ad_copy', 'get_campaign_report'],
+  scout: ['web_search', 'browse_webpage', 'create_file', 'download_file', 'enrich_contact', 'analyze_seo', 'keyword_research', 'analyze_competitors', 'generate_schema_markup', 'check_indexing', 'optimize_content', 'get_analytics_summary', 'get_top_pages', 'get_traffic_sources'],
+  probe: ['web_search', 'browse_webpage', 'run_page_test', 'run_api_test', 'run_agent_test', 'run_full_qa', 'get_qa_report', 'get_analytics_summary'],
+  outreach: ['web_search', 'browse_webpage', 'create_file', 'download_file', 'collect_emails', 'enrich_contact', 'send_bulk_email', 'create_email_campaign', 'add_recipients', 'launch_campaign', 'get_campaign_analytics', 'get_recipient_list', 'pause_campaign', 'send_email'],
 };
 
 // --- Tool parameter schemas (used in OpenAI function-calling format) ---
@@ -463,6 +463,109 @@ export const TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
       },
     },
   },
+
+  // --- Execution tools (web, files, email, enrichment) ---
+
+  web_search: {
+    name: 'web_search',
+    description: 'Search the web for information, leads, data, companies, contacts using Google Search via Serper.dev.',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'The search query' },
+        numResults: { type: 'number', description: 'Number of results to return (default 10, max 100)' },
+      },
+      required: ['query'],
+    },
+  },
+  browse_webpage: {
+    name: 'browse_webpage',
+    description: 'Fetch and extract content from a URL — read articles, extract data, scrape public pages. Returns title, description, main text, and links.',
+    parameters: {
+      type: 'object',
+      properties: {
+        url: { type: 'string', description: 'The URL to fetch and parse' },
+        extractSelector: { type: 'string', description: 'Optional CSS selector to extract only matching content (e.g. "article", ".main-content", "#pricing")' },
+      },
+      required: ['url'],
+    },
+  },
+  download_file: {
+    name: 'download_file',
+    description: 'Download a file from a URL (CSV, PDF, images, etc.) and store it for later use. Returns a stored file URL.',
+    parameters: {
+      type: 'object',
+      properties: {
+        url: { type: 'string', description: 'The URL of the file to download' },
+        filename: { type: 'string', description: 'Optional filename to save as (auto-detected from URL if omitted)' },
+      },
+      required: ['url'],
+    },
+  },
+  create_file: {
+    name: 'create_file',
+    description: 'Create a file (CSV, JSON, TXT, Markdown, HTML) from content the agent generates. Returns a stored file URL.',
+    parameters: {
+      type: 'object',
+      properties: {
+        filename: { type: 'string', description: 'Filename with extension (e.g. "report.csv", "leads.json", "analysis.md")' },
+        content: { type: 'string', description: 'The file content as a string' },
+        mimeType: { type: 'string', description: 'Optional MIME type (auto-detected from filename if omitted)' },
+      },
+      required: ['filename', 'content'],
+    },
+  },
+  collect_emails: {
+    name: 'collect_emails',
+    description: 'Search for and collect email addresses for a given target audience, company, or domain using Hunter.io.',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Search query — a company name, domain, or description of the target audience' },
+        domain: { type: 'string', description: 'Specific domain to search for emails (e.g. "stripe.com"). If omitted, domains are discovered via web search.' },
+        limit: { type: 'number', description: 'Max number of emails to return (default 10)' },
+      },
+      required: ['query'],
+    },
+  },
+  enrich_contact: {
+    name: 'enrich_contact',
+    description: 'Enrich a contact by verifying their email and retrieving associated data (name, company, position) using Hunter.io.',
+    parameters: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', description: 'The email address to verify and enrich' },
+      },
+      required: ['email'],
+    },
+  },
+  send_bulk_email: {
+    name: 'send_bulk_email',
+    description: 'Send a bulk email campaign to a list of recipients via Resend batch API. Max 100 per batch, auto-queued for larger lists.',
+    parameters: {
+      type: 'object',
+      properties: {
+        subject: { type: 'string', description: 'Email subject line' },
+        htmlContent: { type: 'string', description: 'Email body as HTML' },
+        recipients: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              email: { type: 'string', description: 'Recipient email address' },
+              name: { type: 'string', description: 'Recipient name (for personalization)' },
+              variables: { type: 'object', description: 'Key-value pairs for template variable replacement' },
+            },
+            required: ['email'],
+          },
+          description: 'Array of recipients (max 500 per call)',
+        },
+        fromName: { type: 'string', description: 'Sender name (default "Cleya")' },
+        replyTo: { type: 'string', description: 'Reply-to email address' },
+      },
+      required: ['subject', 'htmlContent', 'recipients'],
+    },
+  },
 };
 
 // --- Get OpenAI-format tool schemas for a specific agent ---
@@ -501,7 +604,7 @@ export async function executeTool(agentId: string, toolName: string, params: Rec
   }
 
   // Run guardrails for action-type tools
-  const actionTools = ['post_to_social', 'schedule_post', 'create_ad_campaign', 'send_email', 'launch_campaign', 'activate_campaign', 'pause_campaign', 'adjust_budget'];
+  const actionTools = ['post_to_social', 'schedule_post', 'create_ad_campaign', 'send_email', 'send_bulk_email', 'launch_campaign', 'activate_campaign', 'pause_campaign', 'adjust_budget'];
   if (actionTools.includes(toolName)) {
     const guardrails = getAgentGuardrails(agentId);
     const autonomyLevel = getAgentAutonomyLevel(agentId);
@@ -746,6 +849,52 @@ export async function executeTool(agentId: string, toolName: string, params: Rec
           result = await getLatestQAReport();
         }
         if (!result) result = { success: false, error: 'No QA report found' };
+        break;
+      }
+
+      // --- Execution tools (web, files, email, enrichment) ---
+
+      case 'web_search': {
+        result = await executeWebSearch(params.query, params.numResults || 10);
+        break;
+      }
+
+      case 'browse_webpage': {
+        result = await executeBrowseWebpage(params.url, params.extractSelector);
+        break;
+      }
+
+      case 'download_file': {
+        result = await executeDownloadFile(agentId, params.url, params.filename);
+        break;
+      }
+
+      case 'create_file': {
+        const mime = params.mimeType || getMimeType(params.filename);
+        const fileRecord = await createFileFromContent(
+          params.content, params.filename, mime, agentId, 'agent', '', 'generated',
+        );
+        result = {
+          success: true,
+          fileUrl: `/api/files/${fileRecord.file_id}`,
+          filename: fileRecord.original_name,
+          size: fileRecord.size_bytes,
+        };
+        break;
+      }
+
+      case 'collect_emails': {
+        result = await executeCollectEmails(params.query, params.domain, params.limit || 10);
+        break;
+      }
+
+      case 'enrich_contact': {
+        result = await executeEnrichContact(params.email);
+        break;
+      }
+
+      case 'send_bulk_email': {
+        result = await executeSendBulkEmail(params as any);
         break;
       }
 
@@ -1277,6 +1426,354 @@ async function executeOptimizeContent(content: string, targetKeyword: string, co
       'Add "Last updated" date to signal freshness to AI models',
     ],
   };
+}
+
+// --- Execution tool implementations ---
+
+async function executeWebSearch(query: string, numResults: number): Promise<any> {
+  const apiKey = process.env.SERPER_API_KEY;
+  if (!apiKey) {
+    return { success: false, error: 'SERPER_API_KEY not configured. Please add it to environment variables.' };
+  }
+
+  try {
+    const resp = await fetch('https://google.serper.dev/search', {
+      method: 'POST',
+      headers: {
+        'X-API-KEY': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ q: query, num: Math.min(numResults, 100) }),
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      return { success: false, error: `Serper API error (${resp.status}): ${errText}` };
+    }
+
+    const data = await resp.json() as any;
+    const results = (data.organic || []).map((r: any) => ({
+      title: r.title,
+      link: r.link,
+      snippet: r.snippet,
+    }));
+
+    return {
+      success: true,
+      query,
+      results,
+      totalResults: results.length,
+      knowledgeGraph: data.knowledgeGraph || null,
+    };
+  } catch (err: any) {
+    return { success: false, error: `Web search failed: ${err.message}` };
+  }
+}
+
+async function executeBrowseWebpage(url: string, extractSelector?: string): Promise<any> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+
+    const resp = await fetch(url, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'CleyaAgentBot/1.0 (+https://cleya.ai)' },
+    });
+    clearTimeout(timeout);
+
+    if (!resp.ok) {
+      return { success: false, error: `Failed to fetch ${url}: HTTP ${resp.status}` };
+    }
+
+    const html = await resp.text();
+    const cheerio = await import('cheerio');
+    const $ = cheerio.load(html);
+
+    // Remove scripts, styles, and non-content elements
+    $('script, style, noscript, iframe, svg').remove();
+
+    let content = '';
+    if (extractSelector) {
+      content = $(extractSelector).text().replace(/\s+/g, ' ').trim();
+      if (!content) {
+        content = `No content matched selector "${extractSelector}". Full page text extracted instead.\n\n` +
+          $('body').text().replace(/\s+/g, ' ').trim();
+      }
+    } else {
+      // Try common content selectors first, fall back to body
+      const contentSelectors = ['article', 'main', '[role="main"]', '.content', '.post-content', '#content'];
+      let found = false;
+      for (const sel of contentSelectors) {
+        const el = $(sel);
+        if (el.length && el.text().trim().length > 200) {
+          content = el.text().replace(/\s+/g, ' ').trim();
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        content = $('body').text().replace(/\s+/g, ' ').trim();
+      }
+    }
+
+    // Extract metadata
+    const title = $('title').text().trim() || $('meta[property="og:title"]').attr('content') || '';
+    const description = $('meta[name="description"]').attr('content') || $('meta[property="og:description"]').attr('content') || '';
+    const links: Array<{ text: string; href: string }> = [];
+    $('a[href]').each((_: any, el: any) => {
+      const href = $(el).attr('href');
+      const text = $(el).text().trim();
+      if (href && text && links.length < 50) {
+        links.push({ text: text.substring(0, 100), href });
+      }
+    });
+
+    // Truncate content to avoid token overflow
+    const maxChars = 8000;
+    const truncatedContent = content.length > maxChars
+      ? content.substring(0, maxChars) + '... [truncated]'
+      : content;
+
+    return {
+      success: true,
+      url,
+      title,
+      description,
+      content: truncatedContent,
+      contentLength: content.length,
+      links: links.slice(0, 30),
+    };
+  } catch (err: any) {
+    return { success: false, error: `Failed to browse ${url}: ${err.message}` };
+  }
+}
+
+async function executeDownloadFile(agentId: string, url: string, filename?: string): Promise<any> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
+    const resp = await fetch(url, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'CleyaAgentBot/1.0 (+https://cleya.ai)' },
+    });
+    clearTimeout(timeout);
+
+    if (!resp.ok) {
+      return { success: false, error: `Failed to download from ${url}: HTTP ${resp.status}` };
+    }
+
+    const contentType = resp.headers.get('content-type') || 'application/octet-stream';
+    const buffer = Buffer.from(await resp.arrayBuffer());
+
+    // Determine filename from URL or content-disposition header
+    const resolvedFilename = filename || extractFilenameFromUrl(url) || `download_${Date.now()}`;
+
+    const mime = contentType.split(';')[0].trim();
+    const fileRecord = await createFileFromContent(
+      buffer.toString('base64'),
+      resolvedFilename,
+      mime,
+      agentId,
+      'agent',
+      `Downloaded from ${url}`,
+      'download',
+    );
+
+    return {
+      success: true,
+      fileUrl: `/api/files/${fileRecord.file_id}`,
+      filename: fileRecord.original_name,
+      size: buffer.length,
+      mimeType: mime,
+    };
+  } catch (err: any) {
+    return { success: false, error: `Download failed: ${err.message}` };
+  }
+}
+
+function extractFilenameFromUrl(url: string): string {
+  try {
+    const pathname = new URL(url).pathname;
+    const parts = pathname.split('/').filter(Boolean);
+    return parts[parts.length - 1] || `file_${Date.now()}`;
+  } catch {
+    return `file_${Date.now()}`;
+  }
+}
+
+async function executeCollectEmails(query: string, domain?: string, limit: number = 10): Promise<any> {
+  const apiKey = process.env.HUNTER_API_KEY;
+  if (!apiKey) {
+    return { success: false, error: 'HUNTER_API_KEY not configured. Please add it to environment variables.' };
+  }
+
+  try {
+    let targetDomain = domain;
+
+    // If no domain provided, try to discover one via web search
+    if (!targetDomain) {
+      const searchResult = await executeWebSearch(`${query} company website`, 5);
+      if (searchResult.success && searchResult.results?.length > 0) {
+        // Extract domain from first result
+        try {
+          targetDomain = new URL(searchResult.results[0].link).hostname.replace('www.', '');
+        } catch {
+          return { success: false, error: `Could not determine domain from query "${query}". Please provide a domain directly.` };
+        }
+      } else {
+        return { success: false, error: `Could not find a domain for "${query}". Please provide a domain directly.` };
+      }
+    }
+
+    const resp = await fetch(
+      `https://api.hunter.io/v2/domain-search?domain=${encodeURIComponent(targetDomain)}&limit=${limit}&api_key=${apiKey}`,
+    );
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      return { success: false, error: `Hunter.io API error (${resp.status}): ${errText}` };
+    }
+
+    const data = await resp.json() as any;
+    const emails = (data.data?.emails || []).map((e: any) => ({
+      email: e.value,
+      firstName: e.first_name || null,
+      lastName: e.last_name || null,
+      position: e.position || null,
+      confidence: e.confidence || 0,
+    }));
+
+    return {
+      success: true,
+      domain: targetDomain,
+      emails,
+      totalFound: data.data?.total || emails.length,
+      organization: data.data?.organization || null,
+    };
+  } catch (err: any) {
+    return { success: false, error: `Email collection failed: ${err.message}` };
+  }
+}
+
+async function executeEnrichContact(email: string): Promise<any> {
+  const apiKey = process.env.HUNTER_API_KEY;
+  if (!apiKey) {
+    return { success: false, error: 'HUNTER_API_KEY not configured. Please add it to environment variables.' };
+  }
+
+  try {
+    const resp = await fetch(
+      `https://api.hunter.io/v2/email-verifier?email=${encodeURIComponent(email)}&api_key=${apiKey}`,
+    );
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      return { success: false, error: `Hunter.io API error (${resp.status}): ${errText}` };
+    }
+
+    const data = await resp.json() as any;
+    const result = data.data || {};
+
+    return {
+      success: true,
+      email: result.email || email,
+      status: result.status || 'unknown',
+      score: result.score ?? null,
+      firstName: result.first_name || null,
+      lastName: result.last_name || null,
+      position: result.position || null,
+      company: result.company || null,
+      twitter: result.twitter || null,
+      linkedinUrl: result.linkedin || null,
+      sources: (result.sources || []).slice(0, 5).map((s: any) => ({
+        domain: s.domain,
+        uri: s.uri,
+      })),
+    };
+  } catch (err: any) {
+    return { success: false, error: `Contact enrichment failed: ${err.message}` };
+  }
+}
+
+async function executeSendBulkEmail(params: {
+  subject: string;
+  htmlContent: string;
+  recipients: Array<{ email: string; name?: string; variables?: Record<string, string> }>;
+  fromName?: string;
+  replyTo?: string;
+}): Promise<any> {
+  try {
+    const { getUncachableResendClient } = await import('./resendClient');
+    const { env: emailEnv } = await import('../config/env');
+    const { client, fromEmail } = await getUncachableResendClient();
+
+    const senderEmail = fromEmail || emailEnv.FROM_EMAIL;
+    const senderName = params.fromName || 'Cleya';
+    const recipients = params.recipients.slice(0, 500); // Hard cap at 500
+
+    let totalSent = 0;
+    let totalFailed = 0;
+    const batchIds: string[] = [];
+    const errors: string[] = [];
+
+    // Process in batches of 100
+    for (let i = 0; i < recipients.length; i += 100) {
+      const batch = recipients.slice(i, i + 100);
+
+      const emails = batch.map((r) => {
+        let html = params.htmlContent;
+        // Replace template variables
+        if (r.variables) {
+          for (const [key, value] of Object.entries(r.variables)) {
+            html = html.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value);
+          }
+        }
+        if (r.name) {
+          html = html.replace(/\{\{name\}\}/g, r.name);
+        }
+
+        return {
+          from: `${senderName} <${senderEmail}>`,
+          to: [r.email],
+          subject: params.subject,
+          html,
+          reply_to: params.replyTo,
+        };
+      });
+
+      try {
+        const batchResult = await client.batch.send(emails as any);
+        if (batchResult.error) {
+          totalFailed += batch.length;
+          errors.push(`Batch ${Math.floor(i / 100) + 1}: ${batchResult.error.message}`);
+        } else {
+          totalSent += batch.length;
+          if (batchResult.data) {
+            batchIds.push(...(batchResult.data as unknown as any[]).map((d: any) => d.id).filter(Boolean));
+          }
+        }
+      } catch (batchErr: any) {
+        totalFailed += batch.length;
+        errors.push(`Batch ${Math.floor(i / 100) + 1}: ${batchErr.message}`);
+      }
+
+      // 1s delay between batches to respect rate limits
+      if (i + 100 < recipients.length) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+
+    return {
+      success: totalSent > 0,
+      sent: totalSent,
+      failed: totalFailed,
+      batchIds,
+      errors: errors.length > 0 ? errors : undefined,
+    };
+  } catch (err: any) {
+    return { success: false, error: `Bulk email failed: ${err.message}` };
+  }
 }
 
 // --- Parse tool calls from LLM response (handles OpenAI function-calling format) ---

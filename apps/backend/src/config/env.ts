@@ -82,6 +82,9 @@ const envSchema = z.object({
   RAZORPAY_KEY_SECRET: z.string().optional(),
   RAZORPAY_PLAN_ID: z.string().optional(),
   RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
+
+  SERPER_API_KEY: z.string().optional(),
+  HUNTER_API_KEY: z.string().optional(),
 });
 
 function validateEnv() {
