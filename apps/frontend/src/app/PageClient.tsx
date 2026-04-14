@@ -824,6 +824,10 @@ export default function Home() {
         if (utmTerm) utmData.utm_term = utmTerm;
         localStorage.setItem('cleo_utm', JSON.stringify(utmData));
       }
+      const refCode = params.get('ref');
+      if (refCode) {
+        localStorage.setItem('cleya_ref', refCode);
+      }
       const urlError = params.get('error');
       const urlAction = params.get('action');
       if (urlError) {

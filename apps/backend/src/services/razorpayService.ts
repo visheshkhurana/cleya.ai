@@ -103,22 +103,25 @@ class RazorpayService {
   async getSubscriptionStatus(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { tier: true, matchesUsed: true },
+      select: { tier: true, matchesUsed: true, bonusMatches: true },
     });
 
     const subscription = await prisma.subscription.findUnique({
       where: { userId },
     });
 
+    const bonusMatches = user?.bonusMatches || 0;
+    const effectiveLimit = FREE_MATCH_LIMIT + bonusMatches;
     const matchesRemaining = user?.tier === 'FREE'
-      ? Math.max(0, FREE_MATCH_LIMIT - (user?.matchesUsed || 0))
+      ? Math.max(0, effectiveLimit - (user?.matchesUsed || 0))
       : -1;
 
     return {
       tier: user?.tier || 'FREE',
       matchesUsed: user?.matchesUsed || 0,
       matchesRemaining,
-      freeMatchLimit: FREE_MATCH_LIMIT,
+      freeMatchLimit: effectiveLimit,
+      bonusMatches,
       subscription: subscription ? {
         status: subscription.status,
         currentPeriodStart: subscription.currentPeriodStart,
@@ -244,10 +247,10 @@ class RazorpayService {
     }
   }
 
-  async checkPaywall(userId: string): Promise<{ allowed: boolean; matchesUsed: number; matchesRemaining: number; tier: string }> {
+  async checkPaywall(userId: string): Promise<{ allowed: boolean; matchesUsed: number; matchesRemaining: number; tier: string; freeMatchLimit: number; bonusMatches: number }> {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { tier: true, matchesUsed: true },
+      select: { tier: true, matchesUsed: true, bonusMatches: true },
     });
 
     if (!user) {
@@ -255,15 +258,18 @@ class RazorpayService {
     }
 
     if (user.tier === 'PRO' || user.tier === 'ENTERPRISE') {
-      return { allowed: true, matchesUsed: user.matchesUsed, matchesRemaining: -1, tier: user.tier };
+      return { allowed: true, matchesUsed: user.matchesUsed, matchesRemaining: -1, tier: user.tier, freeMatchLimit: -1, bonusMatches: user.bonusMatches };
     }
 
-    const allowed = user.matchesUsed < FREE_MATCH_LIMIT;
+    const effectiveLimit = FREE_MATCH_LIMIT + user.bonusMatches;
+    const allowed = user.matchesUsed < effectiveLimit;
     return {
       allowed,
       matchesUsed: user.matchesUsed,
-      matchesRemaining: Math.max(0, FREE_MATCH_LIMIT - user.matchesUsed),
+      matchesRemaining: Math.max(0, effectiveLimit - user.matchesUsed),
       tier: user.tier,
+      freeMatchLimit: effectiveLimit,
+      bonusMatches: user.bonusMatches,
     };
   }
 

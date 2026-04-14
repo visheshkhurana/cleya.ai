@@ -58,6 +58,11 @@ model User {
   messageRecords          MessageRecord[]
   notifications           Notification[]
   matchesUsed             Int                      @default(0)
+  referralCode            String?                  @unique
+  referredBy              String?
+  bonusMatches            Int                      @default(0)
+  referralsMade           Referral[]               @relation("ReferralsMade")
+  referralReceived        Referral?                @relation("ReferralReceived")
   profile                 Profile?
   secretaryThreads        SecretaryMessage[]
   embeddings              UserEmbedding[]
@@ -67,6 +72,20 @@ model User {
   @@index([email])
   @@index([phone])
   @@map("users")
+}
+
+model Referral {
+  id            String   @id @default(cuid())
+  referrerId    String
+  refereeId     String   @unique
+  rewardGranted Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  referrer      User     @relation("ReferralsMade", fields: [referrerId], references: [id])
+  referee       User     @relation("ReferralReceived", fields: [refereeId], references: [id])
+
+  @@index([referrerId])
+  @@index([refereeId])
+  @@map("referrals")
 }
 
 model Profile {
