@@ -89,6 +89,10 @@ const envSchema = z.object({
   RAZORPAY_PLAN_ID: z.string().optional(),
   RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
 
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  TWILIO_WHATSAPP_FROM: z.string().optional(),
+
   SERPER_API_KEY: z.string().optional(),
   HUNTER_API_KEY: z.string().optional(),
   LEMLIST_API_KEY: z.string().optional(),
