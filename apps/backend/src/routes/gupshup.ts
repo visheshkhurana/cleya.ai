@@ -1,5 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { gupshupService } from '../services/gupshupService';
+import { metaWhatsAppService } from '../services/metaWhatsAppService';
+import { messagingService } from '../services/messagingService';
 import { whatsappBotService } from '../services/whatsappBotService';
 import { env } from '../config/env';
 
@@ -85,7 +87,25 @@ gupshupRouter.get('/webhook', (_req: Request, res: Response) => {
 
 gupshupRouter.get('/status', (_req: Request, res: Response) => {
   res.json({
-    configured: gupshupService.isConfigured(),
+    activeProvider: messagingService.getActiveProvider(),
+    gupshup: {
+      configured: gupshupService.isConfigured(),
+      apiKey: !!env.GUPSHUP_API_KEY,
+      appName: !!env.GUPSHUP_APP_NAME,
+      sourceNumber: !!env.GUPSHUP_SOURCE_NUMBER,
+      templateNamespace: !!env.GUPSHUP_TEMPLATE_NAMESPACE,
+      webhookSecret: !!env.GUPSHUP_WEBHOOK_SECRET,
+    },
+    meta: {
+      configured: metaWhatsAppService.isConfigured(),
+      token: !!env.META_WHATSAPP_TOKEN,
+      phoneId: !!env.META_WHATSAPP_PHONE_ID,
+      wabaId: !!env.META_WHATSAPP_WABA_ID,
+      appSecret: !!env.META_WHATSAPP_APP_SECRET,
+      verifyToken: !!env.META_WHATSAPP_VERIFY_TOKEN,
+    },
+    // Backwards compat
+    configured: gupshupService.isConfigured() || metaWhatsAppService.isConfigured(),
     apiKey: !!env.GUPSHUP_API_KEY,
     appName: !!env.GUPSHUP_APP_NAME,
     sourceNumber: !!env.GUPSHUP_SOURCE_NUMBER,
@@ -101,26 +121,69 @@ gupshupRouter.post('/test-send', async (req: Request, res: Response) => {
       res.status(400).json({ error: 'phone and message are required' });
       return;
     }
-    if (!gupshupService.isConfigured()) {
+    const provider = messagingService.getActiveProvider();
+    if (provider === 'none') {
       res.status(503).json({
-        error: 'Gupshup is not configured',
+        error: 'No WhatsApp provider configured',
         missingVars: {
           GUPSHUP_API_KEY: !env.GUPSHUP_API_KEY,
           GUPSHUP_APP_NAME: !env.GUPSHUP_APP_NAME,
           GUPSHUP_SOURCE_NUMBER: !env.GUPSHUP_SOURCE_NUMBER,
+          META_WHATSAPP_TOKEN: !env.META_WHATSAPP_TOKEN,
+          META_WHATSAPP_PHONE_ID: !env.META_WHATSAPP_PHONE_ID,
         },
       });
       return;
     }
-    const result = await gupshupService.sendWhatsAppDirect(phone, message);
-    if (result.success) {
-      res.json({ success: true, result });
+    const result = await messagingService.sendWhatsAppDirect(phone, message);
+    if (result && 'success' in result && result.success) {
+      res.json({ success: true, provider, result });
     } else {
-      res.status(502).json({ success: false, error: result.error, httpStatus: result.httpStatus, gupshupResponse: result.response });
+      const error = result && 'error' in result ? result.error : 'Send failed';
+      res.status(502).json({ success: false, provider, error, response: result });
     }
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error);
-    console.error('[Gupshup Test Send] Error:', errMsg);
+    console.error('[Test Send] Error:', errMsg);
     res.status(500).json({ error: errMsg });
+  }
+});
+
+// Meta Cloud API webhook verification (GET)
+gupshupRouter.get('/meta-webhook', (req: Request, res: Response) => {
+  const mode = req.query['hub.mode'] as string;
+  const token = req.query['hub.verify_token'] as string;
+  const challenge = req.query['hub.challenge'] as string;
+
+  if (mode === 'subscribe' && token === env.META_WHATSAPP_VERIFY_TOKEN) {
+    console.log('[Meta Webhook] Verification successful');
+    res.status(200).send(challenge);
+    return;
+  }
+  console.warn('[Meta Webhook] Verification failed: invalid token or mode');
+  res.sendStatus(403);
+});
+
+// Meta Cloud API webhook events (POST)
+gupshupRouter.post('/meta-webhook', async (req: Request, res: Response) => {
+  // Verify signature if app secret is configured
+  if (env.META_WHATSAPP_APP_SECRET && req.headers['x-hub-signature-256']) {
+    const signature = req.headers['x-hub-signature-256'] as string;
+    const rawBody = typeof req.body === 'string' ? Buffer.from(req.body) : Buffer.from(JSON.stringify(req.body));
+    if (!metaWhatsAppService.verifyWebhookSignature(rawBody, signature)) {
+      console.warn('[Meta Webhook] Invalid signature, rejecting');
+      res.sendStatus(403);
+      return;
+    }
+  }
+
+  // Always return 200 immediately per Meta requirements
+  res.sendStatus(200);
+
+  // Process async
+  try {
+    await metaWhatsAppService.handleWebhook(req.body);
+  } catch (err) {
+    console.error('[Meta Webhook] Processing error:', err);
   }
 });

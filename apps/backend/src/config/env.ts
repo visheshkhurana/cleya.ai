@@ -21,6 +21,12 @@ const envSchema = z.object({
   GUPSHUP_TEMPLATE_NAMESPACE: z.string().optional(),
   GUPSHUP_WEBHOOK_SECRET: z.string().optional(),
 
+  META_WHATSAPP_TOKEN: z.string().optional(),
+  META_WHATSAPP_PHONE_ID: z.string().optional(),
+  META_WHATSAPP_WABA_ID: z.string().optional(),
+  META_WHATSAPP_APP_SECRET: z.string().optional(),
+  META_WHATSAPP_VERIFY_TOKEN: z.string().optional(),
+
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(3001),
   FRONTEND_URL: z.string().default('http://localhost:3000'),

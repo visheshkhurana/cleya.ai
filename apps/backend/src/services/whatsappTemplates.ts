@@ -1,4 +1,5 @@
 import { messagingService } from './messagingService';
+import { metaWhatsAppService } from './metaWhatsAppService';
 import { gupshupService } from './gupshupService';
 import { prisma } from '@cleya/db';
 
@@ -207,6 +208,23 @@ export class WhatsAppTemplateService {
     if (!resolvedPhone) {
       console.warn(`No phone number for template ${templateId}`);
       return null;
+    }
+
+    if (metaWhatsAppService.isConfigured() && template.gupshupTemplateId) {
+      try {
+        let orderedParams: string[];
+        if (template.gupshupParamOrder) {
+          orderedParams = template.gupshupParamOrder.map(key => params[key] || '');
+        } else {
+          orderedParams = Object.values(params);
+        }
+        console.log(`WhatsAppTemplateService.sendTemplate: template=${templateId}, metaName=${template.gupshupTemplateId}, orderedParams=${JSON.stringify(orderedParams)}`);
+        const result = await metaWhatsAppService.sendTemplate(userId, resolvedPhone, template.gupshupTemplateId, orderedParams);
+        if (result.status !== 'FAILED') return result;
+        console.warn(`Meta template ${template.gupshupTemplateId} failed, falling back to Gupshup`);
+      } catch (error) {
+        console.error(`Meta template send failed, trying Gupshup fallback:`, error);
+      }
     }
 
     if (gupshupService.isConfigured() && template.gupshupTemplateId) {

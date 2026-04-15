@@ -10,6 +10,7 @@ import { automationService } from '../services/automationService';
 import { emailService } from '../services/email';
 import { whatsappTemplates } from '../services/whatsappTemplates';
 import { gupshupService } from '../services/gupshupService';
+import { metaWhatsAppService } from '../services/metaWhatsAppService';
 import { whatsappBotService } from '../services/whatsappBotService';
 import { analyticsAggregatorService } from '../services/analyticsAggregatorService';
 import { agentScheduler } from '../services/agentScheduler';
@@ -856,55 +857,117 @@ adminRouter.get('/whatsapp/gupshup-templates', async (_req: Request, res: Respon
   }
 });
 
+adminRouter.get('/whatsapp/meta-templates', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await metaWhatsAppService.listTemplates();
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
 adminRouter.get('/whatsapp/diagnostics', async (_req: Request, res: Response, next: NextFunction) => {
   try {
-    const config = {
+    const activeProvider = messagingService.getActiveProvider();
+
+    // Gupshup diagnostics
+    const gupshupConfig = {
       apiKey: !!process.env.GUPSHUP_API_KEY,
       appName: !!process.env.GUPSHUP_APP_NAME,
       sourceNumber: !!process.env.GUPSHUP_SOURCE_NUMBER,
       templateNamespace: !!process.env.GUPSHUP_TEMPLATE_NAMESPACE,
       webhookSecret: !!process.env.GUPSHUP_WEBHOOK_SECRET,
     };
+    const gupshupIsConfigured = gupshupConfig.apiKey && gupshupConfig.appName && gupshupConfig.sourceNumber;
 
-    const isConfigured = config.apiKey && config.appName && config.sourceNumber;
+    let gupshupApiReachable = false;
+    let gupshupApiError: string | null = null;
+    let gupshupTemplateCount: number | null = null;
 
-    let apiReachable = false;
-    let apiError: string | null = null;
-    let templateCount: number | null = null;
-
-    if (isConfigured) {
+    if (gupshupIsConfigured) {
       try {
         const result = await gupshupService.listTemplates();
         if (result.success) {
-          apiReachable = true;
+          gupshupApiReachable = true;
           const data = result.data;
           if (Array.isArray(data)) {
-            templateCount = data.length;
+            gupshupTemplateCount = data.length;
           } else if (data?.templates && Array.isArray(data.templates)) {
-            templateCount = data.templates.length;
+            gupshupTemplateCount = data.templates.length;
           } else if (data?.status === 'success') {
-            apiReachable = true;
+            gupshupApiReachable = true;
           }
         } else {
-          apiError = result.error || 'Unknown API error';
+          gupshupApiError = result.error || 'Unknown API error';
         }
       } catch (err: any) {
-        apiError = err.message || 'Failed to reach Gupshup API';
+        gupshupApiError = err.message || 'Failed to reach Gupshup API';
       }
     }
 
-    const overallHealth = isConfigured && apiReachable ? 'healthy' : isConfigured ? 'degraded' : 'not_configured';
+    // Meta diagnostics
+    const metaConfig = {
+      token: !!process.env.META_WHATSAPP_TOKEN,
+      phoneId: !!process.env.META_WHATSAPP_PHONE_ID,
+      wabaId: !!process.env.META_WHATSAPP_WABA_ID,
+      appSecret: !!process.env.META_WHATSAPP_APP_SECRET,
+      verifyToken: !!process.env.META_WHATSAPP_VERIFY_TOKEN,
+    };
+    const metaIsConfigured = metaWhatsAppService.isConfigured();
+
+    let metaApiReachable = false;
+    let metaApiError: string | null = null;
+    let metaTemplateCount: number | null = null;
+
+    if (metaIsConfigured && metaConfig.wabaId) {
+      try {
+        const result = await metaWhatsAppService.listTemplates();
+        if (result.success) {
+          metaApiReachable = true;
+          const data = result.data?.data;
+          if (Array.isArray(data)) {
+            metaTemplateCount = data.length;
+          }
+        } else {
+          metaApiError = result.error || 'Unknown API error';
+        }
+      } catch (err: any) {
+        metaApiError = err.message || 'Failed to reach Meta API';
+      }
+    }
+
+    const anyConfigured = gupshupIsConfigured || metaIsConfigured;
+    const anyReachable = gupshupApiReachable || metaApiReachable;
+    const overallHealth = anyConfigured && anyReachable ? 'healthy' : anyConfigured ? 'degraded' : 'not_configured';
 
     res.json({
       success: true,
       data: {
         health: overallHealth,
-        config,
-        isConfigured,
-        apiReachable,
-        apiError,
-        templateCount,
-        sourceNumber: isConfigured ? process.env.GUPSHUP_SOURCE_NUMBER!.replace(/.(?=.{4})/g, '*') : null,
+        activeProvider,
+        gupshup: {
+          config: gupshupConfig,
+          isConfigured: gupshupIsConfigured,
+          apiReachable: gupshupApiReachable,
+          apiError: gupshupApiError,
+          templateCount: gupshupTemplateCount,
+          sourceNumber: gupshupIsConfigured ? process.env.GUPSHUP_SOURCE_NUMBER!.replace(/.(?=.{4})/g, '*') : null,
+          appName: process.env.GUPSHUP_APP_NAME || null,
+        },
+        meta: {
+          config: metaConfig,
+          isConfigured: metaIsConfigured,
+          apiReachable: metaApiReachable,
+          apiError: metaApiError,
+          templateCount: metaTemplateCount,
+        },
+        // Backwards compat fields
+        config: gupshupConfig,
+        isConfigured: anyConfigured,
+        apiReachable: anyReachable,
+        apiError: gupshupApiError || metaApiError,
+        templateCount: gupshupTemplateCount ?? metaTemplateCount,
+        sourceNumber: gupshupIsConfigured ? process.env.GUPSHUP_SOURCE_NUMBER!.replace(/.(?=.{4})/g, '*') : null,
         appName: process.env.GUPSHUP_APP_NAME || null,
       },
     });
@@ -926,32 +989,46 @@ adminRouter.post('/whatsapp/test', async (req: Request, res: Response, next: Nex
       return res.status(400).json({ success: false, error: { message: 'Invalid phone number format' } });
     }
 
-    if (!gupshupService.isConfigured()) {
+    const activeProvider = messagingService.getActiveProvider();
+    if (activeProvider === 'none') {
       return res.status(400).json({
         success: false,
-        error: { message: 'Gupshup is not configured. Please set GUPSHUP_API_KEY, GUPSHUP_APP_NAME, and GUPSHUP_SOURCE_NUMBER.' },
+        error: { message: 'No WhatsApp provider configured. Please set Meta (META_WHATSAPP_TOKEN, META_WHATSAPP_PHONE_ID) or Gupshup (GUPSHUP_API_KEY, GUPSHUP_APP_NAME, GUPSHUP_SOURCE_NUMBER) credentials.' },
       });
     }
 
+    // Connectivity check using active provider
     try {
-      const connectivityCheck = await gupshupService.listTemplates();
-      if (!connectivityCheck.success) {
-        return res.status(502).json({
-          success: false,
-          error: { message: `Gupshup API connectivity check failed: ${connectivityCheck.error || 'Unknown error'}` },
-        });
+      if (activeProvider === 'meta') {
+        if (metaWhatsAppService.isConfigured()) {
+          const check = await metaWhatsAppService.listTemplates();
+          if (!check.success) {
+            return res.status(502).json({
+              success: false,
+              error: { message: `Meta API connectivity check failed: ${check.error || 'Unknown error'}` },
+            });
+          }
+        }
+      } else {
+        const connectivityCheck = await gupshupService.listTemplates();
+        if (!connectivityCheck.success) {
+          return res.status(502).json({
+            success: false,
+            error: { message: `Gupshup API connectivity check failed: ${connectivityCheck.error || 'Unknown error'}` },
+          });
+        }
       }
     } catch (connErr: any) {
       return res.status(502).json({
         success: false,
-        error: { message: `Gupshup API unreachable: ${connErr.message || 'Connection failed'}` },
+        error: { message: `WhatsApp API unreachable: ${connErr.message || 'Connection failed'}` },
       });
     }
 
-    const testMessage = `Hello from Cleya! This is a test message sent from the Control Tower at ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST. If you received this, your WhatsApp connection is working.`;
+    const testMessage = `Hello from Cleya! This is a test message sent from the Control Tower at ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST via ${activeProvider.toUpperCase()}. If you received this, your WhatsApp connection is working.`;
 
     const adminUserId = req.user?.userId || 'system';
-    const result = await gupshupService.sendWhatsApp(adminUserId, phoneNumber, testMessage);
+    const result = await messagingService.sendWhatsApp(adminUserId, phoneNumber, testMessage);
 
     const sendStatus = result?.status || 'UNKNOWN';
     const sendFailed = sendStatus === 'FAILED';
@@ -959,6 +1036,7 @@ adminRouter.post('/whatsapp/test', async (req: Request, res: Response, next: Nex
     res.status(sendFailed ? 502 : 200).json({
       success: !sendFailed,
       data: {
+        provider: activeProvider,
         messageId: result?.messageSid || null,
         status: sendStatus,
         errorMessage: result?.errorMessage || null,

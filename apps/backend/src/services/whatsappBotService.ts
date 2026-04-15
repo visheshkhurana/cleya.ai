@@ -1,5 +1,5 @@
 import { prisma, Prisma } from '@cleya/db';
-import { gupshupService } from './gupshupService';
+import { messagingService } from './messagingService';
 import { conversationService } from './conversationService';
 import { matchingService } from './matchingService';
 import { chatWithCleo } from './ai';
@@ -558,7 +558,7 @@ export class WhatsAppBotService {
   }
 
   private async sendReply(phone: string, message: string): Promise<void> {
-    if (!gupshupService.isConfigured()) {
+    if (messagingService.getActiveProvider() === 'none') {
       console.log(`[WhatsApp Bot] Would send to ${phone}: ${message.substring(0, 100)}...`);
       return;
     }
@@ -575,14 +575,15 @@ export class WhatsAppBotService {
     });
 
     if (user) {
-      await gupshupService.sendWhatsApp(user.id, phone, message);
+      await messagingService.sendWhatsApp(user.id, phone, message);
     } else {
-      await gupshupService.sendWhatsAppDirect(phone, message);
+      await messagingService.sendWhatsAppDirect(phone, message);
     }
   }
 
   private async logInboundMessage(userId: string, phone: string, content: string): Promise<void> {
     try {
+      const provider = messagingService.getActiveProvider().toUpperCase() || 'WHATSAPP';
       await prisma.messageRecord.create({
         data: {
           userId,
@@ -590,7 +591,7 @@ export class WhatsAppBotService {
           channel: 'WHATSAPP',
           content: `[INBOUND] ${content}`,
           status: 'DELIVERED',
-          provider: 'GUPSHUP',
+          provider,
         },
       });
     } catch (e: unknown) {
