@@ -1,8 +1,10 @@
 import { prisma } from '@cleya/db';
+import { twilioWhatsAppService } from './twilioWhatsAppService';
 import { metaWhatsAppService } from './metaWhatsAppService';
 import { gupshupService } from './gupshupService';
 
 function getProvider() {
+  if (twilioWhatsAppService.isConfigured()) return twilioWhatsAppService;
   if (metaWhatsAppService.isConfigured()) return metaWhatsAppService;
   if (gupshupService.isConfigured()) return gupshupService;
   return null;
@@ -51,6 +53,7 @@ export class MessagingService {
   }
 
   getActiveProvider(): string {
+    if (twilioWhatsAppService.isConfigured()) return 'twilio';
     if (metaWhatsAppService.isConfigured()) return 'meta';
     if (gupshupService.isConfigured()) return 'gupshup';
     return 'none';

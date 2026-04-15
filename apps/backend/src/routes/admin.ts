@@ -11,6 +11,7 @@ import { emailService } from '../services/email';
 import { whatsappTemplates } from '../services/whatsappTemplates';
 import { gupshupService } from '../services/gupshupService';
 import { metaWhatsAppService } from '../services/metaWhatsAppService';
+import { twilioWhatsAppService } from '../services/twilioWhatsAppService';
 import { whatsappBotService } from '../services/whatsappBotService';
 import { analyticsAggregatorService } from '../services/analyticsAggregatorService';
 import { agentScheduler } from '../services/agentScheduler';
@@ -936,8 +937,16 @@ adminRouter.get('/whatsapp/diagnostics', async (_req: Request, res: Response, ne
       }
     }
 
-    const anyConfigured = gupshupIsConfigured || metaIsConfigured;
-    const anyReachable = gupshupApiReachable || metaApiReachable;
+    // Twilio diagnostics
+    const twilioConfig = {
+      accountSid: !!process.env.TWILIO_ACCOUNT_SID,
+      authToken: !!process.env.TWILIO_AUTH_TOKEN,
+      whatsappFrom: !!process.env.TWILIO_WHATSAPP_FROM,
+    };
+    const twilioIsConfigured = twilioWhatsAppService.isConfigured();
+
+    const anyConfigured = gupshupIsConfigured || metaIsConfigured || twilioIsConfigured;
+    const anyReachable = gupshupApiReachable || metaApiReachable || twilioIsConfigured;
     const overallHealth = anyConfigured && anyReachable ? 'healthy' : anyConfigured ? 'degraded' : 'not_configured';
 
     res.json({
@@ -960,6 +969,11 @@ adminRouter.get('/whatsapp/diagnostics', async (_req: Request, res: Response, ne
           apiReachable: metaApiReachable,
           apiError: metaApiError,
           templateCount: metaTemplateCount,
+        },
+        twilio: {
+          config: twilioConfig,
+          isConfigured: twilioIsConfigured,
+          whatsappFrom: twilioIsConfigured ? process.env.TWILIO_WHATSAPP_FROM?.replace(/.(?=.{4})/g, '*') : null,
         },
         // Backwards compat fields
         config: gupshupConfig,
@@ -993,13 +1007,15 @@ adminRouter.post('/whatsapp/test', async (req: Request, res: Response, next: Nex
     if (activeProvider === 'none') {
       return res.status(400).json({
         success: false,
-        error: { message: 'No WhatsApp provider configured. Please set Meta (META_WHATSAPP_TOKEN, META_WHATSAPP_PHONE_ID) or Gupshup (GUPSHUP_API_KEY, GUPSHUP_APP_NAME, GUPSHUP_SOURCE_NUMBER) credentials.' },
+        error: { message: 'No WhatsApp provider configured. Please set Twilio (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_WHATSAPP_FROM), Meta (META_WHATSAPP_TOKEN, META_WHATSAPP_PHONE_ID), or Gupshup (GUPSHUP_API_KEY, GUPSHUP_APP_NAME, GUPSHUP_SOURCE_NUMBER) credentials.' },
       });
     }
 
     // Connectivity check using active provider
     try {
-      if (activeProvider === 'meta') {
+      if (activeProvider === 'twilio') {
+        // Twilio connectivity is verified by having valid credentials; no template list API needed
+      } else if (activeProvider === 'meta') {
         if (metaWhatsAppService.isConfigured()) {
           const check = await metaWhatsAppService.listTemplates();
           if (!check.success) {

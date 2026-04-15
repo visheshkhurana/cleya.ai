@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { gupshupService } from '../services/gupshupService';
 import { metaWhatsAppService } from '../services/metaWhatsAppService';
+import { twilioWhatsAppService } from '../services/twilioWhatsAppService';
 import { messagingService } from '../services/messagingService';
 import { whatsappBotService } from '../services/whatsappBotService';
 import { env } from '../config/env';
@@ -104,8 +105,14 @@ gupshupRouter.get('/status', (_req: Request, res: Response) => {
       appSecret: !!env.META_WHATSAPP_APP_SECRET,
       verifyToken: !!env.META_WHATSAPP_VERIFY_TOKEN,
     },
+    twilio: {
+      configured: twilioWhatsAppService.isConfigured(),
+      accountSid: !!env.TWILIO_ACCOUNT_SID,
+      authToken: !!env.TWILIO_AUTH_TOKEN,
+      whatsappFrom: !!env.TWILIO_WHATSAPP_FROM,
+    },
     // Backwards compat
-    configured: gupshupService.isConfigured() || metaWhatsAppService.isConfigured(),
+    configured: gupshupService.isConfigured() || metaWhatsAppService.isConfigured() || twilioWhatsAppService.isConfigured(),
     apiKey: !!env.GUPSHUP_API_KEY,
     appName: !!env.GUPSHUP_APP_NAME,
     sourceNumber: !!env.GUPSHUP_SOURCE_NUMBER,
@@ -185,5 +192,28 @@ gupshupRouter.post('/meta-webhook', async (req: Request, res: Response) => {
     await metaWhatsAppService.handleWebhook(req.body);
   } catch (err) {
     console.error('[Meta Webhook] Processing error:', err);
+  }
+});
+
+// POST /api/gupshup/twilio-webhook — Twilio inbound WhatsApp messages
+gupshupRouter.post('/twilio-webhook', async (req: Request, res: Response) => {
+  res.sendStatus(200); // Respond immediately
+  try {
+    const inbound = await twilioWhatsAppService.handleInbound(req.body);
+    if (inbound.phone && inbound.message) {
+      await whatsappBotService.handleInboundMessage(inbound.phone, inbound.message);
+    }
+  } catch (err) {
+    console.error('[TwilioWA Webhook] Error:', err);
+  }
+});
+
+// POST /api/gupshup/twilio-status — Twilio delivery status callbacks
+gupshupRouter.post('/twilio-status', async (req: Request, res: Response) => {
+  res.sendStatus(200);
+  try {
+    await twilioWhatsAppService.handleStatusCallback(req.body);
+  } catch (err) {
+    console.error('[TwilioWA Status] Error:', err);
   }
 });
