@@ -1053,9 +1053,9 @@ adminRouter.post('/whatsapp/test', async (req: Request, res: Response, next: Nex
       success: !sendFailed,
       data: {
         provider: activeProvider,
-        messageId: result?.messageSid || null,
+        messageId: (result as any)?.messageSid || (result as any)?.messageId || null,
         status: sendStatus,
-        errorMessage: result?.errorMessage || null,
+        errorMessage: (result as any)?.errorMessage || null,
         phone: phoneNumber,
         sentAt: new Date().toISOString(),
       },

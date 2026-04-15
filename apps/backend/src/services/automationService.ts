@@ -200,7 +200,7 @@ export class AutomationService {
 
           try {
             const result = await messagingService.sendWhatsApp(participant.userId, phone, message);
-            if (result.status === 'FAILED') {
+            if (result && result.status === 'FAILED') {
               await messagingService.sendSMS(participant.userId, phone, message);
             }
             sent++;

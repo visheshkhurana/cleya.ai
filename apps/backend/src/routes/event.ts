@@ -122,7 +122,7 @@ eventRouter.post('/follow-up', authenticate, requireRole('ADMIN'), async (req: R
 
       try {
         const result = await messagingService.sendWhatsApp(participant.userId, phone, message);
-        if (result.status === 'FAILED') {
+        if (result && result.status === 'FAILED') {
           await messagingService.sendSMS(participant.userId, phone, message);
         }
         sent.push(participant.userId);
