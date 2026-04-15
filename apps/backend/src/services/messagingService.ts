@@ -1,26 +1,59 @@
 import { prisma } from '@cleya/db';
+import { metaWhatsAppService } from './metaWhatsAppService';
 import { gupshupService } from './gupshupService';
+
+function getProvider() {
+  if (metaWhatsAppService.isConfigured()) return metaWhatsAppService;
+  if (gupshupService.isConfigured()) return gupshupService;
+  return null;
+}
 
 export class MessagingService {
   async sendWhatsApp(userId: string, phoneNumber: string, message: string) {
-    return gupshupService.sendWhatsApp(userId, phoneNumber, message);
+    const provider = getProvider();
+    if (!provider) {
+      console.warn('No WhatsApp provider configured, message skipped');
+      return null;
+    }
+    return provider.sendWhatsApp(userId, phoneNumber, message);
+  }
+
+  async sendWhatsAppDirect(phoneNumber: string, message: string) {
+    const provider = getProvider();
+    if (!provider) {
+      return { success: false, error: 'No WhatsApp provider configured' };
+    }
+    return provider.sendWhatsAppDirect(phoneNumber, message);
   }
 
   async sendWhatsAppTemplate(userId: string, phoneNumber: string, templateId: string, params: string[] = []) {
-    return gupshupService.sendTemplate(userId, phoneNumber, templateId, params);
+    const provider = getProvider();
+    if (!provider) {
+      console.warn('No WhatsApp provider configured, template skipped');
+      return null;
+    }
+    return provider.sendTemplate(userId, phoneNumber, templateId, params);
   }
 
   async sendWhatsAppImage(userId: string, phoneNumber: string, imageUrl: string, caption?: string) {
-    return gupshupService.sendImage(userId, phoneNumber, imageUrl, caption);
+    const provider = getProvider();
+    if (!provider) {
+      console.warn('No WhatsApp provider configured, image skipped');
+      return null;
+    }
+    return provider.sendImage(userId, phoneNumber, imageUrl, caption);
   }
 
   async sendSMS(userId: string, phoneNumber: string, message: string) {
-    console.log(`SMS routed to WhatsApp via Gupshup for ${phoneNumber}`);
-    return gupshupService.sendWhatsApp(userId, phoneNumber, message);
+    const providerName = this.getActiveProvider();
+    console.log(`SMS routed to WhatsApp via ${providerName} for ${phoneNumber}`);
+    return this.sendWhatsApp(userId, phoneNumber, message);
   }
 
   getActiveProvider(): string {
-    return gupshupService.isConfigured() ? 'gupshup' : 'none';
+    if (metaWhatsAppService.isConfigured()) return 'meta';
+    if (gupshupService.isConfigured()) return 'gupshup';
+    return 'none';
   }
 
   getWelcomeMessage(userName?: string): string {
