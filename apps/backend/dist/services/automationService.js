@@ -185,7 +185,7 @@ class AutomationService {
                         : `Hi ${userName}! Thanks for attending "${event.name}"! We're finding connections for you — check Cleya.ai soon!`;
                     try {
                         const result = await messagingService_1.messagingService.sendWhatsApp(participant.userId, phone, message);
-                        if (result.status === 'FAILED') {
+                        if (result && result.status === 'FAILED') {
                             await messagingService_1.messagingService.sendSMS(participant.userId, phone, message);
                         }
                         sent++;

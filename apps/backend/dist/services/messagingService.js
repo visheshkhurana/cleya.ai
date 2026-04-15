@@ -2,23 +2,63 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.messagingService = exports.MessagingService = void 0;
 const db_1 = require("@cleya/db");
+const twilioWhatsAppService_1 = require("./twilioWhatsAppService");
+const metaWhatsAppService_1 = require("./metaWhatsAppService");
 const gupshupService_1 = require("./gupshupService");
+function getProvider() {
+    if (twilioWhatsAppService_1.twilioWhatsAppService.isConfigured())
+        return twilioWhatsAppService_1.twilioWhatsAppService;
+    if (metaWhatsAppService_1.metaWhatsAppService.isConfigured())
+        return metaWhatsAppService_1.metaWhatsAppService;
+    if (gupshupService_1.gupshupService.isConfigured())
+        return gupshupService_1.gupshupService;
+    return null;
+}
 class MessagingService {
     async sendWhatsApp(userId, phoneNumber, message) {
-        return gupshupService_1.gupshupService.sendWhatsApp(userId, phoneNumber, message);
+        const provider = getProvider();
+        if (!provider) {
+            console.warn('No WhatsApp provider configured, message skipped');
+            return null;
+        }
+        return provider.sendWhatsApp(userId, phoneNumber, message);
+    }
+    async sendWhatsAppDirect(phoneNumber, message) {
+        const provider = getProvider();
+        if (!provider) {
+            return { success: false, error: 'No WhatsApp provider configured' };
+        }
+        return provider.sendWhatsAppDirect(phoneNumber, message);
     }
     async sendWhatsAppTemplate(userId, phoneNumber, templateId, params = []) {
-        return gupshupService_1.gupshupService.sendTemplate(userId, phoneNumber, templateId, params);
+        const provider = getProvider();
+        if (!provider) {
+            console.warn('No WhatsApp provider configured, template skipped');
+            return null;
+        }
+        return provider.sendTemplate(userId, phoneNumber, templateId, params);
     }
     async sendWhatsAppImage(userId, phoneNumber, imageUrl, caption) {
-        return gupshupService_1.gupshupService.sendImage(userId, phoneNumber, imageUrl, caption);
+        const provider = getProvider();
+        if (!provider) {
+            console.warn('No WhatsApp provider configured, image skipped');
+            return null;
+        }
+        return provider.sendImage(userId, phoneNumber, imageUrl, caption);
     }
     async sendSMS(userId, phoneNumber, message) {
-        console.log(`SMS routed to WhatsApp via Gupshup for ${phoneNumber}`);
-        return gupshupService_1.gupshupService.sendWhatsApp(userId, phoneNumber, message);
+        const providerName = this.getActiveProvider();
+        console.log(`SMS routed to WhatsApp via ${providerName} for ${phoneNumber}`);
+        return this.sendWhatsApp(userId, phoneNumber, message);
     }
     getActiveProvider() {
-        return gupshupService_1.gupshupService.isConfigured() ? 'gupshup' : 'none';
+        if (twilioWhatsAppService_1.twilioWhatsAppService.isConfigured())
+            return 'twilio';
+        if (metaWhatsAppService_1.metaWhatsAppService.isConfigured())
+            return 'meta';
+        if (gupshupService_1.gupshupService.isConfigured())
+            return 'gupshup';
+        return 'none';
     }
     getWelcomeMessage(userName) {
         const name = userName ? ` ${userName}` : '';

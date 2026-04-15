@@ -3,6 +3,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.gupshupRouter = void 0;
 const express_1 = require("express");
 const gupshupService_1 = require("../services/gupshupService");
+const metaWhatsAppService_1 = require("../services/metaWhatsAppService");
+const twilioWhatsAppService_1 = require("../services/twilioWhatsAppService");
+const messagingService_1 = require("../services/messagingService");
 const whatsappBotService_1 = require("../services/whatsappBotService");
 const env_1 = require("../config/env");
 exports.gupshupRouter = (0, express_1.Router)();
@@ -80,7 +83,31 @@ exports.gupshupRouter.get('/webhook', (_req, res) => {
 });
 exports.gupshupRouter.get('/status', (_req, res) => {
     res.json({
-        configured: gupshupService_1.gupshupService.isConfigured(),
+        activeProvider: messagingService_1.messagingService.getActiveProvider(),
+        gupshup: {
+            configured: gupshupService_1.gupshupService.isConfigured(),
+            apiKey: !!env_1.env.GUPSHUP_API_KEY,
+            appName: !!env_1.env.GUPSHUP_APP_NAME,
+            sourceNumber: !!env_1.env.GUPSHUP_SOURCE_NUMBER,
+            templateNamespace: !!env_1.env.GUPSHUP_TEMPLATE_NAMESPACE,
+            webhookSecret: !!env_1.env.GUPSHUP_WEBHOOK_SECRET,
+        },
+        meta: {
+            configured: metaWhatsAppService_1.metaWhatsAppService.isConfigured(),
+            token: !!env_1.env.META_WHATSAPP_TOKEN,
+            phoneId: !!env_1.env.META_WHATSAPP_PHONE_ID,
+            wabaId: !!env_1.env.META_WHATSAPP_WABA_ID,
+            appSecret: !!env_1.env.META_WHATSAPP_APP_SECRET,
+            verifyToken: !!env_1.env.META_WHATSAPP_VERIFY_TOKEN,
+        },
+        twilio: {
+            configured: twilioWhatsAppService_1.twilioWhatsAppService.isConfigured(),
+            accountSid: !!env_1.env.TWILIO_ACCOUNT_SID,
+            authToken: !!env_1.env.TWILIO_AUTH_TOKEN,
+            whatsappFrom: !!env_1.env.TWILIO_WHATSAPP_FROM,
+        },
+        // Backwards compat
+        configured: gupshupService_1.gupshupService.isConfigured() || metaWhatsAppService_1.metaWhatsAppService.isConfigured() || twilioWhatsAppService_1.twilioWhatsAppService.isConfigured(),
         apiKey: !!env_1.env.GUPSHUP_API_KEY,
         appName: !!env_1.env.GUPSHUP_APP_NAME,
         sourceNumber: !!env_1.env.GUPSHUP_SOURCE_NUMBER,
@@ -95,29 +122,91 @@ exports.gupshupRouter.post('/test-send', async (req, res) => {
             res.status(400).json({ error: 'phone and message are required' });
             return;
         }
-        if (!gupshupService_1.gupshupService.isConfigured()) {
+        const provider = messagingService_1.messagingService.getActiveProvider();
+        if (provider === 'none') {
             res.status(503).json({
-                error: 'Gupshup is not configured',
+                error: 'No WhatsApp provider configured',
                 missingVars: {
                     GUPSHUP_API_KEY: !env_1.env.GUPSHUP_API_KEY,
                     GUPSHUP_APP_NAME: !env_1.env.GUPSHUP_APP_NAME,
                     GUPSHUP_SOURCE_NUMBER: !env_1.env.GUPSHUP_SOURCE_NUMBER,
+                    META_WHATSAPP_TOKEN: !env_1.env.META_WHATSAPP_TOKEN,
+                    META_WHATSAPP_PHONE_ID: !env_1.env.META_WHATSAPP_PHONE_ID,
                 },
             });
             return;
         }
-        const result = await gupshupService_1.gupshupService.sendWhatsAppDirect(phone, message);
-        if (result.success) {
-            res.json({ success: true, result });
+        const result = await messagingService_1.messagingService.sendWhatsAppDirect(phone, message);
+        if (result && 'success' in result && result.success) {
+            res.json({ success: true, provider, result });
         }
         else {
-            res.status(502).json({ success: false, error: result.error, httpStatus: result.httpStatus, gupshupResponse: result.response });
+            const error = result && 'error' in result ? result.error : 'Send failed';
+            res.status(502).json({ success: false, provider, error, response: result });
         }
     }
     catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
-        console.error('[Gupshup Test Send] Error:', errMsg);
+        console.error('[Test Send] Error:', errMsg);
         res.status(500).json({ error: errMsg });
+    }
+});
+// Meta Cloud API webhook verification (GET)
+exports.gupshupRouter.get('/meta-webhook', (req, res) => {
+    const mode = req.query['hub.mode'];
+    const token = req.query['hub.verify_token'];
+    const challenge = req.query['hub.challenge'];
+    if (mode === 'subscribe' && token === env_1.env.META_WHATSAPP_VERIFY_TOKEN) {
+        console.log('[Meta Webhook] Verification successful');
+        res.status(200).send(challenge);
+        return;
+    }
+    console.warn('[Meta Webhook] Verification failed: invalid token or mode');
+    res.sendStatus(403);
+});
+// Meta Cloud API webhook events (POST)
+exports.gupshupRouter.post('/meta-webhook', async (req, res) => {
+    // Verify signature if app secret is configured
+    if (env_1.env.META_WHATSAPP_APP_SECRET && req.headers['x-hub-signature-256']) {
+        const signature = req.headers['x-hub-signature-256'];
+        const rawBody = typeof req.body === 'string' ? Buffer.from(req.body) : Buffer.from(JSON.stringify(req.body));
+        if (!metaWhatsAppService_1.metaWhatsAppService.verifyWebhookSignature(rawBody, signature)) {
+            console.warn('[Meta Webhook] Invalid signature, rejecting');
+            res.sendStatus(403);
+            return;
+        }
+    }
+    // Always return 200 immediately per Meta requirements
+    res.sendStatus(200);
+    // Process async
+    try {
+        await metaWhatsAppService_1.metaWhatsAppService.handleWebhook(req.body);
+    }
+    catch (err) {
+        console.error('[Meta Webhook] Processing error:', err);
+    }
+});
+// POST /api/gupshup/twilio-webhook — Twilio inbound WhatsApp messages
+exports.gupshupRouter.post('/twilio-webhook', async (req, res) => {
+    res.sendStatus(200); // Respond immediately
+    try {
+        const inbound = await twilioWhatsAppService_1.twilioWhatsAppService.handleInbound(req.body);
+        if (inbound.phone && inbound.message) {
+            await whatsappBotService_1.whatsappBotService.handleInboundMessage(inbound.phone, inbound.message);
+        }
+    }
+    catch (err) {
+        console.error('[TwilioWA Webhook] Error:', err);
+    }
+});
+// POST /api/gupshup/twilio-status — Twilio delivery status callbacks
+exports.gupshupRouter.post('/twilio-status', async (req, res) => {
+    res.sendStatus(200);
+    try {
+        await twilioWhatsAppService_1.twilioWhatsAppService.handleStatusCallback(req.body);
+    }
+    catch (err) {
+        console.error('[TwilioWA Status] Error:', err);
     }
 });
 //# sourceMappingURL=gupshup.js.map

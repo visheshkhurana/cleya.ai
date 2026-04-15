@@ -10,7 +10,7 @@ export declare class AutomationService {
     triggerCallForUser(userId: string, phoneNumber: string): Promise<null>;
     triggerMessageForUser(userId: string, phoneNumber: string, channel: 'SMS' | 'WHATSAPP', message: string): Promise<{
         status: string;
-        messageSid: string | undefined;
+        messageSid: any;
         userId: string;
         id: string;
         channel: import(".prisma/client").$Enums.MessageChannel;
@@ -32,7 +32,11 @@ export declare class AutomationService {
         content: string;
         messageSid: string | null;
         provider: string | null;
-    }>;
+    } | {
+        success: boolean;
+        messageId: string;
+        status: import("twilio/lib/rest/api/v2010/account/message").MessageStatus;
+    } | null>;
 }
 export declare const automationService: AutomationService;
 //# sourceMappingURL=automationService.d.ts.map

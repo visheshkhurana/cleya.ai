@@ -49,6 +49,8 @@ const automationService_1 = require("../services/automationService");
 const email_1 = require("../services/email");
 const whatsappTemplates_1 = require("../services/whatsappTemplates");
 const gupshupService_1 = require("../services/gupshupService");
+const metaWhatsAppService_1 = require("../services/metaWhatsAppService");
+const twilioWhatsAppService_1 = require("../services/twilioWhatsAppService");
 const whatsappBotService_1 = require("../services/whatsappBotService");
 const analyticsAggregatorService_1 = require("../services/analyticsAggregatorService");
 const agentScheduler_1 = require("../services/agentScheduler");
@@ -825,54 +827,127 @@ exports.adminRouter.get('/whatsapp/gupshup-templates', async (_req, res, next) =
         next(error);
     }
 });
+exports.adminRouter.get('/whatsapp/meta-templates', async (_req, res, next) => {
+    try {
+        const result = await metaWhatsAppService_1.metaWhatsAppService.listTemplates();
+        res.json({ success: true, data: result });
+    }
+    catch (error) {
+        next(error);
+    }
+});
 exports.adminRouter.get('/whatsapp/diagnostics', async (_req, res, next) => {
     try {
-        const config = {
+        const activeProvider = messagingService_1.messagingService.getActiveProvider();
+        // Gupshup diagnostics
+        const gupshupConfig = {
             apiKey: !!process.env.GUPSHUP_API_KEY,
             appName: !!process.env.GUPSHUP_APP_NAME,
             sourceNumber: !!process.env.GUPSHUP_SOURCE_NUMBER,
             templateNamespace: !!process.env.GUPSHUP_TEMPLATE_NAMESPACE,
             webhookSecret: !!process.env.GUPSHUP_WEBHOOK_SECRET,
         };
-        const isConfigured = config.apiKey && config.appName && config.sourceNumber;
-        let apiReachable = false;
-        let apiError = null;
-        let templateCount = null;
-        if (isConfigured) {
+        const gupshupIsConfigured = gupshupConfig.apiKey && gupshupConfig.appName && gupshupConfig.sourceNumber;
+        let gupshupApiReachable = false;
+        let gupshupApiError = null;
+        let gupshupTemplateCount = null;
+        if (gupshupIsConfigured) {
             try {
                 const result = await gupshupService_1.gupshupService.listTemplates();
                 if (result.success) {
-                    apiReachable = true;
+                    gupshupApiReachable = true;
                     const data = result.data;
                     if (Array.isArray(data)) {
-                        templateCount = data.length;
+                        gupshupTemplateCount = data.length;
                     }
                     else if (data?.templates && Array.isArray(data.templates)) {
-                        templateCount = data.templates.length;
+                        gupshupTemplateCount = data.templates.length;
                     }
                     else if (data?.status === 'success') {
-                        apiReachable = true;
+                        gupshupApiReachable = true;
                     }
                 }
                 else {
-                    apiError = result.error || 'Unknown API error';
+                    gupshupApiError = result.error || 'Unknown API error';
                 }
             }
             catch (err) {
-                apiError = err.message || 'Failed to reach Gupshup API';
+                gupshupApiError = err.message || 'Failed to reach Gupshup API';
             }
         }
-        const overallHealth = isConfigured && apiReachable ? 'healthy' : isConfigured ? 'degraded' : 'not_configured';
+        // Meta diagnostics
+        const metaConfig = {
+            token: !!process.env.META_WHATSAPP_TOKEN,
+            phoneId: !!process.env.META_WHATSAPP_PHONE_ID,
+            wabaId: !!process.env.META_WHATSAPP_WABA_ID,
+            appSecret: !!process.env.META_WHATSAPP_APP_SECRET,
+            verifyToken: !!process.env.META_WHATSAPP_VERIFY_TOKEN,
+        };
+        const metaIsConfigured = metaWhatsAppService_1.metaWhatsAppService.isConfigured();
+        let metaApiReachable = false;
+        let metaApiError = null;
+        let metaTemplateCount = null;
+        if (metaIsConfigured && metaConfig.wabaId) {
+            try {
+                const result = await metaWhatsAppService_1.metaWhatsAppService.listTemplates();
+                if (result.success) {
+                    metaApiReachable = true;
+                    const data = result.data?.data;
+                    if (Array.isArray(data)) {
+                        metaTemplateCount = data.length;
+                    }
+                }
+                else {
+                    metaApiError = result.error || 'Unknown API error';
+                }
+            }
+            catch (err) {
+                metaApiError = err.message || 'Failed to reach Meta API';
+            }
+        }
+        // Twilio diagnostics
+        const twilioConfig = {
+            accountSid: !!process.env.TWILIO_ACCOUNT_SID,
+            authToken: !!process.env.TWILIO_AUTH_TOKEN,
+            whatsappFrom: !!process.env.TWILIO_WHATSAPP_FROM,
+        };
+        const twilioIsConfigured = twilioWhatsAppService_1.twilioWhatsAppService.isConfigured();
+        const anyConfigured = gupshupIsConfigured || metaIsConfigured || twilioIsConfigured;
+        const anyReachable = gupshupApiReachable || metaApiReachable || twilioIsConfigured;
+        const overallHealth = anyConfigured && anyReachable ? 'healthy' : anyConfigured ? 'degraded' : 'not_configured';
         res.json({
             success: true,
             data: {
                 health: overallHealth,
-                config,
-                isConfigured,
-                apiReachable,
-                apiError,
-                templateCount,
-                sourceNumber: isConfigured ? process.env.GUPSHUP_SOURCE_NUMBER.replace(/.(?=.{4})/g, '*') : null,
+                activeProvider,
+                gupshup: {
+                    config: gupshupConfig,
+                    isConfigured: gupshupIsConfigured,
+                    apiReachable: gupshupApiReachable,
+                    apiError: gupshupApiError,
+                    templateCount: gupshupTemplateCount,
+                    sourceNumber: gupshupIsConfigured ? process.env.GUPSHUP_SOURCE_NUMBER.replace(/.(?=.{4})/g, '*') : null,
+                    appName: process.env.GUPSHUP_APP_NAME || null,
+                },
+                meta: {
+                    config: metaConfig,
+                    isConfigured: metaIsConfigured,
+                    apiReachable: metaApiReachable,
+                    apiError: metaApiError,
+                    templateCount: metaTemplateCount,
+                },
+                twilio: {
+                    config: twilioConfig,
+                    isConfigured: twilioIsConfigured,
+                    whatsappFrom: twilioIsConfigured ? process.env.TWILIO_WHATSAPP_FROM?.replace(/.(?=.{4})/g, '*') : null,
+                },
+                // Backwards compat fields
+                config: gupshupConfig,
+                isConfigured: anyConfigured,
+                apiReachable: anyReachable,
+                apiError: gupshupApiError || metaApiError,
+                templateCount: gupshupTemplateCount ?? metaTemplateCount,
+                sourceNumber: gupshupIsConfigured ? process.env.GUPSHUP_SOURCE_NUMBER.replace(/.(?=.{4})/g, '*') : null,
                 appName: process.env.GUPSHUP_APP_NAME || null,
             },
         });
@@ -891,36 +966,55 @@ exports.adminRouter.post('/whatsapp/test', async (req, res, next) => {
         if (!phoneRegex.test(phoneNumber)) {
             return res.status(400).json({ success: false, error: { message: 'Invalid phone number format' } });
         }
-        if (!gupshupService_1.gupshupService.isConfigured()) {
+        const activeProvider = messagingService_1.messagingService.getActiveProvider();
+        if (activeProvider === 'none') {
             return res.status(400).json({
                 success: false,
-                error: { message: 'Gupshup is not configured. Please set GUPSHUP_API_KEY, GUPSHUP_APP_NAME, and GUPSHUP_SOURCE_NUMBER.' },
+                error: { message: 'No WhatsApp provider configured. Please set Twilio (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_WHATSAPP_FROM), Meta (META_WHATSAPP_TOKEN, META_WHATSAPP_PHONE_ID), or Gupshup (GUPSHUP_API_KEY, GUPSHUP_APP_NAME, GUPSHUP_SOURCE_NUMBER) credentials.' },
             });
         }
+        // Connectivity check using active provider
         try {
-            const connectivityCheck = await gupshupService_1.gupshupService.listTemplates();
-            if (!connectivityCheck.success) {
-                return res.status(502).json({
-                    success: false,
-                    error: { message: `Gupshup API connectivity check failed: ${connectivityCheck.error || 'Unknown error'}` },
-                });
+            if (activeProvider === 'twilio') {
+                // Twilio connectivity is verified by having valid credentials; no template list API needed
+            }
+            else if (activeProvider === 'meta') {
+                if (metaWhatsAppService_1.metaWhatsAppService.isConfigured()) {
+                    const check = await metaWhatsAppService_1.metaWhatsAppService.listTemplates();
+                    if (!check.success) {
+                        return res.status(502).json({
+                            success: false,
+                            error: { message: `Meta API connectivity check failed: ${check.error || 'Unknown error'}` },
+                        });
+                    }
+                }
+            }
+            else {
+                const connectivityCheck = await gupshupService_1.gupshupService.listTemplates();
+                if (!connectivityCheck.success) {
+                    return res.status(502).json({
+                        success: false,
+                        error: { message: `Gupshup API connectivity check failed: ${connectivityCheck.error || 'Unknown error'}` },
+                    });
+                }
             }
         }
         catch (connErr) {
             return res.status(502).json({
                 success: false,
-                error: { message: `Gupshup API unreachable: ${connErr.message || 'Connection failed'}` },
+                error: { message: `WhatsApp API unreachable: ${connErr.message || 'Connection failed'}` },
             });
         }
-        const testMessage = `Hello from Cleya! This is a test message sent from the Control Tower at ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST. If you received this, your WhatsApp connection is working.`;
+        const testMessage = `Hello from Cleya! This is a test message sent from the Control Tower at ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST via ${activeProvider.toUpperCase()}. If you received this, your WhatsApp connection is working.`;
         const adminUserId = req.user?.userId || 'system';
-        const result = await gupshupService_1.gupshupService.sendWhatsApp(adminUserId, phoneNumber, testMessage);
+        const result = await messagingService_1.messagingService.sendWhatsApp(adminUserId, phoneNumber, testMessage);
         const sendStatus = result?.status || 'UNKNOWN';
         const sendFailed = sendStatus === 'FAILED';
         res.status(sendFailed ? 502 : 200).json({
             success: !sendFailed,
             data: {
-                messageId: result?.messageSid || null,
+                provider: activeProvider,
+                messageId: result?.messageSid || result?.messageId || null,
                 status: sendStatus,
                 errorMessage: result?.errorMessage || null,
                 phone: phoneNumber,

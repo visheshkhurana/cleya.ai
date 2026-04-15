@@ -77,6 +77,7 @@ const calendar_1 = require("./routes/calendar");
 const agent_chat_1 = require("./routes/agent-chat");
 const health_1 = require("./routes/health");
 const subscription_1 = require("./routes/subscription");
+const resendWebhook_1 = require("./routes/resendWebhook");
 const matchScheduler_1 = require("./services/matchScheduler");
 const agentScheduler_1 = require("./services/agentScheduler");
 if (env_1.env.SENTRY_DSN) {
@@ -169,6 +170,7 @@ app.use('/api/calendar', calendar_1.calendarRouter);
 app.use('/api/agent-chat', agent_chat_1.agentChatRouter);
 app.use('/api/health', health_1.healthRouter);
 app.use('/api/subscription', subscription_1.subscriptionRouter);
+app.use('/api/webhooks', resendWebhook_1.webhookRouter);
 if (env_1.env.SENTRY_DSN) {
     Sentry.setupExpressErrorHandler(app);
 }
@@ -176,11 +178,19 @@ app.use(errorHandler_1.errorHandler);
 const PORT = env_1.env.PORT;
 const server = (0, http_1.createServer)(app);
 (0, server_1.setupWebSocket)(server);
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', async () => {
     console.log(`🚀 Cleya.ai backend running on port ${PORT}`);
     console.log(`   Environment: ${env_1.env.NODE_ENV}`);
     matchScheduler_1.matchScheduler.start();
     agentScheduler_1.agentScheduler.start().catch(err => console.error('[AgentScheduler] Failed to start:', err));
+    // Drip sequence processor — runs every hour
+    const cron = await Promise.resolve().then(() => __importStar(require('node-cron')));
+    const { processDripSequences } = await Promise.resolve().then(() => __importStar(require('./services/dripSequenceProcessor')));
+    cron.default.schedule('0 * * * *', async () => {
+        console.log('[Drip] Processing follow-up sequences...');
+        await processDripSequences().catch(err => console.error('[Drip] Processing failed:', err));
+    }, { timezone: 'Asia/Kolkata' });
+    console.log('[Drip] Hourly drip sequence processor registered');
 });
 exports.default = app;
 //# sourceMappingURL=index.js.map

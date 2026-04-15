@@ -50,6 +50,7 @@ const adCampaignAutomation_1 = require("./adCampaignAutomation");
 const analyticsService_1 = require("./analyticsService");
 const guardrailsService_1 = require("./guardrailsService");
 const agentRunner_1 = require("./agentRunner");
+const fileService_1 = require("./fileService");
 // --- Tool definitions per agent ---
 const ANALYTICS_TOOLS = [
     'get_posthog_insights', 'get_ga4_insights', 'get_analytics_overview',
@@ -69,16 +70,16 @@ const ORCHESTRATOR_TOOLS = [
     'coordinate_task',
 ];
 exports.AGENT_TOOLS = {
-    maven: ['post_to_social', 'schedule_post', 'get_post_analytics', 'get_post_history'],
-    ledger: ['create_ad_campaign', 'get_campaign_stats', 'optimize_campaigns', 'launch_campaign', 'activate_campaign', 'pause_campaign', 'adjust_budget', 'generate_ad_copy', 'get_campaign_report'],
-    catalyst: ['post_to_social', 'create_ad_campaign', 'schedule_post', 'launch_campaign', 'generate_ad_copy', 'get_campaign_report'],
-    nexus: ['post_to_social', 'send_email', 'schedule_post'],
-    sentinel: ['get_campaign_stats', 'get_post_analytics', 'get_analytics_summary', 'get_top_pages', 'get_traffic_sources'],
-    ally: ['send_email', 'schedule_post'],
-    closer: ['send_email', 'create_ad_campaign', 'launch_campaign', 'activate_campaign', 'pause_campaign', 'generate_ad_copy', 'get_campaign_report'],
-    scout: ['analyze_seo', 'keyword_research', 'analyze_competitors', 'generate_schema_markup', 'check_indexing', 'optimize_content', 'get_analytics_summary', 'get_top_pages', 'get_traffic_sources'],
-    probe: ['run_page_test', 'run_api_test', 'run_agent_test', 'run_full_qa', 'get_qa_report', 'get_analytics_summary'],
-    outreach: ['create_email_campaign', 'add_recipients', 'launch_campaign', 'get_campaign_analytics', 'get_recipient_list', 'pause_campaign', 'send_email'],
+    maven: ['web_search', 'browse_webpage', 'create_file', 'post_to_social', 'schedule_post', 'get_post_analytics', 'get_post_history'],
+    ledger: ['web_search', 'browse_webpage', 'create_file', 'create_ad_campaign', 'get_campaign_stats', 'optimize_campaigns', 'launch_campaign', 'activate_campaign', 'pause_campaign', 'adjust_budget', 'generate_ad_copy', 'get_campaign_report'],
+    catalyst: ['web_search', 'browse_webpage', 'create_file', 'download_file', 'post_to_social', 'create_ad_campaign', 'schedule_post', 'launch_campaign', 'generate_ad_copy', 'get_campaign_report', 'lemlist_add_lead', 'lemlist_get_lead', 'get_contact_lists', 'get_list_contacts', 'import_list_to_campaign'],
+    nexus: ['web_search', 'browse_webpage', 'create_file', 'download_file', 'collect_emails', 'send_bulk_email', 'post_to_social', 'send_email', 'schedule_post', 'lemlist_add_lead', 'lemlist_get_lead', 'create_contact_list', 'add_to_contact_list', 'get_contact_lists', 'get_list_contacts', 'import_list_to_campaign', 'delete_contact_list'],
+    sentinel: ['web_search', 'browse_webpage', 'create_file', 'get_campaign_stats', 'get_post_analytics', 'get_analytics_summary', 'get_top_pages', 'get_traffic_sources'],
+    ally: ['web_search', 'browse_webpage', 'create_file', 'send_email', 'send_bulk_email', 'schedule_post'],
+    closer: ['web_search', 'browse_webpage', 'create_file', 'download_file', 'collect_emails', 'enrich_contact', 'send_email', 'send_bulk_email', 'create_ad_campaign', 'launch_campaign', 'activate_campaign', 'pause_campaign', 'generate_ad_copy', 'get_campaign_report', 'lemlist_add_lead', 'lemlist_get_lead', 'lemlist_mark_interested', 'lemlist_mark_not_interested', 'create_contact_list', 'add_to_contact_list', 'get_contact_lists', 'get_list_contacts', 'import_list_to_campaign'],
+    scout: ['web_search', 'browse_webpage', 'create_file', 'download_file', 'enrich_contact', 'analyze_seo', 'keyword_research', 'analyze_competitors', 'generate_schema_markup', 'check_indexing', 'optimize_content', 'get_analytics_summary', 'get_top_pages', 'get_traffic_sources'],
+    probe: ['web_search', 'browse_webpage', 'run_page_test', 'run_api_test', 'run_agent_test', 'run_full_qa', 'get_qa_report', 'get_analytics_summary'],
+    outreach: ['web_search', 'browse_webpage', 'create_file', 'download_file', 'collect_emails', 'enrich_contact', 'send_bulk_email', 'create_email_campaign', 'add_recipients', 'launch_campaign', 'get_campaign_analytics', 'get_recipient_list', 'pause_campaign', 'send_email', 'lemlist_add_lead', 'lemlist_get_lead', 'lemlist_mark_interested', 'lemlist_mark_not_interested', 'lemlist_unsubscribe', 'lemlist_pause_lead', 'lemlist_resume_lead', 'create_contact_list', 'add_to_contact_list', 'get_contact_lists', 'get_list_contacts', 'import_list_to_campaign', 'delete_contact_list'],
 };
 exports.TOOL_DEFINITIONS = {
     post_to_social: {
@@ -480,6 +481,285 @@ exports.TOOL_DEFINITIONS = {
             },
         },
     },
+    // --- Execution tools (web, files, email, enrichment) ---
+    web_search: {
+        name: 'web_search',
+        description: 'Search the web for information, leads, data, companies, contacts using Google Search via Serper.dev.',
+        parameters: {
+            type: 'object',
+            properties: {
+                query: { type: 'string', description: 'The search query' },
+                numResults: { type: 'number', description: 'Number of results to return (default 10, max 100)' },
+            },
+            required: ['query'],
+        },
+    },
+    browse_webpage: {
+        name: 'browse_webpage',
+        description: 'Fetch and extract content from a URL — read articles, extract data, scrape public pages. Returns title, description, main text, and links.',
+        parameters: {
+            type: 'object',
+            properties: {
+                url: { type: 'string', description: 'The URL to fetch and parse' },
+                extractSelector: { type: 'string', description: 'Optional CSS selector to extract only matching content (e.g. "article", ".main-content", "#pricing")' },
+            },
+            required: ['url'],
+        },
+    },
+    download_file: {
+        name: 'download_file',
+        description: 'Download a file from a URL (CSV, PDF, images, etc.) and store it for later use. Returns a stored file URL.',
+        parameters: {
+            type: 'object',
+            properties: {
+                url: { type: 'string', description: 'The URL of the file to download' },
+                filename: { type: 'string', description: 'Optional filename to save as (auto-detected from URL if omitted)' },
+            },
+            required: ['url'],
+        },
+    },
+    create_file: {
+        name: 'create_file',
+        description: 'Create a file (CSV, JSON, TXT, Markdown, HTML) from content the agent generates. Returns a stored file URL.',
+        parameters: {
+            type: 'object',
+            properties: {
+                filename: { type: 'string', description: 'Filename with extension (e.g. "report.csv", "leads.json", "analysis.md")' },
+                content: { type: 'string', description: 'The file content as a string' },
+                mimeType: { type: 'string', description: 'Optional MIME type (auto-detected from filename if omitted)' },
+            },
+            required: ['filename', 'content'],
+        },
+    },
+    collect_emails: {
+        name: 'collect_emails',
+        description: 'Search for and collect email addresses for a given target audience, company, or domain using Hunter.io.',
+        parameters: {
+            type: 'object',
+            properties: {
+                query: { type: 'string', description: 'Search query — a company name, domain, or description of the target audience' },
+                domain: { type: 'string', description: 'Specific domain to search for emails (e.g. "stripe.com"). If omitted, domains are discovered via web search.' },
+                limit: { type: 'number', description: 'Max number of emails to return (default 10)' },
+            },
+            required: ['query'],
+        },
+    },
+    enrich_contact: {
+        name: 'enrich_contact',
+        description: 'Enrich a contact by verifying their email and retrieving associated data (name, company, position) using Hunter.io.',
+        parameters: {
+            type: 'object',
+            properties: {
+                email: { type: 'string', description: 'The email address to verify and enrich' },
+            },
+            required: ['email'],
+        },
+    },
+    send_bulk_email: {
+        name: 'send_bulk_email',
+        description: 'Send a bulk email campaign to a list of recipients via Resend batch API. Max 100 per batch, auto-queued for larger lists.',
+        parameters: {
+            type: 'object',
+            properties: {
+                subject: { type: 'string', description: 'Email subject line' },
+                htmlContent: { type: 'string', description: 'Email body as HTML' },
+                recipients: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            email: { type: 'string', description: 'Recipient email address' },
+                            name: { type: 'string', description: 'Recipient name (for personalization)' },
+                            variables: { type: 'object', description: 'Key-value pairs for template variable replacement' },
+                        },
+                        required: ['email'],
+                    },
+                    description: 'Array of recipients (max 500 per call)',
+                },
+                fromName: { type: 'string', description: 'Sender name (default "Cleya")' },
+                replyTo: { type: 'string', description: 'Reply-to email address' },
+            },
+            required: ['subject', 'htmlContent', 'recipients'],
+        },
+    },
+    // --- Lemlist tools ---
+    lemlist_add_lead: {
+        name: 'lemlist_add_lead',
+        description: 'Add a lead to a Lemlist email campaign with personalization. Lemlist handles warm-up, deliverability, and multi-step sequences automatically.',
+        parameters: {
+            type: 'object',
+            properties: {
+                campaignId: { type: 'string', description: 'Lemlist campaign ID' },
+                email: { type: 'string', description: 'Lead email address' },
+                firstName: { type: 'string', description: 'Lead first name' },
+                lastName: { type: 'string', description: 'Lead last name' },
+                companyName: { type: 'string', description: 'Lead company name' },
+                linkedinUrl: { type: 'string', description: 'Lead LinkedIn profile URL' },
+                icebreaker: { type: 'string', description: 'Personalized icebreaker text' },
+                phone: { type: 'string', description: 'Lead phone number' },
+            },
+            required: ['campaignId', 'email'],
+        },
+    },
+    lemlist_get_lead: {
+        name: 'lemlist_get_lead',
+        description: 'Get all info about a lead by email across all Lemlist campaigns.',
+        parameters: {
+            type: 'object',
+            properties: {
+                email: { type: 'string', description: 'Lead email address to look up' },
+            },
+            required: ['email'],
+        },
+    },
+    lemlist_mark_interested: {
+        name: 'lemlist_mark_interested',
+        description: 'Mark a lead as interested in a specific Lemlist campaign (stops the sequence for that lead).',
+        parameters: {
+            type: 'object',
+            properties: {
+                campaignId: { type: 'string', description: 'Lemlist campaign ID' },
+                email: { type: 'string', description: 'Lead email address' },
+            },
+            required: ['campaignId', 'email'],
+        },
+    },
+    lemlist_mark_not_interested: {
+        name: 'lemlist_mark_not_interested',
+        description: 'Mark a lead as not interested in a specific Lemlist campaign.',
+        parameters: {
+            type: 'object',
+            properties: {
+                campaignId: { type: 'string', description: 'Lemlist campaign ID' },
+                email: { type: 'string', description: 'Lead email address' },
+            },
+            required: ['campaignId', 'email'],
+        },
+    },
+    lemlist_unsubscribe: {
+        name: 'lemlist_unsubscribe',
+        description: 'Unsubscribe a lead from all Lemlist campaigns.',
+        parameters: {
+            type: 'object',
+            properties: {
+                campaignId: { type: 'string', description: 'Lemlist campaign ID' },
+                email: { type: 'string', description: 'Lead email address' },
+            },
+            required: ['campaignId', 'email'],
+        },
+    },
+    lemlist_pause_lead: {
+        name: 'lemlist_pause_lead',
+        description: 'Pause a lead across all Lemlist campaigns.',
+        parameters: {
+            type: 'object',
+            properties: {
+                email: { type: 'string', description: 'Lead email address to pause' },
+            },
+            required: ['email'],
+        },
+    },
+    lemlist_resume_lead: {
+        name: 'lemlist_resume_lead',
+        description: 'Resume a paused lead across all Lemlist campaigns.',
+        parameters: {
+            type: 'object',
+            properties: {
+                email: { type: 'string', description: 'Lead email address to resume' },
+            },
+            required: ['email'],
+        },
+    },
+    // --- Contact List tools ---
+    create_contact_list: {
+        name: 'create_contact_list',
+        description: 'Create a new reusable contact list for organizing leads and contacts.',
+        parameters: {
+            type: 'object',
+            properties: {
+                name: { type: 'string', description: 'Name of the contact list' },
+                description: { type: 'string', description: 'Optional description' },
+                tags: { type: 'array', items: { type: 'string' }, description: 'Optional tags for categorization' },
+            },
+            required: ['name'],
+        },
+    },
+    add_to_contact_list: {
+        name: 'add_to_contact_list',
+        description: 'Add contacts to a contact list. Deduplicates by email.',
+        parameters: {
+            type: 'object',
+            properties: {
+                listId: { type: 'string', description: 'Contact list ID' },
+                contacts: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            email: { type: 'string', description: 'Contact email' },
+                            firstName: { type: 'string', description: 'First name' },
+                            lastName: { type: 'string', description: 'Last name' },
+                            company: { type: 'string', description: 'Company name' },
+                            role: { type: 'string', description: 'Job title/role' },
+                            phone: { type: 'string', description: 'Phone number' },
+                            linkedinUrl: { type: 'string', description: 'LinkedIn profile URL' },
+                            tags: { type: 'array', items: { type: 'string' }, description: 'Tags' },
+                            customFields: { type: 'object', description: 'Custom key-value pairs' },
+                        },
+                        required: ['email'],
+                    },
+                    description: 'Array of contacts to add',
+                },
+            },
+            required: ['listId', 'contacts'],
+        },
+    },
+    get_contact_lists: {
+        name: 'get_contact_lists',
+        description: 'Get all contact lists, optionally filtered by tag.',
+        parameters: {
+            type: 'object',
+            properties: {
+                tag: { type: 'string', description: 'Optional tag to filter lists by' },
+            },
+        },
+    },
+    get_list_contacts: {
+        name: 'get_list_contacts',
+        description: 'Get contacts from a contact list with pagination.',
+        parameters: {
+            type: 'object',
+            properties: {
+                listId: { type: 'string', description: 'Contact list ID' },
+                limit: { type: 'number', description: 'Max contacts to return (default 100)' },
+                offset: { type: 'number', description: 'Offset for pagination (default 0)' },
+            },
+            required: ['listId'],
+        },
+    },
+    import_list_to_campaign: {
+        name: 'import_list_to_campaign',
+        description: 'Import all contacts from a contact list into an outreach campaign as recipients. Automatically filters out unsubscribed emails.',
+        parameters: {
+            type: 'object',
+            properties: {
+                listId: { type: 'string', description: 'Contact list ID to import from' },
+                campaignId: { type: 'string', description: 'Campaign ID to import contacts into' },
+            },
+            required: ['listId', 'campaignId'],
+        },
+    },
+    delete_contact_list: {
+        name: 'delete_contact_list',
+        description: 'Delete a contact list and all its entries.',
+        parameters: {
+            type: 'object',
+            properties: {
+                listId: { type: 'string', description: 'Contact list ID to delete' },
+            },
+            required: ['listId'],
+        },
+    },
 };
 // --- Get OpenAI-format tool schemas for a specific agent ---
 function getToolsForAgent(agentId) {
@@ -505,7 +785,7 @@ async function executeTool(agentId, toolName, params) {
         return { success: false, toolName, error: `Agent "${agentId}" is not authorized to use tool "${toolName}"` };
     }
     // Run guardrails for action-type tools
-    const actionTools = ['post_to_social', 'schedule_post', 'create_ad_campaign', 'send_email', 'launch_campaign', 'activate_campaign', 'pause_campaign', 'adjust_budget'];
+    const actionTools = ['post_to_social', 'schedule_post', 'create_ad_campaign', 'send_email', 'send_bulk_email', 'launch_campaign', 'activate_campaign', 'pause_campaign', 'adjust_budget', 'lemlist_add_lead', 'lemlist_mark_interested', 'lemlist_mark_not_interested', 'lemlist_unsubscribe', 'lemlist_pause_lead', 'lemlist_resume_lead', 'import_list_to_campaign', 'delete_contact_list'];
     if (actionTools.includes(toolName)) {
         const guardrails = (0, agentRunner_1.getAgentGuardrails)(agentId);
         const autonomyLevel = (0, agentRunner_1.getAgentAutonomyLevel)(agentId);
@@ -723,6 +1003,109 @@ async function executeTool(agentId, toolName, params) {
                 }
                 if (!result)
                     result = { success: false, error: 'No QA report found' };
+                break;
+            }
+            // --- Execution tools (web, files, email, enrichment) ---
+            case 'web_search': {
+                result = await executeWebSearch(params.query, params.numResults || 10);
+                break;
+            }
+            case 'browse_webpage': {
+                result = await executeBrowseWebpage(params.url, params.extractSelector);
+                break;
+            }
+            case 'download_file': {
+                result = await executeDownloadFile(agentId, params.url, params.filename);
+                break;
+            }
+            case 'create_file': {
+                const mime = params.mimeType || (0, fileService_1.getMimeType)(params.filename);
+                const fileRecord = await (0, fileService_1.createFileFromContent)(params.content, params.filename, mime, agentId, 'agent', '', 'generated');
+                result = {
+                    success: true,
+                    fileUrl: `/api/files/${fileRecord.file_id}`,
+                    filename: fileRecord.original_name,
+                    size: fileRecord.size_bytes,
+                };
+                break;
+            }
+            case 'collect_emails': {
+                result = await executeCollectEmails(params.query, params.domain, params.limit || 10);
+                break;
+            }
+            case 'enrich_contact': {
+                result = await executeEnrichContact(params.email);
+                break;
+            }
+            case 'send_bulk_email': {
+                result = await executeSendBulkEmail(params);
+                break;
+            }
+            // --- Lemlist tools ---
+            case 'lemlist_add_lead': {
+                const { addLead } = await Promise.resolve().then(() => __importStar(require('./lemlistService')));
+                result = await addLead(params);
+                break;
+            }
+            case 'lemlist_get_lead': {
+                const { getLead } = await Promise.resolve().then(() => __importStar(require('./lemlistService')));
+                result = await getLead(params.email);
+                break;
+            }
+            case 'lemlist_mark_interested': {
+                const { markInterested } = await Promise.resolve().then(() => __importStar(require('./lemlistService')));
+                result = await markInterested(params.campaignId, params.email);
+                break;
+            }
+            case 'lemlist_mark_not_interested': {
+                const { markNotInterested } = await Promise.resolve().then(() => __importStar(require('./lemlistService')));
+                result = await markNotInterested(params.campaignId, params.email);
+                break;
+            }
+            case 'lemlist_unsubscribe': {
+                const { unsubscribeLead } = await Promise.resolve().then(() => __importStar(require('./lemlistService')));
+                result = await unsubscribeLead(params.campaignId, params.email);
+                break;
+            }
+            case 'lemlist_pause_lead': {
+                const { pauseLead } = await Promise.resolve().then(() => __importStar(require('./lemlistService')));
+                result = await pauseLead(params.email);
+                break;
+            }
+            case 'lemlist_resume_lead': {
+                const { resumeLead } = await Promise.resolve().then(() => __importStar(require('./lemlistService')));
+                result = await resumeLead(params.email);
+                break;
+            }
+            // --- Contact List tools ---
+            case 'create_contact_list': {
+                const { createContactList } = await Promise.resolve().then(() => __importStar(require('./contactListService')));
+                result = await createContactList(params);
+                break;
+            }
+            case 'add_to_contact_list': {
+                const { addToContactList } = await Promise.resolve().then(() => __importStar(require('./contactListService')));
+                result = await addToContactList(params);
+                break;
+            }
+            case 'get_contact_lists': {
+                const { getContactLists } = await Promise.resolve().then(() => __importStar(require('./contactListService')));
+                result = await getContactLists(params.tag);
+                break;
+            }
+            case 'get_list_contacts': {
+                const { getListContacts } = await Promise.resolve().then(() => __importStar(require('./contactListService')));
+                result = await getListContacts(params);
+                break;
+            }
+            case 'import_list_to_campaign': {
+                const { importListToCampaign } = await Promise.resolve().then(() => __importStar(require('./contactListService')));
+                result = await importListToCampaign(params);
+                break;
+            }
+            case 'delete_contact_list': {
+                const { deleteContactList } = await Promise.resolve().then(() => __importStar(require('./contactListService')));
+                result = await deleteContactList(params.listId);
                 break;
             }
             // --- GA4 Analytics tools ---
@@ -1223,6 +1606,304 @@ async function executeOptimizeContent(content, targetKeyword, contentType) {
             'Add "Last updated" date to signal freshness to AI models',
         ],
     };
+}
+// --- Execution tool implementations ---
+async function executeWebSearch(query, numResults) {
+    const apiKey = process.env.SERPER_API_KEY;
+    if (!apiKey) {
+        return { success: false, error: 'SERPER_API_KEY not configured. Please add it to environment variables.' };
+    }
+    try {
+        const resp = await fetch('https://google.serper.dev/search', {
+            method: 'POST',
+            headers: {
+                'X-API-KEY': apiKey,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ q: query, num: Math.min(numResults, 100) }),
+        });
+        if (!resp.ok) {
+            const errText = await resp.text();
+            return { success: false, error: `Serper API error (${resp.status}): ${errText}` };
+        }
+        const data = await resp.json();
+        const results = (data.organic || []).map((r) => ({
+            title: r.title,
+            link: r.link,
+            snippet: r.snippet,
+        }));
+        return {
+            success: true,
+            query,
+            results,
+            totalResults: results.length,
+            knowledgeGraph: data.knowledgeGraph || null,
+        };
+    }
+    catch (err) {
+        return { success: false, error: `Web search failed: ${err.message}` };
+    }
+}
+async function executeBrowseWebpage(url, extractSelector) {
+    try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 20000);
+        const resp = await fetch(url, {
+            signal: controller.signal,
+            headers: { 'User-Agent': 'CleyaAgentBot/1.0 (+https://cleya.ai)' },
+        });
+        clearTimeout(timeout);
+        if (!resp.ok) {
+            return { success: false, error: `Failed to fetch ${url}: HTTP ${resp.status}` };
+        }
+        const html = await resp.text();
+        const cheerio = await Promise.resolve().then(() => __importStar(require('cheerio')));
+        const $ = cheerio.load(html);
+        // Remove scripts, styles, and non-content elements
+        $('script, style, noscript, iframe, svg').remove();
+        let content = '';
+        if (extractSelector) {
+            content = $(extractSelector).text().replace(/\s+/g, ' ').trim();
+            if (!content) {
+                content = `No content matched selector "${extractSelector}". Full page text extracted instead.\n\n` +
+                    $('body').text().replace(/\s+/g, ' ').trim();
+            }
+        }
+        else {
+            // Try common content selectors first, fall back to body
+            const contentSelectors = ['article', 'main', '[role="main"]', '.content', '.post-content', '#content'];
+            let found = false;
+            for (const sel of contentSelectors) {
+                const el = $(sel);
+                if (el.length && el.text().trim().length > 200) {
+                    content = el.text().replace(/\s+/g, ' ').trim();
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                content = $('body').text().replace(/\s+/g, ' ').trim();
+            }
+        }
+        // Extract metadata
+        const title = $('title').text().trim() || $('meta[property="og:title"]').attr('content') || '';
+        const description = $('meta[name="description"]').attr('content') || $('meta[property="og:description"]').attr('content') || '';
+        const links = [];
+        $('a[href]').each((_, el) => {
+            const href = $(el).attr('href');
+            const text = $(el).text().trim();
+            if (href && text && links.length < 50) {
+                links.push({ text: text.substring(0, 100), href });
+            }
+        });
+        // Truncate content to avoid token overflow
+        const maxChars = 8000;
+        const truncatedContent = content.length > maxChars
+            ? content.substring(0, maxChars) + '... [truncated]'
+            : content;
+        return {
+            success: true,
+            url,
+            title,
+            description,
+            content: truncatedContent,
+            contentLength: content.length,
+            links: links.slice(0, 30),
+        };
+    }
+    catch (err) {
+        return { success: false, error: `Failed to browse ${url}: ${err.message}` };
+    }
+}
+async function executeDownloadFile(agentId, url, filename) {
+    try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30000);
+        const resp = await fetch(url, {
+            signal: controller.signal,
+            headers: { 'User-Agent': 'CleyaAgentBot/1.0 (+https://cleya.ai)' },
+        });
+        clearTimeout(timeout);
+        if (!resp.ok) {
+            return { success: false, error: `Failed to download from ${url}: HTTP ${resp.status}` };
+        }
+        const contentType = resp.headers.get('content-type') || 'application/octet-stream';
+        const buffer = Buffer.from(await resp.arrayBuffer());
+        // Determine filename from URL or content-disposition header
+        const resolvedFilename = filename || extractFilenameFromUrl(url) || `download_${Date.now()}`;
+        const mime = contentType.split(';')[0].trim();
+        const fileRecord = await (0, fileService_1.createFileFromContent)(buffer.toString('base64'), resolvedFilename, mime, agentId, 'agent', `Downloaded from ${url}`, 'download');
+        return {
+            success: true,
+            fileUrl: `/api/files/${fileRecord.file_id}`,
+            filename: fileRecord.original_name,
+            size: buffer.length,
+            mimeType: mime,
+        };
+    }
+    catch (err) {
+        return { success: false, error: `Download failed: ${err.message}` };
+    }
+}
+function extractFilenameFromUrl(url) {
+    try {
+        const pathname = new URL(url).pathname;
+        const parts = pathname.split('/').filter(Boolean);
+        return parts[parts.length - 1] || `file_${Date.now()}`;
+    }
+    catch {
+        return `file_${Date.now()}`;
+    }
+}
+async function executeCollectEmails(query, domain, limit = 10) {
+    const apiKey = process.env.HUNTER_API_KEY;
+    if (!apiKey) {
+        return { success: false, error: 'HUNTER_API_KEY not configured. Please add it to environment variables.' };
+    }
+    try {
+        let targetDomain = domain;
+        // If no domain provided, try to discover one via web search
+        if (!targetDomain) {
+            const searchResult = await executeWebSearch(`${query} company website`, 5);
+            if (searchResult.success && searchResult.results?.length > 0) {
+                // Extract domain from first result
+                try {
+                    targetDomain = new URL(searchResult.results[0].link).hostname.replace('www.', '');
+                }
+                catch {
+                    return { success: false, error: `Could not determine domain from query "${query}". Please provide a domain directly.` };
+                }
+            }
+            else {
+                return { success: false, error: `Could not find a domain for "${query}". Please provide a domain directly.` };
+            }
+        }
+        const resp = await fetch(`https://api.hunter.io/v2/domain-search?domain=${encodeURIComponent(targetDomain)}&limit=${limit}&api_key=${apiKey}`);
+        if (!resp.ok) {
+            const errText = await resp.text();
+            return { success: false, error: `Hunter.io API error (${resp.status}): ${errText}` };
+        }
+        const data = await resp.json();
+        const emails = (data.data?.emails || []).map((e) => ({
+            email: e.value,
+            firstName: e.first_name || null,
+            lastName: e.last_name || null,
+            position: e.position || null,
+            confidence: e.confidence || 0,
+        }));
+        return {
+            success: true,
+            domain: targetDomain,
+            emails,
+            totalFound: data.data?.total || emails.length,
+            organization: data.data?.organization || null,
+        };
+    }
+    catch (err) {
+        return { success: false, error: `Email collection failed: ${err.message}` };
+    }
+}
+async function executeEnrichContact(email) {
+    const apiKey = process.env.HUNTER_API_KEY;
+    if (!apiKey) {
+        return { success: false, error: 'HUNTER_API_KEY not configured. Please add it to environment variables.' };
+    }
+    try {
+        const resp = await fetch(`https://api.hunter.io/v2/email-verifier?email=${encodeURIComponent(email)}&api_key=${apiKey}`);
+        if (!resp.ok) {
+            const errText = await resp.text();
+            return { success: false, error: `Hunter.io API error (${resp.status}): ${errText}` };
+        }
+        const data = await resp.json();
+        const result = data.data || {};
+        return {
+            success: true,
+            email: result.email || email,
+            status: result.status || 'unknown',
+            score: result.score ?? null,
+            firstName: result.first_name || null,
+            lastName: result.last_name || null,
+            position: result.position || null,
+            company: result.company || null,
+            twitter: result.twitter || null,
+            linkedinUrl: result.linkedin || null,
+            sources: (result.sources || []).slice(0, 5).map((s) => ({
+                domain: s.domain,
+                uri: s.uri,
+            })),
+        };
+    }
+    catch (err) {
+        return { success: false, error: `Contact enrichment failed: ${err.message}` };
+    }
+}
+async function executeSendBulkEmail(params) {
+    try {
+        const { getUncachableResendClient } = await Promise.resolve().then(() => __importStar(require('./resendClient')));
+        const { env: emailEnv } = await Promise.resolve().then(() => __importStar(require('../config/env')));
+        const { client, fromEmail } = await getUncachableResendClient();
+        const senderEmail = fromEmail || emailEnv.FROM_EMAIL;
+        const senderName = params.fromName || 'Cleya';
+        const recipients = params.recipients.slice(0, 500); // Hard cap at 500
+        let totalSent = 0;
+        let totalFailed = 0;
+        const batchIds = [];
+        const errors = [];
+        // Process in batches of 100
+        for (let i = 0; i < recipients.length; i += 100) {
+            const batch = recipients.slice(i, i + 100);
+            const emails = batch.map((r) => {
+                let html = params.htmlContent;
+                // Replace template variables
+                if (r.variables) {
+                    for (const [key, value] of Object.entries(r.variables)) {
+                        html = html.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value);
+                    }
+                }
+                if (r.name) {
+                    html = html.replace(/\{\{name\}\}/g, r.name);
+                }
+                return {
+                    from: `${senderName} <${senderEmail}>`,
+                    to: [r.email],
+                    subject: params.subject,
+                    html,
+                    reply_to: params.replyTo,
+                };
+            });
+            try {
+                const batchResult = await client.batch.send(emails);
+                if (batchResult.error) {
+                    totalFailed += batch.length;
+                    errors.push(`Batch ${Math.floor(i / 100) + 1}: ${batchResult.error.message}`);
+                }
+                else {
+                    totalSent += batch.length;
+                    if (batchResult.data) {
+                        batchIds.push(...batchResult.data.map((d) => d.id).filter(Boolean));
+                    }
+                }
+            }
+            catch (batchErr) {
+                totalFailed += batch.length;
+                errors.push(`Batch ${Math.floor(i / 100) + 1}: ${batchErr.message}`);
+            }
+            // 1s delay between batches to respect rate limits
+            if (i + 100 < recipients.length) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+        return {
+            success: totalSent > 0,
+            sent: totalSent,
+            failed: totalFailed,
+            batchIds,
+            errors: errors.length > 0 ? errors : undefined,
+        };
+    }
+    catch (err) {
+        return { success: false, error: `Bulk email failed: ${err.message}` };
+    }
 }
 function parseToolCallsFromResponse(response) {
     // OpenAI format: response.choices[0].message.tool_calls

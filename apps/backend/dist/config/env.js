@@ -21,6 +21,11 @@ const envSchema = zod_1.z.object({
     GUPSHUP_SOURCE_NUMBER: zod_1.z.string().optional(),
     GUPSHUP_TEMPLATE_NAMESPACE: zod_1.z.string().optional(),
     GUPSHUP_WEBHOOK_SECRET: zod_1.z.string().optional(),
+    META_WHATSAPP_TOKEN: zod_1.z.string().optional(),
+    META_WHATSAPP_PHONE_ID: zod_1.z.string().optional(),
+    META_WHATSAPP_WABA_ID: zod_1.z.string().optional(),
+    META_WHATSAPP_APP_SECRET: zod_1.z.string().optional(),
+    META_WHATSAPP_VERIFY_TOKEN: zod_1.z.string().optional(),
     NODE_ENV: zod_1.z.enum(['development', 'production', 'test']).default('development'),
     PORT: zod_1.z.coerce.number().default(3001),
     FRONTEND_URL: zod_1.z.string().default('http://localhost:3000'),
@@ -71,6 +76,12 @@ const envSchema = zod_1.z.object({
     RAZORPAY_KEY_SECRET: zod_1.z.string().optional(),
     RAZORPAY_PLAN_ID: zod_1.z.string().optional(),
     RAZORPAY_WEBHOOK_SECRET: zod_1.z.string().optional(),
+    TWILIO_ACCOUNT_SID: zod_1.z.string().optional(),
+    TWILIO_AUTH_TOKEN: zod_1.z.string().optional(),
+    TWILIO_WHATSAPP_FROM: zod_1.z.string().optional(),
+    SERPER_API_KEY: zod_1.z.string().optional(),
+    HUNTER_API_KEY: zod_1.z.string().optional(),
+    LEMLIST_API_KEY: zod_1.z.string().optional(),
 });
 function validateEnv() {
     if (!process.env.JWT_SECRET) {

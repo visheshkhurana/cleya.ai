@@ -13,6 +13,11 @@ declare const envSchema: z.ZodObject<{
     GUPSHUP_SOURCE_NUMBER: z.ZodOptional<z.ZodString>;
     GUPSHUP_TEMPLATE_NAMESPACE: z.ZodOptional<z.ZodString>;
     GUPSHUP_WEBHOOK_SECRET: z.ZodOptional<z.ZodString>;
+    META_WHATSAPP_TOKEN: z.ZodOptional<z.ZodString>;
+    META_WHATSAPP_PHONE_ID: z.ZodOptional<z.ZodString>;
+    META_WHATSAPP_WABA_ID: z.ZodOptional<z.ZodString>;
+    META_WHATSAPP_APP_SECRET: z.ZodOptional<z.ZodString>;
+    META_WHATSAPP_VERIFY_TOKEN: z.ZodOptional<z.ZodString>;
     NODE_ENV: z.ZodDefault<z.ZodEnum<["development", "production", "test"]>>;
     PORT: z.ZodDefault<z.ZodNumber>;
     FRONTEND_URL: z.ZodDefault<z.ZodString>;
@@ -63,6 +68,12 @@ declare const envSchema: z.ZodObject<{
     RAZORPAY_KEY_SECRET: z.ZodOptional<z.ZodString>;
     RAZORPAY_PLAN_ID: z.ZodOptional<z.ZodString>;
     RAZORPAY_WEBHOOK_SECRET: z.ZodOptional<z.ZodString>;
+    TWILIO_ACCOUNT_SID: z.ZodOptional<z.ZodString>;
+    TWILIO_AUTH_TOKEN: z.ZodOptional<z.ZodString>;
+    TWILIO_WHATSAPP_FROM: z.ZodOptional<z.ZodString>;
+    SERPER_API_KEY: z.ZodOptional<z.ZodString>;
+    HUNTER_API_KEY: z.ZodOptional<z.ZodString>;
+    LEMLIST_API_KEY: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     DATABASE_URL: string;
     REDIS_URL: string;
@@ -84,6 +95,11 @@ declare const envSchema: z.ZodObject<{
     GUPSHUP_SOURCE_NUMBER?: string | undefined;
     GUPSHUP_TEMPLATE_NAMESPACE?: string | undefined;
     GUPSHUP_WEBHOOK_SECRET?: string | undefined;
+    META_WHATSAPP_TOKEN?: string | undefined;
+    META_WHATSAPP_PHONE_ID?: string | undefined;
+    META_WHATSAPP_WABA_ID?: string | undefined;
+    META_WHATSAPP_APP_SECRET?: string | undefined;
+    META_WHATSAPP_VERIFY_TOKEN?: string | undefined;
     CORS_ORIGIN?: string | undefined;
     GOOGLE_CLIENT_ID?: string | undefined;
     GOOGLE_CLIENT_SECRET?: string | undefined;
@@ -127,6 +143,12 @@ declare const envSchema: z.ZodObject<{
     RAZORPAY_KEY_SECRET?: string | undefined;
     RAZORPAY_PLAN_ID?: string | undefined;
     RAZORPAY_WEBHOOK_SECRET?: string | undefined;
+    TWILIO_ACCOUNT_SID?: string | undefined;
+    TWILIO_AUTH_TOKEN?: string | undefined;
+    TWILIO_WHATSAPP_FROM?: string | undefined;
+    SERPER_API_KEY?: string | undefined;
+    HUNTER_API_KEY?: string | undefined;
+    LEMLIST_API_KEY?: string | undefined;
 }, {
     DATABASE_URL: string;
     JWT_SECRET: string;
@@ -141,6 +163,11 @@ declare const envSchema: z.ZodObject<{
     GUPSHUP_SOURCE_NUMBER?: string | undefined;
     GUPSHUP_TEMPLATE_NAMESPACE?: string | undefined;
     GUPSHUP_WEBHOOK_SECRET?: string | undefined;
+    META_WHATSAPP_TOKEN?: string | undefined;
+    META_WHATSAPP_PHONE_ID?: string | undefined;
+    META_WHATSAPP_WABA_ID?: string | undefined;
+    META_WHATSAPP_APP_SECRET?: string | undefined;
+    META_WHATSAPP_VERIFY_TOKEN?: string | undefined;
     NODE_ENV?: "development" | "production" | "test" | undefined;
     PORT?: number | undefined;
     FRONTEND_URL?: string | undefined;
@@ -191,6 +218,12 @@ declare const envSchema: z.ZodObject<{
     RAZORPAY_KEY_SECRET?: string | undefined;
     RAZORPAY_PLAN_ID?: string | undefined;
     RAZORPAY_WEBHOOK_SECRET?: string | undefined;
+    TWILIO_ACCOUNT_SID?: string | undefined;
+    TWILIO_AUTH_TOKEN?: string | undefined;
+    TWILIO_WHATSAPP_FROM?: string | undefined;
+    SERPER_API_KEY?: string | undefined;
+    HUNTER_API_KEY?: string | undefined;
+    LEMLIST_API_KEY?: string | undefined;
 }>;
 export declare const env: {
     DATABASE_URL: string;
@@ -213,6 +246,11 @@ export declare const env: {
     GUPSHUP_SOURCE_NUMBER?: string | undefined;
     GUPSHUP_TEMPLATE_NAMESPACE?: string | undefined;
     GUPSHUP_WEBHOOK_SECRET?: string | undefined;
+    META_WHATSAPP_TOKEN?: string | undefined;
+    META_WHATSAPP_PHONE_ID?: string | undefined;
+    META_WHATSAPP_WABA_ID?: string | undefined;
+    META_WHATSAPP_APP_SECRET?: string | undefined;
+    META_WHATSAPP_VERIFY_TOKEN?: string | undefined;
     CORS_ORIGIN?: string | undefined;
     GOOGLE_CLIENT_ID?: string | undefined;
     GOOGLE_CLIENT_SECRET?: string | undefined;
@@ -256,6 +294,12 @@ export declare const env: {
     RAZORPAY_KEY_SECRET?: string | undefined;
     RAZORPAY_PLAN_ID?: string | undefined;
     RAZORPAY_WEBHOOK_SECRET?: string | undefined;
+    TWILIO_ACCOUNT_SID?: string | undefined;
+    TWILIO_AUTH_TOKEN?: string | undefined;
+    TWILIO_WHATSAPP_FROM?: string | undefined;
+    SERPER_API_KEY?: string | undefined;
+    HUNTER_API_KEY?: string | undefined;
+    LEMLIST_API_KEY?: string | undefined;
 };
 export type Env = z.infer<typeof envSchema>;
 export {};

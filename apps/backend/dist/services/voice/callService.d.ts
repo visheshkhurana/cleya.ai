@@ -8,13 +8,13 @@ export declare class CallService {
         id: string;
         createdAt: Date;
         phoneNumber: string;
-        scheduledAt: Date | null;
-        startedAt: Date | null;
         twilioCallSid: string | null;
         direction: import(".prisma/client").$Enums.CallDirection;
         duration: number | null;
         transcript: import("@prisma/client/runtime/library").JsonValue | null;
         extractedData: import("@prisma/client/runtime/library").JsonValue | null;
+        scheduledAt: Date | null;
+        startedAt: Date | null;
         endedAt: Date | null;
     }[]>;
 }

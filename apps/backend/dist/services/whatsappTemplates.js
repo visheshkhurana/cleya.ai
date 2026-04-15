@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.whatsappTemplates = exports.WhatsAppTemplateService = void 0;
 const messagingService_1 = require("./messagingService");
+const metaWhatsAppService_1 = require("./metaWhatsAppService");
 const gupshupService_1 = require("./gupshupService");
 const db_1 = require("@cleya/db");
 const templates = {
@@ -177,6 +178,25 @@ class WhatsAppTemplateService {
         if (!resolvedPhone) {
             console.warn(`No phone number for template ${templateId}`);
             return null;
+        }
+        if (metaWhatsAppService_1.metaWhatsAppService.isConfigured() && template.gupshupTemplateId) {
+            try {
+                let orderedParams;
+                if (template.gupshupParamOrder) {
+                    orderedParams = template.gupshupParamOrder.map(key => params[key] || '');
+                }
+                else {
+                    orderedParams = Object.values(params);
+                }
+                console.log(`WhatsAppTemplateService.sendTemplate: template=${templateId}, metaName=${template.gupshupTemplateId}, orderedParams=${JSON.stringify(orderedParams)}`);
+                const result = await metaWhatsAppService_1.metaWhatsAppService.sendTemplate(userId, resolvedPhone, template.gupshupTemplateId, orderedParams);
+                if (result.status !== 'FAILED')
+                    return result;
+                console.warn(`Meta template ${template.gupshupTemplateId} failed, falling back to Gupshup`);
+            }
+            catch (error) {
+                console.error(`Meta template send failed, trying Gupshup fallback:`, error);
+            }
         }
         if (gupshupService_1.gupshupService.isConfigured() && template.gupshupTemplateId) {
             try {

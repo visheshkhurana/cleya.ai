@@ -108,7 +108,7 @@ exports.eventRouter.post('/follow-up', auth_1.authenticate, (0, auth_1.requireRo
                 : `Hi ${userName}! Thanks for attending "${event.name}"! We're still finding the best connections for you. Check back on Cleya.ai soon!`;
             try {
                 const result = await messagingService_1.messagingService.sendWhatsApp(participant.userId, phone, message);
-                if (result.status === 'FAILED') {
+                if (result && result.status === 'FAILED') {
                     await messagingService_1.messagingService.sendSMS(participant.userId, phone, message);
                 }
                 sent.push(participant.userId);

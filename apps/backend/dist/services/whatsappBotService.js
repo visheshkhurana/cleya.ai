@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.whatsappBotService = exports.WhatsAppBotService = void 0;
 const db_1 = require("@cleya/db");
-const gupshupService_1 = require("./gupshupService");
+const messagingService_1 = require("./messagingService");
 const conversationService_1 = require("./conversationService");
 const matchingService_1 = require("./matchingService");
 const ai_1 = require("./ai");
@@ -468,7 +468,7 @@ class WhatsAppBotService {
         return prompt;
     }
     async sendReply(phone, message) {
-        if (!gupshupService_1.gupshupService.isConfigured()) {
+        if (messagingService_1.messagingService.getActiveProvider() === 'none') {
             console.log(`[WhatsApp Bot] Would send to ${phone}: ${message.substring(0, 100)}...`);
             return;
         }
@@ -482,14 +482,15 @@ class WhatsAppBotService {
             },
         });
         if (user) {
-            await gupshupService_1.gupshupService.sendWhatsApp(user.id, phone, message);
+            await messagingService_1.messagingService.sendWhatsApp(user.id, phone, message);
         }
         else {
-            await gupshupService_1.gupshupService.sendWhatsAppDirect(phone, message);
+            await messagingService_1.messagingService.sendWhatsAppDirect(phone, message);
         }
     }
     async logInboundMessage(userId, phone, content) {
         try {
+            const provider = messagingService_1.messagingService.getActiveProvider().toUpperCase() || 'WHATSAPP';
             await db_1.prisma.messageRecord.create({
                 data: {
                     userId,
@@ -497,7 +498,7 @@ class WhatsAppBotService {
                     channel: 'WHATSAPP',
                     content: `[INBOUND] ${content}`,
                     status: 'DELIVERED',
-                    provider: 'GUPSHUP',
+                    provider,
                 },
             });
         }

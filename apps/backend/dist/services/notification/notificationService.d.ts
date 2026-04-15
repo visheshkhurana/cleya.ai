@@ -16,9 +16,9 @@ export declare class NotificationService {
         channel: import(".prisma/client").$Enums.NotificationChannel;
         createdAt: Date;
         metadata: import("@prisma/client/runtime/library").JsonValue | null;
+        title: string;
         event: import(".prisma/client").$Enums.NotificationEvent;
         sentAt: Date | null;
-        title: string;
         readAt: Date | null;
     }>;
     sendMultiChannel(userId: string, event: NotifEvent, title: string, body: string, metadata?: Record<string, any>): Promise<PromiseSettledResult<{
@@ -28,9 +28,9 @@ export declare class NotificationService {
         channel: import(".prisma/client").$Enums.NotificationChannel;
         createdAt: Date;
         metadata: import("@prisma/client/runtime/library").JsonValue | null;
+        title: string;
         event: import(".prisma/client").$Enums.NotificationEvent;
         sentAt: Date | null;
-        title: string;
         readAt: Date | null;
     }>[]>;
     private sendInApp;
@@ -44,9 +44,9 @@ export declare class NotificationService {
         channel: import(".prisma/client").$Enums.NotificationChannel;
         createdAt: Date;
         metadata: import("@prisma/client/runtime/library").JsonValue | null;
+        title: string;
         event: import(".prisma/client").$Enums.NotificationEvent;
         sentAt: Date | null;
-        title: string;
         readAt: Date | null;
     }[]>;
     markRead(notificationId: string, userId: string): Promise<import(".prisma/client").Prisma.BatchPayload>;
