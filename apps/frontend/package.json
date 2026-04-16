@@ -6,7 +6,9 @@
     "dev": "next dev --port 5000",
     "prebuild": "rm -rf .next",
     "build": "NEXT_IGNORE_INCORRECT_LOCKFILE=1 NEXT_TELEMETRY_DISABLED=1 NODE_OPTIONS='--max-old-space-size=3072' NODE_ENV=production next build",
-    "start": "next start --port 5000"
+    "start": "next start --port 5000",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@react-three/drei": "^9.92.7",
@@ -27,10 +29,15 @@
     "three": "^0.160.0"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^20.11.5",
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",
-    "typescript": "^5.3.3"
+    "@vitejs/plugin-react": "^6.0.1",
+    "jsdom": "^29.0.2",
+    "typescript": "^5.3.3",
+    "vitest": "^4.1.4"
   },
   "optionalDependencies": {
     "@next/swc-linux-x64-gnu": "14.2.33"

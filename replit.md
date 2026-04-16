@@ -537,6 +537,10 @@ Full 8-stage lifecycle implemented:
 - **404 page**: Custom not-found.tsx with dark teal theme, navigation buttons
 - **Error boundary**: error.tsx with retry button and dashboard link
 
+## Testing
+- **Frontend unit tests:** Vitest + React Testing Library + jsdom. Config: `apps/frontend/vitest.config.ts`. Setup: `apps/frontend/src/__tests__/setup.ts`. Run: `cd apps/frontend && npm test`. Tests in `apps/frontend/src/__tests__/`.
+- **Covered components:** UserAvatar (image rendering, optimized/unoptimized domains, error fallback to initials, error fallback to icon, all 7 size presets, both shape variants circle/rounded, className passthrough, style passthrough, gradient styling)
+
 ## Features (all tested E2E)
 1. **Auth** — Sign up, login, JWT auth, Get Me, smart routing, Google OAuth (optional)
 2. **Chat Onboarding** — State machine flow with 6 persona types
