@@ -8,8 +8,7 @@ import { analytics } from '@/lib/posthog';
 import { useToast } from '@/components/Toast';
 import AppFooter from '@/components/AppFooter';
 import AppShell from '@/components/AppShell';
-import Image from 'next/image';
-import { isOptimizedAvatarDomain } from '@/lib/avatarOptimization';
+import UserAvatar from '@/components/UserAvatar';
 
 interface ProfileData {
   persona?: string;
@@ -232,16 +231,15 @@ export default function ProfilePage() {
 
       <div className="max-w-3xl mx-auto px-6 lg:px-8 py-8 space-y-6">
         <div className="rounded-2xl border border-white/5 p-6 flex items-center gap-4" style={{ background: '#1A2035' }}>
-          {profile.avatarUrl ? (
-            <Image src={profile.avatarUrl} alt={profile.currentRole || 'Profile'} referrerPolicy="no-referrer"
-              width={64} height={64} unoptimized={!isOptimizedAvatarDomain(profile.avatarUrl)}
-              className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 border border-white/10" />
-          ) : (
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl"
-              style={{ background: 'linear-gradient(135deg, #6C63FF20, #4ECDC420)', border: '1px solid rgba(108,99,255,0.15)' }}>
-              {personaIcon[persona] || '💬'}
-            </div>
-          )}
+          <UserAvatar
+            name={profile.currentRole}
+            avatarUrl={profile.avatarUrl}
+            size="3xl"
+            shape="rounded"
+            fallbackIcon={personaIcon[persona] || '💬'}
+            className={profile.avatarUrl ? 'border border-white/10' : ''}
+            style={!profile.avatarUrl ? { background: 'linear-gradient(135deg, #6C63FF20, #4ECDC420)', border: '1px solid rgba(108,99,255,0.15)' } : undefined}
+          />
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-white">{profile.currentRole || 'Your Profile'}</h2>

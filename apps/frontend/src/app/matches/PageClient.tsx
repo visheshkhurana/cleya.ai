@@ -9,8 +9,7 @@ import { analytics } from '@/lib/posthog';
 import { useToast } from '@/components/Toast';
 import AppFooter from '@/components/AppFooter';
 import AppShell from '@/components/AppShell';
-import Image from 'next/image';
-import { isOptimizedAvatarDomain } from '@/lib/avatarOptimization';
+import UserAvatar from '@/components/UserAvatar';
 
 interface MatchData {
   id: string;
@@ -490,16 +489,15 @@ export default function MatchesPage() {
             </div>
 
             <div className="flex items-start gap-4 mb-5">
-              {profile?.avatarUrl ? (
-                <Image src={profile.avatarUrl} alt={profile?.currentRole || 'Profile'} referrerPolicy="no-referrer"
-                  width={64} height={64} unoptimized={!isOptimizedAvatarDomain(profile.avatarUrl)}
-                  className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 border border-white/10" />
-              ) : (
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
-                  style={{ background: 'linear-gradient(135deg, #6C63FF15, #4ECDC415)', border: '1px solid rgba(108,99,255,0.12)' }}>
-                  {personaIcon[profile?.persona || 'OTHER'] || '💬'}
-                </div>
-              )}
+              <UserAvatar
+                name={other.name || profile?.currentRole}
+                avatarUrl={profile?.avatarUrl}
+                size="3xl"
+                shape="rounded"
+                fallbackIcon={personaIcon[profile?.persona || 'OTHER'] || '💬'}
+                className={profile?.avatarUrl ? 'border border-white/10' : ''}
+                style={!profile?.avatarUrl ? { background: 'linear-gradient(135deg, #6C63FF15, #4ECDC415)', border: '1px solid rgba(108,99,255,0.12)' } : undefined}
+              />
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-white text-base">
                   {other.name || profile?.currentRole || other.email?.split('@')[0] || 'Unknown'}
@@ -654,16 +652,15 @@ export default function MatchesPage() {
         style={{ background: '#1A2035' }}>
         <div className="p-5">
           <div className="flex items-start gap-4">
-            {profile?.avatarUrl ? (
-              <Image src={profile.avatarUrl} alt={profile?.currentRole || 'Match'} referrerPolicy="no-referrer"
-                width={56} height={56} unoptimized={!isOptimizedAvatarDomain(profile.avatarUrl)}
-                className="w-14 h-14 rounded-2xl object-cover flex-shrink-0 border border-white/10" />
-            ) : (
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg, #6C63FF15, #4ECDC415)', border: '1px solid rgba(108,99,255,0.12)' }}>
-                {personaIcon[profile?.persona || 'OTHER'] || '💬'}
-              </div>
-            )}
+            <UserAvatar
+              name={other.name || profile?.currentRole}
+              avatarUrl={profile?.avatarUrl}
+              size="2xl"
+              shape="rounded"
+              fallbackIcon={personaIcon[profile?.persona || 'OTHER'] || '💬'}
+              className={profile?.avatarUrl ? 'border border-white/10' : ''}
+              style={!profile?.avatarUrl ? { background: 'linear-gradient(135deg, #6C63FF15, #4ECDC415)', border: '1px solid rgba(108,99,255,0.12)' } : undefined}
+            />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <h3 className="font-semibold text-white text-sm truncate">

@@ -5,10 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import AppNav from '@/components/AppNav';
 import AppFooter from '@/components/AppFooter';
 import AppShell from '@/components/AppShell';
-import Image from 'next/image';
+import UserAvatar from '@/components/UserAvatar';
 import { useTranslation } from '@/lib/i18n';
 import { Suspense } from 'react';
-import { isOptimizedAvatarDomain } from '@/lib/avatarOptimization';
 
 interface Partner {
   id: string;
@@ -173,13 +172,6 @@ function MessagesContent() {
     return parts.join(' at ') || partner.profile?.persona || '';
   };
 
-  const getPartnerInitials = (partner: Partner) => {
-    const name = partner.name || partner.profile?.currentRole || partner.email;
-    const parts = name.split(' ');
-    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-    return name[0]?.toUpperCase() || '?';
-  };
-
   const formatTime = (dateStr: string) => {
     const d = new Date(dateStr);
     const now = new Date();
@@ -231,16 +223,11 @@ function MessagesContent() {
                     selectedPartner === convo.partnerId ? 'bg-white/[0.04]' : ''
                   }`}>
                   <div className="flex items-center gap-3">
-                    {convo.partner.profile?.avatarUrl ? (
-                      <Image src={convo.partner.profile.avatarUrl} alt="" width={40} height={40}
-                        unoptimized={!isOptimizedAvatarDomain(convo.partner.profile.avatarUrl)}
-                        className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                        style={{ background: 'rgba(108,99,255,0.15)', color: '#9B95FF' }}>
-                        {getPartnerInitials(convo.partner)}
-                      </div>
-                    )}
+                    <UserAvatar
+                      name={getPartnerName(convo.partner)}
+                      avatarUrl={convo.partner.profile?.avatarUrl}
+                      size="lg"
+                    />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-medium text-white truncate">{getPartnerName(convo.partner)}</p>
@@ -282,16 +269,11 @@ function MessagesContent() {
                 <button onClick={() => { setSelectedPartner(null); selectedPartnerRef.current = null; }} className="sm:hidden text-white/30 hover:text-white/60">
                   ←
                 </button>
-                {selectedConvo?.partner.profile?.avatarUrl ? (
-                  <Image src={selectedConvo.partner.profile.avatarUrl} alt="" width={32} height={32}
-                    unoptimized={!isOptimizedAvatarDomain(selectedConvo.partner.profile.avatarUrl)}
-                    className="w-8 h-8 rounded-full object-cover" />
-                ) : (
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
-                    style={{ background: 'rgba(108,99,255,0.15)', color: '#9B95FF' }}>
-                    {selectedConvo ? getPartnerInitials(selectedConvo.partner) : '?'}
-                  </div>
-                )}
+                <UserAvatar
+                  name={selectedConvo ? getPartnerName(selectedConvo.partner) : undefined}
+                  avatarUrl={selectedConvo?.partner.profile?.avatarUrl}
+                  size="md"
+                />
                 <div>
                   <p className="text-sm font-medium text-white">
                     {selectedConvo ? getPartnerName(selectedConvo.partner) : ''}

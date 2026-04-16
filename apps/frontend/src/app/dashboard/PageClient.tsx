@@ -8,8 +8,7 @@ import { analytics, identifyUser } from '@/lib/posthog';
 import { setUser as setSentryUser } from '@/lib/sentry';
 import AppFooter from '@/components/AppFooter';
 import AppShell from '@/components/AppShell';
-import Image from 'next/image';
-import { isOptimizedAvatarDomain } from '@/lib/avatarOptimization';
+import UserAvatar from '@/components/UserAvatar';
 
 interface UserProfile {
   persona?: string;
@@ -64,7 +63,6 @@ export default function DashboardPage() {
   const [recentMatches, setRecentMatches] = useState<MatchData[]>([]);
   const [loading, setLoading] = useState(true);
   const [findingMatches, setFindingMatches] = useState(false);
-  const [avatarError, setAvatarError] = useState(false);
   const [showAIChat, setShowAIChat] = useState(false);
   const [aiMessages, setAiMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
   const [aiInput, setAiInput] = useState('');
@@ -338,17 +336,15 @@ export default function DashboardPage() {
 
         <div className="glass-card-glow p-6 fade-up">
           <div className="flex items-start gap-4">
-            {profile?.avatarUrl && !avatarError ? (
-              <Image src={profile.avatarUrl} alt={user?.name || 'Profile'} referrerPolicy="no-referrer"
-                width={64} height={64} unoptimized={!isOptimizedAvatarDomain(profile.avatarUrl)}
-                className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 border border-white/10"
-                onError={() => setAvatarError(true)} />
-            ) : (
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg, #6C63FF20, #4ECDC420)', border: '1px solid rgba(108,99,255,0.15)' }}>
-                {personaIcon[profile?.persona || 'OTHER'] || '💬'}
-              </div>
-            )}
+            <UserAvatar
+              name={user?.name || profile?.currentRole}
+              avatarUrl={profile?.avatarUrl}
+              size="3xl"
+              shape="rounded"
+              fallbackIcon={personaIcon[profile?.persona || 'OTHER'] || '💬'}
+              className={profile?.avatarUrl ? 'border border-white/10' : ''}
+              style={!profile?.avatarUrl ? { background: 'linear-gradient(135deg, #6C63FF20, #4ECDC420)', border: '1px solid rgba(108,99,255,0.15)' } : undefined}
+            />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <h2 className="text-xl font-bold text-white truncate">
