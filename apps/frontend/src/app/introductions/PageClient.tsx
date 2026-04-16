@@ -7,6 +7,7 @@ import AppNav from '@/components/AppNav';
 import AppFooter from '@/components/AppFooter';
 import NotificationCenter from '@/components/NotificationCenter';
 import { useTranslation } from '@/lib/i18n';
+import { personaIcon } from '@/lib/persona';
 
 interface IntroData {
   id: string;
@@ -25,12 +26,6 @@ interface IntroData {
   userA: { id: string; email: string; name?: string; profile?: any };
   userB: { id: string; email: string; name?: string; profile?: any };
 }
-
-const personaIcon: Record<string, string> = {
-  FOUNDER: '🚀', INVESTOR: '💰', TALENT: '🎯', DEAL_PARTNER: '🤝',
-  EVENT_PARTICIPANT: '🏆', VENTURE_PARTNER: '🏦', ADVISOR: '🧠',
-  OPERATOR: '⚙️', JOB_SEEKER: '💼', RECRUITER: '👔', FREELANCER: '✨', OTHER: '💬',
-};
 
 const statusStyles: Record<string, { bg: string; text: string; labelKey: string; icon: string }> = {
   PENDING_APPROVAL: { bg: 'rgba(245,158,11,0.15)', text: '#fbbf24', labelKey: 'intro.statusReview', icon: '⏳' },

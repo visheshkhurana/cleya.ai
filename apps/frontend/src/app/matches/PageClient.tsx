@@ -10,6 +10,7 @@ import { useToast } from '@/components/Toast';
 import AppFooter from '@/components/AppFooter';
 import AppShell from '@/components/AppShell';
 import UserAvatar from '@/components/UserAvatar';
+import { personaIcon, personaLabel } from '@/lib/persona';
 
 interface MatchData {
   id: string;
@@ -270,17 +271,6 @@ export default function MatchesPage() {
   })));
   const declinedMatches = sortList(filterBySearch(matches.filter((m) => m.status === 'REJECTED')));
 
-  const personaIcon: Record<string, string> = {
-    FOUNDER: '🚀', INVESTOR: '💰', TALENT: '🎯', DEAL_PARTNER: '🤝',
-    EVENT_PARTICIPANT: '🏆', VENTURE_PARTNER: '🏦', ADVISOR: '🧠',
-    OPERATOR: '⚙️', JOB_SEEKER: '💼', RECRUITER: '👔', FREELANCER: '✨', OTHER: '💬',
-  };
-
-  const personaLabel: Record<string, string> = {
-    FOUNDER: 'Founder', INVESTOR: 'Investor', TALENT: 'Talent', DEAL_PARTNER: 'Deal Partner',
-    EVENT_PARTICIPANT: 'The Pitch by Deel', VENTURE_PARTNER: 'Venture Partner', ADVISOR: 'Advisor',
-    OPERATOR: 'Operator', JOB_SEEKER: 'Job Seeker', RECRUITER: 'Recruiter', FREELANCER: 'Freelancer', OTHER: 'Other',
-  };
 
   const formatStage = (stage?: string) => {
     if (!stage) return null;

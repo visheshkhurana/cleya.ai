@@ -8,12 +8,7 @@ import Breadcrumb from '@/components/Breadcrumb';
 import NotificationCenter from '@/components/NotificationCenter';
 import AppShell from '@/components/AppShell';
 import { useTranslation } from '@/lib/i18n';
-
-const personaIcon: Record<string, string> = {
-  FOUNDER: '🚀', INVESTOR: '💰', TALENT: '🎯', DEAL_PARTNER: '🤝',
-  EVENT_PARTICIPANT: '🏆', VENTURE_PARTNER: '🏦', ADVISOR: '🧠',
-  OPERATOR: '⚙️', JOB_SEEKER: '💼', RECRUITER: '👔', FREELANCER: '✨', OTHER: '💬',
-};
+import { personaIcon } from '@/lib/persona';
 
 const statusStyles: Record<string, { bg: string; text: string; labelKey: string; icon: string }> = {
   PENDING_APPROVAL: { bg: 'rgba(245,158,11,0.15)', text: '#fbbf24', labelKey: 'intro.statusReview', icon: '⏳' },
