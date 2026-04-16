@@ -127,10 +127,10 @@ describe('UserAvatar', () => {
       expect(screen.getByText('?')).toBeInTheDocument();
     });
 
-    it('renders empty fallback for whitespace-only name', () => {
+    it('renders "?" fallback for whitespace-only name', () => {
       const { container } = render(<UserAvatar name="   " />);
       const div = container.firstChild as HTMLElement;
-      expect(div.textContent).toBe('');
+      expect(div.textContent).toBe('?');
     });
   });
 

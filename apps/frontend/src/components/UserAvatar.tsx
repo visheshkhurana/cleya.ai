@@ -30,7 +30,7 @@ const shapeClass = {
 };
 
 function getInitials(name?: string | null): string {
-  if (!name) return '?';
+  if (!name || !name.trim()) return '?';
   const parts = name.trim().split(/\s+/);
   if (parts.length >= 2) {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
