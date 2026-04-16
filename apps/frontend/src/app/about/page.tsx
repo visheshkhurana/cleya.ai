@@ -16,8 +16,6 @@ const highlights = [
   { value: 'Cross-Role', label: 'Founders, investors & talent matched' },
 ];
 
-const backers = ['Sequoia Scouts', 'Antler India', 'TiE Delhi', 'Nasscom', 'T-Hub'];
-
 export default function AboutPage() {
   return (
     <AppShell className="font-sans">
@@ -101,18 +99,6 @@ export default function AboutPage() {
                 <h3 className="text-sm font-semibold text-white">{t.name}</h3>
                 <p className="text-xs font-medium mt-0.5" style={{ color: '#9B95FF' }}>{t.role}</p>
                 <p className="text-xs mt-2 leading-relaxed" style={{ color: '#94A3B8' }}>{t.bio}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-white/5 p-8 text-center" style={{ background: 'rgba(15,22,41,0.8)' }}>
-          <h2 className="text-lg font-bold text-white mb-4">Backed & Supported By</h2>
-          <div className="flex flex-wrap justify-center gap-4">
-            {backers.map((b, i) => (
-              <div key={i} className="px-4 py-2 rounded-lg border border-white/5"
-                style={{ background: 'rgba(108,99,255,0.05)' }}>
-                <span className="text-sm font-medium text-white/80">{b}</span>
               </div>
             ))}
           </div>
