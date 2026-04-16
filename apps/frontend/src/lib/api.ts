@@ -27,6 +27,12 @@ class ApiClient {
     try {
       await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
     } catch {}
+    try {
+      const clerk = (typeof window !== 'undefined' ? (window as any).Clerk : null);
+      if (clerk?.signOut) {
+        await clerk.signOut();
+      }
+    } catch {}
     this._authenticated = false;
   }
 
@@ -110,6 +116,17 @@ class ApiClient {
 
   async getLinkedInAuthStatus() {
     return this.fetch<{ enabled: boolean }>('/auth/linkedin/status');
+  }
+
+  async getClerkAuthStatus() {
+    return this.fetch<{ enabled: boolean }>('/auth/clerk/status');
+  }
+
+  async clerkExchange(sessionToken: string) {
+    return this.fetch<{ user: any; token: string; isNew?: boolean }>('/auth/clerk/exchange', {
+      method: 'POST',
+      body: JSON.stringify({ sessionToken, platform: 'web' }),
+    });
   }
 
   // Auth

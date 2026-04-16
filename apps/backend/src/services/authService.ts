@@ -330,6 +330,87 @@ export class AuthService {
     };
   }
 
+  async findOrCreateClerkUser(clerkProfile: { email: string; name?: string; clerkUserId: string }) {
+    let user = await prisma.user.findUnique({
+      where: { email: clerkProfile.email },
+      include: { profile: true },
+    });
+
+    if (user) {
+      if (!user.isActive) {
+        throw new AppError(403, 'Account is disabled', 'ACCOUNT_DISABLED');
+      }
+      const updates: { emailVerified?: boolean; name?: string } = {};
+      if (!user.emailVerified) updates.emailVerified = true;
+      if (!user.name && clerkProfile.name) updates.name = clerkProfile.name;
+      if (Object.keys(updates).length > 0) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: updates,
+          include: { profile: true },
+        });
+      }
+      const token = this.generateToken(user);
+      return {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          phone: user.phone,
+          role: user.role,
+          emailVerified: user.emailVerified,
+          profile: user.profile,
+        },
+        token,
+        isNew: false,
+      };
+    }
+
+    user = await prisma.user.create({
+      data: {
+        email: clerkProfile.email,
+        name: clerkProfile.name,
+        passwordHash: '',
+        emailVerified: true,
+        profile: {
+          create: clerkProfile.name ? { currentRole: clerkProfile.name } : {},
+        },
+      },
+      include: { profile: true },
+    });
+
+    import('./dripCampaignService').then(({ dripCampaignService }) => {
+      dripCampaignService.enrollOnboarding(user!.id).catch((e) =>
+        console.log('[Auth] Drip campaign enrollment failed (Clerk):', e.message)
+      );
+    });
+
+    import('./email').then(({ emailService }) => {
+      emailService.sendWelcome(clerkProfile.email).catch(() => {});
+    });
+
+    import('./slackService').then(({ slackService }) => {
+      slackService
+        .notifyUserRegistered({ id: user!.id, email: user!.email, name: user!.name || undefined })
+        .catch(() => {});
+    });
+
+    const token = this.generateToken(user);
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        phone: user.phone,
+        role: user.role,
+        emailVerified: user.emailVerified,
+        profile: user.profile,
+      },
+      token,
+      isNew: true,
+    };
+  }
+
   async findOrCreateLinkedInUser(linkedinProfile: {
     email: string;
     name?: string;

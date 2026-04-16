@@ -41,6 +41,9 @@ const envSchema = z.object({
   LINKEDIN_CLIENT_ID: z.string().optional(),
   LINKEDIN_CLIENT_SECRET: z.string().optional(),
 
+  CLERK_PUBLISHABLE_KEY: z.string().optional(),
+  CLERK_SECRET_KEY: z.string().optional(),
+
   RESEND_API_KEY: z.string().optional(),
 
   SMTP_HOST: z.string().optional(),

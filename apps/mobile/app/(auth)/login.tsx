@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,20 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/contexts/AuthContext';
 import { Colors } from '@/constants/colors';
+import { api } from '@/lib/api';
+import ClerkContinueButton from '@/components/ClerkContinueButton';
+
+const CLERK_PROVIDER_AVAILABLE = !!process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
+function ClerkLoginSection({ onSuccess, onError }: { onSuccess: () => void; onError: (m: string) => void }) {
+  const [enabled, setEnabled] = useState(false);
+  useEffect(() => {
+    if (!CLERK_PROVIDER_AVAILABLE) return;
+    api.getClerkAuthStatus().then((d) => setEnabled(!!d?.enabled)).catch(() => {});
+  }, []);
+  if (!CLERK_PROVIDER_AVAILABLE || !enabled) return null;
+  return <ClerkContinueButton onSuccess={onSuccess} onError={onError} />;
+}
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -137,6 +151,11 @@ export default function LoginScreen() {
               <Text style={styles.buttonText}>Sign In</Text>
             )}
           </TouchableOpacity>
+
+          <ClerkLoginSection
+            onSuccess={() => router.replace('/(tabs)')}
+            onError={(msg) => setError(msg)}
+          />
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>Don't have an account?</Text>

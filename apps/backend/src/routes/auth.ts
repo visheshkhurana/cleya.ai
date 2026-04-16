@@ -10,6 +10,7 @@ import { whatsappTemplates } from '../services/whatsappTemplates';
 import { gupshupService } from '../services/gupshupService';
 import { prisma } from '@cleya/db';
 import { securityLogger, checkRepeatedAuthFailures } from '../services/securityLogger';
+import { clerkService } from '../services/clerkService';
 
 export const authRouter = Router();
 
@@ -385,6 +386,62 @@ authRouter.get('/linkedin/callback', async (req: Request, res: Response) => {
   } catch (err) {
     console.error('LinkedIn OAuth error:', err);
     res.redirect(`${env.FRONTEND_URL}/?error=linkedin_auth_error`);
+  }
+});
+
+authRouter.get('/clerk/status', (_req: Request, res: Response) => {
+  res.json({
+    success: true,
+    data: { enabled: clerkService.isConfigured() },
+  });
+});
+
+authRouter.post('/clerk/exchange', loginLimiter, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!clerkService.isConfigured()) {
+      res.status(503).json({
+        success: false,
+        error: { message: 'Clerk authentication is not configured', code: 'CLERK_NOT_CONFIGURED' },
+      });
+      return;
+    }
+
+    const { sessionToken, platform } = z.object({
+      sessionToken: z.string().min(1),
+      platform: z.enum(['web', 'mobile']).optional(),
+    }).parse(req.body);
+
+    const result = await clerkService.exchangeSessionToken(sessionToken);
+
+    securityLogger.authEvent(
+      req,
+      result.isNew ? 'SIGNUP' : 'LOGIN_SUCCESS',
+      'SUCCESS',
+      result.user.id,
+      { provider: 'clerk', isNew: result.isNew }
+    );
+
+    if (platform !== 'mobile') {
+      setAuthCookie(res, result.token);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        user: result.user,
+        token: result.token,
+        isNew: result.isNew,
+      },
+    });
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({
+        success: false,
+        error: { message: 'Invalid request', code: 'VALIDATION_ERROR', details: error.errors },
+      });
+      return;
+    }
+    next(error);
   }
 });
 

@@ -253,6 +253,19 @@ export const api = {
     await clearToken();
   },
 
+  async clerkExchange(sessionToken: string) {
+    const data = await apiFetch<{ user: AuthUser; token: string; isNew?: boolean }>('/auth/clerk/exchange', {
+      method: 'POST',
+      body: JSON.stringify({ sessionToken, platform: 'mobile' }),
+    });
+    if (data.token) await setToken(data.token);
+    return data;
+  },
+
+  async getClerkAuthStatus() {
+    return apiFetch<{ enabled: boolean }>('/auth/clerk/status');
+  },
+
   async getMe() {
     return apiFetch<AuthUser>('/auth/me');
   },

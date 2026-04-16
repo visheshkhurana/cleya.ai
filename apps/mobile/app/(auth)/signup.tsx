@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,19 @@ import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 import { Colors, personaLabels } from '@/constants/colors';
+import ClerkContinueButton from '@/components/ClerkContinueButton';
+
+const CLERK_PROVIDER_AVAILABLE = !!process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
+function ClerkSignupSection({ onSuccess, onError }: { onSuccess: () => void; onError: (m: string) => void }) {
+  const [enabled, setEnabled] = useState(false);
+  useEffect(() => {
+    if (!CLERK_PROVIDER_AVAILABLE) return;
+    api.getClerkAuthStatus().then((d) => setEnabled(!!d?.enabled)).catch(() => {});
+  }, []);
+  if (!CLERK_PROVIDER_AVAILABLE || !enabled) return null;
+  return <ClerkContinueButton onSuccess={onSuccess} onError={onError} />;
+}
 
 const personaOptions = ['FOUNDER', 'INVESTOR', 'TALENT'] as const;
 
@@ -171,6 +184,11 @@ export default function SignupScreen() {
               <Text style={styles.buttonText}>Create Account</Text>
             )}
           </TouchableOpacity>
+
+          <ClerkSignupSection
+            onSuccess={() => router.replace('/(tabs)')}
+            onError={(msg) => setError(msg)}
+          />
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>Already have an account?</Text>

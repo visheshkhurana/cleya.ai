@@ -3,6 +3,9 @@ import { Plus_Jakarta_Sans, DM_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import ClientProviders from "@/components/ClientProviders";
+import { ClerkProvider } from "@clerk/nextjs";
+
+const CLERK_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -104,11 +107,21 @@ export default function RootLayout({
         </Script>
       </head>
       <body className="min-h-screen" suppressHydrationWarning>
-        <ClientProviders>
-          <main id="main-content" tabIndex={-1} style={{ outline: "none" }}>
-            {children}
-          </main>
-        </ClientProviders>
+        {CLERK_PUBLISHABLE_KEY ? (
+          <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
+            <ClientProviders>
+              <main id="main-content" tabIndex={-1} style={{ outline: "none" }}>
+                {children}
+              </main>
+            </ClientProviders>
+          </ClerkProvider>
+        ) : (
+          <ClientProviders>
+            <main id="main-content" tabIndex={-1} style={{ outline: "none" }}>
+              {children}
+            </main>
+          </ClientProviders>
+        )}
         <Script
           id="organization-schema"
           type="application/ld+json"

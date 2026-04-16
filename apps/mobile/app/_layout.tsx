@@ -18,6 +18,11 @@ import {
 import { queryClient } from '@/lib/query-client';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { Colors } from '@/constants/colors';
+import { ClerkProvider } from '@clerk/clerk-expo';
+import { tokenCache } from '@/lib/clerkTokenCache';
+import ClerkSignOutBridge from '@/components/ClerkSignOutBridge';
+
+const CLERK_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 SplashScreen.preventAutoHideAsync();
 
@@ -70,7 +75,7 @@ export default function RootLayout() {
 
   if (!fontsLoaded && !fontError) return null;
 
-  return (
+  const inner = (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: Colors.background }}>
       <SafeAreaProvider>
         <KeyboardProvider>
@@ -93,5 +98,16 @@ export default function RootLayout() {
         </KeyboardProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
+  );
+
+  if (!CLERK_PUBLISHABLE_KEY) {
+    return inner;
+  }
+
+  return (
+    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY} tokenCache={tokenCache}>
+      <ClerkSignOutBridge />
+      {inner}
+    </ClerkProvider>
   );
 }

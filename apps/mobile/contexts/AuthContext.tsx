@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { api, AuthUser } from '@/lib/api';
+import { runClerkSignOut } from '@/lib/clerkBridge';
 
 interface User extends AuthUser {
   emailVerified?: boolean;
@@ -10,6 +11,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name?: string, persona?: string) => Promise<void>;
+  loginWithClerk: (sessionToken: string) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -19,6 +21,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   login: async () => {},
   signup: async () => {},
+  loginWithClerk: async () => {},
   logout: async () => {},
   refresh: async () => {},
 });
@@ -59,7 +62,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(data.user);
   }, []);
 
+  const loginWithClerk = useCallback(async (sessionToken: string) => {
+    const data = await api.clerkExchange(sessionToken);
+    setUser(data.user);
+  }, []);
+
   const logout = useCallback(async () => {
+    await runClerkSignOut();
     await api.logout();
     setUser(null);
   }, []);
@@ -69,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [checkAuth]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout, refresh }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, loginWithClerk, logout, refresh }}>
       {children}
     </AuthContext.Provider>
   );
