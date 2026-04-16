@@ -3,10 +3,12 @@ import Link from 'next/link';
 import PublicNav from '@/components/PublicNav';
 import AppShell from '@/components/AppShell';
 
-const team = [
+const team: { name: string; role: string; bio: string; imageUrl?: string }[] = [
   { name: 'Rahul Sharma', role: 'Founder & CEO', bio: 'Ex-product lead at a unicorn. Building the networking layer for India\'s startup ecosystem.' },
   { name: 'Priya Patel', role: 'Head of Investor Relations', bio: 'Former VC associate. Connects founders with the right capital partners.' },
   { name: 'Arjun Mehta', role: 'Head of Engineering', bio: 'Full-stack engineer passionate about AI/ML and matchmaking algorithms.' },
+  { name: 'Vishesh Khurana', role: 'Vibe Coder', bio: 'Turning ideas into products with AI-powered development. Passionate about building fast and shipping faster.' },
+  { name: 'Jivraj Singh Sachar', role: 'Vibe Coder', bio: 'Podcaster (Indian Silicon Valley), angel investor, and Forbes 30 Under 30 Asia. GP at ISV Capital, building with AI and vibes.' },
 ];
 
 const highlights = [
@@ -87,13 +89,17 @@ export default function AboutPage() {
 
         <section>
           <h2 className="text-xl font-bold text-white mb-6 text-center">Meet the Team</h2>
-          <div className="grid sm:grid-cols-3 gap-4">
+          <div className="flex flex-wrap justify-center gap-4">
             {team.map((t, i) => (
-              <div key={i} className="rounded-2xl border border-white/5 p-5 text-center" style={{ background: 'rgba(15,22,41,0.8)' }}>
-                <div className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center text-lg font-bold"
-                  style={{ background: 'rgba(108,99,255,0.15)', color: '#9B95FF' }}>
-                  {t.name.split(' ').map(n => n[0]).join('')}
-                </div>
+              <div key={i} className="rounded-2xl border border-white/5 p-5 text-center w-full sm:basis-[calc(33.333%_-_0.75rem)]" style={{ background: 'rgba(15,22,41,0.8)' }}>
+                {t.imageUrl ? (
+                  <img src={t.imageUrl} alt={t.name} className="w-16 h-16 rounded-full mx-auto mb-3 object-cover" />
+                ) : (
+                  <div className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center text-lg font-bold"
+                    style={{ background: 'rgba(108,99,255,0.15)', color: '#9B95FF' }}>
+                    {t.name.split(' ').map(n => n[0]).join('')}
+                  </div>
+                )}
                 <h3 className="text-sm font-semibold text-white">{t.name}</h3>
                 <p className="text-xs font-medium mt-0.5" style={{ color: '#9B95FF' }}>{t.role}</p>
                 <p className="text-xs mt-2 leading-relaxed" style={{ color: '#94A3B8' }}>{t.bio}</p>
