@@ -61,7 +61,7 @@ export function authenticate(req: Request, _res: Response, next: NextFunction) {
       const iat = payload.issuedAt || (payload as any).iat;
       if (iat) {
         const now = Math.floor(Date.now() / 1000);
-        const ADMIN_TIMEOUT = 30 * 60;
+        const ADMIN_TIMEOUT = 12 * 60 * 60;
         if (now - iat > ADMIN_TIMEOUT) {
           throw new AppError(401, 'Admin session expired due to inactivity', 'SESSION_EXPIRED');
         }

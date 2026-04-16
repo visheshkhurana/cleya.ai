@@ -99,6 +99,20 @@ class ApiClient {
         }
       }
       const errMsg = json.error?.message || 'Request failed';
+      const errCode = json.error?.code;
+      if (
+        res.status === 401 &&
+        (errCode === 'TOKEN_EXPIRED' || errCode === 'SESSION_EXPIRED' || errCode === 'UNAUTHORIZED') &&
+        typeof window !== 'undefined' &&
+        !path.startsWith('/auth/')
+      ) {
+        const current = window.location.pathname + window.location.search;
+        if (!current.startsWith('/login') && !current.startsWith('/signup')) {
+          const next = encodeURIComponent(current);
+          window.location.href = `/login?next=${next}&reason=expired`;
+        }
+        throw new Error('Your session has expired. Please log in again.');
+      }
       const details = json.error?.details;
       if (details && Array.isArray(details) && details.length > 0) {
         const detailStr = details.map((d: any) => d.field ? `${d.field}: ${d.message}` : d.message).join('; ');

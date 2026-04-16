@@ -580,7 +580,7 @@ export class AuthService {
       issuedAt: Math.floor(Date.now() / 1000),
     };
 
-    const expiresIn = (user.role as string).toUpperCase() === 'ADMIN' ? '30m' : env.JWT_EXPIRES_IN;
+    const expiresIn = (user.role as string).toUpperCase() === 'ADMIN' ? '12h' : env.JWT_EXPIRES_IN;
 
     return jwt.sign(payload, env.JWT_SECRET, {
       expiresIn,
