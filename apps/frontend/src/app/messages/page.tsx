@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import AppNav from '@/components/AppNav';
 import AppFooter from '@/components/AppFooter';
 import AppShell from '@/components/AppShell';
+import Image from 'next/image';
 import { useTranslation } from '@/lib/i18n';
 import { Suspense } from 'react';
 
@@ -230,7 +231,7 @@ function MessagesContent() {
                   }`}>
                   <div className="flex items-center gap-3">
                     {convo.partner.profile?.avatarUrl ? (
-                      <img src={convo.partner.profile.avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                      <Image src={convo.partner.profile.avatarUrl} alt="" width={40} height={40} className="w-10 h-10 rounded-full object-cover flex-shrink-0" unoptimized />
                     ) : (
                       <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
                         style={{ background: 'rgba(108,99,255,0.15)', color: '#9B95FF' }}>
@@ -279,7 +280,7 @@ function MessagesContent() {
                   ←
                 </button>
                 {selectedConvo?.partner.profile?.avatarUrl ? (
-                  <img src={selectedConvo.partner.profile.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
+                  <Image src={selectedConvo.partner.profile.avatarUrl} alt="" width={32} height={32} className="w-8 h-8 rounded-full object-cover" unoptimized />
                 ) : (
                   <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
                     style={{ background: 'rgba(108,99,255,0.15)', color: '#9B95FF' }}>

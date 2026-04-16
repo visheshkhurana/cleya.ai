@@ -9,6 +9,7 @@ import { analytics } from '@/lib/posthog';
 import { useToast } from '@/components/Toast';
 import AppFooter from '@/components/AppFooter';
 import AppShell from '@/components/AppShell';
+import Image from 'next/image';
 
 interface MatchData {
   id: string;
@@ -489,8 +490,8 @@ export default function MatchesPage() {
 
             <div className="flex items-start gap-4 mb-5">
               {profile?.avatarUrl ? (
-                <img src={profile.avatarUrl} alt={profile?.currentRole || 'Profile'} referrerPolicy="no-referrer"
-                  className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 border border-white/10" />
+                <Image src={profile.avatarUrl} alt={profile?.currentRole || 'Profile'} width={64} height={64} referrerPolicy="no-referrer"
+                  className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 border border-white/10" unoptimized />
               ) : (
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
                   style={{ background: 'linear-gradient(135deg, #6C63FF15, #4ECDC415)', border: '1px solid rgba(108,99,255,0.12)' }}>
@@ -652,8 +653,8 @@ export default function MatchesPage() {
         <div className="p-5">
           <div className="flex items-start gap-4">
             {profile?.avatarUrl ? (
-              <img src={profile.avatarUrl} alt={profile?.currentRole || 'Match'} referrerPolicy="no-referrer"
-                className="w-14 h-14 rounded-2xl object-cover flex-shrink-0 border border-white/10" />
+              <Image src={profile.avatarUrl} alt={profile?.currentRole || 'Match'} width={56} height={56} referrerPolicy="no-referrer"
+                className="w-14 h-14 rounded-2xl object-cover flex-shrink-0 border border-white/10" unoptimized />
             ) : (
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
                 style={{ background: 'linear-gradient(135deg, #6C63FF15, #4ECDC415)', border: '1px solid rgba(108,99,255,0.12)' }}>

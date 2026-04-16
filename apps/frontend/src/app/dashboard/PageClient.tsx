@@ -8,6 +8,7 @@ import { analytics, identifyUser } from '@/lib/posthog';
 import { setUser as setSentryUser } from '@/lib/sentry';
 import AppFooter from '@/components/AppFooter';
 import AppShell from '@/components/AppShell';
+import Image from 'next/image';
 
 interface UserProfile {
   persona?: string;
@@ -337,9 +338,9 @@ export default function DashboardPage() {
         <div className="glass-card-glow p-6 fade-up">
           <div className="flex items-start gap-4">
             {profile?.avatarUrl && !avatarError ? (
-              <img src={profile.avatarUrl} alt={user?.name || 'Profile'} referrerPolicy="no-referrer"
+              <Image src={profile.avatarUrl} alt={user?.name || 'Profile'} width={64} height={64} referrerPolicy="no-referrer"
                 className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 border border-white/10"
-                onError={() => setAvatarError(true)} />
+                onError={() => setAvatarError(true)} unoptimized />
             ) : (
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0"
                 style={{ background: 'linear-gradient(135deg, #6C63FF20, #4ECDC420)', border: '1px solid rgba(108,99,255,0.15)' }}>

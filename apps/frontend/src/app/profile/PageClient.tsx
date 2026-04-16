@@ -8,6 +8,7 @@ import { analytics } from '@/lib/posthog';
 import { useToast } from '@/components/Toast';
 import AppFooter from '@/components/AppFooter';
 import AppShell from '@/components/AppShell';
+import Image from 'next/image';
 
 interface ProfileData {
   persona?: string;
@@ -231,8 +232,8 @@ export default function ProfilePage() {
       <div className="max-w-3xl mx-auto px-6 lg:px-8 py-8 space-y-6">
         <div className="rounded-2xl border border-white/5 p-6 flex items-center gap-4" style={{ background: '#1A2035' }}>
           {profile.avatarUrl ? (
-            <img src={profile.avatarUrl} alt={profile.currentRole || 'Profile'} referrerPolicy="no-referrer"
-              className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 border border-white/10" />
+            <Image src={profile.avatarUrl} alt={profile.currentRole || 'Profile'} width={64} height={64} referrerPolicy="no-referrer"
+              className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 border border-white/10" unoptimized />
           ) : (
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl"
               style={{ background: 'linear-gradient(135deg, #6C63FF20, #4ECDC420)', border: '1px solid rgba(108,99,255,0.15)' }}>
