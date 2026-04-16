@@ -589,6 +589,81 @@ authRouter.post('/mfa/validate', adminLoginLimiter, async (req: Request, res: Re
   }
 });
 
+authRouter.get('/providers', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.userId },
+      select: { email: true, passwordHash: true, googleId: true, linkedinId: true, clerkId: true },
+    });
+    if (!user) {
+      res.status(404).json({ success: false, error: { message: 'User not found', code: 'USER_NOT_FOUND' } });
+      return;
+    }
+    const providers = [
+      { id: 'password', label: 'Email & password', linked: !!user.passwordHash, identifier: user.passwordHash ? user.email : null },
+      { id: 'google', label: 'Google', linked: !!user.googleId, identifier: user.googleId ? user.email : null },
+      { id: 'linkedin', label: 'LinkedIn', linked: !!user.linkedinId, identifier: user.linkedinId ? user.email : null },
+      { id: 'clerk', label: 'Clerk', linked: !!user.clerkId, identifier: user.clerkId ? user.email : null },
+    ];
+    res.json({ success: true, data: { providers } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+authRouter.post('/providers/disconnect', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { provider } = z.object({
+      provider: z.enum(['password', 'google', 'linkedin', 'clerk']),
+    }).parse(req.body);
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.userId },
+      select: { passwordHash: true, googleId: true, linkedinId: true, clerkId: true },
+    });
+    if (!user) {
+      res.status(404).json({ success: false, error: { message: 'User not found', code: 'USER_NOT_FOUND' } });
+      return;
+    }
+
+    const linked = {
+      password: !!user.passwordHash,
+      google: !!user.googleId,
+      linkedin: !!user.linkedinId,
+      clerk: !!user.clerkId,
+    };
+
+    if (!linked[provider]) {
+      res.status(400).json({ success: false, error: { message: 'Provider is not connected', code: 'PROVIDER_NOT_LINKED' } });
+      return;
+    }
+
+    const linkedCount = Object.values(linked).filter(Boolean).length;
+    if (linkedCount <= 1) {
+      res.status(400).json({
+        success: false,
+        error: {
+          message: 'You cannot disconnect your only sign-in method. Add another way to sign in first.',
+          code: 'LAST_PROVIDER',
+        },
+      });
+      return;
+    }
+
+    const data: { passwordHash?: string; googleId?: null; linkedinId?: null; clerkId?: null } = {};
+    if (provider === 'password') data.passwordHash = '';
+    if (provider === 'google') data.googleId = null;
+    if (provider === 'linkedin') data.linkedinId = null;
+    if (provider === 'clerk') data.clerkId = null;
+
+    await prisma.user.update({ where: { id: req.user!.userId }, data });
+    securityLogger.authEvent(req, 'PROVIDER_DISCONNECT', 'SUCCESS', req.user!.userId, { provider });
+    res.json({ success: true, data: { provider, disconnected: true } });
+  } catch (error) {
+    next(error);
+  }
+});
+
 authRouter.post('/reauth', adminLoginLimiter, authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { password } = z.object({ password: z.string() }).parse(req.body);

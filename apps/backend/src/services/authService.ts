@@ -273,10 +273,13 @@ export class AuthService {
       if (!user.isActive) {
         throw new AppError(403, 'Account is disabled', 'ACCOUNT_DISABLED');
       }
-      if (!user.emailVerified) {
+      const updates: any = {};
+      if (!user.emailVerified) updates.emailVerified = true;
+      if (!user.googleId) updates.googleId = googleProfile.googleId;
+      if (Object.keys(updates).length > 0) {
         user = await prisma.user.update({
           where: { id: user.id },
-          data: { emailVerified: true },
+          data: updates,
           include: { profile: true },
         });
       }
@@ -300,6 +303,7 @@ export class AuthService {
         email: googleProfile.email,
         passwordHash: '',
         emailVerified: true,
+        googleId: googleProfile.googleId,
         profile: {
           create: {
             ...(googleProfile.name ? { currentRole: googleProfile.name } : {}),
@@ -340,9 +344,10 @@ export class AuthService {
       if (!user.isActive) {
         throw new AppError(403, 'Account is disabled', 'ACCOUNT_DISABLED');
       }
-      const updates: { emailVerified?: boolean; name?: string } = {};
+      const updates: { emailVerified?: boolean; name?: string; clerkId?: string } = {};
       if (!user.emailVerified) updates.emailVerified = true;
       if (!user.name && clerkProfile.name) updates.name = clerkProfile.name;
+      if (!user.clerkId) updates.clerkId = clerkProfile.clerkUserId;
       if (Object.keys(updates).length > 0) {
         user = await prisma.user.update({
           where: { id: user.id },
@@ -372,6 +377,7 @@ export class AuthService {
         name: clerkProfile.name,
         passwordHash: '',
         emailVerified: true,
+        clerkId: clerkProfile.clerkUserId,
         profile: {
           create: clerkProfile.name ? { currentRole: clerkProfile.name } : {},
         },
@@ -439,6 +445,7 @@ export class AuthService {
       const userUpdates: any = {};
       if (!user.emailVerified) userUpdates.emailVerified = true;
       if (!user.name && linkedinProfile.name) userUpdates.name = linkedinProfile.name;
+      if (!user.linkedinId) userUpdates.linkedinId = linkedinProfile.linkedinId;
 
       if (Object.keys(userUpdates).length > 0) {
         user = await prisma.user.update({
@@ -505,6 +512,7 @@ export class AuthService {
         name: linkedinProfile.name || undefined,
         passwordHash: '',
         emailVerified: true,
+        linkedinId: linkedinProfile.linkedinId,
         profile: {
           create: profileData,
         },

@@ -308,6 +308,17 @@ class ApiClient {
     return this.fetch('/users/account', { method: 'DELETE' });
   }
 
+  async getAuthProviders() {
+    return this.fetch('/auth/providers');
+  }
+
+  async disconnectAuthProvider(provider: 'password' | 'google' | 'linkedin' | 'clerk') {
+    return this.fetch('/auth/providers/disconnect', {
+      method: 'POST',
+      body: JSON.stringify({ provider }),
+    });
+  }
+
   async exportMyData(format: 'json' | 'csv' = 'json') {
     const res = await fetch(`${API_BASE}/users/export?format=${format}`, {
       credentials: 'include',

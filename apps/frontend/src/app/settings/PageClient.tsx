@@ -32,6 +32,9 @@ export default function SettingsPage() {
   const [waLoading, setWaLoading] = useState(false);
   const [waMsg, setWaMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [integrationMsg, setIntegrationMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [providers, setProviders] = useState<Array<{ id: string; label: string; linked: boolean; identifier: string | null }> | null>(null);
+  const [providerLoading, setProviderLoading] = useState<string | null>(null);
+  const [providerMsg, setProviderMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     api.getMe().then((user) => {
@@ -61,6 +64,10 @@ export default function SettingsPage() {
 
     api.calendarStatus().then(data => {
       if (data) setCalendarStatus(data);
+    }).catch(() => {});
+
+    api.getAuthProviders().then(data => {
+      if (data?.providers) setProviders(data.providers);
     }).catch(() => {});
 
     api.whatsappStatus().then(data => {
@@ -740,6 +747,100 @@ export default function SettingsPage() {
               )
             )}
           </div>
+        </section>
+
+        {/* Connected Accounts */}
+        <section style={{
+          background: 'rgba(15,22,41,0.8)',
+          border: '1px solid rgba(255,255,255,0.05)',
+          borderRadius: '16px',
+          padding: '28px',
+          marginBottom: '24px',
+        }}>
+          <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 600, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '20px' }}>🔗</span> Connected Accounts
+          </h2>
+          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '13px', marginBottom: '20px', lineHeight: 1.5 }}>
+            These are the sign-in methods linked to your account. You need at least one connected method to keep access.
+          </p>
+
+          {providerMsg && (
+            <div style={{
+              padding: '10px 14px', borderRadius: '10px', fontSize: '13px', marginBottom: '16px',
+              background: providerMsg.type === 'success' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+              border: `1px solid ${providerMsg.type === 'success' ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
+              color: providerMsg.type === 'success' ? '#6ee7b7' : '#fca5a5',
+            }}>
+              {providerMsg.text}
+            </div>
+          )}
+
+          {!providers ? (
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>Loading…</p>
+          ) : (
+            <div style={{ display: 'grid', gap: '10px' }}>
+              {providers.map(p => {
+                const linkedCount = providers.filter(x => x.linked).length;
+                const canDisconnect = p.linked && linkedCount > 1;
+                const icons: Record<string, string> = { password: '🔑', google: 'G', linkedin: 'in', clerk: 'C' };
+                const colors: Record<string, string> = {
+                  password: '#9CA3AF', google: '#EA4335', linkedin: '#0A66C2', clerk: '#6C47FF',
+                };
+                return (
+                  <div key={p.id} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '14px 16px', borderRadius: '12px',
+                    background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{
+                        width: '36px', height: '36px', borderRadius: '10px',
+                        background: p.linked ? colors[p.id] : 'rgba(255,255,255,0.06)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: '#fff', fontSize: '14px', fontWeight: 700,
+                      }}>{icons[p.id] || '•'}</div>
+                      <div>
+                        <p style={{ color: '#fff', fontSize: '14px', fontWeight: 500, margin: 0 }}>{p.label}</p>
+                        <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', margin: '2px 0 0 0' }}>
+                          {p.linked
+                            ? (p.identifier ? `Connected — ${p.identifier}` : 'Connected')
+                            : 'Not connected'}
+                        </p>
+                      </div>
+                    </div>
+                    {p.linked && (
+                      <button
+                        onClick={async () => {
+                          setProviderMsg(null);
+                          setProviderLoading(p.id);
+                          try {
+                            await api.disconnectAuthProvider(p.id as 'password' | 'google' | 'linkedin' | 'clerk');
+                            const data = await api.getAuthProviders();
+                            if (data?.providers) setProviders(data.providers);
+                            setProviderMsg({ type: 'success', text: `${p.label} disconnected.` });
+                          } catch (err: any) {
+                            setProviderMsg({ type: 'error', text: err.message || 'Failed to disconnect' });
+                          }
+                          setProviderLoading(null);
+                        }}
+                        disabled={!canDisconnect || providerLoading === p.id}
+                        title={!canDisconnect ? 'You need at least one sign-in method.' : undefined}
+                        style={{
+                          padding: '8px 16px', borderRadius: '8px', fontSize: '13px',
+                          background: canDisconnect ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.04)',
+                          color: canDisconnect ? '#ef4444' : 'rgba(255,255,255,0.3)',
+                          border: `1px solid ${canDisconnect ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                          cursor: canDisconnect ? 'pointer' : 'not-allowed',
+                          opacity: providerLoading === p.id ? 0.5 : 1,
+                        }}>
+                        {providerLoading === p.id ? '...' : 'Disconnect'}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </section>
 
         {/* Danger Zone */}
