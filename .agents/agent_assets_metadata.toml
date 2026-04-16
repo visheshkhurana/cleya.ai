@@ -1,0 +1,20 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "yaxNH_q6Uu9JHQ4mINx8v"
+uri = "file://apps/frontend/public/team/rahul.png"
+type = "image"
+title = "Rahul CEO headshot"
+
+[[generated]]
+id = "JLAW56ACn-UgFJjz-5v35"
+uri = "file://apps/frontend/public/team/priya.png"
+type = "image"
+title = "Priya investor relations headshot"
+
+[[generated]]
+id = "zZlrH9PxfRgIM7p_SYe73"
+uri = "file://apps/frontend/public/team/arjun.png"
+type = "image"
+title = "Arjun engineering headshot"

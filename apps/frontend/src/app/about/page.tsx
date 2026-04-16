@@ -4,9 +4,9 @@ import PublicNav from '@/components/PublicNav';
 import AppShell from '@/components/AppShell';
 
 const team: { name: string; role: string; bio: string; imageUrl?: string }[] = [
-  { name: 'Rahul Sharma', role: 'Founder & CEO', bio: 'Ex-product lead at a unicorn. Building the networking layer for India\'s startup ecosystem.' },
-  { name: 'Priya Patel', role: 'Head of Investor Relations', bio: 'Former VC associate. Connects founders with the right capital partners.' },
-  { name: 'Arjun Mehta', role: 'Head of Engineering', bio: 'Full-stack engineer passionate about AI/ML and matchmaking algorithms.' },
+  { name: 'Rahul Sharma', role: 'Founder & CEO', bio: 'Ex-product lead at a unicorn. Building the networking layer for India\'s startup ecosystem.', imageUrl: '/team/rahul.png' },
+  { name: 'Priya Patel', role: 'Head of Investor Relations', bio: 'Former VC associate. Connects founders with the right capital partners.', imageUrl: '/team/priya.png' },
+  { name: 'Arjun Mehta', role: 'Head of Engineering', bio: 'Full-stack engineer passionate about AI/ML and matchmaking algorithms.', imageUrl: '/team/arjun.png' },
   { name: 'Vishesh Khurana', role: 'Vibe Coder', bio: 'Turning ideas into products with AI-powered development. Passionate about building fast and shipping faster.' },
   { name: 'Jivraj Singh Sachar', role: 'Vibe Coder', bio: 'Podcaster (Indian Silicon Valley), angel investor, and Forbes 30 Under 30 Asia. GP at ISV Capital, building with AI and vibes.' },
 ];
