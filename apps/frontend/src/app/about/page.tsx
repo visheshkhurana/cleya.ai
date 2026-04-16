@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
+import { MessageSquare, Sparkles, Share2, Rocket, TrendingUp, Target } from 'lucide-react';
 import PublicNav from '@/components/PublicNav';
 import AppShell from '@/components/AppShell';
 
@@ -51,12 +52,17 @@ export default function AboutPage() {
           <h2 className="text-xl font-bold text-white mb-4">How It Works</h2>
           <div className="space-y-4">
             {[
-              { icon: '💬', title: 'Chat with Cleya', desc: 'Have a natural conversation with our AI. Tell us about your background, goals, and who you want to connect with.' },
-              { icon: '🧠', title: 'AI Matching', desc: 'Our algorithms analyze compatibility across multiple dimensions — industry, stage, goals, and complementary strengths.' },
-              { icon: '🤝', title: 'Warm Introductions', desc: 'When both parties are interested, Cleya facilitates a warm introduction with context for both sides.' },
+              { Icon: MessageSquare, title: 'Chat with Cleya', desc: 'Have a natural conversation with our AI. Tell us about your background, goals, and who you want to connect with.' },
+              { Icon: Sparkles, title: 'AI Matching', desc: 'Our algorithms analyze compatibility across multiple dimensions — industry, stage, goals, and complementary strengths.' },
+              { Icon: Share2, title: 'Warm Introductions', desc: 'When both parties are interested, Cleya facilitates a warm introduction with context for both sides.' },
             ].map((step, i) => (
               <div key={i} className="flex items-start gap-4">
-                <span className="text-2xl mt-0.5">{step.icon}</span>
+                <div
+                  className="flex items-center justify-center w-10 h-10 rounded-xl border border-brand-violet/20 shrink-0"
+                  style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.18), rgba(78,205,196,0.12))' }}
+                >
+                  <step.Icon className="w-5 h-5" style={{ color: '#9B95FF' }} strokeWidth={1.75} />
+                </div>
                 <div>
                   <h3 className="text-sm font-semibold text-white mb-1">{step.title}</h3>
                   <p className="text-xs leading-relaxed" style={{ color: '#94A3B8' }}>{step.desc}</p>
@@ -70,13 +76,18 @@ export default function AboutPage() {
           <h2 className="text-xl font-bold text-white mb-4">Who Is Cleya For?</h2>
           <div className="grid sm:grid-cols-3 gap-4">
             {[
-              { icon: '🚀', title: 'Founders', desc: 'Find investors, co-founders, and key hires aligned with your stage and sector.' },
-              { icon: '💰', title: 'Investors', desc: 'Discover vetted deal flow and portfolio synergies matched to your thesis.' },
-              { icon: '🎯', title: 'Talent & Operators', desc: 'Connect with high-growth startups hiring now for leadership roles.' },
+              { Icon: Rocket, title: 'Founders', desc: 'Find investors, co-founders, and key hires aligned with your stage and sector.' },
+              { Icon: TrendingUp, title: 'Investors', desc: 'Discover vetted deal flow and portfolio synergies matched to your thesis.' },
+              { Icon: Target, title: 'Talent & Operators', desc: 'Connect with high-growth startups hiring now for leadership roles.' },
             ].map((p, i) => (
-              <div key={i} className="text-center p-4 rounded-xl border border-white/5" style={{ background: 'rgba(108,99,255,0.05)' }}>
-                <span className="text-3xl">{p.icon}</span>
-                <h3 className="text-sm font-semibold text-white mt-2 mb-1">{p.title}</h3>
+              <div key={i} className="text-center p-5 rounded-xl border border-white/5" style={{ background: 'rgba(108,99,255,0.05)' }}>
+                <div
+                  className="inline-flex items-center justify-center w-12 h-12 rounded-2xl border border-brand-violet/20 mb-3"
+                  style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.22), rgba(78,205,196,0.14))' }}
+                >
+                  <p.Icon className="w-6 h-6" style={{ color: '#9B95FF' }} strokeWidth={1.75} />
+                </div>
+                <h3 className="text-sm font-semibold text-white mb-1">{p.title}</h3>
                 <p className="text-xs" style={{ color: '#94A3B8' }}>{p.desc}</p>
               </div>
             ))}
