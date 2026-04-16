@@ -14,6 +14,7 @@ Monorepo with:
 - `packages/types` — Shared TypeScript types
 
 ## Stack
+- **Avatar Optimization:** Single source of truth for OAuth avatar domains in `apps/frontend/src/lib/avatarDomains.js` (shared by next.config.js remotePatterns and runtime `isOptimizedAvatarDomain` utility in `avatarOptimization.ts`). Covers Google, GitHub, Facebook, Twitter, LinkedIn, Discord, Apple, Microsoft, Slack, Gravatar.
 - **Frontend:** Next.js 14, React 18, Tailwind CSS ("Premium Dark" theme — Canvas #080D1A, Surface #0F1629, Card #1A2035, Raised #252B42; Brand accents: Violet #6C63FF primary CTA, Teal #4ECDC4 success/match; Plus Jakarta Sans + DM Mono typography), Framer Motion 11, @react-three/fiber 8.15.12 + drei 9.92.7 + three 0.160.0 (3D hero constellation), AppShell component (ParticleNetwork + dot-grid overlay for all pages), TiltCard (3D perspective hover), 3D scroll animations, flip counters, 3D button press effects
 - **Mobile:** Expo SDK 52 (React Native 0.76), expo-router 4, React Query, SecureStore for auth tokens, expo-file-system + expo-sharing (data export), expo-web-browser (OAuth flows), expo-linking (deep links for reset-password, verify-email, join)
 - **Backend:** Express, TypeScript, WebSocket

@@ -1,3 +1,5 @@
+const { OPTIMIZED_AVATAR_DOMAINS } = require('./src/lib/avatarDomains');
+
 /** @type {import('next').NextConfig} */
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -21,12 +23,10 @@ const nextConfig = {
     formats: ['image/webp', 'image/avif'],
     minimumCacheTTL: 60,
     remotePatterns: [
-      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
-      { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
-      { protocol: 'https', hostname: 'platform-lookaside.fbsbx.com' },
-      { protocol: 'https', hostname: 'pbs.twimg.com' },
-      { protocol: 'https', hostname: 'media.licdn.com' },
-      { protocol: 'https', hostname: 'cdn.discordapp.com' },
+      ...OPTIMIZED_AVATAR_DOMAINS.map((hostname) => ({
+        protocol: 'https',
+        hostname,
+      })),
       { protocol: 'https', hostname: '*.googleusercontent.com' },
     ],
   },
