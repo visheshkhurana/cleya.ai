@@ -963,11 +963,10 @@ export default function Home() {
   }
 
   const testimonials = [
-    { initials: 'AM', quote: 'Met my lead investor within a week of joining.', name: 'Arjun M.', title: 'Founder · Fintech · Bangalore' },
-    { initials: 'MI', quote: 'The deal flow quality is leagues ahead of cold inbound.', name: 'Meera I.', title: 'Partner · Blume Ventures' },
-    { initials: 'PS', quote: 'Found a CTO match for my healthtech startup in Tier-2.', name: 'Priya S.', title: 'Founder · HealthTech · Delhi NCR' },
-    { initials: 'RV', quote: 'Landed my founding engineer role through a Cleya intro.', name: 'Rahul V.', title: 'Founding Engineer · Bangalore' },
-    { initials: 'NK', quote: 'Cleya connected me to 3 portfolio founders in one day.', name: 'Nandini R.', title: 'Venture Partner · Elevation Capital' },
+    { initials: 'DL', quote: 'Great app, finding some great connections on it.', name: 'Dhruv Lakra', title: 'Analyst · ISV Capital' },
+    { initials: 'NS', quote: 'Loved finding new people on this app.', name: 'Navneet Kaur Sachar', title: 'Stride Ventures' },
+    { initials: 'VB', quote: 'Very helpful to find serendipitous connections.', name: 'Varun Bengani', title: 'Entrepreneur' },
+    { initials: 'KG', quote: 'Almost hired someone from Cleya, love it.', name: 'Kartikeya Gupta', title: 'Consumer Brand Entrepreneur' },
   ];
 
   return (
@@ -1247,15 +1246,14 @@ export default function Home() {
               <div className="absolute -left-4 top-6 font-sans text-[120px] font-bold leading-none pointer-events-none select-none"
                 style={{ color: 'rgba(108,99,255,0.04)' }}>"</div>
               <blockquote className="font-sans leading-snug text-white/80 mb-8 relative" style={{ fontSize: 'clamp(18px, 2vw + 8px, 26px)' }}>
-                "Cleya introduced me to my lead investor in 48 hours. The match was so precise it felt like Cleya had read my pitch deck."
+                "Great app, finding some great connections on it."
               </blockquote>
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold"
-                  style={{ background: 'rgba(78,205,196,0.1)', color: '#9B95FF', border: '1px solid rgba(78,205,196,0.15)' }}>PS</div>
+                  style={{ background: 'rgba(78,205,196,0.1)', color: '#9B95FF', border: '1px solid rgba(78,205,196,0.15)' }}>DL</div>
                 <div>
-                  <p className="text-white font-semibold text-sm">Priya S.</p>
-                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Founder, MedScan AI · Delhi NCR · Raised Series A</p>
-                  <p className="text-[11px] mt-0.5" style={{ color: '#4ECDC4' }}>Matched with: Meera I. · Blume Ventures · HealthTech</p>
+                  <p className="text-white font-semibold text-sm">Dhruv Lakra</p>
+                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Analyst · ISV Capital</p>
                 </div>
               </div>
             </div>

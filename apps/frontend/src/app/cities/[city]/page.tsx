@@ -19,8 +19,8 @@ const cityData: Record<string, {
     investors: ['Sequoia India', 'Accel', 'Blume Ventures', 'Lightspeed India', 'Elevation Capital'],
     sectors: ['SaaS', 'Fintech', 'E-commerce', 'AI/ML', 'Deep Tech'],
     testimonials: [
-      { name: 'Arjun M.', role: 'Founder', company: 'Fintech Startup', quote: 'Met my lead investor within a week of joining Cleya.' },
-      { name: 'Priya K.', role: 'Partner', company: 'Early Stage VC', quote: 'Quality deal flow that I can\'t find anywhere else in the BLR ecosystem.' },
+      { name: 'Dhruv Lakra', role: 'Analyst', company: 'ISV Capital', quote: 'Great app, finding some great connections on it.' },
+      { name: 'Varun Bengani', role: 'Entrepreneur', company: '', quote: 'Very helpful to find serendipitous connections.' },
     ],
   },
   mumbai: {
@@ -30,8 +30,8 @@ const cityData: Record<string, {
     investors: ['Matrix Partners', 'Tiger Global', 'Fireside Ventures', 'DSP Group', 'Kotak PE'],
     sectors: ['Fintech', 'Media & Entertainment', 'Consumer Brands', 'Real Estate Tech', 'Insurance'],
     testimonials: [
-      { name: 'Rahul S.', role: 'CEO', company: 'D2C Brand', quote: 'Cleya connected me with the exact investor profile I was looking for.' },
-      { name: 'Neha P.', role: 'Angel Investor', company: 'Independent', quote: 'The startup quality on Cleya is remarkable. 3 investments in 2 months.' },
+      { name: 'Kartikeya Gupta', role: 'Consumer Brand Entrepreneur', company: '', quote: 'Almost hired someone from Cleya, love it.' },
+      { name: 'Navneet Kaur Sachar', role: '', company: 'Stride Ventures', quote: 'Loved finding new people on this app.' },
     ],
   },
   delhi: {
@@ -41,8 +41,8 @@ const cityData: Record<string, {
     investors: ['Peak XV', 'Nexus Venture Partners', 'Info Edge', 'Venture Highway', 'Orios VP'],
     sectors: ['Logistics', 'EdTech', 'HealthTech', 'Agritech', 'B2B Commerce'],
     testimonials: [
-      { name: 'Vikram T.', role: 'Founder', company: 'EdTech Startup', quote: 'Found my co-founder through Cleya. Game changer.' },
-      { name: 'Ananya B.', role: 'VP', company: 'Growth Stage VC', quote: 'Better quality intros than any networking event in NCR.' },
+      { name: 'Navneet Kaur Sachar', role: '', company: 'Stride Ventures', quote: 'Loved finding new people on this app.' },
+      { name: 'Dhruv Lakra', role: 'Analyst', company: 'ISV Capital', quote: 'Great app, finding some great connections on it.' },
     ],
   },
   hyderabad: {
@@ -52,7 +52,7 @@ const cityData: Record<string, {
     investors: ['Endiya Partners', 'Pegasus', 'Indian Angel Network', 'ah! Ventures', 'LetsVenture'],
     sectors: ['Pharma Tech', 'AI/ML', 'Cybersecurity', 'Enterprise SaaS', 'Gaming'],
     testimonials: [
-      { name: 'Sanjay R.', role: 'CTO', company: 'Health Startup', quote: 'Cleya helped us connect with domain-specific mentors in pharma tech.' },
+      { name: 'Varun Bengani', role: 'Entrepreneur', company: '', quote: 'Very helpful to find serendipitous connections.' },
     ],
   },
   pune: {
@@ -62,7 +62,7 @@ const cityData: Record<string, {
     investors: ['Ventureast', 'Kalaari Capital', '100X.VC', 'Pune Angels', 'TiE Pune'],
     sectors: ['Automotive Tech', 'Manufacturing SaaS', 'CleanTech', 'HRTech', 'PropTech'],
     testimonials: [
-      { name: 'Ashish D.', role: 'Founder', company: 'Automotive AI', quote: 'Raised our seed round from investors we met through Cleya.' },
+      { name: 'Kartikeya Gupta', role: 'Consumer Brand Entrepreneur', company: '', quote: 'Almost hired someone from Cleya, love it.' },
     ],
   },
   chennai: {
@@ -72,7 +72,7 @@ const cityData: Record<string, {
     investors: ['Zoho Ventures', 'Chennai Angels', 'Titan Capital', 'Qualcomm Ventures', 'Freshworks'],
     sectors: ['EV Tech', 'Supply Chain', 'Ocean Tech', 'SaaS', 'Climate Tech'],
     testimonials: [
-      { name: 'Kavitha N.', role: 'CEO', company: 'Climate Startup', quote: 'Connected with the right mentors in Chennai\'s growing climate tech scene.' },
+      { name: 'Dhruv Lakra', role: 'Analyst', company: 'ISV Capital', quote: 'Great app, finding some great connections on it.' },
     ],
   },
 };
@@ -182,7 +182,7 @@ export default function CityPage() {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-white">{t.name}</p>
-                      <p className="text-xs" style={{ color: '#94A3B8' }}>{t.role} · {t.company}</p>
+                      <p className="text-xs" style={{ color: '#94A3B8' }}>{[t.role, t.company].filter(Boolean).join(' · ')}</p>
                     </div>
                   </div>
                 </div>
