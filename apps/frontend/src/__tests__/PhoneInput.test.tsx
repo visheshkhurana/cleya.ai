@@ -24,7 +24,7 @@ describe('validatePhone', () => {
 
   it('returns error for wrong fixed-length local number', () => {
     const err = validatePhone('+9112345');
-    expect(err).toMatch(/India phone numbers must be 10 digits/);
+    expect(err).toMatch(/valid India phone number/);
   });
 
   it('returns null for valid fixed-length India number', () => {
@@ -33,7 +33,7 @@ describe('validatePhone', () => {
 
   it('returns error for out-of-range variable-length number', () => {
     const err = validatePhone('+97112');
-    expect(err).toMatch(/UAE phone numbers must be 7–9 digits/);
+    expect(err).toMatch(/valid United Arab Emirates phone number/);
   });
 
   it('accepts variable-length number within range', () => {
@@ -41,7 +41,7 @@ describe('validatePhone', () => {
   });
 
   it('accepts numbers with spaces and dashes', () => {
-    expect(validatePhone('+1 555-123-4567')).toBeNull();
+    expect(validatePhone('+1 415-555-2671')).toBeNull();
   });
 
   it('matches longest country code first (e.g. +44 vs +4)', () => {
@@ -161,7 +161,7 @@ describe('PhoneInput', () => {
   it('shows validation error after blur when value is invalid', () => {
     render(<PhoneInput value="+9112" onChange={() => {}} />);
     fireEvent.blur(screen.getByLabelText('Phone number'));
-    expect(screen.getByRole('alert')).toHaveTextContent(/India phone numbers/);
+    expect(screen.getByRole('alert')).toHaveTextContent(/valid India phone number/);
     expect(screen.getByLabelText('Phone number')).toHaveAttribute(
       'aria-invalid',
       'true',

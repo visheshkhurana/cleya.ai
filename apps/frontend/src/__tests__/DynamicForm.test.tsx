@@ -319,7 +319,7 @@ describe('DynamicForm', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: /Continue/ }));
     expect(
-      screen.getByText(/India phone numbers must be 10 digits/),
+      screen.getByText(/valid India phone number/),
     ).toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
   });

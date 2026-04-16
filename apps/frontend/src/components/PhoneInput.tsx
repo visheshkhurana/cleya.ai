@@ -1,76 +1,70 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import {
+  getCountries,
+  getCountryCallingCode,
+  isValidPhoneNumber,
+  parsePhoneNumber,
+} from 'react-phone-number-input';
+import enLocale from 'react-phone-number-input/locale/en.json';
 
 interface Country {
   code: string;
   name: string;
   dial: string;
   flag: string;
-  digits: number | [number, number];
 }
 
-const countries: Country[] = [
-  { code: 'IN', name: 'India', dial: '+91', flag: '🇮🇳', digits: 10 },
-  { code: 'US', name: 'United States', dial: '+1', flag: '🇺🇸', digits: 10 },
-  { code: 'GB', name: 'United Kingdom', dial: '+44', flag: '🇬🇧', digits: 10 },
-  { code: 'AE', name: 'UAE', dial: '+971', flag: '🇦🇪', digits: [7, 9] },
-  { code: 'SG', name: 'Singapore', dial: '+65', flag: '🇸🇬', digits: 8 },
-  { code: 'AU', name: 'Australia', dial: '+61', flag: '🇦🇺', digits: 9 },
-  { code: 'CA', name: 'Canada', dial: '+1', flag: '🇨🇦', digits: 10 },
-  { code: 'DE', name: 'Germany', dial: '+49', flag: '🇩🇪', digits: [7, 12] },
-  { code: 'FR', name: 'France', dial: '+33', flag: '🇫🇷', digits: 9 },
-  { code: 'JP', name: 'Japan', dial: '+81', flag: '🇯🇵', digits: [9, 10] },
-  { code: 'KR', name: 'South Korea', dial: '+82', flag: '🇰🇷', digits: [9, 10] },
-  { code: 'CN', name: 'China', dial: '+86', flag: '🇨🇳', digits: 11 },
-  { code: 'BR', name: 'Brazil', dial: '+55', flag: '🇧🇷', digits: [10, 11] },
-  { code: 'IL', name: 'Israel', dial: '+972', flag: '🇮🇱', digits: [7, 9] },
-  { code: 'NL', name: 'Netherlands', dial: '+31', flag: '🇳🇱', digits: 9 },
-  { code: 'SE', name: 'Sweden', dial: '+46', flag: '🇸🇪', digits: [7, 9] },
-  { code: 'CH', name: 'Switzerland', dial: '+41', flag: '🇨🇭', digits: 9 },
-  { code: 'ID', name: 'Indonesia', dial: '+62', flag: '🇮🇩', digits: [9, 12] },
-  { code: 'MY', name: 'Malaysia', dial: '+60', flag: '🇲🇾', digits: [9, 10] },
-  { code: 'PH', name: 'Philippines', dial: '+63', flag: '🇵🇭', digits: 10 },
-  { code: 'TH', name: 'Thailand', dial: '+66', flag: '🇹🇭', digits: 9 },
-  { code: 'VN', name: 'Vietnam', dial: '+84', flag: '🇻🇳', digits: [9, 10] },
-  { code: 'ZA', name: 'South Africa', dial: '+27', flag: '🇿🇦', digits: 9 },
-  { code: 'NG', name: 'Nigeria', dial: '+234', flag: '🇳🇬', digits: [7, 8] },
-  { code: 'KE', name: 'Kenya', dial: '+254', flag: '🇰🇪', digits: 9 },
-  { code: 'MX', name: 'Mexico', dial: '+52', flag: '🇲🇽', digits: 10 },
-  { code: 'AR', name: 'Argentina', dial: '+54', flag: '🇦🇷', digits: 10 },
-  { code: 'CO', name: 'Colombia', dial: '+57', flag: '🇨🇴', digits: 10 },
-  { code: 'CL', name: 'Chile', dial: '+56', flag: '🇨🇱', digits: 9 },
-  { code: 'NZ', name: 'New Zealand', dial: '+64', flag: '🇳🇿', digits: [8, 10] },
-  { code: 'IE', name: 'Ireland', dial: '+353', flag: '🇮🇪', digits: [7, 9] },
-  { code: 'PK', name: 'Pakistan', dial: '+92', flag: '🇵🇰', digits: 10 },
-  { code: 'BD', name: 'Bangladesh', dial: '+880', flag: '🇧🇩', digits: 10 },
-  { code: 'LK', name: 'Sri Lanka', dial: '+94', flag: '🇱🇰', digits: 9 },
-  { code: 'NP', name: 'Nepal', dial: '+977', flag: '🇳🇵', digits: 10 },
-];
+function flagEmoji(countryCode: string): string {
+  return countryCode
+    .toUpperCase()
+    .replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)));
+}
+
+const labels = enLocale as Record<string, string>;
+
+const countries: Country[] = getCountries()
+  .map((cc) => ({
+    code: cc,
+    name: labels[cc] || cc,
+    dial: `+${getCountryCallingCode(cc)}`,
+    flag: flagEmoji(cc),
+  }))
+  .sort((a, b) => a.name.localeCompare(b.name));
+
+const countriesByDialDescending = [...countries].sort(
+  (a, b) => b.dial.length - a.dial.length,
+);
+
+function findCountryForValue(value: string): Country | undefined {
+  if (!value || !value.startsWith('+')) return undefined;
+  try {
+    const parsed = parsePhoneNumber(value);
+    if (parsed?.country) {
+      const found = countries.find((c) => c.code === parsed.country);
+      if (found) return found;
+    }
+  } catch {
+    // fall through to dial-prefix match
+  }
+  const cleaned = value.replace(/[\s-]/g, '');
+  return countriesByDialDescending.find((c) => cleaned.startsWith(c.dial));
+}
 
 export function validatePhone(value: string): string | null {
   if (!value) return null;
   if (!value.startsWith('+')) return 'Phone number must start with a country code';
 
-  const digitsOnly = value.replace(/[\s\-]/g, '');
-
-  const sorted = [...countries].sort((a, b) => b.dial.length - a.dial.length);
-  const matched = sorted.find(c => digitsOnly.startsWith(c.dial));
+  const cleaned = value.replace(/[\s-]/g, '');
+  const matched = countriesByDialDescending.find((c) => cleaned.startsWith(c.dial));
   if (!matched) return 'Invalid country code';
 
-  const localDigits = digitsOnly.slice(matched.dial.length).replace(/\D/g, '');
-  if (!localDigits) return 'Please enter your phone number';
+  const local = cleaned.slice(matched.dial.length);
+  if (!local) return 'Please enter your phone number';
 
-  const { digits } = matched;
-  if (typeof digits === 'number') {
-    if (localDigits.length !== digits) {
-      return `${matched.name} phone numbers must be ${digits} digits (after ${matched.dial})`;
-    }
-  } else {
-    const [min, max] = digits;
-    if (localDigits.length < min || localDigits.length > max) {
-      return `${matched.name} phone numbers must be ${min}–${max} digits (after ${matched.dial})`;
-    }
+  if (!isValidPhoneNumber(cleaned)) {
+    return `Please enter a valid ${matched.name} phone number`;
   }
 
   return null;
@@ -100,7 +94,7 @@ export default function PhoneInput({
   const [touched, setTouched] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const [selectedCountry, setSelectedCountry] = useState<Country>(
-    countries.find(c => c.code === defaultCountry) || countries[0]
+    countries.find((c) => c.code === defaultCountry) || countries[0],
   );
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -112,8 +106,11 @@ export default function PhoneInput({
 
   useEffect(() => {
     if (!value || !value.startsWith('+')) return;
-    const sorted = [...countries].sort((a, b) => b.dial.length - a.dial.length);
-    const match = sorted.find(c => value.startsWith(c.dial));
+    // If the current selection already matches the value's dial prefix, keep it.
+    // This avoids flipping between countries that share a calling code (e.g. NANP +1
+    // covers US, CA, and many Caribbean nations) while the user is typing.
+    if (value.startsWith(selectedCountry.dial)) return;
+    const match = findCountryForValue(value);
     if (match && match.code !== selectedCountry.code) {
       setSelectedCountry(match);
     }
@@ -143,7 +140,7 @@ export default function PhoneInput({
       return value.slice(selectedCountry.dial.length).trim();
     }
     if (value.startsWith('+')) {
-      const match = countries.find(c => value.startsWith(c.dial));
+      const match = countriesByDialDescending.find((c) => value.startsWith(c.dial));
       if (match) return value.slice(match.dial.length).trim();
       return value;
     }
@@ -171,13 +168,16 @@ export default function PhoneInput({
     inputRef.current?.focus();
   };
 
-  const filtered = search
-    ? countries.filter(c =>
-        c.name.toLowerCase().includes(search.toLowerCase()) ||
+  const filtered = useMemo(() => {
+    if (!search) return countries;
+    const q = search.toLowerCase();
+    return countries.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
         c.dial.includes(search) ||
-        c.code.toLowerCase().includes(search.toLowerCase())
-      )
-    : countries;
+        c.code.toLowerCase().includes(q),
+    );
+  }, [search]);
 
   const handleDropdownKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -188,10 +188,10 @@ export default function PhoneInput({
       inputRef.current?.focus();
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setHighlightIndex(prev => (prev < filtered.length - 1 ? prev + 1 : 0));
+      setHighlightIndex((prev) => (prev < filtered.length - 1 ? prev + 1 : 0));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setHighlightIndex(prev => (prev > 0 ? prev - 1 : filtered.length - 1));
+      setHighlightIndex((prev) => (prev > 0 ? prev - 1 : filtered.length - 1));
     } else if (e.key === 'Enter' && highlightIndex >= 0 && highlightIndex < filtered.length) {
       e.preventDefault();
       handleCountrySelect(filtered[highlightIndex]);
