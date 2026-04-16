@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { isOptimizedAvatarDomain } from '@/lib/avatarOptimization';
 
 interface UserAvatarProps {
   name?: string | null;
@@ -32,16 +33,17 @@ export default function UserAvatar({ name, avatarUrl, size = 'md', className = '
   const { container, text, px } = sizeMap[size];
 
   if (avatarUrl && !imgError) {
+    const optimized = isOptimizedAvatarDomain(avatarUrl);
     return (
       <Image
         src={avatarUrl}
         alt={name || 'User avatar'}
         width={px}
         height={px}
+        unoptimized={!optimized}
         className={`${container} rounded-full object-cover flex-shrink-0 ${className}`}
         onError={() => setImgError(true)}
         referrerPolicy="no-referrer"
-        unoptimized
       />
     );
   }
