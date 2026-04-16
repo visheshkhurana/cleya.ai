@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 import Link from 'next/link';
 import PublicNav from '@/components/PublicNav';
 import AppShell from '@/components/AppShell';
@@ -93,7 +94,7 @@ export default function AboutPage() {
             {team.map((t, i) => (
               <div key={i} className="rounded-2xl border border-white/5 p-5 text-center w-full sm:basis-[calc(33.333%_-_0.75rem)]" style={{ background: 'rgba(15,22,41,0.8)' }}>
                 {t.imageUrl ? (
-                  <img src={t.imageUrl} alt={t.name} className="w-16 h-16 rounded-full mx-auto mb-3 object-cover" />
+                  <Image src={t.imageUrl} alt={t.name} width={64} height={64} className="w-16 h-16 rounded-full mx-auto mb-3 object-cover" sizes="64px" />
                 ) : (
                   <div className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center text-lg font-bold"
                     style={{ background: 'rgba(108,99,255,0.15)', color: '#9B95FF' }}>
