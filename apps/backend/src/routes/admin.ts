@@ -1166,6 +1166,15 @@ adminRouter.post('/batch-matching', async (_req: Request, res: Response, next: N
   }
 });
 
+adminRouter.get('/matchmaking/health', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const stats = matchScheduler.getStats();
+    res.json({ success: true, data: stats });
+  } catch (error) {
+    next(error);
+  }
+});
+
 adminRouter.post('/slack/daily-report', async (_req: Request, res: Response, next: NextFunction) => {
   try {
     await slackService.sendDailyReport();

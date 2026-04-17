@@ -385,6 +385,10 @@ class ApiClient {
     return this.fetch('/admin/funnel');
   }
 
+  async getAdminMatchmakingHealth() {
+    return this.fetch('/admin/matchmaking/health');
+  }
+
   async getAdminCommunications() {
     return this.fetch('/admin/communications');
   }

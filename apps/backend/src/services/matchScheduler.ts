@@ -35,6 +35,17 @@ interface TickStats {
   lastTickAt: Date | null;
 }
 
+export interface MatchmakingTrendPoint {
+  ts: string;
+  usersConsidered: number;
+  proposalsCreated: number;
+  proposalsBlocked: number;
+  errors: number;
+}
+
+const TREND_WINDOW_MS = 24 * 60 * 60 * 1000;
+const TREND_MAX_POINTS = 1000;
+
 class MatchScheduler {
   private tasks: ScheduledTask[] = [];
   private tickRunning = false;
@@ -51,6 +62,26 @@ class MatchScheduler {
     errors: 0,
     lastTickAt: null,
   };
+  private trend: MatchmakingTrendPoint[] = [];
+
+  private recordTrendPoint(point: Omit<MatchmakingTrendPoint, 'ts'> & { tsMs?: number }) {
+    const tsMs = point.tsMs ?? Date.now();
+    this.trend.push({
+      ts: new Date(tsMs).toISOString(),
+      usersConsidered: point.usersConsidered,
+      proposalsCreated: point.proposalsCreated,
+      proposalsBlocked: point.proposalsBlocked,
+      errors: point.errors,
+    });
+    const cutoff = Date.now() - TREND_WINDOW_MS;
+    while (
+      this.trend.length > 0 &&
+      (new Date(this.trend[0].ts).getTime() < cutoff ||
+        this.trend.length > TREND_MAX_POINTS)
+    ) {
+      this.trend.shift();
+    }
+  }
 
   start() {
     if (this.started) {
@@ -142,8 +173,17 @@ class MatchScheduler {
     }
   }
 
-  getStats(): TickStats & { metrics: MatchMetrics } {
-    return { ...this.stats, metrics: snapshot() };
+  getStats(): TickStats & {
+    metrics: MatchMetrics;
+    queueSize: number;
+    trend: MatchmakingTrendPoint[];
+  } {
+    return {
+      ...this.stats,
+      metrics: snapshot(),
+      queueSize: this.pendingQueue.size,
+      trend: [...this.trend],
+    };
   }
 
   async runTick() {
@@ -159,6 +199,12 @@ class MatchScheduler {
       if (candidates.length === 0) {
         this.stats.ticks++;
         this.stats.lastTickAt = new Date();
+        this.recordTrendPoint({
+          usersConsidered: 0,
+          proposalsCreated: 0,
+          proposalsBlocked: 0,
+          errors: 0,
+        });
         console.log('[MatchScheduler] tick: idle (no due users)');
         return;
       }
@@ -205,6 +251,13 @@ class MatchScheduler {
       this.stats.proposalsBlocked += blockedTotal;
       this.stats.errors += errors;
       this.stats.lastTickAt = new Date();
+
+      this.recordTrendPoint({
+        usersConsidered: considered,
+        proposalsCreated: tickDelta.proposalsCreated,
+        proposalsBlocked: blockedTotal,
+        errors,
+      });
 
       console.log(
         `[MatchScheduler] tick: considered=${considered} ` +

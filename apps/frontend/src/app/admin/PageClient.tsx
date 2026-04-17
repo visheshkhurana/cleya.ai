@@ -51,6 +51,25 @@ interface ThrottleData {
   };
 }
 
+interface MatchmakingTrendPoint {
+  ts: string;
+  usersConsidered: number;
+  proposalsCreated: number;
+  proposalsBlocked: number;
+  errors: number;
+}
+
+interface MatchmakingHealth {
+  ticks: number;
+  usersConsidered: number;
+  proposalsCreated: number;
+  proposalsBlocked: number;
+  errors: number;
+  lastTickAt: string | null;
+  queueSize: number;
+  trend: MatchmakingTrendPoint[];
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [funnel, setFunnel] = useState<FunnelStep[]>([]);
@@ -74,6 +93,7 @@ export default function AdminDashboard() {
   const [throttleDraft, setThrottleDraft] = useState<ThrottleConfig | null>(null);
   const [throttleSaving, setThrottleSaving] = useState(false);
   const [throttleMessage, setThrottleMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [matchHealth, setMatchHealth] = useState<MatchmakingHealth | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -86,14 +106,16 @@ export default function AdminDashboard() {
 
   const loadDashboard = async () => {
     try {
-      const [statsData, funnelData, usersData] = await Promise.all([
+      const [statsData, funnelData, usersData, healthData] = await Promise.all([
         api.getAdminStats(),
         api.getAdminFunnel(),
         api.getAdminUsers(),
+        api.getAdminMatchmakingHealth().catch(() => null),
       ]);
       setStats(statsData);
       setFunnel(funnelData.funnel || []);
       setUsers(Array.isArray(usersData) ? usersData : usersData?.users || []);
+      if (healthData) setMatchHealth(healthData);
     } catch (err: any) {
       console.error('Admin load failed:', err);
       setError(err.message || 'Failed to load dashboard');
@@ -101,6 +123,16 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (activeTab !== 'overview') return;
+    const id = setInterval(() => {
+      api.getAdminMatchmakingHealth()
+        .then((h) => h && setMatchHealth(h))
+        .catch(() => {});
+    }, 15000);
+    return () => clearInterval(id);
+  }, [activeTab]);
 
   const loadComms = async () => {
     try {
@@ -349,6 +381,134 @@ export default function AdminDashboard() {
                 ))}
               </div>
             )}
+
+            {matchHealth && (() => {
+              const trend = matchHealth.trend || [];
+              const last24h = trend.reduce(
+                (acc, p) => ({
+                  considered: acc.considered + p.usersConsidered,
+                  proposed: acc.proposed + p.proposalsCreated,
+                  blocked: acc.blocked + p.proposalsBlocked,
+                  errors: acc.errors + p.errors,
+                }),
+                { considered: 0, proposed: 0, blocked: 0, errors: 0 }
+              );
+              const maxVal = Math.max(
+                1,
+                ...trend.map((p) =>
+                  Math.max(p.proposalsCreated, p.proposalsBlocked, p.errors)
+                )
+              );
+              const w = 600;
+              const h = 80;
+              const stepX = trend.length > 1 ? w / (trend.length - 1) : 0;
+              const buildPath = (key: keyof MatchmakingTrendPoint) =>
+                trend
+                  .map((p, i) => {
+                    const x = i * stepX;
+                    const y = h - ((p[key] as number) / maxVal) * h;
+                    return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+                  })
+                  .join(' ');
+              const lastTickLabel = matchHealth.lastTickAt
+                ? new Date(matchHealth.lastTickAt).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                  })
+                : '—';
+              const isStale =
+                matchHealth.lastTickAt &&
+                Date.now() - new Date(matchHealth.lastTickAt).getTime() >
+                  10 * 60 * 1000;
+              return (
+                <div className="bg-[rgba(15,22,41,0.8)]/60 backdrop-blur-sm rounded-xl border border-brand-violet/10 p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-sm font-semibold text-white">
+                      Matchmaking Health
+                    </h2>
+                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                      <span
+                        className={`inline-block w-2 h-2 rounded-full ${
+                          isStale ? 'bg-red-400' : 'bg-green-400'
+                        }`}
+                      />
+                      <span>
+                        Last tick: {lastTickLabel} · {matchHealth.ticks} ticks
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-5">
+                    {[
+                      { label: 'Queue', value: matchHealth.queueSize, tone: 'text-white' },
+                      { label: 'Considered (24h)', value: last24h.considered, tone: 'text-white' },
+                      { label: 'Proposed (24h)', value: last24h.proposed, tone: 'text-green-300' },
+                      { label: 'Blocked (24h)', value: last24h.blocked, tone: 'text-yellow-300' },
+                      { label: 'Errors (24h)', value: last24h.errors, tone: last24h.errors > 0 ? 'text-red-300' : 'text-white' },
+                      { label: 'Total Proposed', value: matchHealth.proposalsCreated, tone: 'text-white' },
+                    ].map((s) => (
+                      <div
+                        key={s.label}
+                        className="rounded-lg border border-brand-violet/10 bg-brand-violet-pressed/10 px-3 py-2"
+                      >
+                        <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                          {s.label}
+                        </p>
+                        <p className={`text-xl font-bold ${s.tone}`}>{s.value}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {trend.length > 1 ? (
+                    <div>
+                      <div className="flex items-center gap-4 text-[11px] text-slate-400 mb-2">
+                        <span className="flex items-center gap-1">
+                          <span className="inline-block w-3 h-0.5 bg-green-400" /> Proposed
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <span className="inline-block w-3 h-0.5 bg-yellow-400" /> Blocked
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <span className="inline-block w-3 h-0.5 bg-red-400" /> Errors
+                        </span>
+                        <span className="ml-auto">
+                          {trend.length} samples · last 24h
+                        </span>
+                      </div>
+                      <svg
+                        viewBox={`0 0 ${w} ${h}`}
+                        preserveAspectRatio="none"
+                        className="w-full h-20"
+                      >
+                        <path
+                          d={buildPath('proposalsCreated')}
+                          fill="none"
+                          stroke="#4ade80"
+                          strokeWidth="1.5"
+                        />
+                        <path
+                          d={buildPath('proposalsBlocked')}
+                          fill="none"
+                          stroke="#facc15"
+                          strokeWidth="1.5"
+                        />
+                        <path
+                          d={buildPath('errors')}
+                          fill="none"
+                          stroke="#f87171"
+                          strokeWidth="1.5"
+                        />
+                      </svg>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-400">
+                      Trend data will appear after the next few matchmaking ticks.
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
 
             <div className="bg-[rgba(15,22,41,0.8)]/60 backdrop-blur-sm rounded-xl border border-brand-violet/10 p-6">
               <h2 className="text-sm font-semibold text-white mb-6">Conversion Funnel</h2>
