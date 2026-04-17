@@ -84,6 +84,13 @@ export class ProfileService {
       await this.generateEmbedding(userId, profile);
     }
 
+    try {
+      const { profileStrengthService } = await import('./profileStrengthService');
+      await profileStrengthService.recompute(userId);
+    } catch (e) {
+      console.log('[ProfileService] Strength recompute failed:', (e as Error).message);
+    }
+
     if (data.linkedinUrl && (profile as any).isComplete) {
       linkedinEnrichmentService.onNewUserSignup(userId);
     }

@@ -9,6 +9,7 @@ import NotificationCenter from '@/components/NotificationCenter';
 import { useTranslation } from '@/lib/i18n';
 import { personaIcon } from '@/lib/persona';
 import { statusStyles, outcomeKeys } from '@/lib/introductions';
+import IntroTemplatePicker from '@/components/IntroTemplatePicker';
 
 interface IntroData {
   id: string;
@@ -333,12 +334,13 @@ function IntroDetailModal({
               <p className="text-[10px] uppercase tracking-wider text-white/30 mb-2 font-medium">{t('intro.preview')}</p>
               <div className="rounded-xl border p-4" style={{ background: 'rgba(108,99,255,0.03)', borderColor: 'rgba(108,99,255,0.1)' }}>
                 {editMode ? (
-                  <textarea
-                    value={editText}
-                    onChange={(e) => onEditTextChange(e.target.value)}
-                    className="w-full bg-transparent text-white/80 text-sm leading-relaxed resize-none outline-none min-h-[150px] border rounded-lg p-3"
-                    style={{ borderColor: 'rgba(108,99,255,0.3)' }}
-                  />
+                  <div className="space-y-3">
+                    <IntroTemplatePicker
+                      matchId={intro.matchId}
+                      initialBody={editText}
+                      onChange={onEditTextChange}
+                    />
+                  </div>
                 ) : (
                   <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{intro.introText}</p>
                 )}

@@ -16,6 +16,17 @@ userRouter.get('/profile', authenticate, async (req: Request, res: Response, nex
   }
 });
 
+userRouter.get('/profile/strength', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { profileStrengthService } = await import('../services/profileStrengthService');
+    const result = await profileStrengthService.getStrength(req.user!.userId);
+    if (!result) return res.status(404).json({ success: false, error: { message: 'Profile not found' } });
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
 userRouter.put('/profile', authenticate, validate(profileUpdateSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const persona = req.body.persona;

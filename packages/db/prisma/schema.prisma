@@ -182,73 +182,76 @@ model Referral {
 }
 
 model Profile {
-  id                  String                 @id @default(cuid())
-  userId              String                 @unique
-  persona             PersonaType?
-  headline            String?
-  bio                 String?
-  companyName         String?
-  companyStage        CompanyStage?
-  currentRole         String?
-  location            String?
-  linkedinUrl         String?
-  websiteUrl          String?
-  yearsExperience     Int?
-  industries          String[]               @default([])
-  skills              String[]               @default([])
-  interests           String[]               @default([])
-  lookingFor          String[]               @default([])
-  extraData           Json?
-  completenessScore   Float                  @default(0)
-  isComplete          Boolean                @default(false)
-  matchLastCheckedAt  DateTime?
-  createdAt           DateTime               @default(now())
-  updatedAt           DateTime               @updatedAt
-  accreditedInvestor  Boolean?
-  amountRaisedToDate  String?
-  businessDescription String?
-  channelSource       String?
-  channelType         String?
-  cityBased           String?
-  exampleInvestment   String?
-  founderAccessPitch  String?
-  fundName            String?
-  fundSize            String?
-  industryFocus       String[]               @default([])
-  investmentAmount    String?
-  investmentRange     String?
-  investmentThesis    String?
-  investorType        String?
-  keyTractionPoints   String?
-  outreachMethod      String?
-  phoneNumber         String?
-  priority            FounderPriority?
-  raiseAmount         String?
-  roundCloseDate      String?
-  targetRole          TalentTargetRole?
-  trackedCompanies    String?
-  profileEmbedding    Unsupported("vector")?
-  linkedinVerified    Boolean                @default(false)
-  verificationScore   Float                  @default(0)
-  avatarUrl           String?
-  activeUsers         String?
-  burnRate            String?
-  checkSizeRange      String?
-  dealsPerYear        Int?
-  equityExpectation   String?
-  functionalArea      String?
-  growthRate          String?
-  introPreference     IntroPreference?
-  leadsRounds         Boolean?
-  maxIntrosPerWeek    Int?
-  monthlyRevenue      String?
-  openToMeeting       Boolean                @default(true)
-  portfolioCompanies  String[]               @default([])
-  preferredStage      CompanyStage?
-  preferredStageRange String?
-  sectorFocus         String[]               @default([])
-  workStyle           WorkStyle?
-  user                User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                     String                 @id @default(cuid())
+  userId                 String                 @unique
+  persona                PersonaType?
+  headline               String?
+  bio                    String?
+  companyName            String?
+  companyStage           CompanyStage?
+  currentRole            String?
+  location               String?
+  linkedinUrl            String?
+  websiteUrl             String?
+  yearsExperience        Int?
+  industries             String[]               @default([])
+  skills                 String[]               @default([])
+  interests              String[]               @default([])
+  lookingFor             String[]               @default([])
+  extraData              Json?
+  completenessScore      Float                  @default(0)
+  isComplete             Boolean                @default(false)
+  profileScore           Int                    @default(0)
+  profileScoreDetails    Json?
+  profileCompleteBadgeAt DateTime?
+  matchLastCheckedAt     DateTime?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+  accreditedInvestor     Boolean?
+  amountRaisedToDate     String?
+  businessDescription    String?
+  channelSource          String?
+  channelType            String?
+  cityBased              String?
+  exampleInvestment      String?
+  founderAccessPitch     String?
+  fundName               String?
+  fundSize               String?
+  industryFocus          String[]               @default([])
+  investmentAmount       String?
+  investmentRange        String?
+  investmentThesis       String?
+  investorType           String?
+  keyTractionPoints      String?
+  outreachMethod         String?
+  phoneNumber            String?
+  priority               FounderPriority?
+  raiseAmount            String?
+  roundCloseDate         String?
+  targetRole             TalentTargetRole?
+  trackedCompanies       String?
+  profileEmbedding       Unsupported("vector")?
+  linkedinVerified       Boolean                @default(false)
+  verificationScore      Float                  @default(0)
+  avatarUrl              String?
+  activeUsers            String?
+  burnRate               String?
+  checkSizeRange         String?
+  dealsPerYear           Int?
+  equityExpectation      String?
+  functionalArea         String?
+  growthRate             String?
+  introPreference        IntroPreference?
+  leadsRounds            Boolean?
+  maxIntrosPerWeek       Int?
+  monthlyRevenue         String?
+  openToMeeting          Boolean                @default(true)
+  portfolioCompanies     String[]               @default([])
+  preferredStage         CompanyStage?
+  preferredStageRange    String?
+  sectorFocus            String[]               @default([])
+  workStyle              WorkStyle?
+  user                   User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([persona])
   @@index([companyStage])
@@ -324,18 +327,23 @@ model Match {
 }
 
 model MatchFeedback {
-  id        String   @id @default(cuid())
-  matchId   String
-  userId    String
-  rating    Int
-  feedback  String?
-  createdAt DateTime @default(now())
-  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String   @id @default(cuid())
+  matchId        String
+  userId         String
+  rating         Int
+  feedback       String?
+  action         String?
+  reasonCode     String?
+  introResponded Boolean?
+  introQuality   Int?
+  createdAt      DateTime @default(now())
+  match          Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([matchId, userId])
   @@index([matchId])
   @@index([userId])
+  @@index([action])
   @@map("match_feedbacks")
 }
 
@@ -1405,6 +1413,9 @@ enum NotificationEvent {
   MEETING_PROPOSED
   MEETING_CONFIRMED
   SECRETARY_DIGEST
+  REFERRAL_JOINED
+  REFERRAL_REWARD
+  PROFILE_STRENGTH
 }
 
 enum MessageChannel {
@@ -1591,4 +1602,38 @@ enum SubscriptionStatus {
   CANCELLED
   COMPLETED
   EXPIRED
+}
+
+model IntroductionTemplate {
+  id          String   @id @default(cuid())
+  ownerId     String?
+  category    String
+  name        String
+  description String?
+  body        String
+  isDefault   Boolean  @default(false)
+  isPro       Boolean  @default(false)
+  variables   String[] @default([])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([category])
+  @@map("introduction_templates")
+}
+
+model InvestorStats {
+  userId              String    @id
+  responseRate        Float     @default(0)
+  avgResponseTimeMs   Int       @default(0)
+  lastActiveAt        DateTime?
+  introsThisMonth     Int       @default(0)
+  acceptanceRate      Float     @default(0)
+  hideStats           Boolean   @default(false)
+  totalIntros         Int       @default(0)
+  totalAcceptedIntros Int       @default(0)
+  computedAt          DateTime  @default(now())
+
+  @@index([computedAt])
+  @@map("investor_stats")
 }

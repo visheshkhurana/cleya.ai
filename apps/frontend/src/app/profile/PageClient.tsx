@@ -10,6 +10,7 @@ import AppFooter from '@/components/AppFooter';
 import AppShell from '@/components/AppShell';
 import UserAvatar from '@/components/UserAvatar';
 import { personaIcon, personaLabel } from '@/lib/persona';
+import ProfileStrengthBar from '@/components/ProfileStrengthBar';
 
 interface ProfileData {
   persona?: string;
@@ -248,20 +249,8 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/5 p-4" style={{ background: '#1A2035' }}>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-white/50 uppercase tracking-wide">Profile Completion</span>
-            <span className="text-sm font-bold" style={{ color: completenessScore === 100 ? '#10b981' : '#9B95FF' }}>{completenessScore}%</span>
-          </div>
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${completenessScore}%`, background: completenessScore === 100 ? '#10b981' : 'linear-gradient(90deg, #6C63FF, #9B95FF)' }} />
-          </div>
-          {getMissingFields().length > 0 && (
-            <p className="text-[11px] mt-2" style={{ color: '#94A3B8' }}>
-              Add {getMissingFields().join(', ')} to reach 100%
-            </p>
-          )}
-        </div>
+        <ProfileStrengthBar />
+
 
         {error && (
           <div className="rounded-xl p-3 text-sm text-red-400 bg-red-500/10 border border-red-500/20">{error}</div>

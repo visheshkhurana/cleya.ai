@@ -45,6 +45,9 @@ import { agentChatRouter } from './routes/agent-chat';
 import { healthRouter } from './routes/health';
 import { subscriptionRouter } from './routes/subscription';
 import { webhookRouter } from './routes/resendWebhook';
+import { introTemplateRouter } from './routes/introTemplate';
+import { investorRouter } from './routes/investor';
+import { introTemplateService } from './services/introTemplateService';
 import { matchScheduler } from './services/matchScheduler';
 import { agentScheduler } from './services/agentScheduler';
 
@@ -122,6 +125,7 @@ app.use('/api/search', searchRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/events', eventRouter);
+app.use('/api/introductions/templates', introTemplateRouter);
 app.use('/api/introductions', introductionRouter);
 app.use('/api/meetings', meetingRouter);
 app.use('/api/messaging', messagingRouter);
@@ -147,6 +151,7 @@ app.use('/api/agent-chat', agentChatRouter);
 app.use('/api/health', healthRouter);
 app.use('/api/subscription', subscriptionRouter);
 app.use('/api/webhooks', webhookRouter);
+app.use('/api/investors', investorRouter);
 
 if (env.SENTRY_DSN) {
   Sentry.setupExpressErrorHandler(app);
@@ -162,6 +167,9 @@ server.listen(PORT, '0.0.0.0', async () => {
   console.log(`🚀 Cleya.ai backend running on port ${PORT}`);
   console.log(`   Environment: ${env.NODE_ENV}`);
   matchScheduler.start();
+  introTemplateService.ensureDefaultsSeeded().catch(err =>
+    console.error('[IntroTemplate] Seeding failed:', err)
+  );
   agentScheduler.start().catch(err =>
     console.error('[AgentScheduler] Failed to start:', err)
   );

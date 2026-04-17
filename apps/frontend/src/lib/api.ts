@@ -504,6 +504,58 @@ class ApiClient {
     });
   }
 
+  async getMatchExplanation(matchId: string) {
+    return this.fetch(`/matches/${matchId}/explanation`);
+  }
+
+  async submitQuickFeedback(matchId: string, action: 'INTERESTED' | 'NOT_INTERESTED' | 'SKIP', reasonCode?: string) {
+    return this.fetch(`/matches/${matchId}/quick-feedback`, {
+      method: 'POST',
+      body: JSON.stringify({ action, reasonCode }),
+    });
+  }
+
+  async submitIntroResponse(matchId: string, responded: boolean, quality?: number) {
+    return this.fetch(`/matches/${matchId}/intro-response`, {
+      method: 'POST',
+      body: JSON.stringify({ responded, quality }),
+    });
+  }
+
+  async getProfileStrength() {
+    return this.fetch('/users/profile/strength');
+  }
+
+  async getPendingFeedback() {
+    return this.fetch('/matches/pending-feedback');
+  }
+
+  async getInvestorStats(userId: string) {
+    return this.fetch(`/investors/${userId}/stats`);
+  }
+
+  async getIntroTemplates() {
+    return this.fetch('/introductions/templates');
+  }
+
+  async createIntroTemplate(data: { name: string; category: string; body: string; description?: string }) {
+    return this.fetch('/introductions/templates', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteIntroTemplate(id: string) {
+    return this.fetch(`/introductions/templates/${id}`, { method: 'DELETE' });
+  }
+
+  async renderIntroTemplate(opts: { templateId?: string; body?: string; matchId?: string; overrides?: Record<string, string> }) {
+    return this.fetch('/introductions/templates/render', {
+      method: 'POST',
+      body: JSON.stringify(opts),
+    });
+  }
+
   async getConversationMessages(conversationId: string) {
     return this.fetch(`/conversations/${conversationId}`);
   }

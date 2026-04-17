@@ -11,6 +11,10 @@ import AppFooter from '@/components/AppFooter';
 import AppShell from '@/components/AppShell';
 import UserAvatar from '@/components/UserAvatar';
 import { personaIcon, personaLabel } from '@/lib/persona';
+import WhyMatchModal from '@/components/WhyMatchModal';
+import QuickFeedbackChips from '@/components/QuickFeedbackChips';
+import InvestorMetrics from '@/components/InvestorMetrics';
+import PostIntroResponsePrompt from '@/components/PostIntroResponsePrompt';
 
 interface MatchData {
   id: string;
@@ -87,6 +91,7 @@ export default function MatchesPage() {
   const toast = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [showPaywall, setShowPaywall] = useState(false);
+  const [whyMatchOpen, setWhyMatchOpen] = useState<string | null>(null);
   const [creatingSubscription, setCreatingSubscription] = useState(false);
   const router = useRouter();
 
@@ -618,6 +623,17 @@ export default function MatchesPage() {
             {match.scoreBreakdown && (
               <ScoreBreakdown breakdown={match.scoreBreakdown} overallScore={match.score} />
             )}
+
+            {getOtherUser(match)?.profile?.persona === 'INVESTOR' && (
+              <InvestorMetrics userId={getOtherUser(match).id} />
+            )}
+
+            <button
+              onClick={() => { onClose(); setWhyMatchOpen(match.id); }}
+              className="w-full mt-2 py-2 rounded-xl text-xs font-medium text-white/70 border border-white/10 hover:border-white/20 transition"
+            >
+              Why this match? See factor breakdown →
+            </button>
           </div>
         </div>
       </div>
@@ -737,12 +753,22 @@ export default function MatchesPage() {
             </div>
           )}
 
-          <button
-            onClick={() => setExpandedProfile(match.id)}
-            className="mt-3 text-[11px] font-medium transition hover:opacity-80"
-            style={{ color: '#9B95FF' }}>
-            View Full Profile →
-          </button>
+          <div className="flex items-center gap-3 mt-3">
+            <button
+              onClick={() => setExpandedProfile(match.id)}
+              className="text-[11px] font-medium transition hover:opacity-80"
+              style={{ color: '#9B95FF' }}>
+              View Full Profile →
+            </button>
+            <button
+              onClick={() => setWhyMatchOpen(match.id)}
+              className="text-[11px] font-medium text-white/40 hover:text-white/70 transition"
+            >
+              Why this match? ⓘ
+            </button>
+          </div>
+
+          {showActions && <QuickFeedbackChips matchId={match.id} />}
 
           {isAccepted && (
             <div className="mt-4 p-3 rounded-xl" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.12)' }}>
@@ -899,6 +925,8 @@ export default function MatchesPage() {
           </div>
         </div>
 
+        <PostIntroResponsePrompt />
+
         {activeTab === 'pending' && (
           <div className="space-y-4">
             {pendingMatches.length === 0 && waitingMatches.length === 0 ? (
@@ -990,6 +1018,10 @@ export default function MatchesPage() {
           match={matches.find(m => m.id === expandedProfile)!}
           onClose={() => setExpandedProfile(null)}
         />
+      )}
+
+      {whyMatchOpen && (
+        <WhyMatchModal matchId={whyMatchOpen} onClose={() => setWhyMatchOpen(null)} />
       )}
 
       {feedbackPrompt && (

@@ -136,11 +136,14 @@ affiliateReferralRouter.post('/apply', authenticate, async (req: Request, res: R
       return res.json({ success: true, data: { alreadyReferred: true } });
     }
 
-    // Apply referral in a transaction
+    // Apply referral in a transaction — both parties get +3 bonus matches
     await prisma.$transaction([
       prisma.user.update({
         where: { id: userId },
-        data: { referredBy: referrer.id },
+        data: {
+          referredBy: referrer.id,
+          bonusMatches: { increment: 3 },
+        },
       }),
       prisma.referral.create({
         data: {
@@ -151,13 +154,36 @@ affiliateReferralRouter.post('/apply', authenticate, async (req: Request, res: R
       }),
       prisma.user.update({
         where: { id: referrer.id },
-        data: { bonusMatches: { increment: 5 } },
+        data: { bonusMatches: { increment: 3 } },
       }),
     ]);
 
+    // Notify both parties (best-effort)
+    try {
+      const { notificationService } = await import('../services/notification/notificationService');
+      await Promise.all([
+        notificationService.send({
+          userId: referrer.id,
+          channel: 'IN_APP',
+          event: 'REFERRAL_JOINED',
+          title: 'Someone joined with your code 🎉',
+          body: 'You earned +3 bonus matches. Thanks for spreading the word!',
+        }),
+        notificationService.send({
+          userId,
+          channel: 'IN_APP',
+          event: 'REFERRAL_REWARD',
+          title: 'Welcome bonus unlocked',
+          body: 'You got +3 bonus matches for joining with a referral.',
+        }),
+      ]);
+    } catch (err) {
+      console.error('[Referral] Notification dispatch failed:', err);
+    }
+
     res.json({
       success: true,
-      data: { applied: true },
+      data: { applied: true, bonusMatchesGranted: 3 },
     });
   } catch (error) {
     next(error);

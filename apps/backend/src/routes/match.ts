@@ -6,8 +6,82 @@ import { prisma } from '@cleya/db';
 import { matchProposalLimiter } from '../middleware/rateLimit';
 import { validate, matchResponseSchema, matchFeedbackSchema, matchProposeSchema } from '../middleware/validation';
 import { razorpayService } from '../services/razorpayService';
+import { matchExplanationService } from '../services/matchExplanationService';
 
 export const matchRouter = Router();
+
+matchRouter.get('/:id/explanation', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const explanation = await matchExplanationService.getForUser(req.params.id, req.user!.userId);
+    if (!explanation) {
+      return res.status(404).json({ success: false, error: { message: 'Match not found' } });
+    }
+    res.json({ success: true, data: explanation });
+  } catch (error) {
+    next(error);
+  }
+});
+
+matchRouter.post('/:id/quick-feedback', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { action, reasonCode } = req.body as { action?: string; reasonCode?: string };
+    const allowed = ['INTERESTED', 'NOT_INTERESTED', 'SKIP'];
+    if (!action || !allowed.includes(action)) {
+      return res.status(400).json({ success: false, error: { message: 'action must be INTERESTED|NOT_INTERESTED|SKIP' } });
+    }
+    const match = await prisma.match.findFirst({
+      where: { id: req.params.id, OR: [{ userAId: req.user!.userId }, { userBId: req.user!.userId }] },
+    });
+    if (!match) return res.status(404).json({ success: false, error: { message: 'Match not found' } });
+
+    const ratingMap: Record<string, number> = { INTERESTED: 5, SKIP: 3, NOT_INTERESTED: 1 };
+    const rating = ratingMap[action];
+
+    const result = await prisma.matchFeedback.upsert({
+      where: { matchId_userId: { matchId: req.params.id, userId: req.user!.userId } },
+      update: { action: action as any, reasonCode: reasonCode || null, rating },
+      create: {
+        matchId: req.params.id,
+        userId: req.user!.userId,
+        action: action as any,
+        reasonCode: reasonCode || null,
+        rating,
+      },
+    });
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
+matchRouter.post('/:id/intro-response', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { responded, quality } = req.body as { responded?: boolean; quality?: number };
+    if (typeof responded !== 'boolean') {
+      return res.status(400).json({ success: false, error: { message: 'responded boolean required' } });
+    }
+    const q = quality && [1, 2, 3, 4, 5].includes(quality) ? quality : null;
+    const match = await prisma.match.findFirst({
+      where: { id: req.params.id, OR: [{ userAId: req.user!.userId }, { userBId: req.user!.userId }] },
+    });
+    if (!match) return res.status(404).json({ success: false, error: { message: 'Match not found' } });
+
+    const result = await prisma.matchFeedback.upsert({
+      where: { matchId_userId: { matchId: req.params.id, userId: req.user!.userId } },
+      update: { introResponded: responded, introQuality: q ?? undefined },
+      create: {
+        matchId: req.params.id,
+        userId: req.user!.userId,
+        rating: q ?? (responded ? 4 : 2),
+        introResponded: responded,
+        introQuality: q,
+      },
+    });
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
 
 matchRouter.get('/', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {

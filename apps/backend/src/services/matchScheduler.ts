@@ -105,6 +105,18 @@ class MatchScheduler {
       );
     }, { timezone: 'Asia/Kolkata' });
 
+    const weeklyDigestJob = cron.schedule('0 9 * * 1', () => {
+      this.runWeeklyDigest().catch(err =>
+        console.error('[MatchScheduler] Weekly digest failed:', err)
+      );
+    }, { timezone: 'Asia/Kolkata' });
+
+    const investorStatsJob = cron.schedule('30 3 * * *', () => {
+      this.runInvestorStatsAggregation().catch(err =>
+        console.error('[MatchScheduler] Investor stats aggregation failed:', err)
+      );
+    }, { timezone: 'Asia/Kolkata' });
+
     const watchdogJob = cron.schedule(TICK_WATCHDOG_CRON, () => {
       this.runTickWatchdog().catch(err =>
         console.error('[MatchScheduler] Tick watchdog failed:', err)
@@ -117,7 +129,7 @@ class MatchScheduler {
       );
     }, { timezone: 'Asia/Kolkata' });
 
-    this.tasks.push(tickJob, safetyNetJob, dailyReportJob, enrichmentJob, dripJob, watchdogJob, freeTierResetJob);
+    this.tasks.push(tickJob, safetyNetJob, dailyReportJob, enrichmentJob, dripJob, weeklyDigestJob, investorStatsJob, watchdogJob, freeTierResetJob);
     this.startedAt = new Date();
     this.started = true;
     console.log(`[MatchScheduler] Continuous matchmaking tick scheduled (${TICK_CRON}, chunk=${TICK_CHUNK_SIZE})`);
@@ -125,6 +137,8 @@ class MatchScheduler {
     console.log('[MatchScheduler] Daily Slack report at 21:00 IST');
     console.log('[MatchScheduler] LinkedIn enrichment at 3:00 IST');
     console.log('[MatchScheduler] Drip campaign at 10:00 IST');
+    console.log('[MatchScheduler] Weekly digest at Mon 9:00 IST');
+    console.log('[MatchScheduler] Investor stats aggregation at 3:30 IST');
     console.log(
       `[MatchScheduler] Tick watchdog scheduled (${TICK_WATCHDOG_CRON}, threshold=${TICK_STALL_THRESHOLD_MIN}m)`
     );
@@ -546,6 +560,36 @@ class MatchScheduler {
       return result;
     } catch (err) {
       console.error('[MatchScheduler] Drip campaign batch failed:', err);
+      throw err;
+    }
+  }
+
+  async runWeeklyDigest() {
+    console.log('[MatchScheduler] Starting weekly digest send...');
+    const startTime = Date.now();
+    try {
+      const { emailService } = await import('./email');
+      const result = await emailService.sendDigestToAll();
+      const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.log(`[MatchScheduler] Weekly digest complete in ${duration}s:`, result);
+      return result;
+    } catch (err) {
+      console.error('[MatchScheduler] Weekly digest failed:', err);
+      throw err;
+    }
+  }
+
+  async runInvestorStatsAggregation() {
+    console.log('[MatchScheduler] Starting investor stats aggregation...');
+    const startTime = Date.now();
+    try {
+      const { investorStatsService } = await import('./investorStatsService');
+      const result = await investorStatsService.runDailyAggregation();
+      const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.log(`[MatchScheduler] Investor stats aggregation complete in ${duration}s:`, result);
+      return result;
+    } catch (err) {
+      console.error('[MatchScheduler] Investor stats aggregation failed:', err);
       throw err;
     }
   }

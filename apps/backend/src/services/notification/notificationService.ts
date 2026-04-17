@@ -2,7 +2,7 @@ import { prisma } from '@cleya/db';
 import { sendToUser } from '../../websocket/server';
 
 type NotifChannel = 'WHATSAPP' | 'EMAIL' | 'SMS' | 'IN_APP';
-type NotifEvent = 'MATCH_FOUND' | 'INTRO_REQUEST' | 'INTRO_ACCEPTED' | 'INTRO_REJECTED' | 'PROFILE_COMPLETE' | 'CALL_SCHEDULED' | 'CALL_REMINDER';
+type NotifEvent = 'MATCH_FOUND' | 'INTRO_REQUEST' | 'INTRO_ACCEPTED' | 'INTRO_REJECTED' | 'PROFILE_COMPLETE' | 'CALL_SCHEDULED' | 'CALL_REMINDER' | 'REFERRAL_JOINED' | 'REFERRAL_REWARD' | 'PROFILE_STRENGTH';
 
 interface NotificationPayload {
   userId: string;
