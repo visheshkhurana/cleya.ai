@@ -108,6 +108,8 @@ export default function SettingsPage() {
     }
   }, [router]);
 
+  const hasPassword = settings?.hasPassword !== false;
+
   const handleChangePassword = async () => {
     setPasswordMsg(null);
     if (newPassword !== confirmPassword) {
@@ -120,13 +122,19 @@ export default function SettingsPage() {
     }
     setPasswordLoading(true);
     try {
-      await api.changePassword(currentPassword, newPassword);
-      setPasswordMsg({ type: 'success', text: 'Password changed successfully' });
+      if (hasPassword) {
+        await api.changePassword(currentPassword, newPassword);
+        setPasswordMsg({ type: 'success', text: 'Password changed successfully' });
+      } else {
+        await api.setPassword(newPassword);
+        setPasswordMsg({ type: 'success', text: 'Password set successfully. You can now sign in with email and password.' });
+        setSettings((prev: any) => prev ? { ...prev, hasPassword: true } : prev);
+      }
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (err: any) {
-      setPasswordMsg({ type: 'error', text: err.message || 'Failed to change password' });
+      setPasswordMsg({ type: 'error', text: err.message || (hasPassword ? 'Failed to change password' : 'Failed to set password') });
     }
     setPasswordLoading(false);
   };
@@ -249,19 +257,26 @@ export default function SettingsPage() {
           marginBottom: '24px',
         }}>
           <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 600, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '20px' }}>🔒</span> Change Password
+            <span style={{ fontSize: '20px' }}>🔒</span> {hasPassword ? 'Change Password' : 'Set Password'}
           </h2>
+          {!hasPassword && (
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', marginBottom: '16px', lineHeight: 1.5 }}>
+              Your account was created through a social sign-in, so it does not have a password yet. Set one to enable email and password as a backup sign-in method.
+            </p>
+          )}
           <div style={{ display: 'grid', gap: '16px' }}>
-            <div>
-              <label style={labelStyle}>Current Password</label>
-              <input
-                type="password"
-                value={currentPassword}
-                onChange={e => setCurrentPassword(e.target.value)}
-                style={inputStyle}
-                placeholder="Enter current password"
-              />
-            </div>
+            {hasPassword && (
+              <div>
+                <label style={labelStyle}>Current Password</label>
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={e => setCurrentPassword(e.target.value)}
+                  style={inputStyle}
+                  placeholder="Enter current password"
+                />
+              </div>
+            )}
             <div>
               <label style={labelStyle}>New Password</label>
               <input
@@ -296,7 +311,7 @@ export default function SettingsPage() {
             )}
             <button
               onClick={handleChangePassword}
-              disabled={passwordLoading || !currentPassword || !newPassword}
+              disabled={passwordLoading || (hasPassword && !currentPassword) || !newPassword}
               style={{
                 padding: '12px 24px',
                 background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)',
@@ -306,11 +321,11 @@ export default function SettingsPage() {
                 fontSize: '14px',
                 fontWeight: 600,
                 cursor: 'pointer',
-                opacity: passwordLoading || !currentPassword || !newPassword ? 0.5 : 1,
+                opacity: passwordLoading || (hasPassword && !currentPassword) || !newPassword ? 0.5 : 1,
                 width: 'fit-content',
               }}
             >
-              {passwordLoading ? 'Updating...' : 'Update Password'}
+              {passwordLoading ? (hasPassword ? 'Updating...' : 'Setting...') : (hasPassword ? 'Update Password' : 'Set Password')}
             </button>
           </div>
         </section>

@@ -3,7 +3,7 @@ import { authenticate } from '../middleware/auth';
 import { profileService } from '../services/profileService';
 import { prisma } from '@cleya/db';
 import bcrypt from 'bcryptjs';
-import { validate, profileUpdateSchema, changePasswordSchema } from '../middleware/validation';
+import { validate, profileUpdateSchema, changePasswordSchema, setPasswordSchema } from '../middleware/validation';
 
 export const userRouter = Router();
 
@@ -60,9 +60,33 @@ userRouter.post('/change-password', authenticate, validate(changePasswordSchema)
       res.status(404).json({ success: false, error: { message: 'User not found' } });
       return;
     }
+    if (!user.passwordHash) {
+      res.status(400).json({ success: false, error: { message: 'No password set for this account. Use set password instead.', code: 'NO_PASSWORD_SET' } });
+      return;
+    }
     const valid = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!valid) {
       res.status(400).json({ success: false, error: { message: 'Current password is incorrect' } });
+      return;
+    }
+    const hashed = await bcrypt.hash(newPassword, 12);
+    await prisma.user.update({ where: { id: user.id }, data: { passwordHash: hashed } });
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+userRouter.post('/set-password', authenticate, validate(setPasswordSchema), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { newPassword } = req.body;
+    const user = await prisma.user.findUnique({ where: { id: req.user!.userId } });
+    if (!user) {
+      res.status(404).json({ success: false, error: { message: 'User not found' } });
+      return;
+    }
+    if (user.passwordHash) {
+      res.status(400).json({ success: false, error: { message: 'A password is already set for this account. Use change password instead.', code: 'PASSWORD_ALREADY_SET' } });
       return;
     }
     const hashed = await bcrypt.hash(newPassword, 12);
@@ -200,7 +224,7 @@ userRouter.get('/settings', authenticate, async (req: Request, res: Response, ne
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user!.userId },
-      select: { email: true, phone: true, name: true, createdAt: true, whatsappOptedIn: true, whatsappPhone: true },
+      select: { email: true, phone: true, name: true, createdAt: true, whatsappOptedIn: true, whatsappPhone: true, passwordHash: true },
     });
     const profile = await prisma.profile.findUnique({
       where: { userId: req.user!.userId },
@@ -210,7 +234,9 @@ userRouter.get('/settings', authenticate, async (req: Request, res: Response, ne
       where: { userId: req.user!.userId },
     });
     const phone = user?.phone || profile?.phoneNumber || null;
-    res.json({ success: true, data: { ...user, phone, profile, notificationPrefs: prefs } });
+    const hasPassword = !!user?.passwordHash;
+    const userData = user ? { email: user.email, phone: user.phone, name: user.name, createdAt: user.createdAt, whatsappOptedIn: user.whatsappOptedIn, whatsappPhone: user.whatsappPhone } : null;
+    res.json({ success: true, data: { ...userData, phone, hasPassword, profile, notificationPrefs: prefs } });
   } catch (error) {
     next(error);
   }

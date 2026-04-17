@@ -304,6 +304,13 @@ class ApiClient {
     });
   }
 
+  async setPassword(newPassword: string) {
+    return this.fetch('/users/set-password', {
+      method: 'POST',
+      body: JSON.stringify({ newPassword }),
+    });
+  }
+
   async deleteAccount() {
     return this.fetch('/users/account', { method: 'DELETE' });
   }
