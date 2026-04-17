@@ -25,6 +25,9 @@ const TICK_CHUNK_SIZE = num(process.env.MATCH_TICK_CHUNK_SIZE, 25);
 const REVISIT_INTERVAL_MS = num(process.env.MATCH_REVISIT_HOURS, 6) * 60 * 60 * 1000;
 const PER_USER_PROPOSE_LIMIT = num(process.env.MATCH_PER_USER_PROPOSE_LIMIT, 3);
 const RECHECK_PEER_LIMIT = num(process.env.MATCH_RECHECK_PEER_LIMIT, 50);
+const TICK_STALL_THRESHOLD_MIN = num(process.env.MATCH_TICK_STALL_MINUTES, 10);
+const TICK_WATCHDOG_CRON = process.env.MATCH_TICK_WATCHDOG_CRON || '*/2 * * * *';
+const TICK_REPEAT_ALERT_MIN = num(process.env.MATCH_TICK_STALL_REPEAT_MINUTES, 60);
 
 interface TickStats {
   ticks: number;
@@ -54,6 +57,10 @@ class MatchScheduler {
 
   private pendingQueue = new Set<string>();
   private lastCheckAt = new Map<string, number>();
+  private startedAt: Date | null = null;
+  private stallAlertActive = false;
+  private stallAlertedAt: Date | null = null;
+  private lastStallAlertAt: Date | null = null;
   private stats: TickStats = {
     ticks: 0,
     usersConsidered: 0,
@@ -98,19 +105,100 @@ class MatchScheduler {
       );
     }, { timezone: 'Asia/Kolkata' });
 
-    this.tasks.push(tickJob, safetyNetJob, dailyReportJob, enrichmentJob, dripJob);
+    const watchdogJob = cron.schedule(TICK_WATCHDOG_CRON, () => {
+      this.runTickWatchdog().catch(err =>
+        console.error('[MatchScheduler] Tick watchdog failed:', err)
+      );
+    }, { timezone: 'Asia/Kolkata' });
+
+    this.tasks.push(tickJob, safetyNetJob, dailyReportJob, enrichmentJob, dripJob, watchdogJob);
+    this.startedAt = new Date();
     this.started = true;
     console.log(`[MatchScheduler] Continuous matchmaking tick scheduled (${TICK_CRON}, chunk=${TICK_CHUNK_SIZE})`);
     console.log('[MatchScheduler] Safety-net sweep scheduled at 4:00 IST');
     console.log('[MatchScheduler] Daily Slack report at 21:00 IST');
     console.log('[MatchScheduler] LinkedIn enrichment at 3:00 IST');
     console.log('[MatchScheduler] Drip campaign at 10:00 IST');
+    console.log(
+      `[MatchScheduler] Tick watchdog scheduled (${TICK_WATCHDOG_CRON}, threshold=${TICK_STALL_THRESHOLD_MIN}m)`
+    );
+  }
+
+  async runTickWatchdog() {
+    if (!this.started) return;
+
+    const now = Date.now();
+    const reference = this.stats.lastTickAt ?? this.startedAt;
+    if (!reference) return;
+
+    const minutesSinceTick = (now - reference.getTime()) / 60000;
+    const isStalled = minutesSinceTick >= TICK_STALL_THRESHOLD_MIN;
+
+    if (isStalled) {
+      const shouldFire =
+        !this.stallAlertActive ||
+        (this.lastStallAlertAt !== null &&
+          (now - this.lastStallAlertAt.getTime()) / 60000 >= TICK_REPEAT_ALERT_MIN);
+
+      if (shouldFire) {
+        if (!this.stallAlertActive) {
+          this.stallAlertedAt = new Date();
+        }
+        this.stallAlertActive = true;
+        this.lastStallAlertAt = new Date();
+        console.warn(
+          `[MatchScheduler] Tick stalled: ${minutesSinceTick.toFixed(1)}m since last tick ` +
+            `(threshold ${TICK_STALL_THRESHOLD_MIN}m). Sending Slack alert.`
+        );
+        await slackService
+          .notifyMatchmakingStalled({
+            minutesSinceLastTick: minutesSinceTick,
+            lastTickAt: this.stats.lastTickAt,
+            thresholdMinutes: TICK_STALL_THRESHOLD_MIN,
+          })
+          .catch(err =>
+            console.error('[MatchScheduler] Failed to send stall alert:', err)
+          );
+      }
+      return;
+    }
+
+    if (this.stallAlertActive && this.stats.lastTickAt) {
+      // Approximate stall onset as the last successful tick before the gap
+      // (or scheduler startup if there had never been one). This gives a
+      // truer downtime than measuring from when we first paged.
+      const stallOnset = this.stallAlertedAt
+        ? new Date(this.stallAlertedAt.getTime() - TICK_STALL_THRESHOLD_MIN * 60000)
+        : this.startedAt ?? this.stats.lastTickAt;
+      const downtimeMs = this.stats.lastTickAt.getTime() - stallOnset.getTime();
+      const downtimeMinutes = Math.max(0, downtimeMs / 60000);
+      this.stallAlertActive = false;
+      this.lastStallAlertAt = null;
+      const recoveredFrom = this.stallAlertedAt;
+      this.stallAlertedAt = null;
+      console.log(
+        `[MatchScheduler] Ticks resumed after ${downtimeMinutes.toFixed(1)}m ` +
+          `(stall started ${recoveredFrom?.toISOString() ?? 'unknown'}). Sending Slack recovery.`
+      );
+      await slackService
+        .notifyMatchmakingResumed({
+          downtimeMinutes,
+          lastTickAt: this.stats.lastTickAt,
+        })
+        .catch(err =>
+          console.error('[MatchScheduler] Failed to send recovery alert:', err)
+        );
+    }
   }
 
   stop() {
     this.tasks.forEach(t => t.stop());
     this.tasks = [];
     this.started = false;
+    this.startedAt = null;
+    this.stallAlertActive = false;
+    this.stallAlertedAt = null;
+    this.lastStallAlertAt = null;
     console.log('[MatchScheduler] All scheduled tasks stopped');
   }
 
