@@ -17,7 +17,7 @@ export default function LanguageSwitcher() {
   return (
     <button
       onClick={toggleLocale}
-      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 hover:bg-white/10"
+      className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 min-h-[44px] sm:min-h-0 rounded-lg text-xs font-medium transition-all duration-200 hover:bg-white/10"
       style={{
         color: 'rgba(255,255,255,0.7)',
         border: '1px solid rgba(255,255,255,0.15)',

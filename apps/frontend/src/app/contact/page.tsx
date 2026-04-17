@@ -66,13 +66,13 @@ export default function ContactPage() {
             <div className="grid sm:grid-cols-2 gap-5">
               <div>
                 <label htmlFor="contact-name" className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>Name</label>
-                <input id="contact-name" type="text" value={name} onChange={e => setName(e.target.value)} required placeholder="Your name"
+                <input id="contact-name" type="text" autoComplete="name" autoCapitalize="words" autoCorrect="off" spellCheck={false} value={name} onChange={e => setName(e.target.value)} required placeholder="Your name"
                   className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-white/30 border border-white/[0.08] focus:outline-none focus:border-[#6C63FF] transition"
                   style={{ background: 'rgba(255,255,255,0.03)' }} />
               </div>
               <div>
                 <label htmlFor="contact-email" className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>Email</label>
-                <input id="contact-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="you@example.com"
+                <input id="contact-email" type="email" inputMode="email" autoComplete="email" autoCapitalize="off" autoCorrect="off" spellCheck={false} value={email} onChange={e => setEmail(e.target.value)} required placeholder="you@example.com"
                   className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-white/30 border border-white/[0.08] focus:outline-none focus:border-[#6C63FF] transition"
                   style={{ background: 'rgba(255,255,255,0.03)' }} />
               </div>
@@ -93,7 +93,7 @@ export default function ContactPage() {
             </div>
             <div>
               <label htmlFor="contact-message" className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>Message</label>
-              <textarea id="contact-message" value={message} onChange={e => setMessage(e.target.value)} required placeholder="How can we help?" rows={5}
+              <textarea id="contact-message" autoCapitalize="sentences" value={message} onChange={e => setMessage(e.target.value)} required placeholder="How can we help?" rows={5}
                 className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-white/30 border border-white/[0.08] focus:outline-none focus:border-[#6C63FF] transition resize-none"
                 style={{ background: 'rgba(255,255,255,0.03)' }} />
             </div>

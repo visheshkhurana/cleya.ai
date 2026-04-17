@@ -674,6 +674,11 @@ function AdminDashboardInner() {
                 <label className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${t.textLabel(isDark)}`}>Email</label>
                 <input
                   type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  spellCheck={false}
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
                   required
@@ -686,6 +691,7 @@ function AdminDashboardInner() {
                 <label className={`block text-xs font-medium uppercase tracking-wider mb-1.5 ${t.textLabel(isDark)}`}>Password</label>
                 <input
                   type="password"
+                  autoComplete="current-password"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
                   required

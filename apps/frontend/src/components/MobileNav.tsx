@@ -86,7 +86,7 @@ export default function MobileNav() {
       <button
         ref={toggleRef}
         onClick={() => setOpen(!open)}
-        className="flex flex-col gap-1.5 p-2 -m-2"
+        className="flex flex-col items-center justify-center gap-1.5 min-w-[44px] min-h-[44px] -m-1"
         aria-label={open ? 'Close menu' : 'Open menu'}
         aria-expanded={open}
         aria-controls="mobile-nav-drawer"
@@ -120,7 +120,7 @@ export default function MobileNav() {
                 <button
                   ref={closeRef}
                   onClick={() => { setOpen(false); toggleRef.current?.focus(); }}
-                  className="text-white/40 hover:text-white/70 transition p-1"
+                  className="text-white/40 hover:text-white/70 transition flex items-center justify-center min-w-[44px] min-h-[44px]"
                   aria-label="Close menu"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -137,7 +137,7 @@ export default function MobileNav() {
                   <button
                     key={item.href}
                     onClick={() => router.push(item.href)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${
+                    className={`w-full flex items-center gap-3 px-4 py-3 min-h-[48px] rounded-xl text-sm font-medium transition ${
                       isActive ? 'text-white' : 'text-white/40 hover:text-white/70'
                     }`}
                     style={isActive ? { background: 'rgba(108,99,255,0.1)', borderLeft: '2px solid #6C63FF' } : {}}
@@ -153,7 +153,7 @@ export default function MobileNav() {
             <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/5">
               <button
                 onClick={() => { api.logout().then(() => router.push('/')); }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400/60 hover:text-red-400 hover:bg-red-500/5 transition"
+                className="w-full flex items-center gap-3 px-4 py-3 min-h-[48px] rounded-xl text-sm font-medium text-red-400/60 hover:text-red-400 hover:bg-red-500/5 transition"
               >
                 <span className="text-base" aria-hidden="true">🚪</span>
                 {t('nav.signOut')}

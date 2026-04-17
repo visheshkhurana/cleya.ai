@@ -16,7 +16,7 @@ export default function AppFooter() {
               </div>
               <span className="text-white/50 font-medium text-xs">Cleya.ai</span>
             </Link>
-            <p className="text-[11px] leading-relaxed text-muted">
+            <p className="text-xs sm:text-[11px] leading-relaxed text-muted">
               {t('footer.tagline')}
             </p>
           </div>
@@ -30,7 +30,7 @@ export default function AppFooter() {
                 { label: t('nav.profile'), href: '/profile' },
                 { label: t('nav.introductions'), href: '/introductions' },
               ].map((link) => (
-                <Link key={link.href} href={link.href} className="block text-[11px] text-muted transition-colors hover:text-white/60">
+                <Link key={link.href} href={link.href} className="block text-xs sm:text-[11px] text-muted transition-colors hover:text-white/60 py-2 sm:py-1 min-h-[44px] sm:min-h-0 flex items-center">
                   {link.label}
                 </Link>
               ))}
@@ -46,7 +46,7 @@ export default function AppFooter() {
                 { label: t('nav.about'), href: '/about' },
                 { label: t('nav.blog'), href: '/blog' },
               ].map((link) => (
-                <Link key={link.href} href={link.href} className="block text-[11px] text-muted transition-colors hover:text-white/60">
+                <Link key={link.href} href={link.href} className="block text-xs sm:text-[11px] text-muted transition-colors hover:text-white/60 py-2 sm:py-1 min-h-[44px] sm:min-h-0 flex items-center">
                   {link.label}
                 </Link>
               ))}
@@ -61,11 +61,11 @@ export default function AppFooter() {
                 { label: t('footer.privacyPolicy'), href: '/privacy' },
                 { label: t('footer.termsOfService'), href: '/terms' },
               ].map((link) => (
-                <Link key={link.href} href={link.href} className="block text-[11px] text-muted transition-colors hover:text-white/60">
+                <Link key={link.href} href={link.href} className="block text-xs sm:text-[11px] text-muted transition-colors hover:text-white/60 py-2 sm:py-1 min-h-[44px] sm:min-h-0 flex items-center">
                   {link.label}
                 </Link>
               ))}
-              <a href="mailto:hello@cleya.ai" className="block text-[11px] text-muted transition-colors hover:text-white/60">
+              <a href="mailto:hello@cleya.ai" className="block text-xs sm:text-[11px] text-muted transition-colors hover:text-white/60 py-2 sm:py-1 min-h-[44px] sm:min-h-0 flex items-center">
                 hello@cleya.ai
               </a>
               <button
@@ -80,10 +80,10 @@ export default function AppFooter() {
         </div>
 
         <div className="border-t border-white/[0.04] pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-[11px] text-muted">
+          <p className="text-xs sm:text-[11px] text-muted">
             {t('footer.copyright')}
           </p>
-          <p className="text-[11px] text-muted">
+          <p className="text-xs sm:text-[11px] text-muted">
             {t('footer.location')}
           </p>
         </div>

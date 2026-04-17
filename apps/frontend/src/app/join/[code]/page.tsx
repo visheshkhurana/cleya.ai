@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import AppShell from '@/components/AppShell';
+import PasswordInput from '@/components/PasswordInput';
 
 interface InviteInfo {
   valid: boolean;
@@ -120,7 +121,7 @@ export default function JoinPage() {
             <div>
               <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>Full Name</label>
               <input type="text" value={fullName} onChange={e => setFullName(e.target.value)}
-                placeholder="Your full name" className="input-dark" autoComplete="name" />
+                placeholder="Your full name" className="input-dark" autoComplete="name" autoCapitalize="words" autoCorrect="off" spellCheck={false} />
             </div>
             <div>
               <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>I am a</label>
@@ -144,18 +145,18 @@ export default function JoinPage() {
             </div>
             <div>
               <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>Email</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+              <input type="email" inputMode="email" autoComplete="email" autoCapitalize="off" autoCorrect="off" spellCheck={false} value={email} onChange={e => setEmail(e.target.value)}
                 placeholder="you@example.com" required className="input-dark" autoFocus />
             </div>
             <div>
               <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>Password</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-                placeholder="Min 8 chars, letter + number" required minLength={8} className="input-dark" />
+              <PasswordInput value={password} onChange={e => setPassword(e.target.value)}
+                placeholder="Min 8 chars, letter + number" required minLength={8} autoComplete="new-password" className="input-dark" />
             </div>
             <div>
               <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>Confirm Password</label>
-              <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
-                placeholder="Re-enter password" className="input-dark" />
+              <PasswordInput value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                placeholder="Re-enter password" autoComplete="new-password" className="input-dark" />
               {confirmPassword && password !== confirmPassword && (
                 <p className="text-[10px] mt-1 text-red-400">Passwords do not match</p>
               )}

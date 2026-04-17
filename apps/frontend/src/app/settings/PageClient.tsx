@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import AppNav from '@/components/AppNav';
 import AppFooter from '@/components/AppFooter';
 import AppShell from '@/components/AppShell';
+import PasswordInput from '@/components/PasswordInput';
 import { resetUser } from '@/lib/posthog';
 import { setUser as setSentryUser } from '@/lib/sentry';
 import PasswordStrengthMeter from '@/components/PasswordStrengthMeter';
@@ -274,10 +275,10 @@ export default function SettingsPage() {
             {hasPassword && (
               <div>
                 <label style={labelStyle}>Current Password</label>
-                <input
-                  type="password"
+                <PasswordInput
                   value={currentPassword}
                   onChange={e => setCurrentPassword(e.target.value)}
+                  autoComplete="current-password"
                   style={inputStyle}
                   placeholder="Enter current password"
                 />
@@ -285,10 +286,10 @@ export default function SettingsPage() {
             )}
             <div>
               <label style={labelStyle}>New Password</label>
-              <input
-                type="password"
+              <PasswordInput
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
+                autoComplete="new-password"
                 style={inputStyle}
                 placeholder="At least 8 characters"
               />
@@ -296,10 +297,10 @@ export default function SettingsPage() {
             </div>
             <div>
               <label style={labelStyle}>Confirm New Password</label>
-              <input
-                type="password"
+              <PasswordInput
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
+                autoComplete="new-password"
                 style={inputStyle}
                 placeholder="Confirm new password"
               />

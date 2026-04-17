@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import AppShell from '@/components/AppShell';
 import PasswordStrengthMeter from '@/components/PasswordStrengthMeter';
 import { getPasswordStrength } from '@/lib/passwordStrength';
+import PasswordInput from '@/components/PasswordInput';
 
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
@@ -78,12 +79,12 @@ export default function ResetPasswordPage() {
         <form onSubmit={handleSubmit} className="rounded-2xl border border-white/[0.08] p-8 space-y-4" style={{ background: 'rgba(15,22,41,0.8)' }}>
           <div>
             <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>New Password</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Min 8 characters" required minLength={8} className="input-dark" />
+            <PasswordInput value={password} onChange={e => setPassword(e.target.value)} placeholder="Min 8 characters" required minLength={8} autoComplete="new-password" className="input-dark" />
             <PasswordStrengthMeter password={password} />
           </div>
           <div>
             <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>Confirm Password</label>
-            <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Confirm password" required className="input-dark" />
+            <PasswordInput value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Confirm password" required autoComplete="new-password" className="input-dark" />
           </div>
           {error && <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">{error}</p>}
           <button type="submit" disabled={loading} className="btn-primary">

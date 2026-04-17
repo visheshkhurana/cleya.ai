@@ -8,6 +8,7 @@ import { useI18n } from '@/lib/i18n';
 import { translations } from '@/lib/i18n/translations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import ClerkContinueButton from '@/components/ClerkContinueButton';
+import PasswordInput from '@/components/PasswordInput';
 import ThreeBackground from '@/components/3d/ThreeBackground';
 import TiltCard from '@/components/ui/TiltCard';
 import {
@@ -1607,7 +1608,7 @@ export default function Home() {
                     <p className="text-sm mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Enter your email and we&apos;ll send you a reset link.</p>
                     <div>
                       <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.5)' }}>Email</label>
-                      <input type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} placeholder="you@example.com" required className="input-dark" />
+                      <input type="email" inputMode="email" autoComplete="email" autoCapitalize="off" autoCorrect="off" spellCheck={false} value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} placeholder="you@example.com" required className="input-dark" />
                     </div>
                     <button type="submit" disabled={forgotLoading} className="btn-primary">{forgotLoading ? 'Sending...' : 'Send Reset Link'}</button>
                     <button type="button" onClick={() => { setShowForgotPassword(false); setError(''); setFieldErrors({}); }} className="w-full text-xs text-center font-medium" style={{ color: '#9B95FF' }}>Back to Login</button>
@@ -1672,14 +1673,14 @@ export default function Home() {
                       <div>
                         <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.5)' }}>Full Name</label>
                         <input type="text" value={fullName} onChange={(e) => { setFullName(e.target.value); setFieldErrors(prev => { const n = {...prev}; delete n.fullName; return n; }); }}
-                          placeholder="Your full name" autoComplete="name" className="input-dark"
+                          placeholder="Your full name" autoComplete="name" autoCapitalize="words" autoCorrect="off" spellCheck={false} className="input-dark"
                           style={fieldErrors.fullName ? { borderColor: '#ef4444' } : {}} />
                         {fieldErrors.fullName && <p className="text-[10px] mt-1 text-red-400">{fieldErrors.fullName}</p>}
                       </div>
                     )}
                     <div>
                       <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.5)' }}>Email</label>
-                      <input type="email" value={email} onChange={(e) => { setEmail(e.target.value); setFieldErrors(prev => { const n = {...prev}; delete n.email; return n; }); }}
+                      <input type="email" inputMode="email" autoComplete="email" autoCapitalize="off" autoCorrect="off" spellCheck={false} value={email} onChange={(e) => { setEmail(e.target.value); setFieldErrors(prev => { const n = {...prev}; delete n.email; return n; }); }}
                         placeholder="you@example.com" className="input-dark"
                         style={fieldErrors.email ? { borderColor: '#ef4444' } : {}}
                         onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} />
@@ -1687,17 +1688,11 @@ export default function Home() {
                     </div>
                     <div>
                       <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.5)' }}>Password</label>
-                      <div className="relative">
-                        <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => { setPassword(e.target.value); setFieldErrors(prev => { const n = {...prev}; delete n.password; return n; }); }}
-                          placeholder={mode === 'signup' ? 'Min 8 chars, letter + number' : 'Your password'}
-                          className="input-dark pr-11" style={fieldErrors.password ? { borderColor: '#ef4444' } : {}}
-                          onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} />
-                        <button type="button" onClick={() => setShowPassword((s) => !s)}
-                          aria-label={showPassword ? 'Hide password' : 'Show password'}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-white/40 hover:text-white/80 transition">
-                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
-                      </div>
+                      <PasswordInput value={password} onChange={(e) => { setPassword(e.target.value); setFieldErrors(prev => { const n = {...prev}; delete n.password; return n; }); }}
+                        placeholder={mode === 'signup' ? 'Min 8 chars, letter + number' : 'Your password'}
+                        autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                        className="input-dark" style={fieldErrors.password ? { borderColor: '#ef4444' } : {}}
+                        onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} />
                       {fieldErrors.password && <p className="text-[10px] mt-1 text-red-400">{fieldErrors.password}</p>}
                       {mode === 'signup' && password.length > 0 && (() => {
                         const strength = getPasswordStrength(password);
@@ -1711,6 +1706,16 @@ export default function Home() {
                         );
                       })()}
                     </div>
+                    {mode === 'signup' && (
+                      <div>
+                        <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.5)' }}>Confirm Password</label>
+                        <PasswordInput value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setFieldErrors(prev => { const n = {...prev}; delete n.confirmPassword; return n; }); }}
+                          placeholder="Confirm your password" autoComplete="new-password" className="input-dark"
+                          style={fieldErrors.confirmPassword ? { borderColor: '#ef4444' } : {}}
+                          onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} />
+                        {fieldErrors.confirmPassword && <p className="text-[10px] mt-1 text-red-400">{fieldErrors.confirmPassword}</p>}
+                      </div>
+                    )}
                     {mode === 'signup' && (
                       <label className="flex items-start gap-2 cursor-pointer">
                         <input type="checkbox" checked={consent} onChange={(e) => { setConsent(e.target.checked); setFieldErrors(prev => { const n = {...prev}; delete n.consent; return n; }); }}
