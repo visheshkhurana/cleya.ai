@@ -10,20 +10,41 @@ function getProvider() {
   return null;
 }
 
+async function resolveRecipientName(userId: string, recipientName?: string): Promise<string | undefined> {
+  if (recipientName) return recipientName;
+  if (!userId || userId === 'direct') return undefined;
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    });
+    return user?.name || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export class MessagingService {
-  async sendWhatsApp(userId: string, phoneNumber: string, message: string) {
+  async sendWhatsApp(userId: string, phoneNumber: string, message: string, recipientName?: string) {
     const provider = getProvider();
     if (!provider) {
       console.warn('No WhatsApp provider configured, message skipped');
       return null;
     }
+    if (provider === twilioWhatsAppService) {
+      const name = await resolveRecipientName(userId, recipientName);
+      return provider.sendWhatsApp(userId, phoneNumber, message, name);
+    }
     return provider.sendWhatsApp(userId, phoneNumber, message);
   }
 
-  async sendWhatsAppDirect(phoneNumber: string, message: string) {
+  async sendWhatsAppDirect(phoneNumber: string, message: string, recipientName?: string) {
     const provider = getProvider();
     if (!provider) {
       return { success: false, error: 'No WhatsApp provider configured' };
+    }
+    if (provider === twilioWhatsAppService) {
+      return provider.sendWhatsAppDirect(phoneNumber, message, recipientName);
     }
     return provider.sendWhatsAppDirect(phoneNumber, message);
   }
@@ -46,10 +67,10 @@ export class MessagingService {
     return provider.sendImage(userId, phoneNumber, imageUrl, caption);
   }
 
-  async sendSMS(userId: string, phoneNumber: string, message: string) {
+  async sendSMS(userId: string, phoneNumber: string, message: string, recipientName?: string) {
     const providerName = this.getActiveProvider();
     console.log(`SMS routed to WhatsApp via ${providerName} for ${phoneNumber}`);
-    return this.sendWhatsApp(userId, phoneNumber, message);
+    return this.sendWhatsApp(userId, phoneNumber, message, recipientName);
   }
 
   getActiveProvider(): string {
