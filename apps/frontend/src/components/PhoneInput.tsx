@@ -8,6 +8,7 @@ import {
   parsePhoneNumber,
 } from 'react-phone-number-input';
 import enLocale from 'react-phone-number-input/locale/en.json';
+import { FALLBACK_COUNTRY, getDetectedCountryClient, normaliseCountry } from '@/lib/detectCountry';
 
 interface Country {
   code: string;
@@ -80,22 +81,52 @@ interface PhoneInputProps {
   showValidation?: boolean;
 }
 
+function pickInitialCountry(defaultCountry: string | undefined): Country {
+  const explicit = normaliseCountry(defaultCountry);
+  if (explicit) {
+    const found = countries.find((c) => c.code === explicit);
+    if (found) return found;
+  }
+  if (defaultCountry === undefined) {
+    const detected = getDetectedCountryClient();
+    if (detected) {
+      const found = countries.find((c) => c.code === detected);
+      if (found) return found;
+    }
+  }
+  return (
+    countries.find((c) => c.code === FALLBACK_COUNTRY) || countries[0]
+  );
+}
+
 export default function PhoneInput({
   value,
   onChange,
   placeholder = '98765 43210',
   disabled = false,
   className = '',
-  defaultCountry = 'IN',
+  defaultCountry,
   showValidation = false,
 }: PhoneInputProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [touched, setTouched] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(-1);
-  const [selectedCountry, setSelectedCountry] = useState<Country>(
-    countries.find((c) => c.code === defaultCountry) || countries[0],
+  const [selectedCountry, setSelectedCountry] = useState<Country>(() =>
+    pickInitialCountry(defaultCountry),
   );
+
+  // If we render before client-side detection is available (SSR), re-detect on mount
+  // and switch only when the user hasn't started typing and no explicit prop was set.
+  useEffect(() => {
+    if (defaultCountry !== undefined) return;
+    if (value) return;
+    const detected = getDetectedCountryClient();
+    if (!detected || detected === selectedCountry.code) return;
+    const found = countries.find((c) => c.code === detected);
+    if (found) setSelectedCountry(found);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);

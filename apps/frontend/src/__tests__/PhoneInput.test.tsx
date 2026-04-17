@@ -1,7 +1,23 @@
 import React from 'react';
 import { render, screen, fireEvent, within } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import PhoneInput, { validatePhone } from '@/components/PhoneInput';
+import { COUNTRY_COOKIE } from '@/lib/detectCountry';
+
+function setNavigatorLanguage(lang: string | undefined, languages: string[] = []) {
+  Object.defineProperty(window.navigator, 'language', {
+    value: lang,
+    configurable: true,
+  });
+  Object.defineProperty(window.navigator, 'languages', {
+    value: languages,
+    configurable: true,
+  });
+}
+
+function clearCountryCookie() {
+  document.cookie = `${COUNTRY_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+}
 
 describe('validatePhone', () => {
   it('returns null for empty value', () => {
@@ -50,12 +66,40 @@ describe('validatePhone', () => {
 });
 
 describe('PhoneInput', () => {
-  it('renders default country (IN) when no value provided', () => {
+  beforeEach(() => {
+    clearCountryCookie();
+    setNavigatorLanguage('en');
+  });
+
+  afterEach(() => {
+    clearCountryCookie();
+  });
+
+  it('falls back to IN when detection is unavailable and no value provided', () => {
     render(<PhoneInput value="" onChange={() => {}} />);
     expect(screen.getByLabelText(/Select country/)).toHaveTextContent('+91');
   });
 
   it('honours defaultCountry prop', () => {
+    render(<PhoneInput value="" onChange={() => {}} defaultCountry="US" />);
+    expect(screen.getByLabelText(/Select country/)).toHaveTextContent('+1');
+  });
+
+  it('detects country from the nf_country cookie', () => {
+    document.cookie = `${COUNTRY_COOKIE}=DE; path=/`;
+    render(<PhoneInput value="" onChange={() => {}} />);
+    expect(screen.getByLabelText(/Select country/)).toHaveTextContent('+49');
+  });
+
+  it('detects country from navigator.language when no cookie is present', () => {
+    setNavigatorLanguage('en-GB', ['en-GB']);
+    render(<PhoneInput value="" onChange={() => {}} />);
+    expect(screen.getByLabelText(/Select country/)).toHaveTextContent('+44');
+  });
+
+  it('explicit defaultCountry overrides detection', () => {
+    document.cookie = `${COUNTRY_COOKIE}=DE; path=/`;
+    setNavigatorLanguage('en-GB', ['en-GB']);
     render(<PhoneInput value="" onChange={() => {}} defaultCountry="US" />);
     expect(screen.getByLabelText(/Select country/)).toHaveTextContent('+1');
   });
