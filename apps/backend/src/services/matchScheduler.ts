@@ -44,7 +44,7 @@ export interface MatchmakingTrendPoint {
 }
 
 const TREND_WINDOW_MS = 24 * 60 * 60 * 1000;
-const TREND_MAX_POINTS = 1000;
+const PRUNE_EVERY_TICKS = 30;
 
 class MatchScheduler {
   private tasks: ScheduledTask[] = [];
@@ -62,27 +62,6 @@ class MatchScheduler {
     errors: 0,
     lastTickAt: null,
   };
-  private trend: MatchmakingTrendPoint[] = [];
-
-  private recordTrendPoint(point: Omit<MatchmakingTrendPoint, 'ts'> & { tsMs?: number }) {
-    const tsMs = point.tsMs ?? Date.now();
-    this.trend.push({
-      ts: new Date(tsMs).toISOString(),
-      usersConsidered: point.usersConsidered,
-      proposalsCreated: point.proposalsCreated,
-      proposalsBlocked: point.proposalsBlocked,
-      errors: point.errors,
-    });
-    const cutoff = Date.now() - TREND_WINDOW_MS;
-    while (
-      this.trend.length > 0 &&
-      (new Date(this.trend[0].ts).getTime() < cutoff ||
-        this.trend.length > TREND_MAX_POINTS)
-    ) {
-      this.trend.shift();
-    }
-  }
-
   start() {
     if (this.started) {
       console.log('[MatchScheduler] Already started, skipping');
@@ -176,13 +155,11 @@ class MatchScheduler {
   getStats(): TickStats & {
     metrics: MatchMetrics;
     queueSize: number;
-    trend: MatchmakingTrendPoint[];
   } {
     return {
       ...this.stats,
       metrics: snapshot(),
       queueSize: this.pendingQueue.size,
-      trend: [...this.trend],
     };
   }
 
@@ -193,19 +170,23 @@ class MatchScheduler {
     const metricsBefore: MatchMetrics = snapshot();
     let considered = 0;
     let errors = 0;
+    let proposed = 0;
+    let blocked = 0;
 
     try {
       const candidates = await this.selectDueUsers(TICK_CHUNK_SIZE);
       if (candidates.length === 0) {
         this.stats.ticks++;
         this.stats.lastTickAt = new Date();
-        this.recordTrendPoint({
-          usersConsidered: 0,
-          proposalsCreated: 0,
-          proposalsBlocked: 0,
-          errors: 0,
-        });
         console.log('[MatchScheduler] tick: idle (no due users)');
+        await this.recordSample({
+          considered: 0,
+          proposed: 0,
+          blocked: 0,
+          errors: 0,
+          queueSize: this.pendingQueue.size,
+          durationMs: Date.now() - startTime,
+        });
         return;
       }
 
@@ -245,19 +226,14 @@ class MatchScheduler {
         Object.values(tickDelta.notificationsSkipped).reduce((a, b) => a + b, 0);
 
       const duration = Date.now() - startTime;
+      proposed = tickDelta.proposalsCreated;
+      blocked = blockedTotal;
       this.stats.ticks++;
       this.stats.usersConsidered += considered;
-      this.stats.proposalsCreated += tickDelta.proposalsCreated;
-      this.stats.proposalsBlocked += blockedTotal;
+      this.stats.proposalsCreated += proposed;
+      this.stats.proposalsBlocked += blocked;
       this.stats.errors += errors;
       this.stats.lastTickAt = new Date();
-
-      this.recordTrendPoint({
-        usersConsidered: considered,
-        proposalsCreated: tickDelta.proposalsCreated,
-        proposalsBlocked: blockedTotal,
-        errors,
-      });
 
       console.log(
         `[MatchScheduler] tick: considered=${considered} ` +
@@ -265,9 +241,75 @@ class MatchScheduler {
           `${formatSkipBreakdown(tickDelta)} ` +
           `errors=${errors} queueLeft=${this.pendingQueue.size} duration=${duration}ms`
       );
+
+      await this.recordSample({
+        considered,
+        proposed,
+        blocked,
+        errors,
+        queueSize: this.pendingQueue.size,
+        durationMs: duration,
+      });
     } finally {
       this.tickRunning = false;
     }
+  }
+
+  private async recordSample(sample: {
+    considered: number;
+    proposed: number;
+    blocked: number;
+    errors: number;
+    queueSize: number;
+    durationMs: number;
+  }) {
+    try {
+      await prisma.matchmakingTickSample.create({
+        data: {
+          considered: sample.considered,
+          proposed: sample.proposed,
+          blocked: sample.blocked,
+          errors: sample.errors,
+          queueSize: sample.queueSize,
+          durationMs: sample.durationMs,
+        },
+      });
+    } catch (err: any) {
+      console.log('[MatchScheduler] recordSample failed:', err?.message || err);
+    }
+
+    if (this.stats.ticks % PRUNE_EVERY_TICKS === 0) {
+      const cutoff = new Date(Date.now() - TREND_WINDOW_MS);
+      try {
+        await prisma.matchmakingTickSample.deleteMany({
+          where: { tickAt: { lt: cutoff } },
+        });
+      } catch (err: any) {
+        console.log('[MatchScheduler] prune samples failed:', err?.message || err);
+      }
+    }
+  }
+
+  async getTrend(windowMs: number = TREND_WINDOW_MS): Promise<MatchmakingTrendPoint[]> {
+    const since = new Date(Date.now() - windowMs);
+    const samples = await prisma.matchmakingTickSample.findMany({
+      where: { tickAt: { gte: since } },
+      orderBy: { tickAt: 'asc' },
+      select: {
+        tickAt: true,
+        considered: true,
+        proposed: true,
+        blocked: true,
+        errors: true,
+      },
+    });
+    return samples.map((s) => ({
+      ts: s.tickAt.toISOString(),
+      usersConsidered: s.considered,
+      proposalsCreated: s.proposed,
+      proposalsBlocked: s.blocked,
+      errors: s.errors,
+    }));
   }
 
   private async selectDueUsers(limit: number): Promise<string[]> {

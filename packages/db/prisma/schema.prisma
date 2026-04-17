@@ -1464,6 +1464,20 @@ model Subscription {
   @@map("subscriptions")
 }
 
+model MatchmakingTickSample {
+  id         String   @id @default(cuid())
+  tickAt     DateTime @default(now())
+  considered Int
+  proposed   Int
+  blocked    Int
+  errors     Int
+  queueSize  Int
+  durationMs Int?
+
+  @@index([tickAt])
+  @@map("matchmaking_tick_samples")
+}
+
 model MatchThrottleConfig {
   id                    String   @id @default("default")
   dailyProposalCap      Int

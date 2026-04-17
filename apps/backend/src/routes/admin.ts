@@ -1157,19 +1157,32 @@ adminRouter.get('/whatsapp/test/status', async (req: Request, res: Response, nex
   }
 });
 
-adminRouter.post('/batch-matching', async (_req: Request, res: Response, next: NextFunction) => {
+adminRouter.get('/matchmaking/health', async (_req: Request, res: Response, next: NextFunction) => {
   try {
-    const result = await matchScheduler.runBatchMatching();
-    res.json({ success: true, data: result });
+    const stats = matchScheduler.getStats();
+    const trend = await matchScheduler.getTrend();
+    res.json({
+      success: true,
+      data: {
+        ticks: stats.ticks,
+        usersConsidered: stats.usersConsidered,
+        proposalsCreated: stats.proposalsCreated,
+        proposalsBlocked: stats.proposalsBlocked,
+        errors: stats.errors,
+        lastTickAt: stats.lastTickAt,
+        queueSize: stats.queueSize,
+        trend,
+      },
+    });
   } catch (error) {
     next(error);
   }
 });
 
-adminRouter.get('/matchmaking/health', async (_req: Request, res: Response, next: NextFunction) => {
+adminRouter.post('/batch-matching', async (_req: Request, res: Response, next: NextFunction) => {
   try {
-    const stats = matchScheduler.getStats();
-    res.json({ success: true, data: stats });
+    const result = await matchScheduler.runBatchMatching();
+    res.json({ success: true, data: result });
   } catch (error) {
     next(error);
   }
