@@ -11,3 +11,8 @@ backups/
 *.sql.gz
 *.tsbuildinfo
 attached_assets/
+
+# Playwright
+apps/frontend/playwright-report/
+apps/frontend/test-results/
+apps/frontend/e2e/.auth/
