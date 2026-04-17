@@ -1464,6 +1464,19 @@ model Subscription {
   @@map("subscriptions")
 }
 
+model MatchThrottleConfig {
+  id                    String   @id @default("default")
+  dailyProposalCap      Int
+  proposalCooldownHours Float
+  dailyNotificationCap  Int
+  quietHoursStart       Int
+  quietHoursEnd         Int
+  updatedAt             DateTime @updatedAt
+  updatedBy             String?
+
+  @@map("match_throttle_config")
+}
+
 enum SubscriptionStatus {
   INACTIVE
   CREATED

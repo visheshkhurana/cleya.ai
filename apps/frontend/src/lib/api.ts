@@ -403,6 +403,23 @@ class ApiClient {
     });
   }
 
+  async getAdminMatchThrottle() {
+    return this.fetch('/admin/match-throttle');
+  }
+
+  async updateAdminMatchThrottle(patch: {
+    dailyProposalCap?: number;
+    proposalCooldownHours?: number;
+    dailyNotificationCap?: number;
+    quietHoursStart?: number;
+    quietHoursEnd?: number;
+  }) {
+    return this.fetch('/admin/match-throttle', {
+      method: 'PUT',
+      body: JSON.stringify(patch),
+    });
+  }
+
   async getAdminDeals() {
     return this.fetch('/deals/admin/all');
   }

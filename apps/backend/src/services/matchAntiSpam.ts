@@ -5,14 +5,108 @@ const num = (v: string | undefined, d: number) => {
   return Number.isFinite(n) ? n : d;
 };
 
-export const ANTI_SPAM = {
+export const ANTI_SPAM_DEFAULTS = {
   dailyProposalCap: num(process.env.MATCH_DAILY_PROPOSAL_CAP, 3),
-  proposalCooldownMs: num(process.env.MATCH_PROPOSAL_COOLDOWN_MS_HOURS, 4) * 60 * 60 * 1000,
+  proposalCooldownHours: num(process.env.MATCH_PROPOSAL_COOLDOWN_MS_HOURS, 4),
   dailyNotificationCap: num(process.env.MATCH_DAILY_NOTIFICATION_CAP, 5),
   quietHoursStart: num(process.env.MATCH_QUIET_HOURS_START, 22),
   quietHoursEnd: num(process.env.MATCH_QUIET_HOURS_END, 8),
+};
+
+export const ANTI_SPAM = {
+  ...ANTI_SPAM_DEFAULTS,
+  proposalCooldownMs: ANTI_SPAM_DEFAULTS.proposalCooldownHours * 60 * 60 * 1000,
   defaultTimezone: process.env.MATCH_DEFAULT_TIMEZONE || 'Asia/Kolkata',
 };
+
+export interface ThrottleConfig {
+  dailyProposalCap: number;
+  proposalCooldownHours: number;
+  proposalCooldownMs: number;
+  dailyNotificationCap: number;
+  quietHoursStart: number;
+  quietHoursEnd: number;
+  defaultTimezone: string;
+  updatedAt: Date | null;
+  updatedBy: string | null;
+}
+
+const CACHE_TTL_MS = 30 * 1000;
+let cached: { value: ThrottleConfig; loadedAt: number } | null = null;
+
+function fromDefaults(): ThrottleConfig {
+  return {
+    dailyProposalCap: ANTI_SPAM_DEFAULTS.dailyProposalCap,
+    proposalCooldownHours: ANTI_SPAM_DEFAULTS.proposalCooldownHours,
+    proposalCooldownMs: ANTI_SPAM_DEFAULTS.proposalCooldownHours * 60 * 60 * 1000,
+    dailyNotificationCap: ANTI_SPAM_DEFAULTS.dailyNotificationCap,
+    quietHoursStart: ANTI_SPAM_DEFAULTS.quietHoursStart,
+    quietHoursEnd: ANTI_SPAM_DEFAULTS.quietHoursEnd,
+    defaultTimezone: ANTI_SPAM.defaultTimezone,
+    updatedAt: null,
+    updatedBy: null,
+  };
+}
+
+export async function getThrottleConfig(force = false): Promise<ThrottleConfig> {
+  if (!force && cached && Date.now() - cached.loadedAt < CACHE_TTL_MS) {
+    return cached.value;
+  }
+  try {
+    const row = await prisma.matchThrottleConfig.findUnique({ where: { id: 'default' } });
+    const value: ThrottleConfig = row
+      ? {
+          dailyProposalCap: row.dailyProposalCap,
+          proposalCooldownHours: row.proposalCooldownHours,
+          proposalCooldownMs: row.proposalCooldownHours * 60 * 60 * 1000,
+          dailyNotificationCap: row.dailyNotificationCap,
+          quietHoursStart: row.quietHoursStart,
+          quietHoursEnd: row.quietHoursEnd,
+          defaultTimezone: ANTI_SPAM.defaultTimezone,
+          updatedAt: row.updatedAt,
+          updatedBy: row.updatedBy,
+        }
+      : fromDefaults();
+    cached = { value, loadedAt: Date.now() };
+    return value;
+  } catch (e) {
+    console.log('[MatchAntiSpam] getThrottleConfig failed, using defaults:', (e as Error).message);
+    const value = fromDefaults();
+    cached = { value, loadedAt: Date.now() };
+    return value;
+  }
+}
+
+export function invalidateThrottleConfigCache() {
+  cached = null;
+}
+
+export async function updateThrottleConfig(
+  patch: Partial<{
+    dailyProposalCap: number;
+    proposalCooldownHours: number;
+    dailyNotificationCap: number;
+    quietHoursStart: number;
+    quietHoursEnd: number;
+  }>,
+  actorId?: string
+): Promise<ThrottleConfig> {
+  const current = await getThrottleConfig(true);
+  const next = {
+    dailyProposalCap: patch.dailyProposalCap ?? current.dailyProposalCap,
+    proposalCooldownHours: patch.proposalCooldownHours ?? current.proposalCooldownHours,
+    dailyNotificationCap: patch.dailyNotificationCap ?? current.dailyNotificationCap,
+    quietHoursStart: patch.quietHoursStart ?? current.quietHoursStart,
+    quietHoursEnd: patch.quietHoursEnd ?? current.quietHoursEnd,
+  };
+  await prisma.matchThrottleConfig.upsert({
+    where: { id: 'default' },
+    create: { id: 'default', ...next, updatedBy: actorId ?? null },
+    update: { ...next, updatedBy: actorId ?? null },
+  });
+  invalidateThrottleConfigCache();
+  return getThrottleConfig(true);
+}
 
 export type GuardrailReason =
   | 'OK'
@@ -91,14 +185,15 @@ export async function checkProposalGuardrails(
   userAId: string,
   userBId: string
 ): Promise<GuardrailDecision> {
+  const cfg = await getThrottleConfig();
   for (const userId of [userAId, userBId]) {
     const { todayCount, lastMatchAt } = await userProposalStats(userId);
-    if (todayCount >= ANTI_SPAM.dailyProposalCap) {
+    if (todayCount >= cfg.dailyProposalCap) {
       return { allowed: false, reason: 'DAILY_CAP', blockingUserId: userId };
     }
     if (
       lastMatchAt &&
-      Date.now() - lastMatchAt.getTime() < ANTI_SPAM.proposalCooldownMs
+      Date.now() - lastMatchAt.getTime() < cfg.proposalCooldownMs
     ) {
       return { allowed: false, reason: 'COOLDOWN', blockingUserId: userId };
     }
@@ -142,12 +237,13 @@ export interface NotificationPolicy {
 export async function evaluateNotificationPolicy(
   userId: string
 ): Promise<NotificationPolicy> {
+  const cfg = await getThrottleConfig();
   const pref = await prisma.communicationPreference.findUnique({
     where: { userId },
   });
-  const timezone = pref?.timezone || ANTI_SPAM.defaultTimezone;
-  const startH = parseHour(pref?.quietHoursStart, ANTI_SPAM.quietHoursStart);
-  const endH = parseHour(pref?.quietHoursEnd, ANTI_SPAM.quietHoursEnd);
+  const timezone = pref?.timezone || cfg.defaultTimezone;
+  const startH = parseHour(pref?.quietHoursStart, cfg.quietHoursStart);
+  const endH = parseHour(pref?.quietHoursEnd, cfg.quietHoursEnd);
   const hour = getUserHourInTz(timezone);
 
   const inQuiet =
@@ -165,7 +261,7 @@ export async function evaluateNotificationPolicy(
       sentAt: { gte: since },
     },
   });
-  const overCap = sentToday >= ANTI_SPAM.dailyNotificationCap;
+  const overCap = sentToday >= cfg.dailyNotificationCap;
 
   return {
     inQuietHours: inQuiet,

@@ -270,6 +270,69 @@ adminRouter.post('/match/run/:userId', async (req: Request, res: Response, next:
   }
 });
 
+const matchThrottleSchema = z.object({
+  dailyProposalCap: z.number().int().min(0).max(1000).optional(),
+  proposalCooldownHours: z.number().min(0).max(168).optional(),
+  dailyNotificationCap: z.number().int().min(0).max(1000).optional(),
+  quietHoursStart: z.number().int().min(0).max(23).optional(),
+  quietHoursEnd: z.number().int().min(0).max(23).optional(),
+});
+
+adminRouter.get('/match-throttle', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { getThrottleConfig, ANTI_SPAM_DEFAULTS } = await import('../services/matchAntiSpam');
+    const config = await getThrottleConfig(true);
+    res.json({
+      success: true,
+      data: {
+        config: {
+          dailyProposalCap: config.dailyProposalCap,
+          proposalCooldownHours: config.proposalCooldownHours,
+          dailyNotificationCap: config.dailyNotificationCap,
+          quietHoursStart: config.quietHoursStart,
+          quietHoursEnd: config.quietHoursEnd,
+          updatedAt: config.updatedAt,
+          updatedBy: config.updatedBy,
+        },
+        defaults: ANTI_SPAM_DEFAULTS,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.put('/match-throttle', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsed = matchThrottleSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'Invalid throttle config', code: 'INVALID_INPUT', issues: parsed.error.issues },
+      });
+    }
+    const { updateThrottleConfig } = await import('../services/matchAntiSpam');
+    const updated = await updateThrottleConfig(parsed.data, req.user?.userId);
+    await logAdminAction(req, 'match_throttle.update', { metadata: parsed.data });
+    res.json({
+      success: true,
+      data: {
+        config: {
+          dailyProposalCap: updated.dailyProposalCap,
+          proposalCooldownHours: updated.proposalCooldownHours,
+          dailyNotificationCap: updated.dailyNotificationCap,
+          quietHoursStart: updated.quietHoursStart,
+          quietHoursEnd: updated.quietHoursEnd,
+          updatedAt: updated.updatedAt,
+          updatedBy: updated.updatedBy,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 adminRouter.get('/analytics', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const rangeParam = (req.query.range as string) || '7d';

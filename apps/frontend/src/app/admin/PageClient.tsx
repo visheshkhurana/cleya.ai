@@ -28,7 +28,28 @@ interface CommData {
   messageStats: { totalSMS: number; totalWhatsApp: number; delivered: number; failed: number; total: number };
 }
 
-type Tab = 'overview' | 'communications' | 'deals' | 'events' | 'analytics';
+type Tab = 'overview' | 'communications' | 'deals' | 'events' | 'analytics' | 'throttling';
+
+interface ThrottleConfig {
+  dailyProposalCap: number;
+  proposalCooldownHours: number;
+  dailyNotificationCap: number;
+  quietHoursStart: number;
+  quietHoursEnd: number;
+  updatedAt: string | null;
+  updatedBy: string | null;
+}
+
+interface ThrottleData {
+  config: ThrottleConfig;
+  defaults: {
+    dailyProposalCap: number;
+    proposalCooldownHours: number;
+    dailyNotificationCap: number;
+    quietHoursStart: number;
+    quietHoursEnd: number;
+  };
+}
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
@@ -49,6 +70,10 @@ export default function AdminDashboard() {
   const [newEvent, setNewEvent] = useState({ name: '', description: '', date: '', location: '', isVirtual: false, maxCapacity: '' });
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [digestLoading, setDigestLoading] = useState(false);
+  const [throttleData, setThrottleData] = useState<ThrottleData | null>(null);
+  const [throttleDraft, setThrottleDraft] = useState<ThrottleConfig | null>(null);
+  const [throttleSaving, setThrottleSaving] = useState(false);
+  const [throttleMessage, setThrottleMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -142,7 +167,49 @@ export default function AdminDashboard() {
     if (activeTab === 'deals' && !dealData) loadDeals();
     if (activeTab === 'events' && !eventData) loadEvents();
     if (activeTab === 'analytics' && !analyticsData) loadAnalytics();
+    if (activeTab === 'throttling' && !throttleData) loadThrottle();
   }, [activeTab]);
+
+  const loadThrottle = async () => {
+    try {
+      const data = await api.getAdminMatchThrottle();
+      setThrottleData(data);
+      setThrottleDraft(data.config);
+    } catch (err: any) {
+      console.error('Failed to load throttle config:', err);
+      setThrottleMessage({ type: 'error', text: err.message || 'Failed to load' });
+    }
+  };
+
+  const handleSaveThrottle = async () => {
+    if (!throttleDraft) return;
+    setThrottleSaving(true);
+    setThrottleMessage(null);
+    try {
+      const result = await api.updateAdminMatchThrottle({
+        dailyProposalCap: throttleDraft.dailyProposalCap,
+        proposalCooldownHours: throttleDraft.proposalCooldownHours,
+        dailyNotificationCap: throttleDraft.dailyNotificationCap,
+        quietHoursStart: throttleDraft.quietHoursStart,
+        quietHoursEnd: throttleDraft.quietHoursEnd,
+      });
+      setThrottleData((prev) => (prev ? { ...prev, config: result.config } : prev));
+      setThrottleDraft(result.config);
+      setThrottleMessage({ type: 'success', text: 'Saved. Changes take effect within ~30s.' });
+    } catch (err: any) {
+      setThrottleMessage({ type: 'error', text: err.message || 'Failed to save' });
+    } finally {
+      setThrottleSaving(false);
+    }
+  };
+
+  const handleResetThrottle = () => {
+    if (!throttleData) return;
+    setThrottleDraft({
+      ...throttleData.config,
+      ...throttleData.defaults,
+    });
+  };
 
   const handleTrigger = async () => {
     if (!triggerModal || !triggerPhone) return;
@@ -239,6 +306,7 @@ export default function AdminDashboard() {
             { id: 'deals' as Tab, label: 'Deals', icon: '🤝' },
             { id: 'events' as Tab, label: 'Events', icon: '📅' },
             { id: 'analytics' as Tab, label: 'Analytics', icon: '📈' },
+            { id: 'throttling' as Tab, label: 'Throttling', icon: '⚙️' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -980,6 +1048,116 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'throttling' && (
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-white text-lg font-semibold">Match Throttling</h2>
+            <p className="text-xs text-brand-violet-hover/40 mt-1">
+              Tune the anti-spam guardrails the matchmaking loop applies to every user.
+              Changes take effect within ~30 seconds without a restart.
+            </p>
+          </div>
+
+          {!throttleDraft || !throttleData ? (
+            <div className="text-center py-12 text-brand-violet-hover/40">Loading throttle config...</div>
+          ) : (
+            <div className="rounded-xl border border-brand-violet/10 p-5 space-y-5" style={{ background: 'rgba(15,22,41,0.8)' }}>
+              {throttleMessage && (
+                <div className={`rounded-lg border px-3 py-2 text-xs ${
+                  throttleMessage.type === 'success'
+                    ? 'border-green-500/30 text-green-300 bg-green-500/10'
+                    : 'border-red-500/30 text-red-300 bg-red-500/10'
+                }`}>
+                  {throttleMessage.text}
+                </div>
+              )}
+
+              {[
+                {
+                  key: 'dailyProposalCap' as const,
+                  label: 'Daily proposal cap (per user)',
+                  hint: 'Maximum new match proposals a single user can be involved in per server day.',
+                  step: 1, min: 0, max: 1000, suffix: 'proposals/day',
+                },
+                {
+                  key: 'proposalCooldownHours' as const,
+                  label: 'Proposal cooldown',
+                  hint: 'Minimum time between consecutive proposals for the same user.',
+                  step: 0.5, min: 0, max: 168, suffix: 'hours',
+                },
+                {
+                  key: 'dailyNotificationCap' as const,
+                  label: 'Daily notification cap (per user)',
+                  hint: 'Maximum MATCH_FOUND notifications sent to a user per local day.',
+                  step: 1, min: 0, max: 1000, suffix: 'notifications/day',
+                },
+                {
+                  key: 'quietHoursStart' as const,
+                  label: 'Quiet hours start',
+                  hint: 'Hour of day (0-23, local) when notifications begin to be suppressed.',
+                  step: 1, min: 0, max: 23, suffix: 'h',
+                },
+                {
+                  key: 'quietHoursEnd' as const,
+                  label: 'Quiet hours end',
+                  hint: 'Hour of day (0-23, local) when notifications resume.',
+                  step: 1, min: 0, max: 23, suffix: 'h',
+                },
+              ].map((field) => (
+                <div key={field.key} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-white">{field.label}</label>
+                    <p className="text-xs text-brand-violet-hover/40 mt-0.5">{field.hint}</p>
+                    <p className="text-[10px] text-brand-violet-hover/30 mt-0.5">
+                      Default: {String(throttleData.defaults[field.key])}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      step={field.step}
+                      min={field.min}
+                      max={field.max}
+                      value={throttleDraft[field.key]}
+                      onChange={(e) => {
+                        const v = e.target.value === '' ? 0 : Number(e.target.value);
+                        setThrottleDraft({ ...throttleDraft, [field.key]: v });
+                      }}
+                      className="w-32 px-3 py-2 rounded-lg border border-brand-violet/20 bg-brand-violet-pressed/20 text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-violet"
+                    />
+                    <span className="text-xs text-brand-violet-hover/40">{field.suffix}</span>
+                  </div>
+                </div>
+              ))}
+
+              {throttleData.config.updatedAt && (
+                <p className="text-[11px] text-brand-violet-hover/30">
+                  Last updated {new Date(throttleData.config.updatedAt).toLocaleString()}
+                  {throttleData.config.updatedBy ? ` by ${throttleData.config.updatedBy}` : ''}
+                </p>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={handleResetThrottle}
+                  disabled={throttleSaving}
+                  className="px-4 py-2 rounded-xl text-sm font-medium text-slate-300 border border-brand-violet/20 hover:text-white transition disabled:opacity-40"
+                >
+                  Reset to defaults
+                </button>
+                <button
+                  onClick={handleSaveThrottle}
+                  disabled={throttleSaving}
+                  className="px-4 py-2 rounded-xl text-sm font-medium bg-brand-violet text-white hover:bg-brand-violet transition disabled:opacity-40"
+                >
+                  {throttleSaving ? 'Saving...' : 'Save changes'}
+                </button>
+              </div>
+            </div>
           )}
         </div>
       )}
