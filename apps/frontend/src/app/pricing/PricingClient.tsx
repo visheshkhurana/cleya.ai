@@ -1,50 +1,117 @@
 'use client';
 import Link from 'next/link';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import PublicNav from '@/components/PublicNav';
 import AppShell from '@/components/AppShell';
 import PricingErrorBoundary from '@/components/PricingErrorBoundary';
 import { api } from '@/lib/api';
 import { useToast } from '@/components/Toast';
+import { Check, X, Minus, Shield, Sparkles, ChevronDown } from 'lucide-react';
 
-const plans = [
+type PlanId = 'free' | 'starter' | 'pro';
+
+const plans: Array<{
+  id: PlanId;
+  name: string;
+  monthly: number;
+  description: string;
+  features: string[];
+  cta: string;
+  href?: string;
+  highlight: boolean;
+  badge?: string;
+  trial?: string;
+  isSubscription: boolean;
+}> = [
   {
+    id: 'free',
     name: 'Free',
-    price: '0',
-    period: 'forever',
-    description: 'Perfect for exploring the platform',
+    monthly: 0,
+    description: 'Try Cleya — perfect for exploring the network.',
     features: [
-      'AI-powered profile creation',
-      '10 free matches per month',
+      '10 AI matches every month',
+      'AI-powered profile builder',
       'Basic match insights',
       'Community access',
       'Email notifications',
     ],
-    cta: 'Get Started',
+    cta: 'Get Started Free',
     href: '/?action=signup',
     highlight: false,
     isSubscription: false,
   },
   {
+    id: 'starter',
+    name: 'Starter',
+    monthly: 999,
+    description: 'For founders and operators warming up their network.',
+    features: [
+      '50 AI matches every month',
+      'In-app messaging',
+      'Detailed match explanations',
+      'LinkedIn verification badge',
+      'Weekly match digest',
+    ],
+    cta: 'Start 7-day Free Trial',
+    href: '/?action=signup',
+    highlight: false,
+    badge: 'Best for new users',
+    trial: '7-day free trial',
+    isSubscription: false,
+  },
+  {
+    id: 'pro',
     name: 'Pro',
-    price: '2,999',
-    period: '/month',
-    description: 'For founders and investors actively networking',
+    monthly: 2999,
+    description: 'For founders and investors actively networking.',
     features: [
       'Unlimited AI matches',
-      'Detailed match explanations',
       'In-app messaging',
+      'Detailed match explanations',
       'Priority introductions',
       'LinkedIn verification badge',
       'Meeting scheduling',
       'Advanced filters & search',
       'Weekly match digest',
     ],
-    cta: 'Subscribe Now',
-    href: '/?action=signup',
+    cta: 'Start 14-day Free Trial',
     highlight: true,
     badge: 'Most Popular',
+    trial: '14-day free trial',
     isSubscription: true,
+  },
+];
+
+const COMPARISON_FEATURES: Array<{
+  group: string;
+  rows: Array<{ label: string; free: string | boolean; starter: string | boolean; pro: string | boolean }>;
+}> = [
+  {
+    group: 'Matching',
+    rows: [
+      { label: 'Monthly AI matches', free: '10', starter: '50', pro: 'Unlimited' },
+      { label: 'AI-powered profile builder', free: true, starter: true, pro: true },
+      { label: 'Detailed match explanations', free: false, starter: true, pro: true },
+      { label: 'Advanced filters & search', free: false, starter: false, pro: true },
+      { label: 'Priority introductions', free: false, starter: false, pro: true },
+    ],
+  },
+  {
+    group: 'Communication',
+    rows: [
+      { label: 'In-app messaging', free: false, starter: true, pro: true },
+      { label: 'Meeting scheduling', free: false, starter: false, pro: true },
+      { label: 'Weekly match digest', free: false, starter: true, pro: true },
+    ],
+  },
+  {
+    group: 'Trust & Verification',
+    rows: [
+      { label: 'LinkedIn verification badge', free: false, starter: true, pro: true },
+      { label: 'Community access', free: true, starter: true, pro: true },
+      { label: 'Email support', free: true, starter: true, pro: true },
+      { label: 'Priority support', free: false, starter: false, pro: true },
+    ],
   },
 ];
 
@@ -54,8 +121,12 @@ const faqs = [
     a: 'Cleya uses a conversational AI to understand your goals, industry, stage, and preferences. Our matching engine then scores compatibility across multiple dimensions — sector fit, stage alignment, geographic proximity, and complementary strengths — to surface the most relevant connections.',
   },
   {
-    q: 'Can I try before I pay?',
-    a: 'Yes! Every user gets 10 free matches every month to experience the platform. The free allowance refreshes automatically. Once you need more, you can subscribe to the Pro plan for unlimited matches and premium features.',
+    q: 'Do I need a credit card to start?',
+    a: 'No. The Free plan requires no credit card and gives you 10 AI matches every month. You can upgrade to Starter or Pro at any time to unlock more matches and premium features.',
+  },
+  {
+    q: 'How do the free trials work?',
+    a: 'Starter includes a 7-day free trial and Pro includes a 14-day free trial. You can cancel any time during the trial and you will not be charged.',
   },
   {
     q: 'What makes Cleya different from LinkedIn?',
@@ -74,6 +145,12 @@ const faqs = [
     a: 'Yes. All paid plans are month-to-month with no lock-in. You can cancel or downgrade at any time from your account settings.',
   },
 ];
+
+function CellValue({ value }: { value: string | boolean }) {
+  if (value === true) return <Check size={16} className="text-success mx-auto" />;
+  if (value === false) return <Minus size={16} className="mx-auto" style={{ color: 'rgba(255,255,255,0.2)' }} />;
+  return <span className="text-sm text-white/85 font-medium">{value}</span>;
+}
 
 export default function PricingClient() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -124,31 +201,46 @@ export default function PricingClient() {
     }
   };
 
+  const priceFor = (monthly: number) => {
+    if (monthly === 0) return '0';
+    const value = annual ? Math.round(monthly * 0.8) : monthly;
+    return value.toLocaleString('en-IN');
+  };
+
   return (
     <PricingErrorBoundary>
     <AppShell className="font-sans">
       <PublicNav />
 
-      <section className="pt-16 pb-8 text-center">
+      <section className="pt-20 pb-10 text-center relative">
         <div className="max-w-4xl mx-auto px-6 lg:px-8">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-medium uppercase tracking-[0.2em] mb-6"
+            style={{ background: 'rgba(201,169,98,0.1)', color: '#D4B976', border: '1px solid rgba(201,169,98,0.25)' }}>
+            <Sparkles size={12} />
+            No credit card required
+          </div>
           <h1 className="font-sans text-4xl sm:text-5xl font-bold text-white tracking-tight mb-4">
             Simple, transparent pricing
           </h1>
           <p className="text-lg max-w-xl mx-auto mb-8" style={{ color: '#94A3B8' }}>
-            Start free. Upgrade when you need more matches, messaging, and premium features.
+            Start free with 10 matches a month. Upgrade when you need messaging, more matches, and premium features.
           </p>
           <div className="inline-flex items-center gap-3 p-1 rounded-full border border-white/10" style={{ background: 'rgba(15,22,41,0.8)' }}>
             <button
               onClick={() => setAnnual(false)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition ${!annual ? 'text-white' : 'text-white/40'}`}
+              className={`px-5 py-2 rounded-full text-sm font-medium transition ${!annual ? 'text-white' : 'text-white/40'}`}
               style={!annual ? { background: '#6C63FF' } : {}}>
               Monthly
             </button>
             <button
               onClick={() => setAnnual(true)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition ${annual ? 'text-white' : 'text-white/40'}`}
+              className={`px-5 py-2 rounded-full text-sm font-medium transition flex items-center gap-2 ${annual ? 'text-white' : 'text-white/40'}`}
               style={annual ? { background: '#6C63FF' } : {}}>
-              Annual <span className="text-xs opacity-75">(-20%)</span>
+              Annual
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
+                style={{ background: annual ? 'rgba(255,255,255,0.18)' : 'rgba(201,169,98,0.18)', color: annual ? '#fff' : '#D4B976' }}>
+                -20%
+              </span>
             </button>
           </div>
         </div>
@@ -157,59 +249,70 @@ export default function PricingClient() {
       <section className="pb-20">
         <div className="max-w-6xl mx-auto px-6 lg:px-8">
           <div className="grid md:grid-cols-3 gap-6">
-            {plans.map((plan) => {
-              const displayPrice = plan.price === '0' ? '0' :
-                annual ? Math.round(parseInt(plan.price.replace(',', '')) * 0.8).toLocaleString('en-IN') : plan.price;
-              return (
-                <div key={plan.name} className={`relative rounded-2xl border p-6 flex flex-col ${
-                  plan.highlight ? 'border-brand-violet/30' : 'border-white/5'
-                }`} style={{ background: plan.highlight ? 'rgba(108,99,255,0.06)' : 'rgba(15,22,41,0.8)' }}>
-                  {plan.badge && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-white"
-                      style={{ background: '#6C63FF' }}>
-                      {plan.badge}
-                    </div>
-                  )}
-                  <h3 className="text-lg font-semibold text-white mb-1">{plan.name}</h3>
-                  <p className="text-sm mb-4" style={{ color: '#94A3B8' }}>{plan.description}</p>
-                  <div className="flex items-baseline gap-1 mb-6">
-                    <span className="text-sm" style={{ color: '#94A3B8' }}>&#8377;</span>
-                    <span className="text-4xl font-bold text-white">{displayPrice}</span>
-                    <span className="text-sm" style={{ color: '#94A3B8' }}>{plan.period}</span>
+            {plans.map((plan) => (
+              <div key={plan.id} className={`relative rounded-2xl border p-6 flex flex-col ${
+                plan.highlight ? 'border-brand-violet/40' : 'border-white/[0.06]'
+              }`} style={{
+                background: plan.highlight ? 'linear-gradient(180deg, rgba(108,99,255,0.10), rgba(15,22,41,0.85))' : 'rgba(15,22,41,0.85)',
+                backdropFilter: 'blur(16px)',
+                boxShadow: plan.highlight ? '0 0 60px rgba(108,99,255,0.18)' : 'none',
+              }}>
+                {plan.badge && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider whitespace-nowrap"
+                    style={plan.highlight
+                      ? { background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)', color: '#fff' }
+                      : { background: 'rgba(201,169,98,0.15)', color: '#D4B976', border: '1px solid rgba(201,169,98,0.3)' }}>
+                    {plan.badge}
                   </div>
-                  <ul className="space-y-3 mb-8 flex-1">
-                    {plan.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2 text-sm" style={{ color: '#CBD5E1' }}>
-                        <svg className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: '#6C63FF' }} viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                  {plan.isSubscription ? (
-                    <button
-                      onClick={handleSubscribe}
-                      disabled={subscribing}
-                      className="block w-full text-center py-3 rounded-xl text-sm font-medium text-white transition hover:scale-[1.02] disabled:opacity-50"
-                      style={{ background: '#6C63FF', boxShadow: '0 0 20px rgba(108,99,255,0.2)' }}>
-                      {subscribing ? 'Setting up...' : plan.cta}
-                    </button>
-                  ) : (
-                    <Link href={plan.href}
-                      className={`block text-center py-3 rounded-xl text-sm font-medium transition hover:scale-[1.02] ${
-                        plan.highlight ? 'text-white' : 'text-white border border-white/10 hover:border-white/20'
-                      }`}
-                      style={plan.highlight ? { background: '#6C63FF', boxShadow: '0 0 20px rgba(108,99,255,0.2)' } : {}}>
-                      {plan.cta}
-                    </Link>
-                  )}
+                )}
+                <h3 className="text-lg font-semibold text-white mb-1">{plan.name}</h3>
+                <p className="text-sm mb-4 min-h-[40px]" style={{ color: '#94A3B8' }}>{plan.description}</p>
+                <div className="flex items-baseline gap-1 mb-2">
+                  <span className="text-sm" style={{ color: '#94A3B8' }}>&#8377;</span>
+                  <span className="text-4xl font-bold text-white">{priceFor(plan.monthly)}</span>
+                  <span className="text-sm" style={{ color: '#94A3B8' }}>{plan.monthly === 0 ? 'forever' : '/mo'}</span>
                 </div>
-              );
-            })}
+                {plan.trial ? (
+                  <p className="text-xs mb-5 flex items-center gap-1.5" style={{ color: '#10B981' }}>
+                    <Check size={12} /> {plan.trial} · cancel anytime
+                  </p>
+                ) : (
+                  <p className="text-xs mb-5" style={{ color: 'rgba(255,255,255,0.35)' }}>No credit card required</p>
+                )}
+                <ul className="space-y-3 mb-8 flex-1">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm" style={{ color: '#CBD5E1' }}>
+                      <Check size={16} className="mt-0.5 flex-shrink-0" style={{ color: plan.highlight ? '#9B95FF' : '#6C63FF' }} />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                {plan.isSubscription ? (
+                  <button
+                    onClick={handleSubscribe}
+                    disabled={subscribing}
+                    className="block w-full text-center py-3 rounded-xl text-sm font-semibold text-white transition hover:scale-[1.02] disabled:opacity-50"
+                    style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)', boxShadow: '0 0 24px rgba(108,99,255,0.25)' }}>
+                    {subscribing ? 'Setting up...' : plan.cta}
+                  </button>
+                ) : (
+                  <Link href={plan.href || '/?action=signup'}
+                    className={`block text-center py-3 rounded-xl text-sm font-semibold transition hover:scale-[1.02] ${
+                      plan.highlight ? 'text-white' : 'text-white border border-white/10 hover:border-white/20'
+                    }`}
+                    style={plan.highlight ? { background: '#6C63FF', boxShadow: '0 0 24px rgba(108,99,255,0.25)' } : {}}>
+                    {plan.cta}
+                  </Link>
+                )}
+              </div>
+            ))}
           </div>
 
-          <div className="mt-12 text-center rounded-2xl border border-white/5 p-8" style={{ background: 'rgba(15,22,41,0.8)' }}>
+          <div className="mt-6 flex items-center justify-center gap-2 text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>
+            <Shield size={14} /> Secure payments by Razorpay · GST included · Cancel anytime
+          </div>
+
+          <div className="mt-12 text-center rounded-2xl border border-white/[0.06] p-8" style={{ background: 'rgba(15,22,41,0.8)' }}>
             <h3 className="text-xl font-semibold text-white mb-2">Enterprise</h3>
             <p className="text-sm mb-4" style={{ color: '#94A3B8' }}>
               Custom plans for accelerators, VC funds, and large teams. SSO, API access, dedicated support, and custom matching rules.
@@ -223,19 +326,54 @@ export default function PricingClient() {
       </section>
 
       <section className="border-t border-white/[0.04] py-16">
+        <div className="max-w-5xl mx-auto px-6 lg:px-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white text-center mb-3">Compare plans</h2>
+          <p className="text-center text-sm mb-10" style={{ color: '#94A3B8' }}>See exactly what's included in every plan.</p>
+          <div className="rounded-2xl border border-white/[0.06] overflow-hidden" style={{ background: 'rgba(15,22,41,0.6)', backdropFilter: 'blur(16px)' }}>
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
+                  <th className="text-left px-5 py-4 font-semibold text-white text-sm w-[40%]">Feature</th>
+                  <th className="px-4 py-4 font-semibold text-white text-sm text-center">Free</th>
+                  <th className="px-4 py-4 font-semibold text-white text-sm text-center">Starter</th>
+                  <th className="px-4 py-4 font-semibold text-sm text-center" style={{ color: '#9B95FF' }}>Pro</th>
+                </tr>
+              </thead>
+              <tbody>
+                {COMPARISON_FEATURES.map((group) => (
+                  <Fragment key={group.group}>
+                    <tr>
+                      <td colSpan={4} className="px-5 pt-6 pb-2 text-[11px] font-bold uppercase tracking-wider" style={{ color: '#9B95FF' }}>
+                        {group.group}
+                      </td>
+                    </tr>
+                    {group.rows.map((row) => (
+                      <tr key={row.label} className="border-t border-white/[0.04]">
+                        <td className="px-5 py-3 text-white/75">{row.label}</td>
+                        <td className="px-4 py-3 text-center"><CellValue value={row.free} /></td>
+                        <td className="px-4 py-3 text-center"><CellValue value={row.starter} /></td>
+                        <td className="px-4 py-3 text-center"><CellValue value={row.pro} /></td>
+                      </tr>
+                    ))}
+                  </Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-white/[0.04] py-16">
         <div className="max-w-3xl mx-auto px-6 lg:px-8">
-          <h2 className="text-2xl font-bold text-white text-center mb-10">Frequently Asked Questions</h2>
+          <h2 className="text-2xl font-bold text-white text-center mb-10">Frequently asked questions</h2>
           <div className="space-y-3">
             {faqs.map((faq, i) => (
-              <div key={i} className="rounded-xl border border-white/5 overflow-hidden" style={{ background: 'rgba(15,22,41,0.8)' }}>
+              <div key={i} className="rounded-xl border border-white/[0.06] overflow-hidden" style={{ background: 'rgba(15,22,41,0.8)' }}>
                 <button
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
                   className="w-full flex items-center justify-between px-5 py-4 text-left">
                   <span className="text-sm font-medium text-white pr-4">{faq.q}</span>
-                  <svg className={`w-4 h-4 flex-shrink-0 transition-transform ${openFaq === i ? 'rotate-180' : ''}`}
-                    style={{ color: '#94A3B8' }} viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
+                  <ChevronDown size={16} className={`flex-shrink-0 transition-transform ${openFaq === i ? 'rotate-180' : ''}`} style={{ color: '#94A3B8' }} />
                 </button>
                 {openFaq === i && (
                   <div className="px-5 pb-4">
@@ -251,12 +389,11 @@ export default function PricingClient() {
       <section className="border-t border-white/[0.04] py-16 text-center">
         <div className="max-w-xl mx-auto px-6 lg:px-8">
           <h2 className="text-2xl font-bold text-white mb-3">Ready to find your next big connection?</h2>
-          <p className="text-sm mb-6" style={{ color: '#94A3B8' }}>Join founders and investors already on Cleya.ai.</p>
-          <Link href="/?action=signup"
-            className="inline-block px-8 py-3 rounded-[10px] text-white font-medium text-sm transition-all hover:scale-[1.02]"
-            style={{ background: '#6C63FF', boxShadow: '0 0 30px rgba(108,99,255,0.25)' }}>
-            Get Started Free →
+          <p className="text-sm mb-6" style={{ color: '#94A3B8' }}>Join 10,000+ founders, investors, and operators on Cleya.ai.</p>
+          <Link href="/?action=signup" className="btn-gold inline-flex">
+            Join Free — 10 Matches/Month
           </Link>
+          <p className="text-xs mt-4" style={{ color: 'rgba(255,255,255,0.4)' }}>No credit card required</p>
         </div>
       </section>
     </AppShell>

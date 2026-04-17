@@ -10,6 +10,11 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 import ClerkContinueButton from '@/components/ClerkContinueButton';
 import ThreeBackground from '@/components/3d/ThreeBackground';
 import TiltCard from '@/components/ui/TiltCard';
+import {
+  User, Briefcase, Building2, TrendingUp, MapPin, Target,
+  Check, Eye, EyeOff,
+  Rocket, Coins, Users, ArrowRight,
+} from 'lucide-react';
 
 function getPasswordStrength(pw: string): { label: string; color: string; width: string } {
   if (!pw) return { label: '', color: '', width: '0%' };
@@ -68,12 +73,12 @@ function RotatingTypewriter() {
 }
 
 const PROFILE_FIELDS = [
-  { label: 'Name', value: 'Arjun Mehta', icon: '👤' },
-  { label: 'Role', value: 'Founder & CEO', icon: '💼' },
-  { label: 'Sector', value: 'Fintech · Payments', icon: '🏢' },
-  { label: 'Stage', value: 'Series A · $2M ARR', icon: '📈' },
-  { label: 'Location', value: 'Bangalore, India', icon: '📍' },
-  { label: 'Looking for', value: 'Lead Investor · $5-8M', icon: '🎯' },
+  { label: 'Name', value: 'Arjun Mehta', Icon: User },
+  { label: 'Role', value: 'Founder & CEO', Icon: Briefcase },
+  { label: 'Sector', value: 'Fintech · Payments', Icon: Building2 },
+  { label: 'Stage', value: 'Series A · $2M ARR', Icon: TrendingUp },
+  { label: 'Location', value: 'Bangalore, India', Icon: MapPin },
+  { label: 'Looking for', value: 'Lead Investor · $5-8M', Icon: Target },
 ];
 
 function ProfileBuilder({ active, onComplete }: { active: boolean; onComplete?: () => void }) {
@@ -118,7 +123,7 @@ function ProfileBuilder({ active, onComplete }: { active: boolean; onComplete?: 
     <div className="rounded-2xl p-6 relative overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(20px)' }}>
       <div className="flex items-center gap-3 mb-5 pb-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <div className="w-12 h-12 rounded-full flex items-center justify-center text-lg" style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.2), rgba(78,205,196,0.2))', border: '1px solid rgba(108,99,255,0.3)' }}>
-          {visibleFields > 0 ? '👤' : '?'}
+          {visibleFields > 0 ? <User size={18} className="text-white/80" /> : <span className="text-white/40">?</span>}
         </div>
         <div>
           <p className="text-sm font-medium text-white">{visibleFields > 0 ? PROFILE_FIELDS[0].value : 'Building profile...'}</p>
@@ -135,7 +140,7 @@ function ProfileBuilder({ active, onComplete }: { active: boolean; onComplete?: 
       <div className="space-y-3">
         {PROFILE_FIELDS.map((field, i) => (
           <div key={i} className="flex items-center gap-3 transition-all duration-500" style={{ opacity: i <= visibleFields ? 1 : 0.15, transform: i <= visibleFields ? 'translateX(0)' : 'translateX(10px)' }}>
-            <span className="text-sm w-5 text-center">{field.icon}</span>
+            <span className="w-5 flex justify-center text-white/50"><field.Icon size={14} /></span>
             <span className="text-xs text-white/40 w-20 shrink-0">{field.label}</span>
             <div className="flex-1 h-8 rounded-lg flex items-center px-3" style={{ background: 'rgba(255,255,255,0.03)', border: i === visibleFields && i < PROFILE_FIELDS.length ? '1px solid rgba(108,99,255,0.3)' : '1px solid rgba(255,255,255,0.04)' }}>
               {i < visibleFields ? (
@@ -763,6 +768,166 @@ function GlowButton({ children, onClick, className = '', style = {} }: { childre
   );
 }
 
+const ROLE_PERSONAS = [
+  {
+    title: 'Founders',
+    tagline: 'Raise faster. Hire smarter.',
+    desc: "Get in front of investors who've already backed companies like yours. Cleya finds the lead-check writers in your sector and warms the intro on your behalf.",
+    bullets: [
+      'Targeted matches with active investors in your stage',
+      'Warm intros sent on your behalf — no cold outreach',
+      'Senior hires from operator networks you trust',
+    ],
+    cta: "I'm a Founder",
+    personaValue: 'FOUNDER',
+    accentColor: '#7C3AED',
+    Icon: Rocket,
+    previews: USE_CASE_PREVIEWS.FOUNDER as Array<{ label: string; status: string; statusColor: string; amount: string }>,
+  },
+  {
+    title: 'Investors',
+    tagline: "Source deals before they're announced.",
+    desc: "See pre-pitch founders in your thesis verticals before they hit the market. Cleya scores fit across stage, sector, and traction signals.",
+    bullets: [
+      'Pre-pitch deal flow ranked by fit score',
+      'Founder context: stage, traction, ask size',
+      'One-click intros, no inbox triage',
+    ],
+    cta: "I'm an Investor",
+    personaValue: 'INVESTOR',
+    accentColor: '#4ECDC4',
+    Icon: Coins,
+    previews: USE_CASE_PREVIEWS.INVESTOR,
+  },
+  {
+    title: 'Talent',
+    tagline: 'Land your next role through relationships.',
+    desc: "Get introduced to founders who are hiring — before the job is posted. Cleya understands what you've built and matches you with the right operators.",
+    bullets: [
+      'Roles surfaced from your matched founders',
+      'Relationship-led intros, not job boards',
+      'Equity-stage opportunities with strong founders',
+    ],
+    cta: "I'm looking for a role",
+    personaValue: 'TALENT',
+    accentColor: '#06B6D4',
+    Icon: Users,
+    previews: USE_CASE_PREVIEWS.TALENT,
+  },
+];
+
+function RoleTabs({ setShowAuth, setMode, setSelectedPersona }: { setShowAuth: (v: boolean) => void; setMode: (v: 'login' | 'signup') => void; setSelectedPersona: (v: string) => void }) {
+  const [active, setActive] = useState(0);
+  const persona = ROLE_PERSONAS[active];
+  const PersonaIcon = persona.Icon;
+
+  return (
+    <div>
+      <div className="flex flex-wrap justify-center gap-2 mb-10" role="tablist" aria-label="Roles">
+        {ROLE_PERSONAS.map((p, i) => {
+          const isActive = i === active;
+          const TabIcon = p.Icon;
+          return (
+            <button
+              key={p.personaValue}
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => setActive(i)}
+              className="flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium transition-all duration-300"
+              style={{
+                background: isActive ? `${p.accentColor}18` : 'rgba(255,255,255,0.03)',
+                border: `1px solid ${isActive ? `${p.accentColor}50` : 'rgba(255,255,255,0.06)'}`,
+                color: isActive ? '#fff' : 'rgba(255,255,255,0.55)',
+                boxShadow: isActive ? `0 0 24px ${p.accentColor}25` : 'none',
+              }}
+            >
+              <TabIcon size={16} style={{ color: isActive ? p.accentColor : 'currentColor' }} />
+              {p.title}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-10 items-stretch rounded-3xl p-8 sm:p-10"
+        style={{
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          backdropFilter: 'blur(20px)',
+        }}>
+        <div className="flex flex-col justify-center">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center"
+              style={{ background: `${persona.accentColor}15`, border: `1px solid ${persona.accentColor}30` }}>
+              <PersonaIcon size={22} style={{ color: persona.accentColor }} />
+            </div>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-[0.2em]" style={{ color: persona.accentColor }}>{persona.title}</p>
+              <h3 className="text-xl font-bold text-white mt-0.5">{persona.tagline}</h3>
+            </div>
+          </div>
+          <p className="text-base leading-relaxed mb-6" style={{ color: 'rgba(255,255,255,0.6)' }}>
+            {persona.desc}
+          </p>
+          <ul className="space-y-3 mb-8">
+            {persona.bullets.map((b) => (
+              <li key={b} className="flex items-start gap-3 text-sm" style={{ color: 'rgba(255,255,255,0.75)' }}>
+                <Check size={16} className="shrink-0 mt-0.5" style={{ color: persona.accentColor }} />
+                <span>{b}</span>
+              </li>
+            ))}
+          </ul>
+          <button
+            onClick={() => { setShowAuth(true); setMode('signup'); setSelectedPersona(persona.personaValue); }}
+            className="btn-gold self-start"
+          >
+            {persona.cta}
+            <ArrowRight size={16} />
+          </button>
+        </div>
+
+        <div className="rounded-2xl p-5 flex flex-col" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.04)' }}>
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-[11px] font-medium uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.4)' }}>Live preview</span>
+            <span className="flex items-center gap-1.5 text-[10px]" style={{ color: persona.accentColor }}>
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: persona.accentColor }} />
+              Real-time
+            </span>
+          </div>
+          <div className="space-y-2">
+            {persona.personaValue === 'FOUNDER' && (persona.previews as typeof USE_CASE_PREVIEWS.FOUNDER).map((p, i) => (
+              <div key={i} className="flex items-center justify-between px-4 py-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                <div>
+                  <p className="text-sm font-medium text-white/85">{p.label}</p>
+                  <p className="text-[11px] mt-0.5" style={{ color: p.statusColor }}>{p.status}</p>
+                </div>
+                <span className="text-sm font-bold text-white/60">{p.amount}</span>
+              </div>
+            ))}
+            {persona.personaValue === 'INVESTOR' && (persona.previews as typeof USE_CASE_PREVIEWS.INVESTOR).map((p, i) => (
+              <div key={i} className="flex items-center justify-between px-4 py-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                <div>
+                  <p className="text-sm font-medium text-white/85">{p.label}</p>
+                  <p className="text-[11px] text-white/35 mt-0.5">{p.stage}</p>
+                </div>
+                <span className="text-sm font-bold" style={{ color: p.color }}>{p.score}%</span>
+              </div>
+            ))}
+            {persona.personaValue === 'TALENT' && (persona.previews as typeof USE_CASE_PREVIEWS.TALENT).map((p, i) => (
+              <div key={i} className="flex items-center justify-between px-4 py-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                <div>
+                  <p className="text-sm font-medium text-white/85">{p.label}</p>
+                  <p className="text-[11px] text-white/35 mt-0.5">{p.company}</p>
+                </div>
+                <span className="text-[11px] font-medium px-2.5 py-1 rounded-full" style={{ color: p.fitColor, background: `${p.fitColor}15` }}>{p.fit}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const { locale } = useI18n();
   const t = useCallback(
@@ -774,6 +939,7 @@ export default function Home() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -916,15 +1082,12 @@ export default function Home() {
     if (mode === 'signup') {
       if (!fullName.trim()) errs.fullName = 'Name is required';
       else if (hasHtmlTags(fullName)) errs.fullName = 'Name cannot contain special characters like < or >';
-      if (!selectedPersona) errs.persona = 'Please select a role';
       if (!email.trim()) errs.email = 'Email is required';
       else if (!isValidEmail(email)) errs.email = 'Please enter a valid email address';
       if (!password) errs.password = 'Password is required';
       else if (password.length < 8) errs.password = 'Password must be at least 8 characters';
       else if (!/[A-Za-z]/.test(password)) errs.password = 'Password must contain at least one letter';
       else if (!/[0-9]/.test(password)) errs.password = 'Password must contain at least one number';
-      if (!confirmPassword) errs.confirmPassword = 'Please confirm your password';
-      else if (password !== confirmPassword) errs.confirmPassword = 'Passwords do not match';
       if (!consent) errs.consent = 'You must agree to the terms';
     } else {
       if (!email.trim()) errs.email = 'Email is required';
@@ -1128,18 +1291,25 @@ export default function Home() {
               style={{ animationDelay: '0.9s' }}
             >
               <GlowButton onClick={() => { setShowAuth(true); setMode('signup'); }}
-                className="group cta-glow px-10 py-4 rounded-full text-white font-medium text-[15px]"
-                style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}>
-                Enter the Network
-                <span className="inline-block ml-2 transition-transform group-hover:translate-x-1">→</span>
+                className="group btn-gold cta-glow text-[15px]">
+                Join Free — 10 Matches/Month
+                <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
               </GlowButton>
-              <button onClick={() => scrollToSection('how-it-works')}
-                className="group flex items-center gap-2 px-6 py-3 text-sm font-medium text-white/40 hover:text-white/70 transition-colors">
-                <span>Explore</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="transition-transform group-hover:translate-y-1">
-                  <path d="M12 5v14M19 12l-7 7-7-7" />
-                </svg>
-              </button>
+              <Link href="/pricing" className="btn-ghost group">
+                View Pricing
+                <ArrowRight size={16} className="opacity-60 transition-transform group-hover:translate-x-1" />
+              </Link>
+            </div>
+
+            <div className="hero-fade-in mt-12" style={{ animationDelay: '1.1s' }}>
+              <p className="text-[11px] uppercase tracking-[0.2em] mb-4" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                Trusted by founders & investors from
+              </p>
+              <div className="flex flex-wrap items-center gap-x-8 gap-y-3" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                {['Sequoia', 'Accel', 'Y Combinator', 'Lightspeed', 'Stride VC', 'ISV Capital'].map((logo) => (
+                  <span key={logo} className="text-sm font-semibold tracking-tight">{logo}</span>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -1187,42 +1357,7 @@ export default function Home() {
             </h2>
           </AnimatedSection>
 
-          <AnimatedSection className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                title: 'Founders',
-                tagline: 'Raise faster. Hire smarter.',
-                desc: "Get in front of investors who've already backed companies like yours.",
-                cta: "I'm a Founder",
-                personaValue: 'FOUNDER',
-                gradient: 'linear-gradient(135deg, rgba(108,99,255,0.08), rgba(108,99,255,0.02))',
-                borderColor: 'rgba(108,99,255,0.12)',
-                accentColor: '#6C63FF',
-              },
-              {
-                title: 'Investors',
-                tagline: "Source deals before they're announced.",
-                desc: "See pre-pitch founders in your thesis verticals before they hit the market.",
-                cta: "I'm an Investor",
-                personaValue: 'INVESTOR',
-                gradient: 'linear-gradient(135deg, rgba(78,205,196,0.08), rgba(78,205,196,0.02))',
-                borderColor: 'rgba(78,205,196,0.12)',
-                accentColor: '#4ECDC4',
-              },
-              {
-                title: 'Talent & Operators',
-                tagline: 'Land your next role through relationships.',
-                desc: "Get introduced to founders who are hiring — before the job is posted.",
-                cta: "I'm looking for a role",
-                personaValue: 'TALENT',
-                gradient: 'linear-gradient(135deg, rgba(6,182,212,0.08), rgba(6,182,212,0.02))',
-                borderColor: 'rgba(6,182,212,0.12)',
-                accentColor: '#06B6D4',
-              },
-            ].map((persona, i) => (
-              <UseCaseCard key={i} persona={persona} setShowAuth={setShowAuth} setMode={setMode} setSelectedPersona={setSelectedPersona} />
-            ))}
-          </AnimatedSection>
+          <RoleTabs setShowAuth={setShowAuth} setMode={setMode} setSelectedPersona={setSelectedPersona} />
         </div>
       </section>
 
@@ -1324,10 +1459,11 @@ export default function Home() {
             </h2>
           </AnimatedSection>
 
-          <div className="grid grid-cols-3 gap-6 sm:gap-10 max-w-3xl mx-auto mb-16">
-            <AnimatedCounter target={49} suffix="+" color="#6C63FF" label="Cities" />
-            <AnimatedCounter target={31} suffix="+" color="#4ECDC4" label="Industries" />
-            <AnimatedCounter target={1} suffix=" Lakh+" color="#06B6D4" label="Connections" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto mb-16">
+            <AnimatedCounter target={1000} suffix="+" color="#C9A962" label="Warm Intros" />
+            <AnimatedCounter target={500} suffix="Cr+" color="#4ECDC4" label="₹ Funding Unlocked" />
+            <AnimatedCounter target={500} suffix="+" color="#9B95FF" label="Senior Hires" />
+            <AnimatedCounter target={10000} suffix="+" color="#06B6D4" label="Members" />
           </div>
 
           <div className="overflow-hidden py-4" style={{ mask: 'linear-gradient(90deg, transparent, black 10%, black 90%, transparent)', WebkitMask: 'linear-gradient(90deg, transparent, black 10%, black 90%, transparent)' }}>
@@ -1427,7 +1563,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.25 }}
-            className="relative w-full max-w-sm mx-4"
+            className="relative w-full max-w-[480px] mx-4 max-h-[92vh] overflow-y-auto"
           >
             <button onClick={() => closeModal()}
               className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full text-white/40 hover:text-white/80 hover:bg-white/10 transition"
@@ -1435,16 +1571,18 @@ export default function Home() {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
             </button>
 
-            <div className="text-center mb-6">
+            <div className="text-center mb-5">
               <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-3"
                 style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)', boxShadow: '0 0 30px rgba(108,99,255,0.3)' }}>
                 <span className="text-white text-xl font-bold">C</span>
               </div>
-              <h2 className="font-sans text-2xl font-bold text-white">Welcome to Cleya.ai</h2>
-              <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.4)' }}>AI Superconnector</p>
+              <h2 className="font-sans text-2xl font-bold text-white">Join Cleya</h2>
+              <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                Join 10,000+ founders, investors & operators
+              </p>
             </div>
 
-            <div className="rounded-2xl border border-white/[0.06] p-8" style={{ background: 'rgba(15,15,26,0.95)', backdropFilter: 'blur(20px)' }}>
+            <div className="rounded-2xl border border-white/[0.06] p-7" style={{ background: 'rgba(15,15,26,0.95)', backdropFilter: 'blur(20px)' }}>
               <div className="flex gap-1 mb-6 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)' }}>
                 <button onClick={() => { setMode('signup'); setError(''); setFieldErrors({}); }}
                   className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${mode === 'signup' ? 'text-white shadow-sm' : 'text-white/40 hover:text-white/70'}`}
@@ -1477,6 +1615,58 @@ export default function Home() {
                 )
               ) : (
                 <>
+                  {mode === 'signup' && (
+                    <div className="flex items-center justify-between mb-5">
+                      <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#9B95FF' }}>Step 1 of 2</span>
+                      <div className="flex-1 ml-3 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                        <div className="h-full rounded-full" style={{ width: '50%', background: 'linear-gradient(90deg, #6C63FF, #4ECDC4)' }} />
+                      </div>
+                      <span className="ml-3 text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Tell us about you next</span>
+                    </div>
+                  )}
+
+                  {(googleEnabled || linkedinEnabled || clerkEnabled) && (
+                    <div className="space-y-2 mb-5">
+                      {linkedinEnabled && (
+                        <a href="/api/auth/linkedin" className="flex items-center justify-center gap-2.5 w-full py-3 rounded-xl border border-white/[0.08] text-sm font-medium text-white/85 hover:text-white hover:border-white/15 transition-all"
+                          style={{ background: 'rgba(255,255,255,0.03)' }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="#0A66C2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                          Continue with LinkedIn
+                        </a>
+                      )}
+                      {googleEnabled && (
+                        <a href="/api/auth/google" className="flex items-center justify-center gap-2.5 w-full py-3 rounded-xl border border-white/[0.08] text-sm font-medium text-white/85 hover:text-white hover:border-white/15 transition-all"
+                          style={{ background: 'rgba(255,255,255,0.03)' }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                          Continue with Google
+                        </a>
+                      )}
+                      {clerkEnabled && (
+                        <ClerkContinueButton
+                          mode={mode}
+                          onSuccess={async () => {
+                            try {
+                              const profile = await api.getProfile().catch(() => null);
+                              if (profile?.isComplete) {
+                                window.location.href = '/dashboard';
+                              } else {
+                                window.location.href = '/chat';
+                              }
+                            } catch {
+                              window.location.href = '/chat';
+                            }
+                          }}
+                          onError={(msg) => setError(msg)}
+                        />
+                      )}
+                      <div className="flex items-center gap-3 pt-3">
+                        <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                        <span className="text-[11px] text-white/30">or {mode === 'signup' ? 'sign up' : 'log in'} with email</span>
+                        <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                      </div>
+                    </div>
+                  )}
+
                   <form onSubmit={handleSubmit} className="space-y-4">
                     {mode === 'signup' && (
                       <div>
@@ -1487,43 +1677,27 @@ export default function Home() {
                         {fieldErrors.fullName && <p className="text-[10px] mt-1 text-red-400">{fieldErrors.fullName}</p>}
                       </div>
                     )}
-                    {mode === 'signup' && (
-                      <div>
-                        <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.5)' }}>I am a</label>
-                        <div className="grid grid-cols-3 gap-2">
-                          {[
-                            { value: 'FOUNDER', label: 'Founder', icon: '🚀' },
-                            { value: 'INVESTOR', label: 'Investor', icon: '💰' },
-                            { value: 'TALENT', label: 'Talent', icon: '⚡' },
-                          ].map((p) => (
-                            <button key={p.value} type="button" onClick={() => { setSelectedPersona(p.value); setFieldErrors(prev => { const n = {...prev}; delete n.persona; return n; }); }}
-                              className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl border transition-all duration-200"
-                              style={{
-                                background: selectedPersona === p.value ? 'rgba(108,99,255,0.12)' : 'rgba(255,255,255,0.03)',
-                                borderColor: selectedPersona === p.value ? '#6C63FF' : fieldErrors.persona ? '#ef4444' : 'rgba(255,255,255,0.06)',
-                              }}>
-                              <span className="text-lg">{p.icon}</span>
-                              <span className="text-xs font-medium" style={{ color: selectedPersona === p.value ? '#9B95FF' : 'rgba(255,255,255,0.4)' }}>{p.label}</span>
-                            </button>
-                          ))}
-                        </div>
-                        {fieldErrors.persona && <p className="text-[10px] mt-1 text-red-400">{fieldErrors.persona}</p>}
-                      </div>
-                    )}
                     <div>
                       <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.5)' }}>Email</label>
                       <input type="email" value={email} onChange={(e) => { setEmail(e.target.value); setFieldErrors(prev => { const n = {...prev}; delete n.email; return n; }); }}
-                        placeholder="you@example.com" className="input-dark" autoFocus
+                        placeholder="you@example.com" className="input-dark"
                         style={fieldErrors.email ? { borderColor: '#ef4444' } : {}}
                         onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} />
                       {fieldErrors.email && <p className="text-[10px] mt-1 text-red-400">{fieldErrors.email}</p>}
                     </div>
                     <div>
                       <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.5)' }}>Password</label>
-                      <input type="password" value={password} onChange={(e) => { setPassword(e.target.value); setFieldErrors(prev => { const n = {...prev}; delete n.password; return n; }); }}
-                        placeholder={mode === 'signup' ? 'Min 8 chars, letter + number' : 'Your password'}
-                        className="input-dark" style={fieldErrors.password ? { borderColor: '#ef4444' } : {}}
-                        onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} />
+                      <div className="relative">
+                        <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => { setPassword(e.target.value); setFieldErrors(prev => { const n = {...prev}; delete n.password; return n; }); }}
+                          placeholder={mode === 'signup' ? 'Min 8 chars, letter + number' : 'Your password'}
+                          className="input-dark pr-11" style={fieldErrors.password ? { borderColor: '#ef4444' } : {}}
+                          onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} />
+                        <button type="button" onClick={() => setShowPassword((s) => !s)}
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-white/40 hover:text-white/80 transition">
+                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
                       {fieldErrors.password && <p className="text-[10px] mt-1 text-red-400">{fieldErrors.password}</p>}
                       {mode === 'signup' && password.length > 0 && (() => {
                         const strength = getPasswordStrength(password);
@@ -1538,21 +1712,11 @@ export default function Home() {
                       })()}
                     </div>
                     {mode === 'signup' && (
-                      <div>
-                        <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.5)' }}>Confirm Password</label>
-                        <input type="password" value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setFieldErrors(prev => { const n = {...prev}; delete n.confirmPassword; return n; }); }}
-                          placeholder="Confirm your password" className="input-dark"
-                          style={fieldErrors.confirmPassword ? { borderColor: '#ef4444' } : {}}
-                          onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} />
-                        {fieldErrors.confirmPassword && <p className="text-[10px] mt-1 text-red-400">{fieldErrors.confirmPassword}</p>}
-                      </div>
-                    )}
-                    {mode === 'signup' && (
                       <label className="flex items-start gap-2 cursor-pointer">
                         <input type="checkbox" checked={consent} onChange={(e) => { setConsent(e.target.checked); setFieldErrors(prev => { const n = {...prev}; delete n.consent; return n; }); }}
                           className="mt-0.5 w-4 h-4 rounded border-white/20 bg-white/5 text-brand-violet focus:ring-brand-violet" />
-                        <span className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                          I agree to the <Link href="/terms" className="underline hover:text-white/70">Terms</Link> and <Link href="/privacy" className="underline hover:text-white/70">Privacy Policy</Link>
+                        <span className="text-[11px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                          I agree to the <Link href="/terms" className="underline hover:text-white/85">Terms</Link> and <Link href="/privacy" className="underline hover:text-white/85">Privacy Policy</Link>
                         </span>
                       </label>
                     )}
@@ -1582,50 +1746,6 @@ export default function Home() {
                   {mode === 'login' && (
                     <button type="button" onClick={() => { setShowForgotPassword(true); setError(''); setFieldErrors({}); }}
                       className="w-full text-xs text-center font-medium mt-3" style={{ color: '#9B95FF' }}>Forgot password?</button>
-                  )}
-
-                  {(googleEnabled || linkedinEnabled || clerkEnabled) && (
-                    <>
-                      <div className="flex items-center gap-3 my-5">
-                        <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
-                        <span className="text-[11px] text-white/30">or</span>
-                        <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
-                      </div>
-                      <div className="space-y-2">
-                        {linkedinEnabled && (
-                          <a href="/api/auth/linkedin" className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-white/[0.06] text-sm text-white/60 hover:text-white hover:border-white/10 transition-all"
-                            style={{ background: 'rgba(255,255,255,0.02)' }}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-                            Continue with LinkedIn
-                          </a>
-                        )}
-                        {googleEnabled && (
-                          <a href="/api/auth/google" className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-white/[0.06] text-sm text-white/60 hover:text-white hover:border-white/10 transition-all"
-                            style={{ background: 'rgba(255,255,255,0.02)' }}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-                            Continue with Google
-                          </a>
-                        )}
-                        {clerkEnabled && (
-                          <ClerkContinueButton
-                            mode={mode}
-                            onSuccess={async () => {
-                              try {
-                                const profile = await api.getProfile().catch(() => null);
-                                if (profile?.isComplete) {
-                                  window.location.href = '/dashboard';
-                                } else {
-                                  window.location.href = '/chat';
-                                }
-                              } catch {
-                                window.location.href = '/chat';
-                              }
-                            }}
-                            onError={(msg) => setError(msg)}
-                          />
-                        )}
-                      </div>
-                    </>
                   )}
                 </>
               )}

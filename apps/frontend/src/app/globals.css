@@ -106,6 +106,37 @@
     transform: translateY(-1px);
   }
 
+  .btn-gold {
+    @apply inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full
+           font-semibold text-sm transition-all duration-200
+           disabled:opacity-40 disabled:cursor-not-allowed;
+    background: linear-gradient(135deg, #D4B976 0%, #C9A962 50%, #B5944E 100%);
+    color: #0A1628;
+    box-shadow: 0 0 24px rgba(201, 169, 98, 0.28), inset 0 1px 0 rgba(255,255,255,0.18);
+    border: 1px solid rgba(212,185,118,0.5);
+  }
+  .btn-gold:hover {
+    box-shadow: 0 0 36px rgba(201, 169, 98, 0.45), inset 0 1px 0 rgba(255,255,255,0.25);
+    transform: translateY(-1px);
+  }
+  .btn-gold:active {
+    transform: translateY(0);
+    box-shadow: 0 0 16px rgba(201, 169, 98, 0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full
+           text-sm font-semibold transition-all duration-200;
+    color: rgba(255,255,255,0.85);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(12px);
+  }
+  .btn-ghost:hover {
+    background: rgba(255,255,255,0.07);
+    border-color: rgba(255,255,255,0.18);
+  }
+
   .glass-card {
     @apply backdrop-blur-xl rounded-3xl;
     background: rgba(255,255,255,0.03);
