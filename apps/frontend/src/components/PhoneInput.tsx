@@ -9,6 +9,7 @@ import {
 } from 'react-phone-number-input';
 import enLocale from 'react-phone-number-input/locale/en.json';
 import { FALLBACK_COUNTRY, getDetectedCountryClient, normaliseCountry } from '@/lib/detectCountry';
+import { useTranslation } from '@/lib/i18n';
 
 interface Country {
   code: string;
@@ -17,40 +18,100 @@ interface Country {
   flag: string;
 }
 
+type LabelMap = Record<string, string>;
+
 function flagEmoji(countryCode: string): string {
   return countryCode
     .toUpperCase()
     .replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)));
 }
 
-const labels = enLocale as Record<string, string>;
+const englishLabels = enLocale as LabelMap;
 
-const countries: Country[] = getCountries()
-  .map((cc) => ({
-    code: cc,
-    name: labels[cc] || cc,
-    dial: `+${getCountryCallingCode(cc)}`,
-    flag: flagEmoji(cc),
-  }))
-  .sort((a, b) => a.name.localeCompare(b.name));
+// Dynamic loaders for the locale files shipped by react-phone-number-input.
+// Keeping them as dynamic imports avoids bundling all ~28 JSON files up front;
+// only the user's locale (if available) gets fetched.
+const localeLoaders: Record<string, () => Promise<{ default: LabelMap }>> = {
+  ar: () => import('react-phone-number-input/locale/ar.json'),
+  ca: () => import('react-phone-number-input/locale/ca.json'),
+  cs: () => import('react-phone-number-input/locale/cz.json'),
+  cz: () => import('react-phone-number-input/locale/cz.json'),
+  de: () => import('react-phone-number-input/locale/de.json'),
+  el: () => import('react-phone-number-input/locale/el.json'),
+  en: () => import('react-phone-number-input/locale/en.json'),
+  es: () => import('react-phone-number-input/locale/es.json'),
+  et: () => import('react-phone-number-input/locale/et.json'),
+  fi: () => import('react-phone-number-input/locale/fi.json'),
+  fr: () => import('react-phone-number-input/locale/fr.json'),
+  he: () => import('react-phone-number-input/locale/he.json'),
+  hy: () => import('react-phone-number-input/locale/hy.json'),
+  it: () => import('react-phone-number-input/locale/it.json'),
+  ja: () => import('react-phone-number-input/locale/ja.json'),
+  ko: () => import('react-phone-number-input/locale/ko.json'),
+  nb: () => import('react-phone-number-input/locale/nb.json'),
+  no: () => import('react-phone-number-input/locale/nb.json'),
+  nl: () => import('react-phone-number-input/locale/nl.json'),
+  pl: () => import('react-phone-number-input/locale/pl.json'),
+  pt: () => import('react-phone-number-input/locale/pt.json'),
+  'pt-br': () => import('react-phone-number-input/locale/pt-BR.json'),
+  ru: () => import('react-phone-number-input/locale/ru.json'),
+  sk: () => import('react-phone-number-input/locale/sk.json'),
+  sv: () => import('react-phone-number-input/locale/sv.json'),
+  th: () => import('react-phone-number-input/locale/th.json'),
+  tr: () => import('react-phone-number-input/locale/tr.json'),
+  uk: () => import('react-phone-number-input/locale/ua.json'),
+  ua: () => import('react-phone-number-input/locale/ua.json'),
+  vi: () => import('react-phone-number-input/locale/vi.json'),
+  zh: () => import('react-phone-number-input/locale/zh.json'),
+};
 
-const countriesByDialDescending = [...countries].sort(
+function resolveLocaleKey(locale: string | undefined | null): string | null {
+  if (!locale) return null;
+  const lower = locale.toLowerCase();
+  if (localeLoaders[lower]) return lower;
+  const base = lower.split('-')[0];
+  if (localeLoaders[base]) return base;
+  return null;
+}
+
+function buildCountries(labels: LabelMap, collationLocale: string): Country[] {
+  return getCountries()
+    .map((cc) => ({
+      code: cc,
+      name: labels[cc] || englishLabels[cc] || cc,
+      dial: `+${getCountryCallingCode(cc)}`,
+      flag: flagEmoji(cc),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, collationLocale));
+}
+
+// English-labelled list, used for module-level helpers (validation messages,
+// dial-prefix matching) and as the synchronous default before a localized
+// labels file has loaded.
+const englishCountries: Country[] = buildCountries(englishLabels, 'en');
+
+const countriesByDialDescending = [...englishCountries].sort(
   (a, b) => b.dial.length - a.dial.length,
 );
 
-function findCountryForValue(value: string): Country | undefined {
+function findCountryForValue(
+  list: Country[],
+  value: string,
+): Country | undefined {
   if (!value || !value.startsWith('+')) return undefined;
   try {
     const parsed = parsePhoneNumber(value);
     if (parsed?.country) {
-      const found = countries.find((c) => c.code === parsed.country);
+      const found = list.find((c) => c.code === parsed.country);
       if (found) return found;
     }
   } catch {
     // fall through to dial-prefix match
   }
   const cleaned = value.replace(/[\s-]/g, '');
-  return countriesByDialDescending.find((c) => cleaned.startsWith(c.dial));
+  const byDial = countriesByDialDescending.find((c) => cleaned.startsWith(c.dial));
+  if (!byDial) return undefined;
+  return list.find((c) => c.code === byDial.code) || byDial;
 }
 
 export function validatePhone(value: string): string | null {
@@ -84,18 +145,18 @@ interface PhoneInputProps {
 function pickInitialCountry(defaultCountry: string | undefined): Country {
   const explicit = normaliseCountry(defaultCountry);
   if (explicit) {
-    const found = countries.find((c) => c.code === explicit);
+    const found = englishCountries.find((c) => c.code === explicit);
     if (found) return found;
   }
   if (defaultCountry === undefined) {
     const detected = getDetectedCountryClient();
     if (detected) {
-      const found = countries.find((c) => c.code === detected);
+      const found = englishCountries.find((c) => c.code === detected);
       if (found) return found;
     }
   }
   return (
-    countries.find((c) => c.code === FALLBACK_COUNTRY) || countries[0]
+    englishCountries.find((c) => c.code === FALLBACK_COUNTRY) || englishCountries[0]
   );
 }
 
@@ -108,12 +169,61 @@ export default function PhoneInput({
   defaultCountry,
   showValidation = false,
 }: PhoneInputProps) {
+  const { locale: appLocale } = useTranslation();
+
+  // Resolve which locale file (if any) we should load for country names.
+  // Priority: app i18n locale, then the browser's preferred language.
+  const resolvedLocale = useMemo(() => {
+    const fromApp = resolveLocaleKey(appLocale);
+    if (fromApp) return fromApp;
+    if (typeof navigator !== 'undefined') {
+      const langs = (navigator.languages && navigator.languages.length
+        ? navigator.languages
+        : [navigator.language]) as string[];
+      for (const lang of langs) {
+        const k = resolveLocaleKey(lang);
+        if (k) return k;
+      }
+    }
+    return 'en';
+  }, [appLocale]);
+
+  const [labels, setLabels] = useState<LabelMap>(englishLabels);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (resolvedLocale === 'en') {
+      setLabels(englishLabels);
+      return;
+    }
+    const loader = localeLoaders[resolvedLocale];
+    if (!loader) {
+      setLabels(englishLabels);
+      return;
+    }
+    loader()
+      .then((mod) => {
+        if (!cancelled) setLabels(mod.default);
+      })
+      .catch(() => {
+        if (!cancelled) setLabels(englishLabels);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [resolvedLocale]);
+
+  const countries = useMemo(
+    () => buildCountries(labels, resolvedLocale),
+    [labels, resolvedLocale],
+  );
+
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [touched, setTouched] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(-1);
-  const [selectedCountry, setSelectedCountry] = useState<Country>(() =>
-    pickInitialCountry(defaultCountry),
+  const [selectedCode, setSelectedCode] = useState<string>(
+    () => pickInitialCountry(defaultCountry).code,
   );
 
   // If we render before client-side detection is available (SSR), re-detect on mount
@@ -122,15 +232,23 @@ export default function PhoneInput({
     if (defaultCountry !== undefined) return;
     if (value) return;
     const detected = getDetectedCountryClient();
-    if (!detected || detected === selectedCountry.code) return;
-    const found = countries.find((c) => c.code === detected);
-    if (found) setSelectedCountry(found);
+    if (!detected || detected === selectedCode) return;
+    const found = englishCountries.find((c) => c.code === detected);
+    if (found) setSelectedCode(found.code);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+
+  const selectedCountry = useMemo(
+    () =>
+      countries.find((c) => c.code === selectedCode) ||
+      englishCountries.find((c) => c.code === selectedCode) ||
+      countries[0],
+    [countries, selectedCode],
+  );
 
   const validationError = (showValidation || touched) && value ? validatePhone(value) : null;
   const validationId = validationError ? 'phone-validation-error' : undefined;
@@ -141,10 +259,14 @@ export default function PhoneInput({
     // This avoids flipping between countries that share a calling code (e.g. NANP +1
     // covers US, CA, and many Caribbean nations) while the user is typing.
     if (value.startsWith(selectedCountry.dial)) return;
-    const match = findCountryForValue(value);
+    const match = findCountryForValue(countries, value);
     if (match && match.code !== selectedCountry.code) {
-      setSelectedCountry(match);
+      setSelectedCode(match.code);
     }
+    // Intentionally only re-run on `value` changes — re-running when the
+    // selected country changes would immediately clobber a manual selection
+    // for callers that don't echo `value` back through props.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
   useEffect(() => {
@@ -189,7 +311,7 @@ export default function PhoneInput({
 
   const handleCountrySelect = (country: Country) => {
     const localNum = getLocalNumber();
-    setSelectedCountry(country);
+    setSelectedCode(country.code);
     setOpen(false);
     setSearch('');
     setHighlightIndex(-1);
@@ -202,13 +324,16 @@ export default function PhoneInput({
   const filtered = useMemo(() => {
     if (!search) return countries;
     const q = search.toLowerCase();
-    return countries.filter(
-      (c) =>
+    return countries.filter((c) => {
+      const englishName = (englishLabels[c.code] || '').toLowerCase();
+      return (
         c.name.toLowerCase().includes(q) ||
+        englishName.includes(q) ||
         c.dial.includes(search) ||
-        c.code.toLowerCase().includes(q),
-    );
-  }, [search]);
+        c.code.toLowerCase().includes(q)
+      );
+    });
+  }, [search, countries]);
 
   const handleDropdownKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
