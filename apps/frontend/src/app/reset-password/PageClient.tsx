@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import AppShell from '@/components/AppShell';
+import PasswordStrengthMeter from '@/components/PasswordStrengthMeter';
+import { getPasswordStrength } from '@/lib/passwordStrength';
 
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
@@ -16,7 +18,10 @@ export default function ResetPasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirm) { setError('Passwords do not match'); return; }
-    if (password.length < 8) { setError('Password must be at least 8 characters'); return; }
+    if (!getPasswordStrength(password).meetsRequirements) {
+      setError('Password must be at least 8 characters and include uppercase, lowercase, number, and special character');
+      return;
+    }
     if (!token) { setError('Missing reset token'); return; }
     setLoading(true);
     setError('');
@@ -74,6 +79,7 @@ export default function ResetPasswordPage() {
           <div>
             <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>New Password</label>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Min 8 characters" required minLength={8} className="input-dark" />
+            <PasswordStrengthMeter password={password} />
           </div>
           <div>
             <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#94A3B8' }}>Confirm Password</label>

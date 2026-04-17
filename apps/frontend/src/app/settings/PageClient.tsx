@@ -7,6 +7,8 @@ import AppFooter from '@/components/AppFooter';
 import AppShell from '@/components/AppShell';
 import { resetUser } from '@/lib/posthog';
 import { setUser as setSentryUser } from '@/lib/sentry';
+import PasswordStrengthMeter from '@/components/PasswordStrengthMeter';
+import { getPasswordStrength } from '@/lib/passwordStrength';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -112,6 +114,10 @@ export default function SettingsPage() {
 
   const handleChangePassword = async () => {
     setPasswordMsg(null);
+    if (!getPasswordStrength(newPassword).meetsRequirements) {
+      setPasswordMsg({ type: 'error', text: 'Password must be at least 8 characters and include uppercase, lowercase, number, and special character' });
+      return;
+    }
     if (newPassword !== confirmPassword) {
       setPasswordMsg({ type: 'error', text: 'New passwords do not match' });
       return;
@@ -286,6 +292,7 @@ export default function SettingsPage() {
                 style={inputStyle}
                 placeholder="At least 8 characters"
               />
+              <PasswordStrengthMeter password={newPassword} />
             </div>
             <div>
               <label style={labelStyle}>Confirm New Password</label>

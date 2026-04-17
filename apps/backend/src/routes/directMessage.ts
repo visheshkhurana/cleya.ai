@@ -160,6 +160,24 @@ directMessageRouter.post('/:partnerId', authenticate, requireEmailVerified, asyn
       return;
     }
 
+    const blocked = await prisma.blockedUser.findFirst({
+      where: {
+        OR: [
+          { blockerId: userId, blockedId: partnerId },
+          { blockerId: partnerId, blockedId: userId },
+        ],
+      },
+      select: { blockerId: true },
+    });
+    if (blocked) {
+      const youBlocked = blocked.blockerId === userId;
+      res.status(403).json({
+        success: false,
+        error: { message: youBlocked ? 'You have blocked this user. Unblock them to send messages.' : 'You cannot send messages to this user.' },
+      });
+      return;
+    }
+
     const message = await prisma.directMessage.create({
       data: {
         senderId: userId,

@@ -384,11 +384,17 @@ export async function findMatches(
     new Set(existingMatches.flatMap((m) => [m.userAId, m.userBId]))
   );
 
+  const blockedRows = await prisma.blockedUser.findMany({
+    where: { OR: [{ blockerId: userId }, { blockedId: userId }] },
+    select: { blockerId: true, blockedId: true },
+  });
+  const blockedIds = blockedRows.map((b) => (b.blockerId === userId ? b.blockedId : b.blockerId));
+
   return hybridMatch(userId, {
     limit,
     vectorCandidatePool: Math.max(limit * 5, 50),
     minScore: 0.35,
-    excludeUserIds: alreadyMatchedIds,
+    excludeUserIds: Array.from(new Set([...alreadyMatchedIds, ...blockedIds])),
   });
 }
 

@@ -91,6 +91,11 @@ class EmailService {
     }
   }
 
+  async sendAdminAlert(to: string, subject: string, html: string) {
+    const wrapped = `<div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;padding:24px;background:#0F1629;color:#fff;border-radius:12px">${html}<hr style="border-color:rgba(255,255,255,0.1);margin:24px 0"/><p style="color:rgba(255,255,255,0.4);font-size:12px">Cleya Moderation — automated alert</p></div>`;
+    return this.send(to, subject, wrapped);
+  }
+
   async sendWelcome(email: string) {
     const html = plainEmailLayout(`
       <p>Hey there,</p>

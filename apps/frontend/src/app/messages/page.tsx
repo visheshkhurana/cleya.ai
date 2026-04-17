@@ -8,6 +8,7 @@ import AppShell from '@/components/AppShell';
 import UserAvatar from '@/components/UserAvatar';
 import { useTranslation } from '@/lib/i18n';
 import { Suspense } from 'react';
+import ReportUserModal from '@/components/ReportUserModal';
 
 interface Partner {
   id: string;
@@ -54,6 +55,10 @@ function MessagesContent() {
   const wsRef = useRef<WebSocket | null>(null);
   const [typing, setTyping] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const [reportOpen, setReportOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [blockedSet, setBlockedSet] = useState<Set<string>>(new Set());
+  const [actionMsg, setActionMsg] = useState<string | null>(null);
   const deepLinkedRef = useRef(false);
   const selectedPartnerRef = useRef<string | null>(null);
   const { t } = useTranslation();
@@ -64,6 +69,10 @@ function MessagesContent() {
       api.setToken('authenticated');
       setMe(user);
       loadConversations();
+      api.getBlockedUsers().then((res: any) => {
+        const list = res?.data || res || [];
+        setBlockedSet(new Set(list.map((b: any) => b.blockedId)));
+      }).catch(() => {});
     }).catch(() => router.push('/?action=login'));
   }, []);
 
@@ -265,7 +274,7 @@ function MessagesContent() {
             </div>
           ) : (
             <>
-              <div className="p-3 border-b border-white/5 flex items-center gap-3">
+              <div className="p-3 border-b border-white/5 flex items-center gap-3 relative">
                 <button onClick={() => { setSelectedPartner(null); selectedPartnerRef.current = null; }} className="sm:hidden text-white/30 hover:text-white/60">
                   ←
                 </button>
@@ -274,7 +283,7 @@ function MessagesContent() {
                   avatarUrl={selectedConvo?.partner.profile?.avatarUrl}
                   size="md"
                 />
-                <div>
+                <div className="flex-1">
                   <p className="text-sm font-medium text-white">
                     {selectedConvo ? getPartnerName(selectedConvo.partner) : ''}
                   </p>
@@ -284,7 +293,58 @@ function MessagesContent() {
                     <p className="text-[11px]" style={{ color: '#64748B' }}>{getPartnerSubtitle(selectedConvo.partner)}</p>
                   ) : null}
                 </div>
+                <button
+                  type="button"
+                  aria-label="More options"
+                  onClick={() => setMenuOpen(o => !o)}
+                  className="text-white/40 hover:text-white/80 px-2 py-1 rounded"
+                  style={{ fontSize: 18, lineHeight: 1 }}
+                >⋯</button>
+                {menuOpen && selectedPartner && (
+                  <div className="absolute right-2 top-12 z-10 rounded-xl border border-white/10 shadow-2xl overflow-hidden" style={{ background: '#0F1629', minWidth: 180 }}>
+                    <button
+                      onClick={() => { setMenuOpen(false); setReportOpen(true); }}
+                      className="block w-full text-left px-4 py-2.5 text-xs text-white/70 hover:bg-white/[0.04]"
+                    >🚩 Report user</button>
+                    {blockedSet.has(selectedPartner) ? (
+                      <button
+                        onClick={async () => {
+                          setMenuOpen(false);
+                          try {
+                            await api.unblockUser(selectedPartner);
+                            setBlockedSet(prev => { const n = new Set(prev); n.delete(selectedPartner); return n; });
+                            setActionMsg('User unblocked.');
+                            setTimeout(() => setActionMsg(null), 3000);
+                          } catch (e: any) { setActionMsg(e?.message || 'Failed to unblock'); }
+                        }}
+                        className="block w-full text-left px-4 py-2.5 text-xs text-white/70 hover:bg-white/[0.04] border-t border-white/5"
+                      >Unblock user</button>
+                    ) : (
+                      <button
+                        onClick={async () => {
+                          setMenuOpen(false);
+                          if (!confirm('Block this user? You will no longer see them in matches and they cannot message you.')) return;
+                          try {
+                            await api.blockUser(selectedPartner);
+                            setBlockedSet(prev => new Set(prev).add(selectedPartner));
+                            setActionMsg('User blocked.');
+                            setTimeout(() => setActionMsg(null), 3000);
+                          } catch (e: any) { setActionMsg(e?.message || 'Failed to block'); }
+                        }}
+                        className="block w-full text-left px-4 py-2.5 text-xs text-red-400 hover:bg-white/[0.04] border-t border-white/5"
+                      >🚫 Block user</button>
+                    )}
+                  </div>
+                )}
               </div>
+              {actionMsg && (
+                <div className="px-4 py-2 text-[11px] text-center text-white/60" style={{ background: 'rgba(108,99,255,0.08)' }}>{actionMsg}</div>
+              )}
+              {selectedPartner && blockedSet.has(selectedPartner) && (
+                <div className="px-4 py-2 text-[11px] text-center text-amber-300" style={{ background: 'rgba(245,158,11,0.08)' }}>
+                  You have blocked this user. Unblock to send messages.
+                </div>
+              )}
 
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 {messages.map((msg) => {
@@ -333,6 +393,15 @@ function MessagesContent() {
         </div>
       </div>
       <AppFooter />
+      {selectedPartner && selectedConvo && (
+        <ReportUserModal
+          open={reportOpen}
+          onClose={() => setReportOpen(false)}
+          targetUserId={selectedPartner}
+          targetType="MESSAGE"
+          targetName={getPartnerName(selectedConvo.partner)}
+        />
+      )}
     </AppShell>
   );
 }

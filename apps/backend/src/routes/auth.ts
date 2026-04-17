@@ -58,8 +58,10 @@ const signupSchema = z.object({
   email: z.string().email().max(255),
   password: z.string().min(8, 'Password must be at least 8 characters')
     .max(128, 'Password must be less than 128 characters')
-    .regex(/[A-Za-z]/, 'Password must contain at least one letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number')
+    .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
   name: z.string().min(2, 'Full name is required').max(100).transform(stripHtmlBasic).optional(),
   persona: z.enum(['FOUNDER', 'INVESTOR', 'TALENT']).optional(),
   phone: z.string().max(20).optional(),
@@ -502,7 +504,12 @@ authRouter.post('/reset-password', passwordResetLimiter, verifyRecaptcha('reset_
   try {
     const { token, password } = z.object({
       token: z.string(),
-      password: z.string().min(8),
+      password: z.string().min(8, 'Password must be at least 8 characters')
+        .max(128, 'Password must be less than 128 characters')
+        .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+        .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+        .regex(/[0-9]/, 'Password must contain at least one number')
+        .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
     }).parse(req.body);
 
     const entry = resetTokens.get(token);

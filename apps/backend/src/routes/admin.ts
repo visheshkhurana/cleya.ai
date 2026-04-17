@@ -1988,6 +1988,71 @@ adminRouter.delete('/users/:userId', requireRole('ADMIN'), requireReauth, async 
   }
 });
 
+adminRouter.get('/reports', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const status = (req.query.status as string | undefined)?.toUpperCase();
+    const validStatuses = ['PENDING', 'REVIEWING', 'DISMISSED', 'WARNED', 'SUSPENDED', 'BANNED'];
+    const where = status && validStatuses.includes(status) ? { status: status as any } : {};
+    const reports = await prisma.report.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+      include: {
+        reporter: { select: { id: true, name: true, email: true } },
+        target: { select: { id: true, name: true, email: true, isActive: true } },
+      },
+    });
+    res.json({ success: true, data: reports });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.patch('/reports/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const moderatorId = req.user!.userId;
+    const { id } = req.params;
+    const { status, moderatorNotes, suspendUser, banUser } = z.object({
+      status: z.enum(['REVIEWING', 'DISMISSED', 'WARNED', 'SUSPENDED', 'BANNED']),
+      moderatorNotes: z.string().max(2000).optional().nullable(),
+      suspendUser: z.boolean().optional(),
+      banUser: z.boolean().optional(),
+    }).parse(req.body);
+
+    const report = await prisma.report.findUnique({ where: { id }, select: { targetUserId: true } });
+    if (!report) {
+      res.status(404).json({ success: false, error: { message: 'Report not found' } });
+      return;
+    }
+
+    const updated = await prisma.report.update({
+      where: { id },
+      data: {
+        status,
+        moderatorId,
+        moderatorNotes: moderatorNotes || null,
+        resolvedAt: ['DISMISSED', 'WARNED', 'SUSPENDED', 'BANNED'].includes(status) ? new Date() : null,
+      },
+    });
+
+    if (suspendUser || banUser || status === 'SUSPENDED' || status === 'BANNED') {
+      await prisma.user.update({
+        where: { id: report.targetUserId },
+        data: { isActive: false },
+      }).catch(() => {});
+    }
+
+    await logAdminAction(req, 'REPORT_RESOLVE', {
+      targetId: report.targetUserId,
+      metadata: { reportId: id, status, suspendUser: !!suspendUser, banUser: !!banUser },
+    });
+
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    next(error);
+  }
+});
+
 adminRouter.put('/users/:userId/status', requireRole('ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { isActive } = z.object({ isActive: z.boolean() }).parse(req.body);

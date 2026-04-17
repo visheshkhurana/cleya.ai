@@ -613,6 +613,53 @@ class ApiClient {
     return this.fetch(`/dm/${partnerId}/read`, { method: 'POST' });
   }
 
+  async createReport(payload: {
+    targetUserId: string;
+    targetType: 'PROFILE' | 'MESSAGE' | 'MATCH' | 'INTRODUCTION';
+    targetRefId?: string | null;
+    category: 'FAKE' | 'SPAM' | 'SCAM' | 'HARASSMENT' | 'INAPPROPRIATE' | 'OTHER';
+    details?: string | null;
+  }) {
+    return this.fetch('/reports', { method: 'POST', body: JSON.stringify(payload) });
+  }
+
+  async getMyReports() {
+    return this.fetch('/reports/mine');
+  }
+
+  async getBlockedUsers() {
+    return this.fetch('/blocks');
+  }
+
+  async blockUser(blockedId: string, reason?: string) {
+    return this.fetch('/blocks', { method: 'POST', body: JSON.stringify({ blockedId, reason }) });
+  }
+
+  async unblockUser(blockedId: string) {
+    return this.fetch(`/blocks/${blockedId}`, { method: 'DELETE' });
+  }
+
+  async getCookieConsent() {
+    return this.fetch('/cookie-consent');
+  }
+
+  async putCookieConsent(payload: { analytics: boolean; marketing: boolean }) {
+    return this.fetch('/cookie-consent', { method: 'PUT', body: JSON.stringify(payload) });
+  }
+
+  async adminGetReports(status?: string) {
+    return this.fetch(`/admin/reports${status ? `?status=${status}` : ''}`);
+  }
+
+  async adminResolveReport(id: string, payload: {
+    status: 'REVIEWING' | 'DISMISSED' | 'WARNED' | 'SUSPENDED' | 'BANNED';
+    moderatorNotes?: string;
+    suspendUser?: boolean;
+    banUser?: boolean;
+  }) {
+    return this.fetch(`/admin/reports/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+  }
+
   async getMeetings() {
     return this.fetch('/meetings');
   }

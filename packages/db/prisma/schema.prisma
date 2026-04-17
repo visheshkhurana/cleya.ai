@@ -75,10 +75,96 @@ model User {
   embeddings              UserEmbedding[]
   dripEmails              DripEmail[]
   subscription            Subscription?
+  reportsMade             Report[]                 @relation("ReportsMade")
+  reportsAgainst          Report[]                 @relation("ReportsAgainst")
+  blocksMade              BlockedUser[]            @relation("BlocksMade")
+  blocksReceived          BlockedUser[]            @relation("BlocksReceived")
+  cookieConsent           CookieConsent?
 
   @@index([email])
   @@index([phone])
   @@map("users")
+}
+
+enum ReportTargetType {
+  PROFILE
+  MESSAGE
+  MATCH
+  INTRODUCTION
+}
+
+enum ReportCategory {
+  FAKE
+  SPAM
+  SCAM
+  HARASSMENT
+  INAPPROPRIATE
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWING
+  DISMISSED
+  WARNED
+  SUSPENDED
+  BANNED
+}
+
+model Report {
+  id              String           @id @default(cuid())
+  reporterId      String
+  targetUserId    String
+  targetType      ReportTargetType
+  targetRefId     String?
+  category        ReportCategory
+  details         String?
+  status          ReportStatus     @default(PENDING)
+  moderatorId     String?
+  moderatorNotes  String?
+  resolvedAt      DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  reporter        User             @relation("ReportsMade", fields: [reporterId], references: [id], onDelete: Cascade)
+  target          User             @relation("ReportsAgainst", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@index([reporterId])
+  @@index([targetUserId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("reports")
+}
+
+model BlockedUser {
+  id         String   @id @default(cuid())
+  blockerId  String
+  blockedId  String
+  reason     String?
+  createdAt  DateTime @default(now())
+
+  blocker    User     @relation("BlocksMade", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked    User     @relation("BlocksReceived", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+  @@map("blocked_users")
+}
+
+model CookieConsent {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  essential   Boolean  @default(true)
+  analytics   Boolean  @default(false)
+  marketing   Boolean  @default(false)
+  version     String   @default("v2")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("cookie_consents")
 }
 
 model Referral {

@@ -68,6 +68,13 @@ export default function AppFooter() {
               <a href="mailto:hello@cleya.ai" className="block text-[11px] text-muted transition-colors hover:text-white/60">
                 hello@cleya.ai
               </a>
+              <button
+                type="button"
+                onClick={() => { if (typeof window !== 'undefined' && window.openCookiePreferences) window.openCookiePreferences(); }}
+                className="block text-[11px] text-muted transition-colors hover:text-white/60 text-left"
+              >
+                Cookie preferences
+              </button>
             </div>
           </div>
         </div>
