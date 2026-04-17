@@ -1,0 +1,152 @@
+name: Mobile Layout Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - 'apps/frontend/**'
+      - 'apps/backend/**'
+      - 'packages/**'
+      - '.github/workflows/mobile-layout.yml'
+
+concurrency:
+  group: mobile-layout-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mobile-layout:
+    name: Playwright mobile layout audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cleya_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      NEXT_TELEMETRY_DISABLED: '1'
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cleya_test
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET: ci-mobile-layout-jwt-secret-32chars-min-1234567890
+      PORT: '3001'
+      FRONTEND_URL: http://localhost:5000
+      BACKEND_URL: http://localhost:3001
+      CORS_ORIGIN: http://localhost:5000
+      ADMIN_EMAIL: admin@cleya.test
+      ADMIN_PASSWORD: AdminPass123!
+      TEST_USER_EMAIL: arjun.mehta@example.com
+      TEST_USER_PASSWORD: Cleo2024!seed
+      PLAYWRIGHT_BASE_URL: http://localhost:5000
+      PLAYWRIGHT_STORAGE_STATE: ${{ github.workspace }}/apps/frontend/e2e/.auth/state.json
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install workspace dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Generate Prisma client
+        run: npx prisma generate --schema packages/db/prisma/schema.prisma
+
+      - name: Push database schema
+        run: npx prisma db push --schema packages/db/prisma/schema.prisma --accept-data-loss
+
+      - name: Build workspace packages
+        run: |
+          npm run build --workspace=packages/types
+          npm run build --workspace=packages/db
+          npm run build --workspace=packages/ai
+          npm run build --workspace=packages/matching
+          npm run build --workspace=packages/conversation-engine
+          npm run build --workspace=packages/api
+
+      - name: Seed test user
+        run: npm run db:seed
+
+      - name: Install Playwright browser
+        working-directory: apps/frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Start backend
+        run: |
+          npm run dev:backend > backend.log 2>&1 &
+          echo $! > backend.pid
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3001/health >/dev/null 2>&1 \
+              || curl -sf http://localhost:3001/ >/dev/null 2>&1; then
+              echo "Backend is up"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Backend failed to start within 120s"
+          cat backend.log
+          exit 1
+
+      - name: Start frontend
+        working-directory: apps/frontend
+        run: |
+          PORT=5000 npm run dev > frontend.log 2>&1 &
+          echo $! > frontend.pid
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:5000/ >/dev/null 2>&1; then
+              echo "Frontend is up"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Frontend failed to start within 120s"
+          cat frontend.log
+          exit 1
+
+      - name: Run mobile layout tests
+        working-directory: apps/frontend
+        run: npm run test:e2e
+
+      - name: Stop background servers
+        if: always()
+        run: |
+          if [ -f backend.pid ]; then kill $(cat backend.pid) || true; fi
+          if [ -f apps/frontend/frontend.pid ]; then kill $(cat apps/frontend/frontend.pid) || true; fi
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            apps/frontend/playwright-report
+            apps/frontend/test-results
+            backend.log
+            apps/frontend/frontend.log
+          if-no-files-found: ignore
+          retention-days: 7

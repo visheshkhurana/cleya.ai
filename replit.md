@@ -539,6 +539,7 @@ Full 8-stage lifecycle implemented:
 
 ## Testing
 - **Frontend unit tests:** Vitest + React Testing Library + jsdom. Config: `apps/frontend/vitest.config.ts`. Setup: `apps/frontend/src/__tests__/setup.ts`. Run: `cd apps/frontend && npm test`. Tests in `apps/frontend/src/__tests__/`.
+- **Frontend mobile layout E2E tests:** Playwright. Config: `apps/frontend/playwright.config.ts`. Tests in `apps/frontend/e2e/`. Run: `cd apps/frontend && npm run test:e2e:install && npm run test:e2e`. Locks in the Phase 5 mobile audit rules (body font >= 14px, no rendered text < 12px, interactive controls including non-inline anchor links >= 44x44) across the four target viewports (360, 375, 393, 768) for the homepage, signup modal, dashboard, matches, messages and footer. Set `PLAYWRIGHT_BASE_URL` to point at an already-running frontend instead of spawning `next dev`. Set `PLAYWRIGHT_STORAGE_STATE` to a Playwright storage state JSON for a logged-in user to enable the `/dashboard`, `/matches`, and `/messages` checks (otherwise those three are skipped with a clear message). CI: `.github/workflows/mobile-layout.yml` runs the suite on every PR touching the frontend and on pushes to `main`.
 - **Covered components:** UserAvatar (image rendering, optimized/unoptimized domains, error fallback to initials, error fallback to icon, all 7 size presets, both shape variants circle/rounded, className passthrough, style passthrough, gradient styling)
 
 ## Features (all tested E2E)
