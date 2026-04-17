@@ -8,8 +8,35 @@ const crypto_1 = __importDefault(require("crypto"));
 const db_1 = require("@cleya/db");
 const env_1 = require("../config/env");
 const errorHandler_1 = require("../middleware/errorHandler");
-const FREE_MATCH_LIMIT = 5;
+const FREE_MATCH_LIMIT = 10;
 exports.FREE_MATCH_LIMIT = FREE_MATCH_LIMIT;
+const FREE_MATCH_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+/**
+ * Returns the current monthly counter, rolling it over if the 30-day window
+ * has elapsed since the user's last reset. Returns the values to use when
+ * computing remaining matches, but does NOT persist a rollover unless one
+ * is needed (caller persists when needed).
+ */
+async function getMonthlyMatchUsage(userId) {
+    const user = await db_1.prisma.user.findUnique({
+        where: { id: userId },
+        select: { monthlyMatchesUsed: true, monthlyResetAt: true, createdAt: true },
+    });
+    if (!user)
+        throw new errorHandler_1.AppError(404, 'User not found');
+    const now = new Date();
+    const anchor = user.monthlyResetAt ?? user.createdAt;
+    const windowStart = new Date(anchor.getTime());
+    if (now.getTime() - windowStart.getTime() >= FREE_MATCH_WINDOW_MS) {
+        // Roll over: reset counter and anchor to now.
+        await db_1.prisma.user.update({
+            where: { id: userId },
+            data: { monthlyMatchesUsed: 0, monthlyResetAt: now },
+        });
+        return { used: 0, resetAt: now };
+    }
+    return { used: user.monthlyMatchesUsed, resetAt: anchor };
+}
 class RazorpayService {
     keyId;
     keySecret;
@@ -94,12 +121,21 @@ class RazorpayService {
         });
         const bonusMatches = user?.bonusMatches || 0;
         const effectiveLimit = FREE_MATCH_LIMIT + bonusMatches;
+        let monthlyUsed = 0;
+        let resetAt = null;
+        if (user?.tier === 'FREE') {
+            const usage = await getMonthlyMatchUsage(userId);
+            monthlyUsed = usage.used;
+            resetAt = new Date(usage.resetAt.getTime() + FREE_MATCH_WINDOW_MS);
+        }
         const matchesRemaining = user?.tier === 'FREE'
-            ? Math.max(0, effectiveLimit - (user?.matchesUsed || 0))
+            ? Math.max(0, effectiveLimit - monthlyUsed)
             : -1;
         return {
             tier: user?.tier || 'FREE',
             matchesUsed: user?.matchesUsed || 0,
+            monthlyMatchesUsed: monthlyUsed,
+            matchesResetAt: resetAt,
             matchesRemaining,
             freeMatchLimit: effectiveLimit,
             bonusMatches,
@@ -224,21 +260,28 @@ class RazorpayService {
         if (user.tier === 'PRO' || user.tier === 'ENTERPRISE') {
             return { allowed: true, matchesUsed: user.matchesUsed, matchesRemaining: -1, tier: user.tier, freeMatchLimit: -1, bonusMatches: user.bonusMatches };
         }
+        const usage = await getMonthlyMatchUsage(userId);
         const effectiveLimit = FREE_MATCH_LIMIT + user.bonusMatches;
-        const allowed = user.matchesUsed < effectiveLimit;
+        const allowed = usage.used < effectiveLimit;
         return {
             allowed,
-            matchesUsed: user.matchesUsed,
-            matchesRemaining: Math.max(0, effectiveLimit - user.matchesUsed),
+            matchesUsed: usage.used,
+            matchesRemaining: Math.max(0, effectiveLimit - usage.used),
             tier: user.tier,
             freeMatchLimit: effectiveLimit,
             bonusMatches: user.bonusMatches,
         };
     }
     async incrementMatchesUsed(userId) {
+        // Roll the monthly window first if it's elapsed, then increment both
+        // counters atomically.
+        await getMonthlyMatchUsage(userId);
         await db_1.prisma.user.update({
             where: { id: userId },
-            data: { matchesUsed: { increment: 1 } },
+            data: {
+                matchesUsed: { increment: 1 },
+                monthlyMatchesUsed: { increment: 1 },
+            },
         });
     }
 }

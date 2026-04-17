@@ -6,6 +6,7 @@ const callService_1 = require("./voice/callService");
 const messagingService_1 = require("./messagingService");
 const matchingService_1 = require("./matchingService");
 const whatsappTemplates_1 = require("./whatsappTemplates");
+const matchScheduler_1 = require("./matchScheduler");
 class AutomationService {
     async onOnboardingComplete(userId, context) {
         console.log(`Running post-onboarding automation for user ${userId}`);
@@ -20,18 +21,13 @@ class AutomationService {
         const phoneNumber = user.phone || user.profile?.phoneNumber;
         const userName = user.profile?.currentRole || user.email.split('@')[0];
         const persona = user.profile?.persona;
+        matchScheduler_1.matchScheduler.enqueueUserCheck(userId);
+        matchScheduler_1.matchScheduler.enqueueRecheckPeers(userId).catch((err) => console.log(`[AutoMatch] Peer re-queue failed for ${userId}:`, err));
         if (persona === 'DEAL_PARTNER') {
             this.scheduleDealPartnerScout(userId);
         }
-        else if (persona === 'VENTURE_PARTNER') {
-            this.scheduleVenturePartnerMatch(userId);
-        }
         else if (persona === 'EVENT_PARTICIPANT') {
             this.scheduleEventRegistration(userId, context);
-            this.scheduleAutoMatch(userId);
-        }
-        else {
-            this.scheduleAutoMatch(userId);
         }
         if (!phoneNumber) {
             console.log(`No phone number for user ${userId}, skipping call/messaging automation`);
@@ -39,18 +35,6 @@ class AutomationService {
         }
         this.scheduleCall(userId, phoneNumber);
         this.sendWelcomeMessages(userId, phoneNumber, userName);
-    }
-    scheduleAutoMatch(userId) {
-        setTimeout(async () => {
-            try {
-                console.log(`[AutoMatch] Finding matches for user ${userId}`);
-                const proposed = await matchingService_1.matchingService.findAndAutoPropose(userId, 5);
-                console.log(`[AutoMatch] Proposed ${proposed.length} matches for ${userId}`);
-            }
-            catch (error) {
-                console.error(`[AutoMatch] Failed for user ${userId}:`, error);
-            }
-        }, 5000);
     }
     scheduleDealPartnerScout(userId) {
         setTimeout(async () => {
@@ -61,18 +45,6 @@ class AutomationService {
             }
             catch (error) {
                 console.error(`[DealFlow] Auto-scout failed for deal partner ${userId}:`, error);
-            }
-        }, 5000);
-    }
-    scheduleVenturePartnerMatch(userId) {
-        setTimeout(async () => {
-            try {
-                console.log(`[VPFlow] Finding thesis-matched founders for venture partner ${userId}`);
-                const proposed = await matchingService_1.matchingService.findAndAutoPropose(userId, 5);
-                console.log(`[VPFlow] Proposed ${proposed.length} thesis-matched founders for VP ${userId}`);
-            }
-            catch (error) {
-                console.error(`[VPFlow] Auto-match failed for venture partner ${userId}:`, error);
             }
         }, 5000);
     }

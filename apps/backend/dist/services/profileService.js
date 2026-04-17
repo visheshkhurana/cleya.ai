@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.profileService = exports.ProfileService = void 0;
 const db_1 = require("@cleya/db");
@@ -82,8 +115,33 @@ class ProfileService {
         if (data.headline || data.bio || data.skills || data.interests) {
             await this.generateEmbedding(userId, profile);
         }
+        try {
+            const { profileStrengthService } = await Promise.resolve().then(() => __importStar(require('./profileStrengthService')));
+            await profileStrengthService.recompute(userId);
+        }
+        catch (e) {
+            console.log('[ProfileService] Strength recompute failed:', e.message);
+        }
         if (data.linkedinUrl && profile.isComplete) {
             linkedinEnrichmentService_1.linkedinEnrichmentService.onNewUserSignup(userId);
+        }
+        if (profile.isComplete) {
+            const matchTriggerFields = [
+                'persona', 'industries', 'skills', 'lookingFor', 'companyStage',
+                'priority', 'targetRole', 'investorType', 'sectorFocus',
+                'raiseAmount', 'investmentRange', 'investmentThesis', 'investmentAmount',
+            ];
+            const significant = matchTriggerFields.some((f) => data[f] !== undefined);
+            if (significant) {
+                try {
+                    const { matchScheduler } = await Promise.resolve().then(() => __importStar(require('./matchScheduler')));
+                    matchScheduler.enqueueUserCheck(userId);
+                    matchScheduler.enqueueRecheckPeers(userId).catch(() => null);
+                }
+                catch (e) {
+                    console.log('[ProfileService] Match enqueue failed:', e.message);
+                }
+            }
         }
         return profile;
     }

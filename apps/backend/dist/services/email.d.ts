@@ -1,6 +1,13 @@
 declare class EmailService {
     private resendAvailable;
+    sendRaw(opts: {
+        to: string;
+        subject: string;
+        html: string;
+        replyTo?: string;
+    }): Promise<boolean>;
     private send;
+    sendAdminAlert(to: string, subject: string, html: string): Promise<boolean>;
     sendWelcome(email: string): Promise<void>;
     sendMatchProposed(recipientEmail: string, recipientName: string, matchName: string, matchPersona: string, matchScore: number, matchDetails?: {
         companyName?: string;

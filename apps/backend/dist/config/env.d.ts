@@ -29,6 +29,8 @@ declare const envSchema: z.ZodObject<{
     GOOGLE_REDIRECT_URI: z.ZodOptional<z.ZodString>;
     LINKEDIN_CLIENT_ID: z.ZodOptional<z.ZodString>;
     LINKEDIN_CLIENT_SECRET: z.ZodOptional<z.ZodString>;
+    CLERK_PUBLISHABLE_KEY: z.ZodOptional<z.ZodString>;
+    CLERK_SECRET_KEY: z.ZodOptional<z.ZodString>;
     RESEND_API_KEY: z.ZodOptional<z.ZodString>;
     SMTP_HOST: z.ZodOptional<z.ZodString>;
     SMTP_PORT: z.ZodDefault<z.ZodNumber>;
@@ -74,6 +76,9 @@ declare const envSchema: z.ZodObject<{
     SERPER_API_KEY: z.ZodOptional<z.ZodString>;
     HUNTER_API_KEY: z.ZodOptional<z.ZodString>;
     LEMLIST_API_KEY: z.ZodOptional<z.ZodString>;
+    RECAPTCHA_SITE_KEY: z.ZodOptional<z.ZodString>;
+    RECAPTCHA_SECRET_KEY: z.ZodOptional<z.ZodString>;
+    SUPPORT_EMAIL: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     DATABASE_URL: string;
     REDIS_URL: string;
@@ -106,6 +111,8 @@ declare const envSchema: z.ZodObject<{
     GOOGLE_REDIRECT_URI?: string | undefined;
     LINKEDIN_CLIENT_ID?: string | undefined;
     LINKEDIN_CLIENT_SECRET?: string | undefined;
+    CLERK_PUBLISHABLE_KEY?: string | undefined;
+    CLERK_SECRET_KEY?: string | undefined;
     RESEND_API_KEY?: string | undefined;
     SMTP_HOST?: string | undefined;
     SMTP_USER?: string | undefined;
@@ -149,6 +156,9 @@ declare const envSchema: z.ZodObject<{
     SERPER_API_KEY?: string | undefined;
     HUNTER_API_KEY?: string | undefined;
     LEMLIST_API_KEY?: string | undefined;
+    RECAPTCHA_SITE_KEY?: string | undefined;
+    RECAPTCHA_SECRET_KEY?: string | undefined;
+    SUPPORT_EMAIL?: string | undefined;
 }, {
     DATABASE_URL: string;
     JWT_SECRET: string;
@@ -179,6 +189,8 @@ declare const envSchema: z.ZodObject<{
     GOOGLE_REDIRECT_URI?: string | undefined;
     LINKEDIN_CLIENT_ID?: string | undefined;
     LINKEDIN_CLIENT_SECRET?: string | undefined;
+    CLERK_PUBLISHABLE_KEY?: string | undefined;
+    CLERK_SECRET_KEY?: string | undefined;
     RESEND_API_KEY?: string | undefined;
     SMTP_HOST?: string | undefined;
     SMTP_PORT?: number | undefined;
@@ -224,6 +236,9 @@ declare const envSchema: z.ZodObject<{
     SERPER_API_KEY?: string | undefined;
     HUNTER_API_KEY?: string | undefined;
     LEMLIST_API_KEY?: string | undefined;
+    RECAPTCHA_SITE_KEY?: string | undefined;
+    RECAPTCHA_SECRET_KEY?: string | undefined;
+    SUPPORT_EMAIL?: string | undefined;
 }>;
 export declare const env: {
     DATABASE_URL: string;
@@ -257,6 +272,8 @@ export declare const env: {
     GOOGLE_REDIRECT_URI?: string | undefined;
     LINKEDIN_CLIENT_ID?: string | undefined;
     LINKEDIN_CLIENT_SECRET?: string | undefined;
+    CLERK_PUBLISHABLE_KEY?: string | undefined;
+    CLERK_SECRET_KEY?: string | undefined;
     RESEND_API_KEY?: string | undefined;
     SMTP_HOST?: string | undefined;
     SMTP_USER?: string | undefined;
@@ -300,6 +317,9 @@ export declare const env: {
     SERPER_API_KEY?: string | undefined;
     HUNTER_API_KEY?: string | undefined;
     LEMLIST_API_KEY?: string | undefined;
+    RECAPTCHA_SITE_KEY?: string | undefined;
+    RECAPTCHA_SECRET_KEY?: string | undefined;
+    SUPPORT_EMAIL?: string | undefined;
 };
 export type Env = z.infer<typeof envSchema>;
 export {};

@@ -545,6 +545,13 @@ class ApiClient {
     });
   }
 
+  async updateIntroTemplate(id: string, data: { name?: string; body?: string; description?: string; category?: string }) {
+    return this.fetch(`/introductions/templates/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
   async deleteIntroTemplate(id: string) {
     return this.fetch(`/introductions/templates/${id}`, { method: 'DELETE' });
   }

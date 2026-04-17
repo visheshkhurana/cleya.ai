@@ -1,4 +1,4 @@
-declare const FREE_MATCH_LIMIT = 5;
+declare const FREE_MATCH_LIMIT = 10;
 declare class RazorpayService {
     private keyId;
     private keySecret;
@@ -17,6 +17,8 @@ declare class RazorpayService {
     getSubscriptionStatus(userId: string): Promise<{
         tier: import(".prisma/client").$Enums.UserTier;
         matchesUsed: number;
+        monthlyMatchesUsed: number;
+        matchesResetAt: Date | null;
         matchesRemaining: number;
         freeMatchLimit: number;
         bonusMatches: number;

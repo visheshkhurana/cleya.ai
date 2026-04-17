@@ -31,6 +31,27 @@ function link(text, url) {
 }
 class EmailService {
     resendAvailable = null;
+    async sendRaw(opts) {
+        try {
+            const { client, fromEmail } = await (0, resendClient_1.getUncachableResendClient)();
+            const senderEmail = fromEmail || env_1.env.FROM_EMAIL;
+            const from = `Cleya <${senderEmail}>`;
+            const payload = { from, to: [opts.to], subject: opts.subject, html: opts.html };
+            if (opts.replyTo)
+                payload.reply_to = opts.replyTo;
+            const result = await client.emails.send(payload);
+            if (result.error) {
+                console.error(`📧 Resend error to ${opts.to}:`, result.error);
+                return false;
+            }
+            this.resendAvailable = true;
+            return true;
+        }
+        catch (err) {
+            console.error(`📧 Email send failed to ${opts.to}:`, err?.message || err);
+            return false;
+        }
+    }
     async send(to, subject, html) {
         try {
             const { client, fromEmail } = await (0, resendClient_1.getUncachableResendClient)();
@@ -59,6 +80,10 @@ class EmailService {
             console.log(`📧 [FALLBACK] Email to ${to}: ${subject}`);
             return false;
         }
+    }
+    async sendAdminAlert(to, subject, html) {
+        const wrapped = `<div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;padding:24px;background:#0F1629;color:#fff;border-radius:12px">${html}<hr style="border-color:rgba(255,255,255,0.1);margin:24px 0"/><p style="color:rgba(255,255,255,0.4);font-size:12px">Cleya Moderation — automated alert</p></div>`;
+        return this.send(to, subject, wrapped);
     }
     async sendWelcome(email) {
         const html = plainEmailLayout(`
@@ -199,7 +224,7 @@ class EmailService {
         if (!user)
             return;
         const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-        const [pendingMatches, newMatches, acceptedMatches] = await Promise.all([
+        const [pendingMatches, newMatches, acceptedMatches, topMatches] = await Promise.all([
             db_1.prisma.match.count({
                 where: {
                     OR: [
@@ -222,6 +247,19 @@ class EmailService {
                     updatedAt: { gte: oneWeekAgo },
                 },
             }),
+            db_1.prisma.match.findMany({
+                where: {
+                    OR: [{ userAId: userId }, { userBId: userId }],
+                    createdAt: { gte: oneWeekAgo },
+                    status: { notIn: ['REJECTED', 'EXPIRED'] },
+                },
+                include: {
+                    userA: { select: { id: true, name: true, profile: { select: { headline: true, companyName: true, persona: true } } } },
+                    userB: { select: { id: true, name: true, profile: { select: { headline: true, companyName: true, persona: true } } } },
+                },
+                orderBy: { score: 'desc' },
+                take: 5,
+            }),
         ]);
         const name = user.name?.split(' ')[0] || user.profile?.currentRole || user.email.split('@')[0];
         let body = `<p>Hi ${name},</p>`;
@@ -233,12 +271,33 @@ class EmailService {
             body += `<li><strong>${pendingMatches}</strong> match${pendingMatches !== 1 ? 'es' : ''} waiting for your review</li>`;
         }
         body += `</ul>`;
+        if (topMatches.length > 0) {
+            body += `<p style="margin-top:24px;"><strong>Top ${topMatches.length} match${topMatches.length === 1 ? '' : 'es'} this week</strong></p>`;
+            body += `<ul style="padding-left:20px;">`;
+            for (const m of topMatches) {
+                const isA = m.userAId === userId;
+                const other = isA ? m.userB : m.userA;
+                const headline = other?.profile?.headline || other?.profile?.companyName || other?.name || 'A new connection';
+                const persona = other?.profile?.persona ? ` · ${other.profile.persona}` : '';
+                const score = Math.round(m.score * 100);
+                body += `<li>${headline}${persona} — <strong>${score}% fit</strong></li>`;
+            }
+            body += `</ul>`;
+        }
         if (pendingMatches > 0) {
             body += `<p>Don't leave them hanging — ${link('review your matches →', `${env_1.env.FRONTEND_URL}/matches`)}</p>`;
         }
         else {
             body += `<p>${link('See your dashboard →', `${env_1.env.FRONTEND_URL}/dashboard`)}</p>`;
         }
+        // Profile strength tip
+        try {
+            const score = user.profile?.profileScore ?? 0;
+            if (score < 100) {
+                body += `<p style="margin-top:24px;color:#555;"><strong>Profile tip:</strong> Your profile is ${score}% complete. ${link('Finish your profile →', `${env_1.env.FRONTEND_URL}/profile`)} for better matches.</p>`;
+            }
+        }
+        catch { }
         body += `<p>— Cleya</p>`;
         const html = plainEmailLayout(body);
         await this.send(user.email, `Your week: ${newMatches} new match${newMatches !== 1 ? 'es' : ''} on Cleya`, html);

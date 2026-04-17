@@ -37,6 +37,8 @@ const envSchema = zod_1.z.object({
     GOOGLE_REDIRECT_URI: zod_1.z.string().optional(),
     LINKEDIN_CLIENT_ID: zod_1.z.string().optional(),
     LINKEDIN_CLIENT_SECRET: zod_1.z.string().optional(),
+    CLERK_PUBLISHABLE_KEY: zod_1.z.string().optional(),
+    CLERK_SECRET_KEY: zod_1.z.string().optional(),
     RESEND_API_KEY: zod_1.z.string().optional(),
     SMTP_HOST: zod_1.z.string().optional(),
     SMTP_PORT: zod_1.z.coerce.number().default(587),
@@ -82,6 +84,9 @@ const envSchema = zod_1.z.object({
     SERPER_API_KEY: zod_1.z.string().optional(),
     HUNTER_API_KEY: zod_1.z.string().optional(),
     LEMLIST_API_KEY: zod_1.z.string().optional(),
+    RECAPTCHA_SITE_KEY: zod_1.z.string().optional(),
+    RECAPTCHA_SECRET_KEY: zod_1.z.string().optional(),
+    SUPPORT_EMAIL: zod_1.z.string().email().optional(),
 });
 function validateEnv() {
     if (!process.env.JWT_SECRET) {

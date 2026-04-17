@@ -81,6 +81,28 @@ class IntroductionService {
         return intro;
     }
     async approveAndSend(introId) {
+        const existing = await db_1.prisma.introductionRecord.findUnique({
+            where: { id: introId },
+            select: { userAId: true, userBId: true, status: true },
+        });
+        if (!existing)
+            return null;
+        const blocked = await db_1.prisma.blockedUser.findFirst({
+            where: {
+                OR: [
+                    { blockerId: existing.userAId, blockedId: existing.userBId },
+                    { blockerId: existing.userBId, blockedId: existing.userAId },
+                ],
+            },
+            select: { id: true },
+        });
+        if (blocked) {
+            await db_1.prisma.introductionRecord.update({
+                where: { id: introId },
+                data: { status: 'CANCELLED' },
+            }).catch(() => { });
+            return null;
+        }
         const updated = await db_1.prisma.introductionRecord.updateMany({
             where: {
                 id: introId,

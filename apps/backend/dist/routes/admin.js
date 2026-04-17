@@ -281,6 +281,68 @@ exports.adminRouter.post('/match/run/:userId', async (req, res, next) => {
         next(error);
     }
 });
+const matchThrottleSchema = zod_1.z.object({
+    dailyProposalCap: zod_1.z.number().int().min(0).max(1000).optional(),
+    proposalCooldownHours: zod_1.z.number().min(0).max(168).optional(),
+    dailyNotificationCap: zod_1.z.number().int().min(0).max(1000).optional(),
+    quietHoursStart: zod_1.z.number().int().min(0).max(23).optional(),
+    quietHoursEnd: zod_1.z.number().int().min(0).max(23).optional(),
+});
+exports.adminRouter.get('/match-throttle', async (_req, res, next) => {
+    try {
+        const { getThrottleConfig, ANTI_SPAM_DEFAULTS } = await Promise.resolve().then(() => __importStar(require('../services/matchAntiSpam')));
+        const config = await getThrottleConfig(true);
+        res.json({
+            success: true,
+            data: {
+                config: {
+                    dailyProposalCap: config.dailyProposalCap,
+                    proposalCooldownHours: config.proposalCooldownHours,
+                    dailyNotificationCap: config.dailyNotificationCap,
+                    quietHoursStart: config.quietHoursStart,
+                    quietHoursEnd: config.quietHoursEnd,
+                    updatedAt: config.updatedAt,
+                    updatedBy: config.updatedBy,
+                },
+                defaults: ANTI_SPAM_DEFAULTS,
+            },
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+});
+exports.adminRouter.put('/match-throttle', async (req, res, next) => {
+    try {
+        const parsed = matchThrottleSchema.safeParse(req.body);
+        if (!parsed.success) {
+            return res.status(400).json({
+                success: false,
+                error: { message: 'Invalid throttle config', code: 'INVALID_INPUT', issues: parsed.error.issues },
+            });
+        }
+        const { updateThrottleConfig } = await Promise.resolve().then(() => __importStar(require('../services/matchAntiSpam')));
+        const updated = await updateThrottleConfig(parsed.data, req.user?.userId);
+        await (0, auditLogger_1.logAdminAction)(req, 'match_throttle.update', { metadata: parsed.data });
+        res.json({
+            success: true,
+            data: {
+                config: {
+                    dailyProposalCap: updated.dailyProposalCap,
+                    proposalCooldownHours: updated.proposalCooldownHours,
+                    dailyNotificationCap: updated.dailyNotificationCap,
+                    quietHoursStart: updated.quietHoursStart,
+                    quietHoursEnd: updated.quietHoursEnd,
+                    updatedAt: updated.updatedAt,
+                    updatedBy: updated.updatedBy,
+                },
+            },
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+});
 exports.adminRouter.get('/analytics', async (req, res, next) => {
     try {
         const rangeParam = req.query.range || '7d';
@@ -1052,6 +1114,28 @@ exports.adminRouter.get('/whatsapp/test/status', async (req, res, next) => {
         next(error);
     }
 });
+exports.adminRouter.get('/matchmaking/health', async (_req, res, next) => {
+    try {
+        const stats = matchScheduler_1.matchScheduler.getStats();
+        const trend = await matchScheduler_1.matchScheduler.getTrend();
+        res.json({
+            success: true,
+            data: {
+                ticks: stats.ticks,
+                usersConsidered: stats.usersConsidered,
+                proposalsCreated: stats.proposalsCreated,
+                proposalsBlocked: stats.proposalsBlocked,
+                errors: stats.errors,
+                lastTickAt: stats.lastTickAt,
+                queueSize: stats.queueSize,
+                trend,
+            },
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+});
 exports.adminRouter.post('/batch-matching', async (_req, res, next) => {
     try {
         const result = await matchScheduler_1.matchScheduler.runBatchMatching();
@@ -1804,6 +1888,66 @@ exports.adminRouter.delete('/users/:userId', (0, auth_1.requireRole)('ADMIN'), a
             await tx.user.delete({ where: { id: targetUserId } });
         });
         res.json({ success: true, message: 'User deleted' });
+    }
+    catch (error) {
+        next(error);
+    }
+});
+exports.adminRouter.get('/reports', async (req, res, next) => {
+    try {
+        const status = req.query.status?.toUpperCase();
+        const validStatuses = ['PENDING', 'REVIEWING', 'DISMISSED', 'WARNED', 'SUSPENDED', 'BANNED'];
+        const where = status && validStatuses.includes(status) ? { status: status } : {};
+        const reports = await db_1.prisma.report.findMany({
+            where,
+            orderBy: { createdAt: 'desc' },
+            take: 200,
+            include: {
+                reporter: { select: { id: true, name: true, email: true } },
+                target: { select: { id: true, name: true, email: true, isActive: true } },
+            },
+        });
+        res.json({ success: true, data: reports });
+    }
+    catch (error) {
+        next(error);
+    }
+});
+exports.adminRouter.patch('/reports/:id', async (req, res, next) => {
+    try {
+        const moderatorId = req.user.userId;
+        const { id } = req.params;
+        const { status, moderatorNotes, suspendUser, banUser } = zod_1.z.object({
+            status: zod_1.z.enum(['REVIEWING', 'DISMISSED', 'WARNED', 'SUSPENDED', 'BANNED']),
+            moderatorNotes: zod_1.z.string().max(2000).optional().nullable(),
+            suspendUser: zod_1.z.boolean().optional(),
+            banUser: zod_1.z.boolean().optional(),
+        }).parse(req.body);
+        const report = await db_1.prisma.report.findUnique({ where: { id }, select: { targetUserId: true } });
+        if (!report) {
+            res.status(404).json({ success: false, error: { message: 'Report not found' } });
+            return;
+        }
+        const updated = await db_1.prisma.report.update({
+            where: { id },
+            data: {
+                status,
+                moderatorId,
+                moderatorNotes: moderatorNotes || null,
+                resolvedAt: ['DISMISSED', 'WARNED', 'SUSPENDED', 'BANNED'].includes(status) ? new Date() : null,
+            },
+        });
+        if (suspendUser || banUser || status === 'SUSPENDED' || status === 'BANNED') {
+            await db_1.prisma.user.update({
+                where: { id: report.targetUserId },
+                data: { isActive: false },
+            }).catch(() => { });
+        }
+        await (0, auditLogger_1.logAdminAction)(req, 'REPORT_RESOLVE', {
+            targetId: report.targetUserId,
+            metadata: { reportId: id, status, suspendUser: !!suspendUser, banUser: !!banUser },
+        });
+        res.json({ success: true, data: updated });
     }
     catch (error) {
         next(error);

@@ -20,6 +20,10 @@ export declare class ProfileService {
         lookingFor: string[];
         extraData: import("@prisma/client/runtime/library").JsonValue | null;
         completenessScore: number;
+        profileScore: number;
+        profileScoreDetails: import("@prisma/client/runtime/library").JsonValue | null;
+        profileCompleteBadgeAt: Date | null;
+        matchLastCheckedAt: Date | null;
         createdAt: Date;
         updatedAt: Date;
         accreditedInvestor: boolean | null;
@@ -86,6 +90,10 @@ export declare class ProfileService {
         lookingFor: string[];
         extraData: import("@prisma/client/runtime/library").JsonValue | null;
         completenessScore: number;
+        profileScore: number;
+        profileScoreDetails: import("@prisma/client/runtime/library").JsonValue | null;
+        profileCompleteBadgeAt: Date | null;
+        matchLastCheckedAt: Date | null;
         createdAt: Date;
         updatedAt: Date;
         accreditedInvestor: boolean | null;
@@ -152,6 +160,10 @@ export declare class ProfileService {
         lookingFor: string[];
         extraData: import("@prisma/client/runtime/library").JsonValue | null;
         completenessScore: number;
+        profileScore: number;
+        profileScoreDetails: import("@prisma/client/runtime/library").JsonValue | null;
+        profileCompleteBadgeAt: Date | null;
+        matchLastCheckedAt: Date | null;
         createdAt: Date;
         updatedAt: Date;
         accreditedInvestor: boolean | null;

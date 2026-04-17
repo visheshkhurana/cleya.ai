@@ -100,6 +100,40 @@ class SlackService {
         ];
         await this.post(`New user registered: ${user.email} (Total: ${totalUsers})`, blocks);
     }
+    async notifyMatchmakingStalled(opts) {
+        const lastTickStr = opts.lastTickAt
+            ? opts.lastTickAt.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) + ' IST'
+            : 'never';
+        const blocks = [
+            {
+                type: 'section',
+                text: {
+                    type: 'mrkdwn',
+                    text: `:rotating_light: *Matchmaking loop stalled*\n` +
+                        `>No MatchScheduler tick has run in *${opts.minutesSinceLastTick.toFixed(1)} minutes* ` +
+                        `(threshold: ${opts.thresholdMinutes}m).\n` +
+                        `>Last tick: *${lastTickStr}*.\n` +
+                        `>Investigate the backend process and the \`MATCH_TICK_CRON\` job.`,
+                },
+            },
+        ];
+        await this.post(`Matchmaking stalled: no tick in ${opts.minutesSinceLastTick.toFixed(1)}m (last: ${lastTickStr})`, blocks);
+    }
+    async notifyMatchmakingResumed(opts) {
+        const lastTickStr = opts.lastTickAt.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) + ' IST';
+        const blocks = [
+            {
+                type: 'section',
+                text: {
+                    type: 'mrkdwn',
+                    text: `:white_check_mark: *Matchmaking loop recovered*\n` +
+                        `>Ticks have resumed after ~*${opts.downtimeMinutes.toFixed(1)} minutes* of silence.\n` +
+                        `>Latest tick: *${lastTickStr}*.`,
+                },
+            },
+        ];
+        await this.post(`Matchmaking recovered after ${opts.downtimeMinutes.toFixed(1)}m downtime`, blocks);
+    }
     async sendDailyReport() {
         const today = new Date();
         today.setHours(0, 0, 0, 0);

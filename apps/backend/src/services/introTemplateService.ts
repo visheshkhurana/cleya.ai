@@ -53,6 +53,11 @@ Worth a 20-min chat to explore how you might work together.
   },
 ];
 
+const MAX_NAME = 80;
+const MIN_BODY = 10;
+const MAX_BODY = 4000;
+const MAX_PER_USER = 25;
+
 export class IntroTemplateService {
   async ensureDefaultsSeeded() {
     for (const t of DEFAULT_TEMPLATES) {
@@ -90,18 +95,62 @@ export class IntroTemplateService {
   }
 
   async createCustom(userId: string, data: { name: string; category: string; body: string; description?: string }) {
+    const cleanName = (data.name || '').trim();
+    const cleanBody = (data.body || '').trim();
+    const cleanCategory = (data.category || 'OTHER').trim();
+    if (!cleanName) throw new Error('Template name is required');
+    if (cleanName.length > MAX_NAME) throw new Error(`Name must be ${MAX_NAME} characters or fewer`);
+    if (cleanBody.length < MIN_BODY) throw new Error(`Template body must be at least ${MIN_BODY} characters`);
+    if (cleanBody.length > MAX_BODY) throw new Error(`Template body must be ${MAX_BODY} characters or fewer`);
+
+    const count = await prisma.introductionTemplate.count({ where: { ownerId: userId } });
+    if (count >= MAX_PER_USER) {
+      throw new Error(`You can save at most ${MAX_PER_USER} templates. Delete one first.`);
+    }
+
     return prisma.introductionTemplate.create({
       data: {
         ownerId: userId,
-        category: data.category,
-        name: data.name,
+        category: cleanCategory,
+        name: cleanName,
         description: data.description ?? null,
-        body: data.body,
+        body: cleanBody,
         isDefault: false,
         isPro: true,
-        variables: extractVariables(data.body),
+        variables: extractVariables(cleanBody),
       },
     });
+  }
+
+  async updateCustom(userId: string, id: string, data: { name?: string; body?: string; description?: string; category?: string }) {
+    const existing = await prisma.introductionTemplate.findFirst({
+      where: { id, ownerId: userId, isDefault: false },
+    });
+    if (!existing) throw new Error('Template not found');
+
+    const update: { name?: string; body?: string; description?: string | null; category?: string; variables?: string[] } = {};
+    if (data.name !== undefined) {
+      const cleanName = data.name.trim();
+      if (!cleanName) throw new Error('Template name is required');
+      if (cleanName.length > MAX_NAME) throw new Error(`Name must be ${MAX_NAME} characters or fewer`);
+      update.name = cleanName;
+    }
+    if (data.body !== undefined) {
+      const cleanBody = data.body.trim();
+      if (cleanBody.length < MIN_BODY) throw new Error(`Template body must be at least ${MIN_BODY} characters`);
+      if (cleanBody.length > MAX_BODY) throw new Error(`Template body must be ${MAX_BODY} characters or fewer`);
+      update.body = cleanBody;
+      update.variables = extractVariables(cleanBody);
+    }
+    if (data.description !== undefined) {
+      update.description = data.description ? data.description.trim() : null;
+    }
+    if (data.category !== undefined) {
+      update.category = data.category.trim();
+    }
+    if (Object.keys(update).length === 0) return existing;
+
+    return prisma.introductionTemplate.update({ where: { id }, data: update });
   }
 
   async deleteCustom(userId: string, id: string) {

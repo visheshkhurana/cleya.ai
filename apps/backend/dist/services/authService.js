@@ -65,12 +65,14 @@ class AuthService {
             throw new errorHandler_1.AppError(409, 'Unable to create account. Please try a different email.', 'SIGNUP_FAILED');
         }
         const passwordHash = await bcryptjs_1.default.hash(data.password, 12);
+        const smtpConfigured = !!(env_1.env.SMTP_HOST && env_1.env.SMTP_USER && env_1.env.SMTP_PASS);
         const user = await db_1.prisma.user.create({
             data: {
                 email: data.email,
                 phone: data.phone,
                 name: data.name,
                 passwordHash,
+                isActive: !smtpConfigured,
                 utmSource: data.utmSource,
                 utmMedium: data.utmMedium,
                 utmCampaign: data.utmCampaign,
@@ -80,7 +82,7 @@ class AuthService {
             },
             include: { profile: true },
         });
-        const token = this.generateToken(user);
+        const token = smtpConfigured ? null : this.generateToken(user);
         if (user.phone) {
             Promise.resolve().then(() => __importStar(require('./gupshupService'))).then(({ gupshupService }) => {
                 gupshupService.optInUser(user.phone).then((optInResult) => {
@@ -116,6 +118,7 @@ class AuthService {
                 profile: user.profile,
             },
             token,
+            verificationRequired: !user.isActive,
         };
     }
     async login(data) {
@@ -131,6 +134,9 @@ class AuthService {
             throw new errorHandler_1.AppError(401, 'Invalid credentials', 'INVALID_CREDENTIALS');
         }
         if (!user.isActive) {
+            if (!user.emailVerified) {
+                throw new errorHandler_1.AppError(403, 'Please verify your email to activate your account. Check your inbox or request a new verification link.', 'EMAIL_NOT_VERIFIED');
+            }
             throw new errorHandler_1.AppError(403, 'Account is disabled', 'ACCOUNT_DISABLED');
         }
         if (user.mfaEnabled && user.totpSecret) {
@@ -268,10 +274,15 @@ class AuthService {
             if (!user.isActive) {
                 throw new errorHandler_1.AppError(403, 'Account is disabled', 'ACCOUNT_DISABLED');
             }
-            if (!user.emailVerified) {
+            const updates = {};
+            if (!user.emailVerified)
+                updates.emailVerified = true;
+            if (user.googleId !== googleProfile.googleId)
+                updates.googleId = googleProfile.googleId;
+            if (Object.keys(updates).length > 0) {
                 user = await db_1.prisma.user.update({
                     where: { id: user.id },
-                    data: { emailVerified: true },
+                    data: updates,
                     include: { profile: true },
                 });
             }
@@ -294,6 +305,7 @@ class AuthService {
                 email: googleProfile.email,
                 passwordHash: '',
                 emailVerified: true,
+                googleId: googleProfile.googleId,
                 profile: {
                     create: {
                         ...(googleProfile.name ? { currentRole: googleProfile.name } : {}),
@@ -319,6 +331,83 @@ class AuthService {
             isNew: true,
         };
     }
+    async findOrCreateClerkUser(clerkProfile) {
+        let user = await db_1.prisma.user.findUnique({
+            where: { email: clerkProfile.email },
+            include: { profile: true },
+        });
+        if (user) {
+            if (!user.isActive) {
+                throw new errorHandler_1.AppError(403, 'Account is disabled', 'ACCOUNT_DISABLED');
+            }
+            const updates = {};
+            if (!user.emailVerified)
+                updates.emailVerified = true;
+            if (!user.name && clerkProfile.name)
+                updates.name = clerkProfile.name;
+            if (!user.clerkId)
+                updates.clerkId = clerkProfile.clerkUserId;
+            if (Object.keys(updates).length > 0) {
+                user = await db_1.prisma.user.update({
+                    where: { id: user.id },
+                    data: updates,
+                    include: { profile: true },
+                });
+            }
+            const token = this.generateToken(user);
+            return {
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    name: user.name,
+                    phone: user.phone,
+                    role: user.role,
+                    emailVerified: user.emailVerified,
+                    profile: user.profile,
+                },
+                token,
+                isNew: false,
+            };
+        }
+        user = await db_1.prisma.user.create({
+            data: {
+                email: clerkProfile.email,
+                name: clerkProfile.name,
+                passwordHash: '',
+                emailVerified: true,
+                clerkId: clerkProfile.clerkUserId,
+                profile: {
+                    create: clerkProfile.name ? { currentRole: clerkProfile.name } : {},
+                },
+            },
+            include: { profile: true },
+        });
+        Promise.resolve().then(() => __importStar(require('./dripCampaignService'))).then(({ dripCampaignService }) => {
+            dripCampaignService.enrollOnboarding(user.id).catch((e) => console.log('[Auth] Drip campaign enrollment failed (Clerk):', e.message));
+        });
+        Promise.resolve().then(() => __importStar(require('./email'))).then(({ emailService }) => {
+            emailService.sendWelcome(clerkProfile.email).catch(() => { });
+        });
+        Promise.resolve().then(() => __importStar(require('./slackService'))).then(({ slackService }) => {
+            slackService
+                .notifyUserRegistered({ id: user.id, email: user.email, name: user.name || undefined })
+                .catch(() => { });
+        });
+        const token = this.generateToken(user);
+        return {
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                phone: user.phone,
+                role: user.role,
+                emailVerified: user.emailVerified,
+                profile: user.profile,
+            },
+            token,
+            isNew: true,
+        };
+    }
     async findOrCreateLinkedInUser(linkedinProfile) {
         const safeLinkedinUrl = linkedinProfile.linkedinUrl && isValidHttpsUrl(linkedinProfile.linkedinUrl) ? linkedinProfile.linkedinUrl : undefined;
         const safeAvatarUrl = linkedinProfile.avatarUrl && isValidHttpsUrl(linkedinProfile.avatarUrl) ? linkedinProfile.avatarUrl : undefined;
@@ -335,6 +424,8 @@ class AuthService {
                 userUpdates.emailVerified = true;
             if (!user.name && linkedinProfile.name)
                 userUpdates.name = linkedinProfile.name;
+            if (user.linkedinId !== linkedinProfile.linkedinId)
+                userUpdates.linkedinId = linkedinProfile.linkedinId;
             if (Object.keys(userUpdates).length > 0) {
                 user = await db_1.prisma.user.update({
                     where: { id: user.id },
@@ -405,6 +496,7 @@ class AuthService {
                 name: linkedinProfile.name || undefined,
                 passwordHash: '',
                 emailVerified: true,
+                linkedinId: linkedinProfile.linkedinId,
                 profile: {
                     create: profileData,
                 },
@@ -463,7 +555,7 @@ class AuthService {
             role: user.role,
             issuedAt: Math.floor(Date.now() / 1000),
         };
-        const expiresIn = user.role.toUpperCase() === 'ADMIN' ? '30m' : env_1.env.JWT_EXPIRES_IN;
+        const expiresIn = user.role.toUpperCase() === 'ADMIN' ? '12h' : env_1.env.JWT_EXPIRES_IN;
         return jsonwebtoken_1.default.sign(payload, env_1.env.JWT_SECRET, {
             expiresIn,
         });

@@ -9,7 +9,80 @@ const db_1 = require("@cleya/db");
 const rateLimit_1 = require("../middleware/rateLimit");
 const validation_1 = require("../middleware/validation");
 const razorpayService_1 = require("../services/razorpayService");
+const matchExplanationService_1 = require("../services/matchExplanationService");
 exports.matchRouter = (0, express_1.Router)();
+exports.matchRouter.get('/:id/explanation', auth_1.authenticate, async (req, res, next) => {
+    try {
+        const explanation = await matchExplanationService_1.matchExplanationService.getForUser(req.params.id, req.user.userId);
+        if (!explanation) {
+            return res.status(404).json({ success: false, error: { message: 'Match not found' } });
+        }
+        res.json({ success: true, data: explanation });
+    }
+    catch (error) {
+        next(error);
+    }
+});
+exports.matchRouter.post('/:id/quick-feedback', auth_1.authenticate, async (req, res, next) => {
+    try {
+        const { action, reasonCode } = req.body;
+        const allowed = ['INTERESTED', 'NOT_INTERESTED', 'SKIP'];
+        if (!action || !allowed.includes(action)) {
+            return res.status(400).json({ success: false, error: { message: 'action must be INTERESTED|NOT_INTERESTED|SKIP' } });
+        }
+        const match = await db_1.prisma.match.findFirst({
+            where: { id: req.params.id, OR: [{ userAId: req.user.userId }, { userBId: req.user.userId }] },
+        });
+        if (!match)
+            return res.status(404).json({ success: false, error: { message: 'Match not found' } });
+        const ratingMap = { INTERESTED: 5, SKIP: 3, NOT_INTERESTED: 1 };
+        const rating = ratingMap[action];
+        const result = await db_1.prisma.matchFeedback.upsert({
+            where: { matchId_userId: { matchId: req.params.id, userId: req.user.userId } },
+            update: { action: action, reasonCode: reasonCode || null, rating },
+            create: {
+                matchId: req.params.id,
+                userId: req.user.userId,
+                action: action,
+                reasonCode: reasonCode || null,
+                rating,
+            },
+        });
+        res.json({ success: true, data: result });
+    }
+    catch (error) {
+        next(error);
+    }
+});
+exports.matchRouter.post('/:id/intro-response', auth_1.authenticate, async (req, res, next) => {
+    try {
+        const { responded, quality } = req.body;
+        if (typeof responded !== 'boolean') {
+            return res.status(400).json({ success: false, error: { message: 'responded boolean required' } });
+        }
+        const q = quality && [1, 2, 3, 4, 5].includes(quality) ? quality : null;
+        const match = await db_1.prisma.match.findFirst({
+            where: { id: req.params.id, OR: [{ userAId: req.user.userId }, { userBId: req.user.userId }] },
+        });
+        if (!match)
+            return res.status(404).json({ success: false, error: { message: 'Match not found' } });
+        const result = await db_1.prisma.matchFeedback.upsert({
+            where: { matchId_userId: { matchId: req.params.id, userId: req.user.userId } },
+            update: { introResponded: responded, introQuality: q ?? undefined },
+            create: {
+                matchId: req.params.id,
+                userId: req.user.userId,
+                rating: q ?? (responded ? 4 : 2),
+                introResponded: responded,
+                introQuality: q,
+            },
+        });
+        res.json({ success: true, data: result });
+    }
+    catch (error) {
+        next(error);
+    }
+});
 exports.matchRouter.get('/', auth_1.authenticate, async (req, res, next) => {
     try {
         const matches = await matchingService_1.matchingService.getMatchesForUser(req.user.userId);
@@ -52,7 +125,7 @@ exports.matchRouter.post('/find', auth_1.authenticate, async (req, res, next) =>
         next(error);
     }
 });
-exports.matchRouter.post('/find-and-propose', auth_1.authenticate, rateLimit_1.matchProposalLimiter, async (req, res, next) => {
+exports.matchRouter.post('/find-and-propose', auth_1.authenticate, auth_1.requireEmailVerified, rateLimit_1.matchProposalLimiter, async (req, res, next) => {
     try {
         const { limit } = req.body;
         const proposed = await matchingService_1.matchingService.findAndAutoPropose(req.user.userId, limit || 5);
@@ -62,7 +135,7 @@ exports.matchRouter.post('/find-and-propose', auth_1.authenticate, rateLimit_1.m
         next(error);
     }
 });
-exports.matchRouter.post('/propose', auth_1.authenticate, (0, validation_1.validate)(validation_1.matchProposeSchema), async (req, res, next) => {
+exports.matchRouter.post('/propose', auth_1.authenticate, auth_1.requireEmailVerified, (0, validation_1.validate)(validation_1.matchProposeSchema), async (req, res, next) => {
     try {
         const { userAId, userBId } = req.body;
         const match = await matchingService_1.matchingService.proposeMatch(userAId, userBId);

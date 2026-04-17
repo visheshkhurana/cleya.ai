@@ -14,19 +14,42 @@ function getProvider() {
         return gupshupService_1.gupshupService;
     return null;
 }
+async function resolveRecipientName(userId, recipientName) {
+    if (recipientName)
+        return recipientName;
+    if (!userId || userId === 'direct')
+        return undefined;
+    try {
+        const user = await db_1.prisma.user.findUnique({
+            where: { id: userId },
+            select: { name: true },
+        });
+        return user?.name || undefined;
+    }
+    catch {
+        return undefined;
+    }
+}
 class MessagingService {
-    async sendWhatsApp(userId, phoneNumber, message) {
+    async sendWhatsApp(userId, phoneNumber, message, recipientName) {
         const provider = getProvider();
         if (!provider) {
             console.warn('No WhatsApp provider configured, message skipped');
             return null;
         }
+        if (provider === twilioWhatsAppService_1.twilioWhatsAppService) {
+            const name = await resolveRecipientName(userId, recipientName);
+            return provider.sendWhatsApp(userId, phoneNumber, message, name);
+        }
         return provider.sendWhatsApp(userId, phoneNumber, message);
     }
-    async sendWhatsAppDirect(phoneNumber, message) {
+    async sendWhatsAppDirect(phoneNumber, message, recipientName) {
         const provider = getProvider();
         if (!provider) {
             return { success: false, error: 'No WhatsApp provider configured' };
+        }
+        if (provider === twilioWhatsAppService_1.twilioWhatsAppService) {
+            return provider.sendWhatsAppDirect(phoneNumber, message, recipientName);
         }
         return provider.sendWhatsAppDirect(phoneNumber, message);
     }
@@ -46,10 +69,10 @@ class MessagingService {
         }
         return provider.sendImage(userId, phoneNumber, imageUrl, caption);
     }
-    async sendSMS(userId, phoneNumber, message) {
+    async sendSMS(userId, phoneNumber, message, recipientName) {
         const providerName = this.getActiveProvider();
         console.log(`SMS routed to WhatsApp via ${providerName} for ${phoneNumber}`);
-        return this.sendWhatsApp(userId, phoneNumber, message);
+        return this.sendWhatsApp(userId, phoneNumber, message, recipientName);
     }
     getActiveProvider() {
         if (twilioWhatsAppService_1.twilioWhatsAppService.isConfigured())

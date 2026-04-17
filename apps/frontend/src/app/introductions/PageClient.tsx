@@ -334,13 +334,11 @@ function IntroDetailModal({
               <p className="text-[10px] uppercase tracking-wider text-white/30 mb-2 font-medium">{t('intro.preview')}</p>
               <div className="rounded-xl border p-4" style={{ background: 'rgba(108,99,255,0.03)', borderColor: 'rgba(108,99,255,0.1)' }}>
                 {editMode ? (
-                  <div className="space-y-3">
-                    <IntroTemplatePicker
-                      matchId={intro.matchId}
-                      initialBody={editText}
-                      onChange={onEditTextChange}
-                    />
-                  </div>
+                  <IntroTemplatePicker
+                    matchId={intro.matchId}
+                    initialBody={editText}
+                    onChange={onEditTextChange}
+                  />
                 ) : (
                   <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{intro.introText}</p>
                 )}

@@ -1,0 +1,99 @@
+export interface ClerkVerifiedProfile {
+    email: string;
+    name?: string;
+    clerkUserId: string;
+}
+export declare const clerkService: {
+    isConfigured(): boolean;
+    /**
+     * Verify a Clerk session token and return the resolved Clerk profile.
+     * Caller should pass the result to authService.findOrCreateClerkUser.
+     */
+    verifySessionToken(sessionToken: string): Promise<ClerkVerifiedProfile>;
+    /**
+     * Convenience: verify the Clerk token and provision the Cleya user via authService.
+     */
+    exchangeSessionToken(sessionToken: string): Promise<{
+        user: {
+            id: string;
+            email: string;
+            name: string | null;
+            phone: string | null;
+            role: import(".prisma/client").$Enums.Role;
+            emailVerified: boolean;
+            profile: {
+                userId: string;
+                id: string;
+                isComplete: boolean;
+                persona: import(".prisma/client").$Enums.PersonaType | null;
+                headline: string | null;
+                bio: string | null;
+                companyName: string | null;
+                companyStage: import(".prisma/client").$Enums.CompanyStage | null;
+                currentRole: string | null;
+                location: string | null;
+                linkedinUrl: string | null;
+                websiteUrl: string | null;
+                yearsExperience: number | null;
+                industries: string[];
+                skills: string[];
+                interests: string[];
+                lookingFor: string[];
+                extraData: import("@prisma/client/runtime/library").JsonValue | null;
+                completenessScore: number;
+                profileScore: number;
+                profileScoreDetails: import("@prisma/client/runtime/library").JsonValue | null;
+                profileCompleteBadgeAt: Date | null;
+                matchLastCheckedAt: Date | null;
+                createdAt: Date;
+                updatedAt: Date;
+                accreditedInvestor: boolean | null;
+                amountRaisedToDate: string | null;
+                businessDescription: string | null;
+                channelSource: string | null;
+                channelType: string | null;
+                cityBased: string | null;
+                exampleInvestment: string | null;
+                founderAccessPitch: string | null;
+                fundName: string | null;
+                fundSize: string | null;
+                industryFocus: string[];
+                investmentAmount: string | null;
+                investmentRange: string | null;
+                investmentThesis: string | null;
+                investorType: string | null;
+                keyTractionPoints: string | null;
+                outreachMethod: string | null;
+                phoneNumber: string | null;
+                priority: import(".prisma/client").$Enums.FounderPriority | null;
+                raiseAmount: string | null;
+                roundCloseDate: string | null;
+                targetRole: import(".prisma/client").$Enums.TalentTargetRole | null;
+                trackedCompanies: string | null;
+                linkedinVerified: boolean;
+                verificationScore: number;
+                avatarUrl: string | null;
+                activeUsers: string | null;
+                burnRate: string | null;
+                checkSizeRange: string | null;
+                dealsPerYear: number | null;
+                equityExpectation: string | null;
+                functionalArea: string | null;
+                growthRate: string | null;
+                introPreference: import(".prisma/client").$Enums.IntroPreference | null;
+                leadsRounds: boolean | null;
+                maxIntrosPerWeek: number | null;
+                monthlyRevenue: string | null;
+                openToMeeting: boolean;
+                portfolioCompanies: string[];
+                preferredStage: import(".prisma/client").$Enums.CompanyStage | null;
+                preferredStageRange: string | null;
+                sectorFocus: string[];
+                workStyle: import(".prisma/client").$Enums.WorkStyle | null;
+            } | null;
+        };
+        token: string;
+        isNew: boolean;
+    }>;
+};
+//# sourceMappingURL=clerkService.d.ts.map

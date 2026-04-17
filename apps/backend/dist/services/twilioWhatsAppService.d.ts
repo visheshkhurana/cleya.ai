@@ -3,17 +3,23 @@ declare class TwilioWhatsAppService {
     private getClient;
     isConfigured(): boolean;
     private formatPhone;
-    sendWhatsApp(userId: string, phoneNumber: string, message: string): Promise<{
+    private resolveTemplateSid;
+    private extractRecipientName;
+    sendWhatsApp(userId: string, phoneNumber: string, message: string, recipientName?: string): Promise<{
         success: boolean;
         messageId: string;
         status: import("twilio/lib/rest/api/v2010/account/message").MessageStatus;
-    }>;
-    sendWhatsAppDirect(phoneNumber: string, message: string): Promise<{
+    } | null>;
+    sendWhatsAppDirect(phoneNumber: string, message: string, recipientName?: string): Promise<{
         success: boolean;
         messageId: string;
         status: import("twilio/lib/rest/api/v2010/account/message").MessageStatus;
-    }>;
-    sendTemplate(userId: string, phoneNumber: string, templateName: string, params?: string[]): Promise<null>;
+    } | null>;
+    sendTemplate(userId: string, phoneNumber: string, templateName: string, params?: string[]): Promise<{
+        success: boolean;
+        messageId: string;
+        status: import("twilio/lib/rest/api/v2010/account/message").MessageStatus;
+    } | null>;
     sendImage(userId: string, phoneNumber: string, imageUrl: string, caption?: string): Promise<{
         success: boolean;
         messageId: string;
@@ -25,7 +31,7 @@ declare class TwilioWhatsAppService {
         success: boolean;
         messageId: string;
         status: import("twilio/lib/rest/api/v2010/account/message").MessageStatus;
-    }>;
+    } | null>;
     optInUser(phoneNumber: string): Promise<{
         success: boolean;
     }>;

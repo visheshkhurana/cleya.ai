@@ -6,6 +6,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.twilioWhatsAppService = void 0;
 const twilio_1 = __importDefault(require("twilio"));
 const env_1 = require("../config/env");
+const TEMPLATE_CONTENT_SIDS = {
+    cleya_welcome_message: 'HX247a078a6699a55d88481161a076ca83',
+    cleya_networking_intro: 'HXa44d4a7d23ce01c47d9c477e714b2f97',
+    cleya_general_update: 'HXb313fddcb0d8450b4bdc4255f5871e8a',
+};
+const FALLBACK_TEMPLATE = 'cleya_general_update';
+const OUTSIDE_WINDOW_ERROR_CODE = 63016;
 class TwilioWhatsAppService {
     client = null;
     getClient() {
@@ -23,27 +30,73 @@ class TwilioWhatsAppService {
         const withPlus = digits.startsWith('+') ? digits : `+${digits}`;
         return `whatsapp:${withPlus}`;
     }
-    async sendWhatsApp(userId, phoneNumber, message) {
+    resolveTemplateSid(templateName) {
+        return TEMPLATE_CONTENT_SIDS[templateName] || null;
+    }
+    extractRecipientName(recipientName) {
+        const trimmed = (recipientName || '').trim();
+        if (trimmed)
+            return trimmed.split(/\s+/)[0];
+        return 'there';
+    }
+    async sendWhatsApp(userId, phoneNumber, message, recipientName) {
         const client = this.getClient();
         if (!client)
             throw new Error('Twilio not configured');
-        const result = await client.messages.create({
-            from: env_1.env.TWILIO_WHATSAPP_FROM,
-            to: this.formatPhone(phoneNumber),
-            body: message,
-        });
-        console.log(`[TwilioWA] Sent to ${phoneNumber}: ${result.sid} status=${result.status}`);
-        return { success: true, messageId: result.sid, status: result.status };
+        const to = this.formatPhone(phoneNumber);
+        try {
+            const result = await client.messages.create({
+                from: env_1.env.TWILIO_WHATSAPP_FROM,
+                to,
+                body: message,
+            });
+            console.log(`[TwilioWA] Sent to ${phoneNumber}: ${result.sid} status=${result.status}`);
+            return { success: true, messageId: result.sid, status: result.status };
+        }
+        catch (error) {
+            if (error?.code === OUTSIDE_WINDOW_ERROR_CODE) {
+                console.warn(`[TwilioWA] Outside 24h messaging window for ${phoneNumber}, falling back to template '${FALLBACK_TEMPLATE}'`);
+                return this.sendTemplate(userId, phoneNumber, FALLBACK_TEMPLATE, [
+                    this.extractRecipientName(recipientName),
+                ]);
+            }
+            console.error(`[TwilioWA] Send failed to ${phoneNumber}: ${error?.code || ''} ${error?.message || error}`);
+            throw error;
+        }
     }
-    async sendWhatsAppDirect(phoneNumber, message) {
-        return this.sendWhatsApp('direct', phoneNumber, message);
+    async sendWhatsAppDirect(phoneNumber, message, recipientName) {
+        return this.sendWhatsApp('direct', phoneNumber, message, recipientName);
     }
     async sendTemplate(userId, phoneNumber, templateName, params = []) {
-        // Twilio uses Content Templates (ContentSid) for WhatsApp templates
-        // For now, fall back to sending as regular text with the template content
-        // In production, you'd use Twilio Content API: client.content.v1.contentAndApprovals.list()
-        console.log(`[TwilioWA] Template '${templateName}' not natively supported, falling back to text`);
-        return null; // Return null to let the next provider try
+        const client = this.getClient();
+        if (!client)
+            throw new Error('Twilio not configured');
+        const contentSid = this.resolveTemplateSid(templateName);
+        if (!contentSid) {
+            console.warn(`[TwilioWA] Unknown template '${templateName}', cannot send`);
+            return null;
+        }
+        const contentVariables = {};
+        params.forEach((value, idx) => {
+            contentVariables[String(idx + 1)] = value ?? '';
+        });
+        if (!contentVariables['1']) {
+            contentVariables['1'] = 'there';
+        }
+        try {
+            const result = await client.messages.create({
+                from: env_1.env.TWILIO_WHATSAPP_FROM,
+                to: this.formatPhone(phoneNumber),
+                contentSid,
+                contentVariables: JSON.stringify(contentVariables),
+            });
+            console.log(`[TwilioWA] Template '${templateName}' sent to ${phoneNumber}: ${result.sid} status=${result.status}`);
+            return { success: true, messageId: result.sid, status: result.status };
+        }
+        catch (error) {
+            console.error(`[TwilioWA] Template '${templateName}' failed to ${phoneNumber}: ${error?.code || ''} ${error?.message || error}`);
+            throw error;
+        }
     }
     async sendImage(userId, phoneNumber, imageUrl, caption) {
         const client = this.getClient();

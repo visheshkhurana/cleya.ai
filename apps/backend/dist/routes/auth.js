@@ -43,12 +43,14 @@ const zod_1 = require("zod");
 const authService_1 = require("../services/authService");
 const auth_1 = require("../middleware/auth");
 const rateLimit_1 = require("../middleware/rateLimit");
+const recaptcha_1 = require("../middleware/recaptcha");
 const email_1 = require("../services/email");
 const env_1 = require("../config/env");
 const whatsappTemplates_1 = require("../services/whatsappTemplates");
 const gupshupService_1 = require("../services/gupshupService");
 const db_1 = require("@cleya/db");
 const securityLogger_1 = require("../services/securityLogger");
+const clerkService_1 = require("../services/clerkService");
 exports.authRouter = (0, express_1.Router)();
 const ALLOWED_HOSTS = [
     env_1.env.FRONTEND_URL ? new URL(env_1.env.FRONTEND_URL).host : '',
@@ -89,8 +91,10 @@ const signupSchema = zod_1.z.object({
     email: zod_1.z.string().email().max(255),
     password: zod_1.z.string().min(8, 'Password must be at least 8 characters')
         .max(128, 'Password must be less than 128 characters')
-        .regex(/[A-Za-z]/, 'Password must contain at least one letter')
-        .regex(/[0-9]/, 'Password must contain at least one number'),
+        .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+        .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+        .regex(/[0-9]/, 'Password must contain at least one number')
+        .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
     name: zod_1.z.string().min(2, 'Full name is required').max(100).transform(stripHtmlBasic).optional(),
     persona: zod_1.z.enum(['FOUNDER', 'INVESTOR', 'TALENT']).optional(),
     phone: zod_1.z.string().max(20).optional(),
@@ -111,22 +115,32 @@ function setAuthCookie(res, token) {
         maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 }
-exports.authRouter.post('/signup', rateLimit_1.signupLimiter, async (req, res, next) => {
+async function issueVerificationToken(userId, email) {
+    const token = crypto_1.default.randomBytes(32).toString('hex');
+    const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await db_1.prisma.user.update({
+        where: { id: userId },
+        data: { verificationToken: token, verificationTokenExpiry: expiry },
+    });
+    email_1.emailService.sendEmailVerification(email, token).catch(() => { });
+    return token;
+}
+exports.authRouter.post('/signup', rateLimit_1.signupLimiter, (0, recaptcha_1.verifyRecaptcha)('signup'), async (req, res, next) => {
     try {
         const data = signupSchema.parse(req.body);
         const result = await authService_1.authService.signup(data);
         const smtpConfigured = !!(env_1.env.SMTP_HOST && env_1.env.SMTP_USER && env_1.env.SMTP_PASS);
         if (smtpConfigured) {
             email_1.emailService.sendWelcome(data.email).catch(() => { });
-            const verifyToken = crypto_1.default.randomBytes(32).toString('hex');
-            verifyTokens.set(verifyToken, { userId: result.user.id, createdAt: Date.now() });
-            email_1.emailService.sendEmailVerification(data.email, verifyToken).catch(() => { });
+            await issueVerificationToken(result.user.id, data.email);
         }
         else {
             await authService_1.authService.verifyEmail(result.user.id);
             result.user.emailVerified = true;
         }
-        setAuthCookie(res, result.token);
+        if (result.token) {
+            setAuthCookie(res, result.token);
+        }
         res.status(201).json({ success: true, data: result });
     }
     catch (error) {
@@ -144,7 +158,7 @@ exports.authRouter.post('/signup', rateLimit_1.signupLimiter, async (req, res, n
         next(error);
     }
 });
-exports.authRouter.post('/login', rateLimit_1.loginLimiter, async (req, res, next) => {
+exports.authRouter.post('/login', rateLimit_1.loginLimiter, (0, recaptcha_1.verifyRecaptcha)('login'), async (req, res, next) => {
     try {
         const data = loginSchema.parse(req.body);
         const result = await authService_1.authService.login(data);
@@ -152,6 +166,17 @@ exports.authRouter.post('/login', rateLimit_1.loginLimiter, async (req, res, nex
         res.json({ success: true, data: result });
     }
     catch (error) {
+        if (error instanceof zod_1.z.ZodError) {
+            res.status(400).json({
+                success: false,
+                error: {
+                    message: 'Please enter a valid email and password.',
+                    code: 'VALIDATION_ERROR',
+                    details: error.errors.map(e => ({ field: e.path.join('.'), message: e.message })),
+                },
+            });
+            return;
+        }
         next(error);
     }
 });
@@ -404,6 +429,50 @@ exports.authRouter.get('/linkedin/callback', async (req, res) => {
         res.redirect(`${env_1.env.FRONTEND_URL}/?error=linkedin_auth_error`);
     }
 });
+exports.authRouter.get('/clerk/status', (_req, res) => {
+    res.json({
+        success: true,
+        data: { enabled: clerkService_1.clerkService.isConfigured() },
+    });
+});
+exports.authRouter.post('/clerk/exchange', rateLimit_1.loginLimiter, async (req, res, next) => {
+    try {
+        if (!clerkService_1.clerkService.isConfigured()) {
+            res.status(503).json({
+                success: false,
+                error: { message: 'Clerk authentication is not configured', code: 'CLERK_NOT_CONFIGURED' },
+            });
+            return;
+        }
+        const { sessionToken, platform } = zod_1.z.object({
+            sessionToken: zod_1.z.string().min(1),
+            platform: zod_1.z.enum(['web', 'mobile']).optional(),
+        }).parse(req.body);
+        const result = await clerkService_1.clerkService.exchangeSessionToken(sessionToken);
+        securityLogger_1.securityLogger.authEvent(req, result.isNew ? 'SIGNUP' : 'LOGIN_SUCCESS', 'SUCCESS', result.user.id, { provider: 'clerk', isNew: result.isNew });
+        if (platform !== 'mobile') {
+            setAuthCookie(res, result.token);
+        }
+        res.json({
+            success: true,
+            data: {
+                user: result.user,
+                token: result.token,
+                isNew: result.isNew,
+            },
+        });
+    }
+    catch (error) {
+        if (error instanceof zod_1.z.ZodError) {
+            res.status(400).json({
+                success: false,
+                error: { message: 'Invalid request', code: 'VALIDATION_ERROR', details: error.errors },
+            });
+            return;
+        }
+        next(error);
+    }
+});
 exports.authRouter.get('/linkedin/status', (_req, res) => {
     res.json({
         success: true,
@@ -418,15 +487,7 @@ setInterval(() => {
             resetTokens.delete(key);
     }
 }, 60 * 1000);
-const verifyTokens = new Map();
-setInterval(() => {
-    const now = Date.now();
-    for (const [key, val] of verifyTokens) {
-        if (now - val.createdAt > 24 * 60 * 60 * 1000)
-            verifyTokens.delete(key);
-    }
-}, 5 * 60 * 1000);
-exports.authRouter.post('/forgot-password', rateLimit_1.passwordResetLimiter, async (req, res, next) => {
+exports.authRouter.post('/forgot-password', rateLimit_1.passwordResetLimiter, (0, recaptcha_1.verifyRecaptcha)('forgot_password'), async (req, res, next) => {
     try {
         const { email } = zod_1.z.object({ email: zod_1.z.string().email() }).parse(req.body);
         const user = await authService_1.authService.findUserByEmail(email);
@@ -441,11 +502,16 @@ exports.authRouter.post('/forgot-password', rateLimit_1.passwordResetLimiter, as
         next(error);
     }
 });
-exports.authRouter.post('/reset-password', rateLimit_1.passwordResetLimiter, async (req, res, next) => {
+exports.authRouter.post('/reset-password', rateLimit_1.passwordResetLimiter, (0, recaptcha_1.verifyRecaptcha)('reset_password'), async (req, res, next) => {
     try {
         const { token, password } = zod_1.z.object({
             token: zod_1.z.string(),
-            password: zod_1.z.string().min(8),
+            password: zod_1.z.string().min(8, 'Password must be at least 8 characters')
+                .max(128, 'Password must be less than 128 characters')
+                .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+                .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+                .regex(/[0-9]/, 'Password must contain at least one number')
+                .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
         }).parse(req.body);
         const entry = resetTokens.get(token);
         if (!entry || Date.now() - entry.createdAt > 60 * 60 * 1000) {
@@ -463,10 +529,26 @@ exports.authRouter.post('/reset-password', rateLimit_1.passwordResetLimiter, asy
 exports.authRouter.post('/send-verification', auth_1.authenticate, async (req, res, next) => {
     try {
         const user = await authService_1.authService.getMe(req.user.userId);
-        const token = crypto_1.default.randomBytes(32).toString('hex');
-        verifyTokens.set(token, { userId: req.user.userId, createdAt: Date.now() });
-        email_1.emailService.sendEmailVerification(user.email, token).catch(() => { });
+        if (user.emailVerified) {
+            res.json({ success: true, message: 'Your email is already verified.' });
+            return;
+        }
+        await issueVerificationToken(req.user.userId, user.email);
         res.json({ success: true, message: 'Verification email sent.' });
+    }
+    catch (error) {
+        next(error);
+    }
+});
+exports.authRouter.post('/resend-verification', rateLimit_1.verificationResendLimiter, async (req, res, next) => {
+    try {
+        const { email } = zod_1.z.object({ email: zod_1.z.string().email() }).parse(req.body);
+        const user = await db_1.prisma.user.findUnique({ where: { email }, select: { id: true, email: true, emailVerified: true } });
+        // Always respond with the same generic message to avoid email enumeration.
+        if (user && !user.emailVerified) {
+            await issueVerificationToken(user.id, user.email);
+        }
+        res.json({ success: true, message: 'If an account with that email exists and is unverified, a new verification link has been sent.' });
     }
     catch (error) {
         next(error);
@@ -474,15 +556,30 @@ exports.authRouter.post('/send-verification', auth_1.authenticate, async (req, r
 });
 exports.authRouter.post('/verify-email', async (req, res, next) => {
     try {
-        const { token } = zod_1.z.object({ token: zod_1.z.string() }).parse(req.body);
-        const entry = verifyTokens.get(token);
-        if (!entry || Date.now() - entry.createdAt > 24 * 60 * 60 * 1000) {
-            res.status(400).json({ success: false, error: { message: 'Invalid or expired verification token', code: 'INVALID_TOKEN' } });
+        const { token } = zod_1.z.object({ token: zod_1.z.string().min(16) }).parse(req.body);
+        const user = await db_1.prisma.user.findUnique({
+            where: { verificationToken: token },
+            select: { id: true, verificationTokenExpiry: true, emailVerified: true },
+        });
+        if (!user || !user.verificationTokenExpiry || user.verificationTokenExpiry.getTime() < Date.now()) {
+            res.status(400).json({ success: false, error: { message: 'This verification link is invalid or has expired. Please request a new one.', code: 'INVALID_TOKEN' } });
             return;
         }
-        await authService_1.authService.verifyEmail(entry.userId);
-        verifyTokens.delete(token);
-        res.json({ success: true, message: 'Email verified successfully.' });
+        if (user.emailVerified) {
+            // Token still matched a record but the user has already been verified
+            // (e.g. duplicate clicks). Clear the token and respond idempotently.
+            await db_1.prisma.user.update({
+                where: { id: user.id },
+                data: { verificationToken: null, verificationTokenExpiry: null },
+            });
+            res.json({ success: true, data: { alreadyVerified: true, message: 'Your email is already verified.' } });
+            return;
+        }
+        await db_1.prisma.user.update({
+            where: { id: user.id },
+            data: { emailVerified: true, isActive: true, verificationToken: null, verificationTokenExpiry: null },
+        });
+        res.json({ success: true, data: { alreadyVerified: false, message: 'Email verified successfully.' } });
     }
     catch (error) {
         next(error);
@@ -539,6 +636,79 @@ exports.authRouter.post('/mfa/validate', rateLimit_1.adminLoginLimiter, async (r
     }
     catch (error) {
         securityLogger_1.securityLogger.authEvent(req, 'MFA_VALIDATE', 'FAILURE', null, { error: error?.message });
+        next(error);
+    }
+});
+exports.authRouter.get('/providers', auth_1.authenticate, async (req, res, next) => {
+    try {
+        const user = await db_1.prisma.user.findUnique({
+            where: { id: req.user.userId },
+            select: { email: true, passwordHash: true, googleId: true, linkedinId: true, clerkId: true },
+        });
+        if (!user) {
+            res.status(404).json({ success: false, error: { message: 'User not found', code: 'USER_NOT_FOUND' } });
+            return;
+        }
+        const providers = [
+            { id: 'password', label: 'Email & password', linked: !!user.passwordHash, identifier: user.passwordHash ? user.email : null },
+            { id: 'google', label: 'Google', linked: !!user.googleId, identifier: user.googleId ? user.email : null },
+            { id: 'linkedin', label: 'LinkedIn', linked: !!user.linkedinId, identifier: user.linkedinId ? user.email : null },
+            { id: 'clerk', label: 'Clerk', linked: !!user.clerkId, identifier: user.clerkId ? user.email : null },
+        ];
+        res.json({ success: true, data: { providers } });
+    }
+    catch (error) {
+        next(error);
+    }
+});
+exports.authRouter.post('/providers/disconnect', auth_1.authenticate, async (req, res, next) => {
+    try {
+        const { provider } = zod_1.z.object({
+            provider: zod_1.z.enum(['password', 'google', 'linkedin', 'clerk']),
+        }).parse(req.body);
+        const user = await db_1.prisma.user.findUnique({
+            where: { id: req.user.userId },
+            select: { passwordHash: true, googleId: true, linkedinId: true, clerkId: true },
+        });
+        if (!user) {
+            res.status(404).json({ success: false, error: { message: 'User not found', code: 'USER_NOT_FOUND' } });
+            return;
+        }
+        const linked = {
+            password: !!user.passwordHash,
+            google: !!user.googleId,
+            linkedin: !!user.linkedinId,
+            clerk: !!user.clerkId,
+        };
+        if (!linked[provider]) {
+            res.status(400).json({ success: false, error: { message: 'Provider is not connected', code: 'PROVIDER_NOT_LINKED' } });
+            return;
+        }
+        const linkedCount = Object.values(linked).filter(Boolean).length;
+        if (linkedCount <= 1) {
+            res.status(400).json({
+                success: false,
+                error: {
+                    message: 'You cannot disconnect your only sign-in method. Add another way to sign in first.',
+                    code: 'LAST_PROVIDER',
+                },
+            });
+            return;
+        }
+        const data = {};
+        if (provider === 'password')
+            data.passwordHash = '';
+        if (provider === 'google')
+            data.googleId = null;
+        if (provider === 'linkedin')
+            data.linkedinId = null;
+        if (provider === 'clerk')
+            data.clerkId = null;
+        await db_1.prisma.user.update({ where: { id: req.user.userId }, data });
+        securityLogger_1.securityLogger.authEvent(req, 'PROVIDER_DISCONNECT', 'SUCCESS', req.user.userId, { provider });
+        res.json({ success: true, data: { provider, disconnected: true } });
+    }
+    catch (error) {
         next(error);
     }
 });

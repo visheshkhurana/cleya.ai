@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.introductionStatusSchema = exports.matchProposeSchema = exports.matchFeedbackSchema = exports.matchResponseSchema = exports.changePasswordSchema = exports.profileUpdateSchema = void 0;
+exports.introductionStatusSchema = exports.matchProposeSchema = exports.matchFeedbackSchema = exports.matchResponseSchema = exports.setPasswordSchema = exports.changePasswordSchema = exports.strongPasswordSchema = exports.profileUpdateSchema = void 0;
 exports.validate = validate;
 const zod_1 = require("zod");
 function validate(schema) {
@@ -173,13 +173,19 @@ exports.profileUpdateSchema = zod_1.z.object({
     sectorFocus: nullableArraySchema(20, 100),
     checkSizeRange: nullableString(50),
 }).passthrough();
+exports.strongPasswordSchema = zod_1.z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .max(128, 'Password must be less than 128 characters')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number')
+    .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character');
 exports.changePasswordSchema = zod_1.z.object({
     currentPassword: zod_1.z.string().min(1, 'Current password is required'),
-    newPassword: zod_1.z.string()
-        .min(8, 'Password must be at least 8 characters')
-        .max(128, 'Password must be less than 128 characters')
-        .regex(/[A-Za-z]/, 'Password must contain at least one letter')
-        .regex(/[0-9]/, 'Password must contain at least one number'),
+    newPassword: exports.strongPasswordSchema,
+});
+exports.setPasswordSchema = zod_1.z.object({
+    newPassword: exports.strongPasswordSchema,
 });
 exports.matchResponseSchema = zod_1.z.object({
     response: zod_1.z.enum(['ACCEPTED', 'REJECTED'], {

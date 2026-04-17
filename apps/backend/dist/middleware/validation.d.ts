@@ -167,6 +167,7 @@ export declare const profileUpdateSchema: z.ZodObject<{
     sectorFocus: z.ZodOptional<z.ZodUnion<[z.ZodArray<z.ZodEffects<z.ZodString, string, string>, "many">, z.ZodEffects<z.ZodNull, undefined, null>]>>;
     checkSizeRange: z.ZodOptional<z.ZodUnion<[z.ZodEffects<z.ZodString, string, string>, z.ZodEffects<z.ZodLiteral<"">, undefined, "">, z.ZodEffects<z.ZodNull, undefined, null>]>>;
 }, z.ZodTypeAny, "passthrough">>;
+export declare const strongPasswordSchema: z.ZodString;
 export declare const changePasswordSchema: z.ZodObject<{
     currentPassword: z.ZodString;
     newPassword: z.ZodString;
@@ -175,6 +176,13 @@ export declare const changePasswordSchema: z.ZodObject<{
     newPassword: string;
 }, {
     currentPassword: string;
+    newPassword: string;
+}>;
+export declare const setPasswordSchema: z.ZodObject<{
+    newPassword: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    newPassword: string;
+}, {
     newPassword: string;
 }>;
 export declare const matchResponseSchema: z.ZodObject<{

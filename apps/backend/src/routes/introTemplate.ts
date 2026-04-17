@@ -26,6 +26,20 @@ introTemplateRouter.post('/', authenticate, async (req: Request, res: Response, 
   }
 });
 
+introTemplateRouter.patch('/:id', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name, body, description, category } = req.body || {};
+    const updated = await introTemplateService.updateCustom(req.user!.userId, req.params.id, {
+      name, body, description, category,
+    });
+    res.json({ success: true, data: updated });
+  } catch (e: any) {
+    const msg = e?.message || 'Failed to update template';
+    const status = msg === 'Template not found' ? 404 : 400;
+    res.status(status).json({ success: false, error: { message: msg } });
+  }
+});
+
 introTemplateRouter.delete('/:id', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     await introTemplateService.deleteCustom(req.user!.userId, req.params.id);

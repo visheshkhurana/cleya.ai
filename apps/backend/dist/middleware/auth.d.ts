@@ -22,5 +22,14 @@ export declare function authenticate(req: Request, _res: Response, next: NextFun
 export declare function requireRole(minimumRole: RoleType): (req: Request, _res: Response, next: NextFunction) => void;
 export declare function requireAdmin(req: Request, _res: Response, next: NextFunction): void;
 export declare function requireReauth(req: Request, _res: Response, next: NextFunction): void;
+/**
+ * Requires the authenticated user's email to be verified before running the
+ * downstream handler. Use on actions that send outbound communication or
+ * create user-visible records (match requests, direct messages, etc.).
+ *
+ * Must be mounted after `authenticate`. Looks the user up fresh so a recent
+ * verification is reflected without forcing a token refresh.
+ */
+export declare function requireEmailVerified(req: Request, _res: Response, next: NextFunction): void;
 export { ROLE_HIERARCHY };
 //# sourceMappingURL=auth.d.ts.map

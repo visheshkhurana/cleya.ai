@@ -44,6 +44,9 @@ const vectorMatchingService_1 = require("./vectorMatchingService");
 const email_1 = require("./email");
 const secretaryService_1 = require("./secretaryService");
 const whatsappTemplates_1 = require("./whatsappTemplates");
+const matchAntiSpam_1 = require("./matchAntiSpam");
+const matchMetrics_1 = require("./matchMetrics");
+const razorpayService_1 = require("./razorpayService");
 class MatchingService {
     ai = (0, ai_1.createAIService)();
     async findMatchesForUser(userId, limit = 10) {
@@ -72,7 +75,10 @@ class MatchingService {
                 });
             }
             catch (err) {
-                if (err.code !== 'MATCH_EXISTS') {
+                if (err.code === 'PROPOSAL_THROTTLED' && err.message?.includes('DAILY_CAP')) {
+                    break;
+                }
+                if (err.code !== 'MATCH_EXISTS' && err.code !== 'PROPOSAL_THROTTLED') {
                     console.log(`[MatchingService] Auto-propose failed for ${match.profile.userId}:`, err.message);
                 }
             }
@@ -90,13 +96,31 @@ class MatchingService {
             },
         });
         if (existing) {
+            (0, matchMetrics_1.recordProposalSkipped)('DUPLICATE');
             throw new errorHandler_1.AppError(409, 'Match already exists', 'MATCH_EXISTS');
+        }
+        // Enforce FREE tier monthly cap centrally for all proposal paths.
+        for (const id of [userAId, userBId]) {
+            const paywall = await razorpayService_1.razorpayService.checkPaywall(id);
+            if (paywall.tier === 'FREE' && !paywall.allowed) {
+                (0, matchMetrics_1.recordProposalSkipped)('FREE_LIMIT');
+                throw new errorHandler_1.AppError(429, `User ${id} exceeded monthly free match limit`, 'FREE_LIMIT_EXCEEDED');
+            }
+        }
+        // Apply per-user daily cap + cooldown to ALL non-admin proposal paths
+        // (including eventId-driven matches) so anti-spam guarantees hold.
+        const guardrail = await (0, matchAntiSpam_1.checkProposalGuardrails)(userAId, userBId);
+        if (!guardrail.allowed) {
+            (0, matchMetrics_1.recordProposalSkipped)(guardrail.reason);
+            console.log(`[MatchingService] Proposal ${userAId}<->${userBId} blocked: ${guardrail.reason} (user=${guardrail.blockingUserId})${eventId ? ` event=${eventId}` : ''}`);
+            throw new errorHandler_1.AppError(429, `Proposal throttled: ${guardrail.reason}`, 'PROPOSAL_THROTTLED');
         }
         const profileA = await vectorMatchingService_1.vectorMatchingService.getProfileForMatching(userAId);
         const profileB = await vectorMatchingService_1.vectorMatchingService.getProfileForMatching(userBId);
         if (!profileA || !profileB)
             throw new errorHandler_1.AppError(404, 'Profile not found');
         if (profileA.persona === profileB.persona) {
+            (0, matchMetrics_1.recordProposalSkipped)('SAME_PERSONA');
             throw new errorHandler_1.AppError(400, 'Same-persona matches are not allowed', 'SAME_PERSONA');
         }
         const score = matching_1.matchingEngine.score(profileA, profileB);
@@ -117,6 +141,7 @@ class MatchingService {
                 ...(eventId && { eventId }),
             },
         });
+        (0, matchMetrics_1.recordProposalCreated)();
         (0, server_1.sendToUser)(userAId, 'match:proposed', {
             matchId: match.id,
             reason,
@@ -160,10 +185,60 @@ class MatchingService {
                 bio: userAData.profile?.bio || undefined,
                 matchReason: reason,
             };
-            email_1.emailService.sendMatchProposed(userAData.email, nameA, nameB, personaB, score.total, detailsB).catch(() => { });
-            email_1.emailService.sendMatchProposed(userBData.email, nameB, nameA, personaA, score.total, detailsA).catch(() => { });
-            whatsappTemplates_1.whatsappTemplates.triggerMatchFound(userAId, userBId, score.total).catch((e) => console.log('[MatchingService] WhatsApp match found (A) failed:', e));
-            whatsappTemplates_1.whatsappTemplates.triggerMatchFound(userBId, userAId, score.total).catch((e) => console.log('[MatchingService] WhatsApp match found (B) failed:', e));
+            const dispatch = async (targetUserId, action, channel, body) => {
+                const policy = await (0, matchAntiSpam_1.evaluateNotificationPolicy)(targetUserId);
+                if (!policy.shouldSend) {
+                    if (policy.reason)
+                        (0, matchMetrics_1.recordNotificationSkipped)(policy.reason);
+                    console.log(`[MatchingService] Skipping ${channel} for ${targetUserId} — ${policy.reason} ` +
+                        `(hour=${policy.hour} ${policy.timezone}); proposal still created`);
+                    return;
+                }
+                try {
+                    await action();
+                    await (0, matchAntiSpam_1.recordMatchNotification)(targetUserId, channel, match.id, body);
+                    (0, matchMetrics_1.recordNotificationSent)();
+                }
+                catch (e) {
+                    console.log(`[MatchingService] ${channel} dispatch failed for ${targetUserId}:`, e);
+                }
+            };
+            const emailBodyA = `New match: ${nameB} (${personaB})`;
+            const emailBodyB = `New match: ${nameA} (${personaA})`;
+            const waBodyA = `Match found with ${nameB}`;
+            const waBodyB = `Match found with ${nameA}`;
+            // Serialize per-user dispatch to honor the per-user daily notification
+            // cap atomically: each channel send re-checks policy AFTER the
+            // previous one has recorded its Notification row.
+            const dispatchUserChain = async (targetUserId, steps) => {
+                for (const s of steps) {
+                    await dispatch(targetUserId, s.action, s.channel, s.body).catch((e) => console.log(`[MatchingService] dispatch ${s.channel} for ${targetUserId} unhandled:`, e));
+                }
+            };
+            void dispatchUserChain(userAId, [
+                {
+                    action: () => email_1.emailService.sendMatchProposed(userAData.email, nameA, nameB, personaB, score.total, detailsB),
+                    channel: 'EMAIL',
+                    body: emailBodyA,
+                },
+                {
+                    action: () => whatsappTemplates_1.whatsappTemplates.triggerMatchFound(userAId, userBId, score.total),
+                    channel: 'WHATSAPP',
+                    body: waBodyA,
+                },
+            ]);
+            void dispatchUserChain(userBId, [
+                {
+                    action: () => email_1.emailService.sendMatchProposed(userBData.email, nameB, nameA, personaA, score.total, detailsA),
+                    channel: 'EMAIL',
+                    body: emailBodyB,
+                },
+                {
+                    action: () => whatsappTemplates_1.whatsappTemplates.triggerMatchFound(userBId, userAId, score.total),
+                    channel: 'WHATSAPP',
+                    body: waBodyB,
+                },
+            ]);
         }
         return match;
     }
@@ -202,6 +277,14 @@ class MatchingService {
             where: { id: matchId },
             data: updateData,
         });
+        // Either user just became "ready" again — re-enqueue so the continuous
+        // loop reconsiders them within the next tick instead of waiting for
+        // the periodic revisit window.
+        Promise.resolve().then(() => __importStar(require('./matchScheduler'))).then(({ matchScheduler }) => {
+            matchScheduler.enqueueUserCheck(updated.userAId);
+            matchScheduler.enqueueUserCheck(updated.userBId);
+        })
+            .catch((e) => console.log('[MatchingService] re-enqueue after response failed:', e));
         if (updated.status === 'ACCEPTED') {
             await this.revealContacts(updated);
             introductionService_1.introductionService.sendIntroduction(matchId).catch((e) => console.log('[MatchingService] Intro send failed:', e));

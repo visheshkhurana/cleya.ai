@@ -1,5 +1,9 @@
 export declare class MessagingService {
-    sendWhatsApp(userId: string, phoneNumber: string, message: string): Promise<{
+    sendWhatsApp(userId: string, phoneNumber: string, message: string, recipientName?: string): Promise<{
+        success: boolean;
+        messageId: string;
+        status: import("twilio/lib/rest/api/v2010/account/message").MessageStatus;
+    } | {
         status: string;
         messageSid: any;
         userId: string;
@@ -23,12 +27,8 @@ export declare class MessagingService {
         content: string;
         messageSid: string | null;
         provider: string | null;
-    } | {
-        success: boolean;
-        messageId: string;
-        status: import("twilio/lib/rest/api/v2010/account/message").MessageStatus;
     } | null>;
-    sendWhatsAppDirect(phoneNumber: string, message: string): Promise<{
+    sendWhatsAppDirect(phoneNumber: string, message: string, recipientName?: string): Promise<{
         success: boolean;
         error?: string;
         httpStatus?: number;
@@ -37,7 +37,7 @@ export declare class MessagingService {
         success: boolean;
         messageId: string;
         status: import("twilio/lib/rest/api/v2010/account/message").MessageStatus;
-    }>;
+    } | null>;
     sendWhatsAppTemplate(userId: string, phoneNumber: string, templateId: string, params?: string[]): Promise<{
         status: string;
         messageSid: any;
@@ -62,6 +62,10 @@ export declare class MessagingService {
         content: string;
         messageSid: string | null;
         provider: string | null;
+    } | {
+        success: boolean;
+        messageId: string;
+        status: import("twilio/lib/rest/api/v2010/account/message").MessageStatus;
     } | null>;
     sendWhatsAppImage(userId: string, phoneNumber: string, imageUrl: string, caption?: string): Promise<{
         status: string;
@@ -91,7 +95,11 @@ export declare class MessagingService {
         success: boolean;
         messageId: string;
     } | null>;
-    sendSMS(userId: string, phoneNumber: string, message: string): Promise<{
+    sendSMS(userId: string, phoneNumber: string, message: string, recipientName?: string): Promise<{
+        success: boolean;
+        messageId: string;
+        status: import("twilio/lib/rest/api/v2010/account/message").MessageStatus;
+    } | {
         status: string;
         messageSid: any;
         userId: string;
@@ -115,10 +123,6 @@ export declare class MessagingService {
         content: string;
         messageSid: string | null;
         provider: string | null;
-    } | {
-        success: boolean;
-        messageId: string;
-        status: import("twilio/lib/rest/api/v2010/account/message").MessageStatus;
     } | null>;
     getActiveProvider(): string;
     getWelcomeMessage(userName?: string): string;
