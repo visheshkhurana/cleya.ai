@@ -61,6 +61,10 @@ model User {
   messageRecords          MessageRecord[]
   notifications           Notification[]
   matchesUsed             Int                      @default(0)
+  monthlyMatchesUsed      Int                      @default(0)
+  monthlyResetAt          DateTime?
+  verificationToken       String?                  @unique
+  verificationTokenExpiry DateTime?
   referralCode            String?                  @unique
   referredBy              String?
   bonusMatches            Int                      @default(0)

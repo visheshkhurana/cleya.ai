@@ -22,6 +22,7 @@ export function errorHandler(
 ) {
   if (err instanceof AppError) {
     return res.status(err.statusCode).json({
+      success: false,
       error: {
         message: err.message,
         code: err.code || 'ERROR',
@@ -45,6 +46,7 @@ export function errorHandler(
 
   if (err instanceof SyntaxError && 'body' in err) {
     return res.status(400).json({
+      success: false,
       error: {
         message: 'Invalid request body',
         code: 'INVALID_JSON',
@@ -65,8 +67,9 @@ export function errorHandler(
   }
 
   res.status(500).json({
+    success: false,
     error: {
-      message: 'Internal server error',
+      message: 'Something went wrong on our end. Please try again.',
       code: 'INTERNAL_ERROR',
     },
   });

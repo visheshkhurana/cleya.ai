@@ -33,6 +33,32 @@ function link(text: string, url: string): string {
 class EmailService {
   private resendAvailable: boolean | null = null;
 
+  async sendRaw(opts: { to: string; subject: string; html: string; replyTo?: string }): Promise<boolean> {
+    try {
+      const { client, fromEmail } = await getUncachableResendClient();
+      const senderEmail = fromEmail || env.FROM_EMAIL;
+      const from = `Cleya <${senderEmail}>`;
+      const payload: {
+        from: string;
+        to: string[];
+        subject: string;
+        html: string;
+        reply_to?: string;
+      } = { from, to: [opts.to], subject: opts.subject, html: opts.html };
+      if (opts.replyTo) payload.reply_to = opts.replyTo;
+      const result = await client.emails.send(payload);
+      if (result.error) {
+        console.error(`📧 Resend error to ${opts.to}:`, result.error);
+        return false;
+      }
+      this.resendAvailable = true;
+      return true;
+    } catch (err: any) {
+      console.error(`📧 Email send failed to ${opts.to}:`, err?.message || err);
+      return false;
+    }
+  }
+
   private async send(to: string, subject: string, html: string): Promise<boolean> {
     try {
       const { client, fromEmail } = await getUncachableResendClient();

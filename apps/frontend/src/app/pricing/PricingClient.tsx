@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import PublicNav from '@/components/PublicNav';
 import AppShell from '@/components/AppShell';
+import PricingErrorBoundary from '@/components/PricingErrorBoundary';
 import { api } from '@/lib/api';
 import { useToast } from '@/components/Toast';
 
@@ -14,7 +15,7 @@ const plans = [
     description: 'Perfect for exploring the platform',
     features: [
       'AI-powered profile creation',
-      '5 free matches (lifetime)',
+      '10 free matches per month',
       'Basic match insights',
       'Community access',
       'Email notifications',
@@ -54,7 +55,7 @@ const faqs = [
   },
   {
     q: 'Can I try before I pay?',
-    a: 'Yes! Every user gets 5 free matches to experience the platform. Once you\'ve used your free matches, you can subscribe to the Pro plan for unlimited matches and premium features.',
+    a: 'Yes! Every user gets 10 free matches every month to experience the platform. The free allowance refreshes automatically. Once you need more, you can subscribe to the Pro plan for unlimited matches and premium features.',
   },
   {
     q: 'What makes Cleya different from LinkedIn?',
@@ -124,6 +125,7 @@ export default function PricingClient() {
   };
 
   return (
+    <PricingErrorBoundary>
     <AppShell className="font-sans">
       <PublicNav />
 
@@ -258,5 +260,6 @@ export default function PricingClient() {
         </div>
       </section>
     </AppShell>
+    </PricingErrorBoundary>
   );
 }

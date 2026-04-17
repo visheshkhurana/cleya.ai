@@ -31,12 +31,15 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(data.password, 12);
 
+    const smtpConfigured = !!(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS);
+
     const user = await prisma.user.create({
       data: {
         email: data.email,
         phone: data.phone,
         name: data.name,
         passwordHash,
+        isActive: !smtpConfigured,
         utmSource: data.utmSource,
         utmMedium: data.utmMedium,
         utmCampaign: data.utmCampaign,
@@ -47,7 +50,7 @@ export class AuthService {
       include: { profile: true },
     });
 
-    const token = this.generateToken(user);
+    const token = smtpConfigured ? null : this.generateToken(user);
 
     if (user.phone) {
       import('./gupshupService').then(({ gupshupService }) => {
@@ -93,6 +96,7 @@ export class AuthService {
         profile: user.profile,
       },
       token,
+      verificationRequired: !user.isActive,
     };
   }
 
@@ -112,6 +116,13 @@ export class AuthService {
     }
 
     if (!user.isActive) {
+      if (!user.emailVerified) {
+        throw new AppError(
+          403,
+          'Please verify your email to activate your account. Check your inbox or request a new verification link.',
+          'EMAIL_NOT_VERIFIED'
+        );
+      }
       throw new AppError(403, 'Account is disabled', 'ACCOUNT_DISABLED');
     }
 

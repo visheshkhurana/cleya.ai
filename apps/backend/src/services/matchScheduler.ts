@@ -6,7 +6,7 @@ import { vectorMatchingService } from './vectorMatchingService';
 import { slackService } from './slackService';
 import { linkedinEnrichmentService } from './linkedinEnrichmentService';
 import { dripCampaignService } from './dripCampaignService';
-import { FREE_MATCH_LIMIT } from './razorpayService';
+import { razorpayService } from './razorpayService';
 import {
   diffSince,
   formatSkipBreakdown,
@@ -111,7 +111,13 @@ class MatchScheduler {
       );
     }, { timezone: 'Asia/Kolkata' });
 
-    this.tasks.push(tickJob, safetyNetJob, dailyReportJob, enrichmentJob, dripJob, watchdogJob);
+    const freeTierResetJob = cron.schedule('5 0 * * *', () => {
+      this.runFreeTierReset().catch(err =>
+        console.error('[MatchScheduler] Free-tier reset failed:', err)
+      );
+    }, { timezone: 'Asia/Kolkata' });
+
+    this.tasks.push(tickJob, safetyNetJob, dailyReportJob, enrichmentJob, dripJob, watchdogJob, freeTierResetJob);
     this.startedAt = new Date();
     this.started = true;
     console.log(`[MatchScheduler] Continuous matchmaking tick scheduled (${TICK_CRON}, chunk=${TICK_CHUNK_SIZE})`);
@@ -122,6 +128,19 @@ class MatchScheduler {
     console.log(
       `[MatchScheduler] Tick watchdog scheduled (${TICK_WATCHDOG_CRON}, threshold=${TICK_STALL_THRESHOLD_MIN}m)`
     );
+    console.log('[MatchScheduler] Free-tier monthly reset scheduled at 00:05 IST');
+  }
+
+  async runFreeTierReset() {
+    const now = new Date();
+    const cutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const result = await prisma.user.updateMany({
+      where: { tier: 'FREE', monthlyResetAt: { lte: cutoff } },
+      data: { monthlyMatchesUsed: 0, monthlyResetAt: now },
+    });
+    if (result.count > 0) {
+      console.log(`[MatchScheduler] Free-tier reset: refreshed ${result.count} users`);
+    }
   }
 
   async runTickWatchdog() {
@@ -286,15 +305,9 @@ class MatchScheduler {
           .update({ where: { userId }, data: { matchLastCheckedAt: new Date() } })
           .catch(() => null);
         try {
-          const user = await prisma.user.findUnique({
-            where: { id: userId },
-            select: { tier: true, matchesUsed: true, bonusMatches: true },
-          });
-          if (!user) continue;
-          if (
-            user.tier === 'FREE' &&
-            user.matchesUsed >= FREE_MATCH_LIMIT + (user.bonusMatches || 0)
-          ) {
+          const paywall = await razorpayService.checkPaywall(userId).catch(() => null);
+          if (!paywall) continue;
+          if (paywall.tier === 'FREE' && !paywall.allowed) {
             recordProposalSkipped('FREE_LIMIT');
             continue;
           }
@@ -477,15 +490,9 @@ class MatchScheduler {
 
       for (const p of profiles) {
         try {
-          const user = await prisma.user.findUnique({
-            where: { id: p.userId },
-            select: { tier: true, matchesUsed: true, bonusMatches: true },
-          });
-          if (!user) continue;
-          if (
-            user.tier === 'FREE' &&
-            user.matchesUsed >= FREE_MATCH_LIMIT + (user.bonusMatches || 0)
-          ) {
+          const paywall = await razorpayService.checkPaywall(p.userId).catch(() => null);
+          if (!paywall) continue;
+          if (paywall.tier === 'FREE' && !paywall.allowed) {
             continue;
           }
           const proposed = await matchingService.findAndAutoPropose(

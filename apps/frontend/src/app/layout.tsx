@@ -6,6 +6,7 @@ import ClientProviders from "@/components/ClientProviders";
 import { ClerkProvider } from "@clerk/nextjs";
 
 const CLERK_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+const RECAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -105,6 +106,12 @@ export default function RootLayout({
             gtag('js', new Date());
             gtag('config', 'G-NQZFDW5CGZ');`}
         </Script>
+        {RECAPTCHA_SITE_KEY && (
+          <Script
+            src={`https://www.google.com/recaptcha/api.js?render=${RECAPTCHA_SITE_KEY}`}
+            strategy="afterInteractive"
+          />
+        )}
       </head>
       <body className="min-h-screen" suppressHydrationWarning>
         {CLERK_PUBLISHABLE_KEY ? (

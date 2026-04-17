@@ -3,7 +3,8 @@ import crypto from 'crypto';
 import { z } from 'zod';
 import { authService } from '../services/authService';
 import { authenticate } from '../middleware/auth';
-import { signupLimiter, loginLimiter, passwordResetLimiter, adminLoginLimiter } from '../middleware/rateLimit';
+import { signupLimiter, loginLimiter, passwordResetLimiter, adminLoginLimiter, verificationResendLimiter } from '../middleware/rateLimit';
+import { verifyRecaptcha } from '../middleware/recaptcha';
 import { emailService } from '../services/email';
 import { env } from '../config/env';
 import { whatsappTemplates } from '../services/whatsappTemplates';
@@ -82,21 +83,32 @@ function setAuthCookie(res: Response, token: string) {
   });
 }
 
-authRouter.post('/signup', signupLimiter, async (req: Request, res: Response, next: NextFunction) => {
+async function issueVerificationToken(userId: string, email: string) {
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { verificationToken: token, verificationTokenExpiry: expiry },
+  });
+  emailService.sendEmailVerification(email, token).catch(() => {});
+  return token;
+}
+
+authRouter.post('/signup', signupLimiter, verifyRecaptcha('signup'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = signupSchema.parse(req.body);
     const result = await authService.signup(data);
     const smtpConfigured = !!(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS);
     if (smtpConfigured) {
       emailService.sendWelcome(data.email).catch(() => {});
-      const verifyToken = crypto.randomBytes(32).toString('hex');
-      verifyTokens.set(verifyToken, { userId: result.user.id, createdAt: Date.now() });
-      emailService.sendEmailVerification(data.email, verifyToken).catch(() => {});
+      await issueVerificationToken(result.user.id, data.email);
     } else {
       await authService.verifyEmail(result.user.id);
       result.user.emailVerified = true;
     }
-    setAuthCookie(res, result.token);
+    if (result.token) {
+      setAuthCookie(res, result.token);
+    }
     res.status(201).json({ success: true, data: result });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
@@ -114,13 +126,24 @@ authRouter.post('/signup', signupLimiter, async (req: Request, res: Response, ne
   }
 });
 
-authRouter.post('/login', loginLimiter, async (req: Request, res: Response, next: NextFunction) => {
+authRouter.post('/login', loginLimiter, verifyRecaptcha('login'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = loginSchema.parse(req.body);
     const result = await authService.login(data);
     setAuthCookie(res, result.token);
     res.json({ success: true, data: result });
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({
+        success: false,
+        error: {
+          message: 'Please enter a valid email and password.',
+          code: 'VALIDATION_ERROR',
+          details: error.errors.map(e => ({ field: e.path.join('.'), message: e.message })),
+        },
+      });
+      return;
+    }
     next(error);
   }
 });
@@ -460,15 +483,7 @@ setInterval(() => {
   }
 }, 60 * 1000);
 
-const verifyTokens = new Map<string, { userId: string; createdAt: number }>();
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, val] of verifyTokens) {
-    if (now - val.createdAt > 24 * 60 * 60 * 1000) verifyTokens.delete(key);
-  }
-}, 5 * 60 * 1000);
-
-authRouter.post('/forgot-password', passwordResetLimiter, async (req: Request, res: Response, next: NextFunction) => {
+authRouter.post('/forgot-password', passwordResetLimiter, verifyRecaptcha('forgot_password'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email } = z.object({ email: z.string().email() }).parse(req.body);
     const user = await authService.findUserByEmail(email);
@@ -483,7 +498,7 @@ authRouter.post('/forgot-password', passwordResetLimiter, async (req: Request, r
   }
 });
 
-authRouter.post('/reset-password', passwordResetLimiter, async (req: Request, res: Response, next: NextFunction) => {
+authRouter.post('/reset-password', passwordResetLimiter, verifyRecaptcha('reset_password'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { token, password } = z.object({
       token: z.string(),
@@ -507,10 +522,26 @@ authRouter.post('/reset-password', passwordResetLimiter, async (req: Request, re
 authRouter.post('/send-verification', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = await authService.getMe(req.user!.userId);
-    const token = crypto.randomBytes(32).toString('hex');
-    verifyTokens.set(token, { userId: req.user!.userId, createdAt: Date.now() });
-    emailService.sendEmailVerification(user.email, token).catch(() => {});
+    if (user.emailVerified) {
+      res.json({ success: true, message: 'Your email is already verified.' });
+      return;
+    }
+    await issueVerificationToken(req.user!.userId, user.email);
     res.json({ success: true, message: 'Verification email sent.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+authRouter.post('/resend-verification', verificationResendLimiter, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email } = z.object({ email: z.string().email() }).parse(req.body);
+    const user = await prisma.user.findUnique({ where: { email }, select: { id: true, email: true, emailVerified: true } });
+    // Always respond with the same generic message to avoid email enumeration.
+    if (user && !user.emailVerified) {
+      await issueVerificationToken(user.id, user.email);
+    }
+    res.json({ success: true, message: 'If an account with that email exists and is unverified, a new verification link has been sent.' });
   } catch (error) {
     next(error);
   }
@@ -518,15 +549,30 @@ authRouter.post('/send-verification', authenticate, async (req: Request, res: Re
 
 authRouter.post('/verify-email', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { token } = z.object({ token: z.string() }).parse(req.body);
-    const entry = verifyTokens.get(token);
-    if (!entry || Date.now() - entry.createdAt > 24 * 60 * 60 * 1000) {
-      res.status(400).json({ success: false, error: { message: 'Invalid or expired verification token', code: 'INVALID_TOKEN' } });
+    const { token } = z.object({ token: z.string().min(16) }).parse(req.body);
+    const user = await prisma.user.findUnique({
+      where: { verificationToken: token },
+      select: { id: true, verificationTokenExpiry: true, emailVerified: true },
+    });
+    if (!user || !user.verificationTokenExpiry || user.verificationTokenExpiry.getTime() < Date.now()) {
+      res.status(400).json({ success: false, error: { message: 'This verification link is invalid or has expired. Please request a new one.', code: 'INVALID_TOKEN' } });
       return;
     }
-    await authService.verifyEmail(entry.userId);
-    verifyTokens.delete(token);
-    res.json({ success: true, message: 'Email verified successfully.' });
+    if (user.emailVerified) {
+      // Token still matched a record but the user has already been verified
+      // (e.g. duplicate clicks). Clear the token and respond idempotently.
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { verificationToken: null, verificationTokenExpiry: null },
+      });
+      res.json({ success: true, data: { alreadyVerified: true, message: 'Your email is already verified.' } });
+      return;
+    }
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { emailVerified: true, isActive: true, verificationToken: null, verificationTokenExpiry: null },
+    });
+    res.json({ success: true, data: { alreadyVerified: false, message: 'Email verified successfully.' } });
   } catch (error) {
     next(error);
   }

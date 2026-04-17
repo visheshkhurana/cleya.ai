@@ -11,6 +11,7 @@ import { errorHandler } from './middleware/errorHandler';
 import { setupWebSocket } from './websocket/server';
 
 import { authRouter } from './routes/auth';
+import { contactRouter } from './routes/contact';
 import { userRouter } from './routes/user';
 import { conversationRouter } from './routes/conversation';
 import { matchRouter } from './routes/match';
@@ -108,6 +109,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.use('/api/auth', authRouter);
+app.use('/api/contact', contactRouter);
 app.use('/api/users', userRouter);
 app.use('/api/conversations', conversationRouter);
 app.use('/api/matches', matchRouter);

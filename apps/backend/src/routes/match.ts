@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { authenticate, requireRole } from '../middleware/auth';
+import { authenticate, requireRole, requireEmailVerified } from '../middleware/auth';
 import { matchingService } from '../services/matchingService';
 import { vectorMatchingService } from '../services/vectorMatchingService';
 import { prisma } from '@cleya/db';
@@ -51,7 +51,7 @@ matchRouter.post('/find', authenticate, async (req: Request, res: Response, next
   }
 });
 
-matchRouter.post('/find-and-propose', authenticate, matchProposalLimiter, async (req: Request, res: Response, next: NextFunction) => {
+matchRouter.post('/find-and-propose', authenticate, requireEmailVerified, matchProposalLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { limit } = req.body;
     const proposed = await matchingService.findAndAutoPropose(req.user!.userId, limit || 5);
@@ -61,7 +61,7 @@ matchRouter.post('/find-and-propose', authenticate, matchProposalLimiter, async 
   }
 });
 
-matchRouter.post('/propose', authenticate, validate(matchProposeSchema), async (req: Request, res: Response, next: NextFunction) => {
+matchRouter.post('/propose', authenticate, requireEmailVerified, validate(matchProposeSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { userAId, userBId } = req.body;
     const match = await matchingService.proposeMatch(userAId, userBId);

@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authenticate } from '../middleware/auth';
+import { authenticate, requireEmailVerified } from '../middleware/auth';
 import { sendToUser } from '../websocket/server';
 
 const prisma = new PrismaClient();
@@ -129,7 +129,7 @@ directMessageRouter.get('/:partnerId', authenticate, async (req: Request, res: R
   }
 });
 
-directMessageRouter.post('/:partnerId', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+directMessageRouter.post('/:partnerId', authenticate, requireEmailVerified, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.userId;
     const { partnerId } = req.params;

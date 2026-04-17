@@ -1,5 +1,26 @@
 const API_BASE = '/api';
 
+export interface AuthUser {
+  id: string;
+  email: string;
+  name?: string | null;
+  phone?: string | null;
+  role?: string;
+  emailVerified?: boolean;
+  profile?: unknown;
+}
+
+export interface SignupResponse {
+  user: AuthUser;
+  token: string | null;
+  verificationRequired?: boolean;
+}
+
+export interface VerifyEmailResponse {
+  alreadyVerified: boolean;
+  message?: string;
+}
+
 function getCookie(name: string): string | null {
   if (typeof document === 'undefined') return null;
   const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1') + '=([^;]*)'));
@@ -118,7 +139,10 @@ class ApiClient {
         const detailStr = details.map((d: any) => d.field ? `${d.field}: ${d.message}` : d.message).join('; ');
         throw new Error(`${errMsg} — ${detailStr}`);
       }
-      throw new Error(errMsg);
+      const e = new Error(errMsg) as Error & { code?: string; status?: number };
+      e.code = errCode;
+      e.status = res.status;
+      throw e;
     }
 
     return json.data;
@@ -145,16 +169,36 @@ class ApiClient {
 
   // Auth
   async signup(email: string, password: string, phone?: string, utm?: { utmSource?: string; utmMedium?: string; utmCampaign?: string }, name?: string, persona?: string) {
-    return this.fetch<{ user: any; token: string }>('/auth/signup', {
+    const { getRecaptchaToken } = await import('./recaptcha');
+    const recaptchaToken = await getRecaptchaToken('signup');
+    return this.fetch<SignupResponse>('/auth/signup', {
       method: 'POST',
-      body: JSON.stringify({ email, password, phone, name, persona, ...utm }),
+      body: JSON.stringify({ email, password, phone, name, persona, recaptchaToken, ...utm }),
     });
   }
 
   async login(email: string, password: string) {
+    const { getRecaptchaToken } = await import('./recaptcha');
+    const recaptchaToken = await getRecaptchaToken('login');
     return this.fetch<{ user: any; token: string; mfaRequired?: boolean }>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, recaptchaToken }),
+    });
+  }
+
+  async submitContact(payload: { name: string; email: string; subject: string; message: string }) {
+    const { getRecaptchaToken } = await import('./recaptcha');
+    const recaptchaToken = await getRecaptchaToken('contact');
+    return this.fetch<{ message: string }>('/contact', {
+      method: 'POST',
+      body: JSON.stringify({ ...payload, recaptchaToken }),
+    });
+  }
+
+  async resendVerification(email: string) {
+    return this.fetch<{ message: string }>('/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
     });
   }
 
@@ -520,16 +564,20 @@ class ApiClient {
   }
 
   async forgotPassword(email: string) {
+    const { getRecaptchaToken } = await import('./recaptcha');
+    const recaptchaToken = await getRecaptchaToken('forgot_password');
     return this.fetch('/auth/forgot-password', {
       method: 'POST',
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, recaptchaToken }),
     });
   }
 
   async resetPassword(token: string, password: string) {
+    const { getRecaptchaToken } = await import('./recaptcha');
+    const recaptchaToken = await getRecaptchaToken('reset_password');
     return this.fetch('/auth/reset-password', {
       method: 'POST',
-      body: JSON.stringify({ token, password }),
+      body: JSON.stringify({ token, password, recaptchaToken }),
     });
   }
 
@@ -538,7 +586,7 @@ class ApiClient {
   }
 
   async verifyEmail(token: string) {
-    return this.fetch('/auth/verify-email', {
+    return this.fetch<VerifyEmailResponse>('/auth/verify-email', {
       method: 'POST',
       body: JSON.stringify({ token }),
     });

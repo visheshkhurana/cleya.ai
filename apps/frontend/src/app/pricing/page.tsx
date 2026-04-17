@@ -1,5 +1,13 @@
 import PricingClient from './PricingClient';
 
+// Root-cause fix for /pricing ChunkLoadError reports: render this route
+// dynamically so Next.js never serves a cached HTML payload that points
+// to JS chunk hashes removed by a newer deploy. The PricingErrorBoundary
+// and global ChunkLoadError handler in ClientProviders remain as a
+// belt-and-suspenders safety net for in-flight navigations during a
+// deploy.
+export const dynamic = 'force-dynamic';
+
 const faqs = [
   {
     q: 'How does the AI matching work?',
@@ -7,7 +15,7 @@ const faqs = [
   },
   {
     q: 'Can I try before I pay?',
-    a: 'Yes! Every user gets 5 free matches to experience the platform. Once you\'ve used your free matches, you can subscribe to the Professional plan for unlimited matches and premium features.',
+    a: 'Yes! Every user gets 10 free matches every month. The allowance refreshes automatically. Once you need more, you can subscribe to the Professional plan for unlimited matches and premium features.',
   },
   {
     q: 'What makes Cleya different from LinkedIn?',

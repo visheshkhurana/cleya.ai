@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import PublicNav from '@/components/PublicNav';
 import AppShell from '@/components/AppShell';
+import { api } from '@/lib/api';
 
 const FAQ_ITEMS = [
   { q: 'How does Cleya.ai match me with the right people?', a: 'Cleya uses AI-powered matching that considers your industry, stage, goals, and preferences to find highly relevant connections. Our algorithm achieves 94% match accuracy.' },
@@ -23,12 +24,20 @@ export default function ContactPage() {
   const [loading, setLoading] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
+  const [formError, setFormError] = useState<string | null>(null);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise(r => setTimeout(r, 600));
-    setSubmitted(true);
-    setLoading(false);
+    setFormError(null);
+    try {
+      await api.submitContact({ name, email, subject, message });
+      setSubmitted(true);
+    } catch (err: any) {
+      setFormError(err?.message || "We couldn't send your message. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -88,6 +97,11 @@ export default function ContactPage() {
                 className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-white/30 border border-white/[0.08] focus:outline-none focus:border-[#6C63FF] transition resize-none"
                 style={{ background: 'rgba(255,255,255,0.03)' }} />
             </div>
+            {formError && (
+              <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                {formError}
+              </div>
+            )}
             <button type="submit" disabled={loading}
               className="w-full py-3 rounded-xl text-white font-semibold transition-all duration-200 hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               style={{ background: '#6C63FF' }}>

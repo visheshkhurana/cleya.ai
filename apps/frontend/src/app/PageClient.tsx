@@ -938,11 +938,19 @@ export default function Home() {
       if (mode === 'signup') {
         const utmRaw = localStorage.getItem('cleo_utm');
         const utmData = utmRaw ? JSON.parse(utmRaw) : {};
-        await api.signup(email, password, undefined, {
+        const result = await api.signup(email, password, undefined, {
           utmSource: utmData.utm_source, utmMedium: utmData.utm_medium, utmCampaign: utmData.utm_campaign,
         }, fullName || undefined, selectedPersona || undefined);
         localStorage.removeItem('cleo_utm');
         analytics.signupCompleted('email');
+        // When the server requires email verification it intentionally
+        // returns no auth token; route the user to a "check your email"
+        // confirmation rather than the chat (which would 403).
+        if (result?.verificationRequired || !result?.token) {
+          setNeedsVerificationEmail(email);
+          setError("We've sent a verification link to your email. Please check your inbox to activate your account.");
+          return;
+        }
         window.location.href = '/chat';
       } else {
         const data = await api.login(email, password);
@@ -953,9 +961,21 @@ export default function Home() {
         else { window.location.href = '/chat'; }
       }
     } catch (err: any) {
-      if (err.details) { setError(err.details.map((d: any) => d.message).join('. ')); }
+      if (err?.code === 'EMAIL_NOT_VERIFIED') {
+        setNeedsVerificationEmail(email);
+        setError(err.message || 'Please verify your email to continue.');
+      } else if (err.details) { setError(err.details.map((d: any) => d.message).join('. ')); }
       else { setError(err.message || 'Something went wrong'); }
     } finally { setLoading(false); }
+  };
+
+  const [needsVerificationEmail, setNeedsVerificationEmail] = useState<string | null>(null);
+  const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
+  const handleResendVerification = async () => {
+    if (!needsVerificationEmail) return;
+    setResendStatus('sending');
+    try { await api.resendVerification(needsVerificationEmail); } catch { /* generic */ }
+    setResendStatus('sent');
   };
 
   useEffect(() => {
@@ -1100,8 +1120,7 @@ export default function Home() {
               className="leading-relaxed mb-12 max-w-xl lg:max-w-2xl hero-fade-in"
               style={{ color: 'rgba(255,255,255,0.6)', fontSize: 'clamp(16px, 1.2vw + 12px, 22px)', animationDelay: '0.7s' }}
             >
-              Whether you want to <RotatingTypewriter /><br />
-              Cleya's AI finds the right people — so every connection is intentional.
+              Whether you want to find a co-founder, investor, or hire — Cleya makes it happen.
             </div>
 
             <div
@@ -1344,9 +1363,6 @@ export default function Home() {
           <p className="scroll-item text-base mb-8 max-w-lg mx-auto" style={{ color: 'rgba(255,255,255,0.6)' }}>
             Join the founders, investors, and operators who are building meaningful connections through AI.
           </p>
-          <p className="scroll-item urgency-text text-sm font-medium mb-8" style={{ color: '#F59E0B' }}>
-            Only 23 spots remaining this month
-          </p>
           <div className="scroll-item flex flex-col sm:flex-row items-center justify-center gap-4">
             <GlowButton onClick={() => { setShowAuth(true); setMode('signup'); }}
               className="group cta-shimmer px-12 py-4 rounded-full text-white font-medium text-[15px]"
@@ -1541,7 +1557,25 @@ export default function Home() {
                       </label>
                     )}
                     {fieldErrors.consent && <p className="text-[10px] text-red-400">{fieldErrors.consent}</p>}
-                    {error && <p className="text-sm text-red-400 text-center bg-red-500/5 rounded-xl py-2 px-3">{error}</p>}
+                    {error && (
+                      <div className="text-sm text-red-400 text-center bg-red-500/5 rounded-xl py-2 px-3">
+                        <p>{error}</p>
+                        {needsVerificationEmail && (
+                          <button
+                            type="button"
+                            onClick={handleResendVerification}
+                            disabled={resendStatus !== 'idle'}
+                            className="mt-2 text-cyan-300 underline hover:text-cyan-200 disabled:opacity-60"
+                          >
+                            {resendStatus === 'sent'
+                              ? 'If an account exists, a new link is on its way.'
+                              : resendStatus === 'sending'
+                              ? 'Sending…'
+                              : 'Resend verification email'}
+                          </button>
+                        )}
+                      </div>
+                    )}
                     <button type="submit" disabled={loading} className="btn-primary">{loading ? 'Please wait...' : (mode === 'signup' ? 'Create Account' : 'Log In')}</button>
                   </form>
 

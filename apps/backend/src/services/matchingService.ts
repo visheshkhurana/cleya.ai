@@ -19,7 +19,7 @@ import {
   recordNotificationSent,
   recordNotificationSkipped,
 } from './matchMetrics';
-import { FREE_MATCH_LIMIT } from './razorpayService';
+import { razorpayService } from './razorpayService';
 
 export class MatchingService {
   private ai = createAIService();
@@ -80,17 +80,14 @@ export class MatchingService {
       throw new AppError(409, 'Match already exists', 'MATCH_EXISTS');
     }
 
-    // Enforce FREE tier cap centrally for all proposal paths.
-    const tierCheckUsers = await prisma.user.findMany({
-      where: { id: { in: [userAId, userBId] } },
-      select: { id: true, tier: true, matchesUsed: true, bonusMatches: true },
-    });
-    for (const u of tierCheckUsers) {
-      if (u.tier === 'FREE' && u.matchesUsed >= FREE_MATCH_LIMIT + (u.bonusMatches || 0)) {
+    // Enforce FREE tier monthly cap centrally for all proposal paths.
+    for (const id of [userAId, userBId]) {
+      const paywall = await razorpayService.checkPaywall(id);
+      if (paywall.tier === 'FREE' && !paywall.allowed) {
         recordProposalSkipped('FREE_LIMIT');
         throw new AppError(
           429,
-          `User ${u.id} exceeded free match limit`,
+          `User ${id} exceeded monthly free match limit`,
           'FREE_LIMIT_EXCEEDED',
         );
       }

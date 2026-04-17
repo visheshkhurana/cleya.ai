@@ -1044,7 +1044,7 @@ export default function MatchesPage() {
               <span className="text-5xl block mb-4">🚀</span>
               <h2 className="text-xl font-bold text-white mb-2">Upgrade to Pro</h2>
               <p className="text-sm text-white/50">
-                {"You've used all 5 free matches. Subscribe to unlock unlimited matches, introductions, and premium features."}
+                {"You've used all 10 free matches for this month. Subscribe to unlock unlimited matches, introductions, and premium features."}
               </p>
             </div>
 

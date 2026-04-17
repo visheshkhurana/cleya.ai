@@ -99,6 +99,11 @@ const envSchema = z.object({
   SERPER_API_KEY: z.string().optional(),
   HUNTER_API_KEY: z.string().optional(),
   LEMLIST_API_KEY: z.string().optional(),
+
+  RECAPTCHA_SITE_KEY: z.string().optional(),
+  RECAPTCHA_SECRET_KEY: z.string().optional(),
+
+  SUPPORT_EMAIL: z.string().email().optional(),
 });
 
 function validateEnv() {
