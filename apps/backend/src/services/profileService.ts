@@ -88,6 +88,24 @@ export class ProfileService {
       linkedinEnrichmentService.onNewUserSignup(userId);
     }
 
+    if ((profile as any).isComplete) {
+      const matchTriggerFields = [
+        'persona', 'industries', 'skills', 'lookingFor', 'companyStage',
+        'priority', 'targetRole', 'investorType', 'sectorFocus',
+        'raiseAmount', 'investmentRange', 'investmentThesis', 'investmentAmount',
+      ];
+      const significant = matchTriggerFields.some((f) => data[f] !== undefined);
+      if (significant) {
+        try {
+          const { matchScheduler } = await import('./matchScheduler');
+          matchScheduler.enqueueUserCheck(userId);
+          matchScheduler.enqueueRecheckPeers(userId).catch(() => null);
+        } catch (e) {
+          console.log('[ProfileService] Match enqueue failed:', (e as Error).message);
+        }
+      }
+    }
+
     return profile;
   }
 

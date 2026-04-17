@@ -4,7 +4,7 @@
 // Three-layer scoring: Rule-based + Intent + Semantic
 // ============================================
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.matchingEngine = exports.MatchingEngine = exports.EXPERTISE_TAGS = void 0;
+exports.matchingEngine = exports.MatchingEngine = exports.EXPERTISE_TAGS = exports.PERSONA_COMPATIBILITY = void 0;
 exports.normalizeToExpertiseTags = normalizeToExpertiseTags;
 const SECTOR_FAMILIES = {
     fintech: ['fintech', 'payments', 'payment automation', 'lending', 'insurtech', 'neobanking', 'wealth management', 'financial services', 'banking', 'defi', 'crypto', 'blockchain finance', 'regtech'],
@@ -49,7 +49,7 @@ const SECTOR_FAMILY_SIMILARITY = {
     spacetech: { cleantech: 0.15, mobility: 0.20 },
 };
 // ─── Persona Compatibility Matrix ───
-const PERSONA_COMPATIBILITY = {
+exports.PERSONA_COMPATIBILITY = {
     FOUNDER: {
         INVESTOR: 0.95,
         ADVISOR: 0.85,
@@ -546,7 +546,7 @@ class MatchingEngine {
     }
     // --- Scoring Functions ---
     scoreRoleMatch(a, b) {
-        const base = PERSONA_COMPATIBILITY[a.persona]?.[b.persona] ?? 0.3;
+        const base = exports.PERSONA_COMPATIBILITY[a.persona]?.[b.persona] ?? 0.3;
         let priorityBoost = 0;
         if (a.priority && PRIORITY_PERSONA_BOOST[a.priority]?.includes(b.persona)) {
             priorityBoost = 0.15;

@@ -72,6 +72,7 @@ export interface CompatibilitySignals {
     tractionHighlights: string[];
     conflictFlags: string[];
 }
+export declare const PERSONA_COMPATIBILITY: Record<string, Record<string, number>>;
 export declare const EXPERTISE_TAGS: Record<string, string[]>;
 export declare function normalizeToExpertiseTags(inputs: string[]): string[];
 export declare class MatchingEngine {

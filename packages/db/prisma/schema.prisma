@@ -111,6 +111,7 @@ model Profile {
   extraData           Json?
   completenessScore   Float                  @default(0)
   isComplete          Boolean                @default(false)
+  matchLastCheckedAt  DateTime?
   createdAt           DateTime               @default(now())
   updatedAt           DateTime               @updatedAt
   accreditedInvestor  Boolean?
@@ -163,6 +164,7 @@ model Profile {
   @@index([companyStage])
   @@index([location])
   @@index([completenessScore])
+  @@index([isComplete, matchLastCheckedAt])
   @@map("profiles")
 }
 

@@ -129,7 +129,7 @@ const SECTOR_FAMILY_SIMILARITY: Record<string, Record<string, number>> = {
 };
 
 // ─── Persona Compatibility Matrix ───
-const PERSONA_COMPATIBILITY: Record<string, Record<string, number>> = {
+export const PERSONA_COMPATIBILITY: Record<string, Record<string, number>> = {
   FOUNDER: {
     INVESTOR: 0.95,
     ADVISOR: 0.85,
