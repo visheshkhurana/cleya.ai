@@ -273,9 +273,9 @@ export class AuthService {
       if (!user.isActive) {
         throw new AppError(403, 'Account is disabled', 'ACCOUNT_DISABLED');
       }
-      const updates: any = {};
+      const updates: { emailVerified?: boolean; googleId?: string } = {};
       if (!user.emailVerified) updates.emailVerified = true;
-      if (!user.googleId) updates.googleId = googleProfile.googleId;
+      if (user.googleId !== googleProfile.googleId) updates.googleId = googleProfile.googleId;
       if (Object.keys(updates).length > 0) {
         user = await prisma.user.update({
           where: { id: user.id },
@@ -445,7 +445,7 @@ export class AuthService {
       const userUpdates: any = {};
       if (!user.emailVerified) userUpdates.emailVerified = true;
       if (!user.name && linkedinProfile.name) userUpdates.name = linkedinProfile.name;
-      if (!user.linkedinId) userUpdates.linkedinId = linkedinProfile.linkedinId;
+      if (user.linkedinId !== linkedinProfile.linkedinId) userUpdates.linkedinId = linkedinProfile.linkedinId;
 
       if (Object.keys(userUpdates).length > 0) {
         user = await prisma.user.update({
