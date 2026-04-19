@@ -96,6 +96,35 @@ class EmailService {
     return this.send(to, subject, wrapped);
   }
 
+  async sendNewSignupNotification(opts: {
+    email: string;
+    name?: string | null;
+    provider: 'email' | 'google' | 'linkedin' | 'clerk';
+    userId?: string;
+  }) {
+    const recipients = (env.SIGNUP_NOTIFY_TO || 'jivraj@cleya.ai')
+      .split(',').map(s => s.trim()).filter(Boolean);
+    if (recipients.length === 0) return;
+    const when = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+    const safe = (s: string) => s.replace(/[<>&"']/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;' }[c] as string));
+    const html = `
+      <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;background:#0F1629;color:#fff;border-radius:12px">
+        <h2 style="margin:0 0 12px;color:#9B95FF">New Cleya signup</h2>
+        <p style="margin:0 0 16px;color:rgba(255,255,255,0.7)">A new user just joined the network.</p>
+        <table style="width:100%;border-collapse:collapse;font-size:14px">
+          <tr><td style="padding:6px 0;color:rgba(255,255,255,0.5);width:110px">Email</td><td style="padding:6px 0"><strong>${safe(opts.email)}</strong></td></tr>
+          ${opts.name ? `<tr><td style="padding:6px 0;color:rgba(255,255,255,0.5)">Name</td><td style="padding:6px 0">${safe(opts.name)}</td></tr>` : ''}
+          <tr><td style="padding:6px 0;color:rgba(255,255,255,0.5)">Provider</td><td style="padding:6px 0">${opts.provider}</td></tr>
+          ${opts.userId ? `<tr><td style="padding:6px 0;color:rgba(255,255,255,0.5)">User ID</td><td style="padding:6px 0;font-family:monospace;font-size:12px">${safe(opts.userId)}</td></tr>` : ''}
+          <tr><td style="padding:6px 0;color:rgba(255,255,255,0.5)">When</td><td style="padding:6px 0">${when}</td></tr>
+        </table>
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:20px 0"/>
+        <p style="color:rgba(255,255,255,0.4);font-size:12px;margin:0">Cleya — automated signup notification</p>
+      </div>`;
+    const subject = `New signup: ${opts.email}${opts.provider !== 'email' ? ` (via ${opts.provider})` : ''}`;
+    await Promise.all(recipients.map(to => this.send(to, subject, html).catch(() => false)));
+  }
+
   async sendWelcome(email: string) {
     const html = plainEmailLayout(`
       <p>Hey there,</p>

@@ -100,6 +100,12 @@ authRouter.post('/signup', signupLimiter, verifyRecaptcha('signup'), async (req:
   try {
     const data = signupSchema.parse(req.body);
     const result = await authService.signup(data);
+    emailService.sendNewSignupNotification({
+      email: data.email,
+      name: (data as any).name || null,
+      provider: 'email',
+      userId: result.user.id,
+    }).catch((e) => console.error('[Auth/Email] Signup notify failed:', e));
     const smtpConfigured = !!(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS);
     if (smtpConfigured) {
       emailService.sendWelcome(data.email).catch(() => {});
@@ -235,6 +241,12 @@ authRouter.get('/google/callback', async (req: Request, res: Response) => {
     });
     if (result.isNew) {
       emailService.sendWelcome(profile.email).catch(() => {});
+      emailService.sendNewSignupNotification({
+        email: profile.email,
+        name: profile.name || null,
+        provider: 'google',
+        userId: result.user.id,
+      }).catch((e) => console.error('[Auth/Google] Signup notify failed:', e));
       if (result.user.phone) {
         gupshupService.optInUser(result.user.phone).then((optInResult) => {
           if (!optInResult?.success) return;
@@ -393,6 +405,12 @@ authRouter.get('/linkedin/callback', async (req: Request, res: Response) => {
 
     if (result.isNew) {
       emailService.sendWelcome(profile.email).catch(() => {});
+      emailService.sendNewSignupNotification({
+        email: profile.email,
+        name: profile.name || null,
+        provider: 'linkedin',
+        userId: result.user.id,
+      }).catch((e) => console.error('[Auth/LinkedIn] Signup notify failed:', e));
       if (result.user.phone) {
         gupshupService.optInUser(result.user.phone).then((optInResult) => {
           if (!optInResult?.success) return;
@@ -445,6 +463,15 @@ authRouter.post('/clerk/exchange', loginLimiter, async (req: Request, res: Respo
       result.user.id,
       { provider: 'clerk', isNew: result.isNew }
     );
+
+    if (result.isNew) {
+      emailService.sendNewSignupNotification({
+        email: result.user.email,
+        name: null,
+        provider: 'clerk',
+        userId: result.user.id,
+      }).catch((e) => console.error('[Auth/Clerk] Signup notify failed:', e));
+    }
 
     if (platform !== 'mobile') {
       setAuthCookie(res, result.token);
