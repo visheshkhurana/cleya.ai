@@ -137,7 +137,10 @@ class EmailService {
       // Personal-looking sender increases the chance Gmail files this in
       // Primary instead of Updates/Promotions.
       const from = `Cleya from Cleya.ai <${senderEmail}>`;
-      const replyTo = process.env.REPLY_TO_EMAIL || senderEmail;
+      // Always prefer the configured Reply-To over the sender so replies
+      // land in a real, monitored mailbox (hello@cleya.ai is not provisioned
+      // and bounces every reply that hits it).
+      const replyTo = env.REPLY_TO_EMAIL || senderEmail;
 
       // Plain-text fallback materially helps deliverability + Primary placement.
       const text = htmlToPlainText(html);
@@ -315,6 +318,148 @@ class EmailService {
       subject = `${firstName}, want to connect with ${matchFirst} (${personaPretty})?`;
     }
     await this.send(recipientEmail, subject, html);
+  }
+
+  /**
+   * Boardy-style joint introduction email.
+   *
+   * Fires ONE email with BOTH parties on To:, so they share a single thread
+   * (just like the Boardy "to bigansh.agarwal, me" pattern). Reply-To is set
+   * to both addresses so a Reply naturally lands in the OTHER person's inbox
+   * — no more bouncing off hello@cleya.ai because hitting Reply replies to
+   * the partner's mailbox, not to a non-existent Cleya alias.
+   *
+   * This is what should fire automatically the moment the second person
+   * accepts a match — it is the actual "warm intro" that makes the network
+   * worth being in.
+   */
+  async sendMatchIntroJoint(opts: {
+    emailA: string;
+    nameA: string;
+    emailB: string;
+    nameB: string;
+    personaA?: string;
+    personaB?: string;
+    headlineA?: string;
+    headlineB?: string;
+    companyA?: string;
+    companyB?: string;
+    sectorA?: string;
+    sectorB?: string;
+    locationA?: string;
+    locationB?: string;
+    tractionA?: string;
+    tractionB?: string;
+    linkedinA?: string;
+    linkedinB?: string;
+    matchReason?: string;
+    talkingPoints?: string[];
+  }): Promise<boolean> {
+    const firstA = opts.nameA?.split(' ')[0] || 'there';
+    const firstB = opts.nameB?.split(' ')[0] || 'there';
+
+    const personMeta = (
+      persona?: string,
+      company?: string,
+      sector?: string,
+      location?: string
+    ) => {
+      const parts: string[] = [];
+      if (persona) parts.push(persona.replace(/_/g, ' ').toLowerCase());
+      if (company) parts.push(company);
+      if (sector) parts.push(sector.replace(/_/g, ' ').toLowerCase());
+      if (location) parts.push(location);
+      return parts.join(' · ');
+    };
+
+    const personCard = (
+      name: string,
+      headline?: string,
+      meta?: string,
+      traction?: string,
+      email?: string,
+      linkedin?: string
+    ) => {
+      let card = `<table width="100%" cellpadding="0" cellspacing="0" style="margin:12px 0;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;"><tr><td style="padding:18px;">`;
+      card += `<p style="margin:0 0 4px;font-size:16px;font-weight:600;color:#1e293b;">${name}</p>`;
+      if (headline) card += `<p style="margin:0 0 4px;font-size:13px;color:#64748b;">${headline}</p>`;
+      if (meta) card += `<p style="margin:0 0 8px;font-size:12px;color:#94a3b8;">${meta}</p>`;
+      if (traction) card += `<p style="margin:0 0 8px;font-size:13px;color:#334155;">📈 ${traction}</p>`;
+      const links: string[] = [];
+      if (email) links.push(`📧 <a href="mailto:${email}" style="color:${brandColor};">${email}</a>`);
+      if (linkedin) links.push(`🔗 <a href="${linkedin}" style="color:${brandColor};">LinkedIn</a>`);
+      if (links.length) card += `<p style="margin:0;font-size:13px;">${links.join(' &nbsp;·&nbsp; ')}</p>`;
+      card += `</td></tr></table>`;
+      return card;
+    };
+
+    let body = `<p>Hi ${firstA} and ${firstB},</p>`;
+    body += `<p>Excited to introduce you two — I think there's a real reason for this conversation to happen.</p>`;
+    if (opts.matchReason) {
+      body += `<p style="line-height:1.6;">${opts.matchReason}</p>`;
+    }
+
+    body += personCard(
+      opts.nameA,
+      opts.headlineA,
+      personMeta(opts.personaA, opts.companyA, opts.sectorA, opts.locationA),
+      opts.tractionA,
+      opts.emailA,
+      opts.linkedinA
+    );
+    body += personCard(
+      opts.nameB,
+      opts.headlineB,
+      personMeta(opts.personaB, opts.companyB, opts.sectorB, opts.locationB),
+      opts.tractionB,
+      opts.emailB,
+      opts.linkedinB
+    );
+
+    if (opts.talkingPoints && opts.talkingPoints.length > 0) {
+      body += `<p style="margin-top:20px;font-weight:600;color:#1e293b;">A few things you could dig into:</p>`;
+      body += `<ul style="margin:0 0 16px;padding-left:20px;color:#334155;line-height:1.6;">`;
+      for (const tp of opts.talkingPoints.slice(0, 5)) {
+        body += `<li style="margin-bottom:6px;">${tp}</li>`;
+      }
+      body += `</ul>`;
+    }
+
+    body += `<p style="margin-top:20px;">I'll let you two take it from here — just hit Reply All and pick a time that works.</p>`;
+    body += `<p style="font-size:13px;color:#94a3b8;">Tip: first impressions matter — try to reply within 24 hours while this is top-of-mind.</p>`;
+    body += `<p>Cheers,<br>Cleya</p>`;
+
+    const html = plainEmailLayout(body);
+    const subject = `Cleya intro: ${opts.nameA} ↔ ${opts.nameB}`;
+
+    try {
+      const { client, fromEmail } = await getUncachableResendClient();
+      const senderEmail = fromEmail || env.FROM_EMAIL;
+      const from = `Cleya from Cleya.ai <${senderEmail}>`;
+      const text = htmlToPlainText(html);
+
+      const result = await client.emails.send({
+        from,
+        to: [opts.emailA, opts.emailB],
+        subject,
+        html,
+        text,
+        // Reply-To = both recipients. When either party hits Reply,
+        // the message goes to the OTHER person directly — no bouncing
+        // off a non-existent Cleya alias.
+        reply_to: [opts.emailA, opts.emailB],
+      } as any);
+
+      if (result.error) {
+        console.error(`📧 Joint intro email error to ${opts.emailA},${opts.emailB}:`, result.error);
+        return false;
+      }
+      console.log(`📧 Joint intro sent: ${opts.emailA} ↔ ${opts.emailB} (id: ${result.data?.id})`);
+      return true;
+    } catch (err: any) {
+      console.error(`📧 Joint intro email failed:`, err?.message || err);
+      return false;
+    }
   }
 
   async sendMatchAccepted(

@@ -394,24 +394,54 @@ export class MatchingService {
 
     const matchReason = match.reason || '';
 
-    emailService.sendMatchAccepted(userA.email, nameA, nameB, personaB, userB.email, userB.profile?.linkedinUrl || undefined, {
-      headline: userB.profile?.headline || userB.profile?.currentRole || undefined,
-      companyName: userB.profile?.companyName || undefined,
-      sector: (userB.profile?.industries as string[] | undefined)?.[0] || undefined,
-      location: userB.profile?.location || undefined,
-      traction: userB.profile?.keyTractionPoints || undefined,
-      matchReason: matchReason,
-      matchUserId: userB.id,
-    }).catch(() => {});
-    emailService.sendMatchAccepted(userB.email, nameB, nameA, personaA, userA.email, userA.profile?.linkedinUrl || undefined, {
-      headline: userA.profile?.headline || userA.profile?.currentRole || undefined,
-      companyName: userA.profile?.companyName || undefined,
-      sector: (userA.profile?.industries as string[] | undefined)?.[0] || undefined,
-      location: userA.profile?.location || undefined,
-      traction: userA.profile?.keyTractionPoints || undefined,
-      matchReason: matchReason,
-      matchUserId: userA.id,
-    }).catch(() => {});
+    // CRITICAL: send ONE joint introduction email with both parties on the
+    // To: line (Boardy-style). This is what makes the network feel like a
+    // real warm introduction instead of two strangers each receiving a
+    // private notification. Reply-To is set to both addresses so a Reply
+    // goes straight to the OTHER person — no bouncing off hello@cleya.ai.
+    //
+    // We try to pick up any pre-generated talking points from the
+    // IntroductionRecord (created by introductionService.generateIntroduction
+    // which fires in parallel). If they aren't ready yet we still send
+    // immediately — talking points are a nice-to-have, the joint thread is
+    // the must-have.
+    let talkingPoints: string[] | undefined;
+    try {
+      const introRec = await prisma.introductionRecord.findUnique({
+        where: { matchId: match.id },
+        select: { talkingPoints: true },
+      });
+      if (Array.isArray(introRec?.talkingPoints)) {
+        talkingPoints = (introRec!.talkingPoints as unknown[]).filter(
+          (x): x is string => typeof x === 'string'
+        );
+      }
+    } catch {}
+
+    emailService
+      .sendMatchIntroJoint({
+        emailA: userA.email,
+        nameA,
+        emailB: userB.email,
+        nameB,
+        personaA,
+        personaB,
+        headlineA: userA.profile?.headline || userA.profile?.currentRole || undefined,
+        headlineB: userB.profile?.headline || userB.profile?.currentRole || undefined,
+        companyA: userA.profile?.companyName || undefined,
+        companyB: userB.profile?.companyName || undefined,
+        sectorA: (userA.profile?.industries as string[] | undefined)?.[0] || undefined,
+        sectorB: (userB.profile?.industries as string[] | undefined)?.[0] || undefined,
+        locationA: userA.profile?.location || undefined,
+        locationB: userB.profile?.location || undefined,
+        tractionA: userA.profile?.keyTractionPoints || undefined,
+        tractionB: userB.profile?.keyTractionPoints || undefined,
+        linkedinA: userA.profile?.linkedinUrl || undefined,
+        linkedinB: userB.profile?.linkedinUrl || undefined,
+        matchReason,
+        talkingPoints,
+      })
+      .catch((e) => console.log('[MatchingService] Joint intro email failed:', e));
 
     const welcomeContent = `Hey! Cleya just connected us — excited to chat with you! 👋`;
     try {

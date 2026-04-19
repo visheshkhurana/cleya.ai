@@ -51,6 +51,11 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   FROM_EMAIL: z.string().default('hello@cleya.ai'),
+  // Reply-To used by all transactional emails. MUST be a real, monitored
+  // mailbox — replies to FROM_EMAIL bounce because hello@cleya.ai isn't
+  // a provisioned account. Default is the founder inbox so a Reply from
+  // a recipient never disappears into the void.
+  REPLY_TO_EMAIL: z.string().default('jivraj@cleya.ai'),
 
   ADMIN_EMAIL: z.string().optional(),
   ADMIN_PASSWORD: z.string().optional(),
