@@ -160,7 +160,7 @@
 
   .glass-card-glow {
     position: relative;
-    background: rgba(15, 22, 41, 0.6);
+    background: rgba(21, 16, 46, 0.6);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.06);
@@ -210,7 +210,7 @@
   }
 
   .glass-header {
-    background: rgba(8, 13, 26, 0.7);
+    background: rgba(11, 8, 32, 0.7);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
@@ -221,7 +221,7 @@
   }
 
   .glass-stat {
-    background: rgba(15, 22, 41, 0.5);
+    background: rgba(21, 16, 46, 0.5);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.06);
