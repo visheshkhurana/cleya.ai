@@ -355,8 +355,18 @@ class EmailService {
     matchReason?: string;
     talkingPoints?: string[];
   }): Promise<boolean> {
-    const firstA = opts.nameA?.split(' ')[0] || 'there';
-    const firstB = opts.nameB?.split(' ')[0] || 'there';
+    // HTML-escape every user-controlled field. Names, headlines, company
+    // names, match reason, talking points and even sector strings can all
+    // contain characters that would otherwise inject markup or scripts
+    // into the recipient's mail client.
+    const esc = (s: string) =>
+      s.replace(/[<>&"']/g, (c) => (
+        { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c] as string
+      ));
+    const escOpt = (s?: string) => (s ? esc(s) : undefined);
+
+    const firstA = esc((opts.nameA || '').split(' ')[0] || 'there');
+    const firstB = esc((opts.nameB || '').split(' ')[0] || 'there');
 
     const personMeta = (
       persona?: string,
@@ -365,10 +375,10 @@ class EmailService {
       location?: string
     ) => {
       const parts: string[] = [];
-      if (persona) parts.push(persona.replace(/_/g, ' ').toLowerCase());
-      if (company) parts.push(company);
-      if (sector) parts.push(sector.replace(/_/g, ' ').toLowerCase());
-      if (location) parts.push(location);
+      if (persona) parts.push(esc(persona.replace(/_/g, ' ').toLowerCase()));
+      if (company) parts.push(esc(company));
+      if (sector) parts.push(esc(sector.replace(/_/g, ' ').toLowerCase()));
+      if (location) parts.push(esc(location));
       return parts.join(' · ');
     };
 
@@ -381,13 +391,17 @@ class EmailService {
       linkedin?: string
     ) => {
       let card = `<table width="100%" cellpadding="0" cellspacing="0" style="margin:12px 0;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;"><tr><td style="padding:18px;">`;
-      card += `<p style="margin:0 0 4px;font-size:16px;font-weight:600;color:#1e293b;">${name}</p>`;
-      if (headline) card += `<p style="margin:0 0 4px;font-size:13px;color:#64748b;">${headline}</p>`;
+      card += `<p style="margin:0 0 4px;font-size:16px;font-weight:600;color:#1e293b;">${esc(name)}</p>`;
+      if (headline) card += `<p style="margin:0 0 4px;font-size:13px;color:#64748b;">${esc(headline)}</p>`;
       if (meta) card += `<p style="margin:0 0 8px;font-size:12px;color:#94a3b8;">${meta}</p>`;
-      if (traction) card += `<p style="margin:0 0 8px;font-size:13px;color:#334155;">📈 ${traction}</p>`;
+      if (traction) card += `<p style="margin:0 0 8px;font-size:13px;color:#334155;">📈 ${esc(traction)}</p>`;
       const links: string[] = [];
-      if (email) links.push(`📧 <a href="mailto:${email}" style="color:${brandColor};">${email}</a>`);
-      if (linkedin) links.push(`🔗 <a href="${linkedin}" style="color:${brandColor};">LinkedIn</a>`);
+      if (email) links.push(`📧 <a href="mailto:${encodeURIComponent(email)}" style="color:${brandColor};">${esc(email)}</a>`);
+      if (linkedin) {
+        // Only allow http(s) URLs in href to block javascript: payloads.
+        const safeUrl = /^https?:\/\//i.test(linkedin) ? linkedin : '#';
+        links.push(`🔗 <a href="${esc(safeUrl)}" style="color:${brandColor};">LinkedIn</a>`);
+      }
       if (links.length) card += `<p style="margin:0;font-size:13px;">${links.join(' &nbsp;·&nbsp; ')}</p>`;
       card += `</td></tr></table>`;
       return card;
@@ -396,22 +410,22 @@ class EmailService {
     let body = `<p>Hi ${firstA} and ${firstB},</p>`;
     body += `<p>Excited to introduce you two — I think there's a real reason for this conversation to happen.</p>`;
     if (opts.matchReason) {
-      body += `<p style="line-height:1.6;">${opts.matchReason}</p>`;
+      body += `<p style="line-height:1.6;">${esc(opts.matchReason)}</p>`;
     }
 
     body += personCard(
       opts.nameA,
-      opts.headlineA,
+      escOpt(opts.headlineA),
       personMeta(opts.personaA, opts.companyA, opts.sectorA, opts.locationA),
-      opts.tractionA,
+      escOpt(opts.tractionA),
       opts.emailA,
       opts.linkedinA
     );
     body += personCard(
       opts.nameB,
-      opts.headlineB,
+      escOpt(opts.headlineB),
       personMeta(opts.personaB, opts.companyB, opts.sectorB, opts.locationB),
-      opts.tractionB,
+      escOpt(opts.tractionB),
       opts.emailB,
       opts.linkedinB
     );
@@ -420,7 +434,7 @@ class EmailService {
       body += `<p style="margin-top:20px;font-weight:600;color:#1e293b;">A few things you could dig into:</p>`;
       body += `<ul style="margin:0 0 16px;padding-left:20px;color:#334155;line-height:1.6;">`;
       for (const tp of opts.talkingPoints.slice(0, 5)) {
-        body += `<li style="margin-bottom:6px;">${tp}</li>`;
+        body += `<li style="margin-bottom:6px;">${esc(tp)}</li>`;
       }
       body += `</ul>`;
     }
@@ -438,16 +452,23 @@ class EmailService {
       const from = `Cleya from Cleya.ai <${senderEmail}>`;
       const text = htmlToPlainText(html);
 
+      // Both recipients on To: + Reply-To set to both, so a Reply-All
+      // naturally CCs the partner and a plain Reply still lands in a real
+      // mailbox (never on the unprovisioned hello@cleya.ai alias).
+      // Resend SDK accepts string | string[] for reply_to.
+      // List-Unsubscribe headers retained for Gmail/Yahoo 2024 deliverability.
+      const unsubscribeUrlA = `${env.FRONTEND_URL}/unsubscribe?email=${encodeURIComponent(opts.emailA)}`;
       const result = await client.emails.send({
         from,
         to: [opts.emailA, opts.emailB],
         subject,
         html,
         text,
-        // Reply-To = both recipients. When either party hits Reply,
-        // the message goes to the OTHER person directly — no bouncing
-        // off a non-existent Cleya alias.
         reply_to: [opts.emailA, opts.emailB],
+        headers: {
+          'List-Unsubscribe': `<${unsubscribeUrlA}>, <mailto:unsubscribe@cleya.ai?subject=unsubscribe>`,
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        },
       } as any);
 
       if (result.error) {

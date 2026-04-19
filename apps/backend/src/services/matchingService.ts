@@ -308,7 +308,13 @@ export class MatchingService {
       })
       .catch((e) => console.log('[MatchingService] re-enqueue after response failed:', e));
 
-    if (updated.status === 'ACCEPTED') {
+    // Idempotency guard: only fire side-effects (joint email, WhatsApp, deal
+    // progression, drip enrollment) on the FIRST transition to ACCEPTED.
+    // Without this, a network retry or rapid double-tap on the accept button
+    // would trigger duplicate joint intro emails to both parties.
+    const justAccepted = updated.status === 'ACCEPTED' && match.status !== 'ACCEPTED';
+
+    if (justAccepted) {
       await this.revealContacts(updated);
       introductionService.sendIntroduction(matchId).catch((e) =>
         console.log('[MatchingService] Intro send failed:', e)

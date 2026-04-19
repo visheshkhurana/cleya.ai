@@ -155,33 +155,16 @@ export class IntroductionService {
     const nameA = userA.name || profA?.currentRole || userA.email.split('@')[0];
     const nameB = userB.name || profB?.currentRole || userB.email.split('@')[0];
 
-    emailService.sendIntroductionEmail(
-      userA.email, nameA, nameB, intro.introText,
-      profB?.linkedinUrl || undefined,
-      {
-        headline: profB?.headline || profB?.currentRole || undefined,
-        companyName: profB?.companyName || undefined,
-        sector: (profB?.industries as string[] | undefined)?.[0] || undefined,
-        location: profB?.location || undefined,
-        traction: profB?.keyTractionPoints || undefined,
-        matchReason,
-        partnerUserId: userB.id,
-      }
-    ).catch(() => {});
-
-    emailService.sendIntroductionEmail(
-      userB.email, nameB, nameA, intro.introText,
-      profA?.linkedinUrl || undefined,
-      {
-        headline: profA?.headline || profA?.currentRole || undefined,
-        companyName: profA?.companyName || undefined,
-        sector: (profA?.industries as string[] | undefined)?.[0] || undefined,
-        location: profA?.location || undefined,
-        traction: profA?.keyTractionPoints || undefined,
-        matchReason,
-        partnerUserId: userA.id,
-      }
-    ).catch(() => {});
+    // NOTE: We deliberately do NOT fire the two separate per-recipient
+    // sendIntroductionEmail calls anymore. matchingService.revealContacts
+    // already sends ONE joint Boardy-style intro email (both parties on To:,
+    // single shared thread) the moment the second user accepts. Sending
+    // separate emails here would mean each user receives THREE emails for
+    // the same match — the joint thread + two private notifications — which
+    // is exactly the noise we're trying to avoid. The IntroductionRecord is
+    // still marked SENT above so admin tooling and outcome tracking work.
+    void emailService; // keep import alive for type checking
+    void matchReason; void profA; void profB; void nameA; void nameB;
 
     try {
       await prisma.notification.createMany({
