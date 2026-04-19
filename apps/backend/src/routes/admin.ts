@@ -486,6 +486,24 @@ adminRouter.post('/send-digest', async (_req: Request, res: Response, next: Next
   }
 });
 
+adminRouter.post('/referrals/broadcast', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const earlyAccessBonus = req.body?.earlyAccessBonus === true;
+    const dryRun = req.body?.dryRun === true;
+    const limit = typeof req.body?.limit === 'number' && req.body.limit > 0 ? Math.min(req.body.limit, 5000) : undefined;
+    const userId = typeof req.body?.userId === 'string' ? req.body.userId : undefined;
+    if (userId) {
+      const ok = await emailService.sendReferralInvite(userId, { earlyAccessBonus });
+      res.json({ success: true, data: { sent: ok ? 1 : 0, failed: ok ? 0 : 1, total: 1 } });
+      return;
+    }
+    const result = await emailService.sendReferralInviteToAll({ earlyAccessBonus, limit, dryRun });
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+});
+
 adminRouter.get('/analytics/overview', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const dateRange = (req.query.range as string) || '30d';

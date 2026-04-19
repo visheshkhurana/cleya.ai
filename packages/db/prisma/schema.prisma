@@ -68,6 +68,7 @@ model User {
   referralCode            String?                  @unique
   referredBy              String?
   bonusMatches            Int                      @default(0)
+  referralInviteSentAt    DateTime?
   referralsMade           Referral[]               @relation("ReferralsMade")
   referralReceived        Referral?                @relation("ReferralReceived")
   profile                 Profile?

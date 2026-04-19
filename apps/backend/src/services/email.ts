@@ -577,6 +577,97 @@ class EmailService {
     return this.send(email, `Quick feedback on your match with ${matchFirst}?`, html);
   }
 
+  async sendReferralInvite(userId: string, opts?: { earlyAccessBonus?: boolean; force?: boolean }) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, name: true, referralCode: true, isActive: true, role: true, referralInviteSentAt: true },
+    });
+    if (!user || !user.email || !user.isActive) return false;
+    // Dedup: skip if we already sent this campaign within the last 7 days,
+    // unless explicitly forced (e.g. admin re-test for a single user).
+    if (!opts?.force && user.referralInviteSentAt) {
+      const ageDays = (Date.now() - user.referralInviteSentAt.getTime()) / 86400000;
+      if (ageDays < 7) {
+        console.log(`📧 Referral invite skipped (sent ${ageDays.toFixed(1)}d ago) for ${user.email}`);
+        return false;
+      }
+    }
+    const firstName = user.name?.split(' ')[0] || 'there';
+    let code = user.referralCode;
+    if (!code) {
+      // Persist a unique referralCode before sending. Retry on @unique collision.
+      const base = (user.name || 'cleya').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8) || 'cleya';
+      let saved: string | null = null;
+      for (let attempt = 0; attempt < 5 && !saved; attempt++) {
+        const candidate = `${base}${Math.random().toString(36).slice(2, 7)}`;
+        try {
+          await prisma.user.update({ where: { id: userId }, data: { referralCode: candidate } });
+          saved = candidate;
+        } catch (err: any) {
+          if (err?.code !== 'P2002') {
+            console.error(`📧 Referral code persist failed for ${userId}:`, err?.message || err);
+            return false;
+          }
+          // unique collision — try again
+        }
+      }
+      if (!saved) {
+        console.error(`📧 Could not assign a unique referral code for ${userId} after retries`);
+        return false;
+      }
+      code = saved;
+    }
+    const link = `${env.FRONTEND_URL}/?ref=${code}`;
+    const bonus = opts?.earlyAccessBonus ? 10 : 5;
+    const bonusLine = opts?.earlyAccessBonus
+      ? `As an early member, you get <strong>${bonus} bonus intros per friend</strong> (double the usual) when they finish their profile — only this week.`
+      : `You'll get <strong>${bonus} bonus intros</strong> for each friend who joins and completes their profile.`;
+
+    const html = plainEmailLayout(`
+      <p>Hi ${firstName},</p>
+      <p>Quick ask — if there are 1 or 2 people in your circle who'd genuinely benefit from warm intros in the Indian startup ecosystem, would you forward this to them?</p>
+      <p>${bonusLine}</p>
+      <p>The easiest way: <strong>just forward this email</strong> and tell them what you're getting out of Cleya. Or share your link directly:</p>
+      <p style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;font-family:monospace;font-size:13px;word-break:break-all;">${link}</p>
+      <p style="color:#64748b;font-size:13px;">Manage referrals: ${link.replace('/?ref=' + code, '/referral')}</p>
+      <p>— Cleya</p>
+      <hr style="border:none;border-top:1px solid #eee;margin:28px 0 16px;"/>
+      <p style="color:#64748b;font-size:13px;margin:0 0 8px;"><em>Forward-friendly note you can copy:</em></p>
+      <blockquote style="margin:0;padding:12px 16px;border-left:3px solid ${brandColor};background:#f8fafc;color:#334155;font-size:14px;line-height:1.6;">
+        Hey — I've been using Cleya.ai (an AI superconnector for the Indian startup ecosystem). It quietly figures out who in the network you should actually talk to and makes the intros for you. No spam, no random adds. Worth 2 minutes to set up.<br/><br/>
+        Sign up here: ${link}
+      </blockquote>
+    `);
+    const result = await this.send(user.email, `${firstName}, a small favour (and ${bonus} bonus intros)`, html);
+    if (result) {
+      await prisma.user.update({ where: { id: userId }, data: { referralInviteSentAt: new Date() } }).catch(() => null);
+    }
+    return result;
+  }
+
+  async sendReferralInviteToAll(opts?: { earlyAccessBonus?: boolean; limit?: number; dryRun?: boolean }) {
+    const users = await prisma.user.findMany({
+      where: { role: 'USER', isActive: true },
+      select: { id: true, email: true },
+      orderBy: { createdAt: 'asc' },
+      ...(opts?.limit ? { take: opts.limit } : {}),
+    });
+    if (opts?.dryRun) return { sent: 0, failed: 0, total: users.length, dryRun: true };
+    let sent = 0, failed = 0;
+    for (const u of users) {
+      try {
+        const ok = await this.sendReferralInvite(u.id, { earlyAccessBonus: opts?.earlyAccessBonus });
+        if (ok) sent++; else failed++;
+      } catch (err) {
+        console.error(`Referral invite failed for ${u.id}:`, err);
+        failed++;
+      }
+      // Gentle pacing to respect Resend rate limits
+      await new Promise(r => setTimeout(r, 250));
+    }
+    return { sent, failed, total: users.length };
+  }
+
   async sendDigestToAll() {
     const users = await prisma.user.findMany({
       where: { role: 'USER', isActive: true },

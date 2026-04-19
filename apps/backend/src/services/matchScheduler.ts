@@ -24,6 +24,14 @@ const TICK_CRON = process.env.MATCH_TICK_CRON || '*/2 * * * *';
 const TICK_CHUNK_SIZE = num(process.env.MATCH_TICK_CHUNK_SIZE, 25);
 const REVISIT_INTERVAL_MS = num(process.env.MATCH_REVISIT_HOURS, 6) * 60 * 60 * 1000;
 const PER_USER_PROPOSE_LIMIT = num(process.env.MATCH_PER_USER_PROPOSE_LIMIT, 3);
+
+// Cadence: pace match delivery so each new proposal feels like a moment of delight.
+// New users (account < NEW_USER_DAYS AND lifetime matches < NEW_USER_FAST_QUOTA) bypass
+// the gap so they get their first 2-3 matches quickly. Established users get a
+// minimum gap between any new proposal being created for them.
+const NEW_USER_DAYS = num(process.env.MATCH_NEW_USER_DAYS, 7);
+const NEW_USER_FAST_QUOTA = num(process.env.MATCH_NEW_USER_FAST_QUOTA, 3);
+const ESTABLISHED_GAP_HOURS = num(process.env.MATCH_ESTABLISHED_GAP_HOURS, 36);
 const RECHECK_PEER_LIMIT = num(process.env.MATCH_RECHECK_PEER_LIMIT, 50);
 const TICK_STALL_THRESHOLD_MIN = num(process.env.MATCH_TICK_STALL_MINUTES, 10);
 const TICK_WATCHDOG_CRON = process.env.MATCH_TICK_WATCHDOG_CRON || '*/2 * * * *';
@@ -442,10 +450,11 @@ class MatchScheduler {
     if (result.length >= limit) return result;
 
     // 2. Pull globally least-recently-checked complete profiles. Nulls
-    // (never checked) sort first, then oldest matchLastCheckedAt. This
-    // guarantees every eligible profile is considered within an SLA
-    // bounded by population_size / (chunk_size * tick_frequency).
+    // (never checked) sort first, then oldest matchLastCheckedAt.
     const cutoff = new Date(Date.now() - REVISIT_INTERVAL_MS);
+    // Pull a wider candidate pool than `limit` so we can apply per-user
+    // cadence filtering and still hit the chunk size for active users.
+    const poolSize = Math.max(limit * 4, limit);
     const due = await prisma.profile.findMany({
       where: {
         isComplete: true,
@@ -454,14 +463,75 @@ class MatchScheduler {
           { matchLastCheckedAt: { lt: cutoff } },
         ],
       },
-      select: { userId: true },
+      select: { userId: true, user: { select: { createdAt: true } } },
       orderBy: [{ matchLastCheckedAt: { sort: 'asc', nulls: 'first' } }],
-      take: limit - result.length,
+      take: poolSize,
     });
+
+    if (due.length === 0) return result;
+
+    // Pace established users: skip if they already received a proposal
+    // within the gap window. New users (recently joined AND haven't yet
+    // hit the fast-quota of lifetime matches) bypass the gap entirely so
+    // their first 2-3 matches feel immediate and welcoming.
+    const dueIds = due.map(d => d.userId);
+    const gapCutoff = new Date(Date.now() - ESTABLISHED_GAP_HOURS * 60 * 60 * 1000);
+    const newUserCutoff = new Date(Date.now() - NEW_USER_DAYS * 24 * 60 * 60 * 1000);
+
+    // Per-user lifetime match count + most recent timestamp, counted on
+    // BOTH sides of the match (userA and userB are both notified, so both
+    // sides count as "received a proposal" for cadence purposes).
+    const [aGroups, bGroups] = await Promise.all([
+      prisma.match.groupBy({
+        by: ['userAId'],
+        where: { userAId: { in: dueIds } },
+        _count: { userAId: true },
+        _max: { createdAt: true },
+      }).catch(() => [] as { userAId: string; _count: { userAId: number }; _max: { createdAt: Date | null } }[]),
+      prisma.match.groupBy({
+        by: ['userBId'],
+        where: { userBId: { in: dueIds } },
+        _count: { userBId: true },
+        _max: { createdAt: true },
+      }).catch(() => [] as { userBId: string; _count: { userBId: number }; _max: { createdAt: Date | null } }[]),
+    ]);
+
+    const lifetimeMap = new Map<string, number>();
+    const lastMatchMap = new Map<string, Date>();
+    for (const g of aGroups) {
+      lifetimeMap.set(g.userAId, (lifetimeMap.get(g.userAId) || 0) + g._count.userAId);
+      if (g._max.createdAt) lastMatchMap.set(g.userAId, g._max.createdAt);
+    }
+    for (const g of bGroups) {
+      lifetimeMap.set(g.userBId, (lifetimeMap.get(g.userBId) || 0) + g._count.userBId);
+      const prev = lastMatchMap.get(g.userBId);
+      if (g._max.createdAt && (!prev || g._max.createdAt > prev)) {
+        lastMatchMap.set(g.userBId, g._max.createdAt);
+      }
+    }
 
     for (const p of due) {
       if (result.length >= limit) break;
       if (seen.has(p.userId)) continue;
+
+      const joinedAt = p.user?.createdAt ?? new Date(0);
+      const isNewUser = joinedAt >= newUserCutoff;
+      const lifetime = lifetimeMap.get(p.userId) || 0;
+      const lastMatchAt = lastMatchMap.get(p.userId);
+      const inFastQuota = isNewUser && lifetime < NEW_USER_FAST_QUOTA;
+
+      if (!inFastQuota && lastMatchAt && lastMatchAt > gapCutoff) {
+        // Established user with a recent proposal — skip this tick to let
+        // the moment of delight breathe. Bump matchLastCheckedAt so we
+        // don't re-evaluate them every tick.
+        recordProposalSkipped('CADENCE_GAP');
+        await prisma.profile
+          .update({ where: { userId: p.userId }, data: { matchLastCheckedAt: new Date() } })
+          .catch(() => null);
+        seen.add(p.userId);
+        continue;
+      }
+
       result.push(p.userId);
       seen.add(p.userId);
     }
