@@ -116,7 +116,17 @@ export class MatchingService {
     const score = matchingEngine.score(profileA, profileB);
 
     console.log(`[MatchingService] Generating AI reasoning for match: ${userAId} <-> ${userBId}`);
-    const reason = await this.generateMatchReason(profileA, profileB);
+    const userPair = await prisma.user.findMany({
+      where: { id: { in: [userAId, userBId] } },
+      select: { id: true, name: true },
+    });
+    const nameById = new Map(userPair.map((u) => [u.id, u.name || '']));
+    const reason = await this.generateMatchReason(
+      profileA,
+      profileB,
+      nameById.get(userAId) || '',
+      nameById.get(userBId) || ''
+    );
     console.log(`[MatchingService] Generated reasoning (${reason.length} chars): "${reason.substring(0, 80)}..."`);
 
     const match = await prisma.match.create({
@@ -688,9 +698,30 @@ export class MatchingService {
     return results;
   }
 
-  private async generateMatchReason(a: ProfileForMatching, b: ProfileForMatching): Promise<string> {
-    const describeProfile = (p: ProfileForMatching) => {
+  private async generateMatchReason(
+    a: ProfileForMatching,
+    b: ProfileForMatching,
+    rawNameA: string = '',
+    rawNameB: string = ''
+  ): Promise<string> {
+    // Defense against the LLM hallucinating other people's names from bio/business text:
+    // we sanitize the inputs and then validate the output. If the model invents a name
+    // that isn't one of the two people we're connecting, we fall back to the deterministic
+    // template instead of shipping a confusing email.
+    const nameA = (rawNameA || '').trim();
+    const nameB = (rawNameB || '').trim();
+    const firstA = nameA.split(/\s+/)[0] || '';
+    const firstB = nameB.split(/\s+/)[0] || '';
+    const allowedNameTokens = new Set(
+      [nameA, nameB, firstA, firstB]
+        .filter(Boolean)
+        .flatMap((n) => n.split(/\s+/))
+        .map((t) => t.toLowerCase())
+    );
+
+    const describeProfile = (p: ProfileForMatching, label: string, displayName: string) => {
       const parts: string[] = [];
+      parts.push(`Refer to this person ONLY as "${displayName}" (or first name). Do not introduce any other personal name from the text below.`);
       parts.push(`Persona: ${p.persona}`);
       if (p.headline) parts.push(`Role: ${p.headline}`);
       if (p.companyName) parts.push(`Company: ${p.companyName}`);
@@ -709,7 +740,7 @@ export class MatchingService {
       if (p.enrichedData?.domainExpertise?.length) parts.push(`Domain expertise: ${p.enrichedData.domainExpertise.join(', ')}`);
       if (p.enrichedData?.notableCompanies?.length) parts.push(`Notable companies: ${p.enrichedData.notableCompanies.join(', ')}`);
       if (p.enrichedData?.exits?.length) parts.push(`Exits: ${p.enrichedData.exits.join(', ')}`);
-      return parts.join('. ');
+      return `[${label}]\n${parts.join('. ')}`;
     };
 
     const signals = matchingEngine.computeCompatibilitySignals(a, b);
@@ -721,23 +752,35 @@ export class MatchingService {
           role: 'system',
           content: `You are Cleya, an AI superconnector. Write a warm referral — like a mutual friend texting someone about a person they should meet. Start with a phrase like "thought of someone for you" or "okay so i know someone you'd want to meet" or "had to connect you two."
 
-Write 2-3 sentences max. Use casual, lowercase tone. Make it feel personal, not algorithmic.
+Write 2-3 sentences max. Use casual, lowercase tone. Make it feel personal — and a little psychological, not algorithmic. Lead with the human angle (what kind of operator they are, conviction, ambition, working style, what they're chasing) — then bridge to the concrete value exchange.
 
-Rules:
-- Reference SPECIFIC details: actual role titles, company names, traction numbers, fund names, check sizes, sectors, and locations.
-- Explain the concrete value exchange: what each person gets from the connection (deal flow, fundraising, hiring, domain expertise, market access).
-- If traction data exists, mention it ("they're at $X MRR", "growing Y% MoM", "raised $Z").
-- Never use generic phrases like "complementary backgrounds", "synergy", "mutual benefit", or "valuable connection".
-- Never start with "Both" — lead with the most compelling detail about one person, then bridge to the other.
+NAME RULES (critical):
+- The ONLY people you are allowed to name in this message are: "${nameA}" and "${nameB}".
+- If the bio, business description, or any field contains a different person's name, IGNORE it. Never use any other personal name. Use "they", "she", or "he" instead.
+- Use first names ("${firstA}", "${firstB}") for warmth.
 
-You have structured compatibility data — weave in specific details (sector overlap, check size fit, traction numbers, shared geography) naturally.`,
+Content rules:
+- Lead with what makes ${firstB || 'this person'} interesting as a human/operator — conviction, the bet they're making, why they exist — not just credentials.
+- Then bridge to why ${firstA || 'the recipient'} specifically should care: the concrete value exchange (deal flow, capital, hiring, domain expertise, market access, mentorship).
+- If traction or check-size data exists, weave it in once — don't list stats.
+- Never use generic phrases like "complementary backgrounds", "synergy", "mutual benefit", "valuable connection".
+- Never start with "Both" — lead with one person, then bridge to the other.`,
         },
         {
           role: 'user',
-          content: `Person A: ${describeProfile(a)}\n\nPerson B: ${describeProfile(b)}\n\n--- COMPATIBILITY SIGNALS ---\n${signalsSummary}\n\nWrite 2-3 specific, data-backed sentences about why they should connect.`,
+          content: `${describeProfile(a, 'PERSON A — recipient', nameA || 'them')}\n\n${describeProfile(b, 'PERSON B — the match being introduced', nameB || 'them')}\n\n--- COMPATIBILITY SIGNALS ---\n${signalsSummary}\n\nWrite 2-3 sentences. Lead with the human/psychological angle on ${firstB || 'PERSON B'}, then explain why ${firstA || 'PERSON A'} should want to meet them.`,
         },
       ]);
-      return response.content;
+      const reason = (response.content || '').trim();
+
+      // Validate: reject any output that introduces a personal name not in the allowed set.
+      // Heuristic: scan for capitalized first-name-like tokens that aren't in our whitelist
+      // and aren't common acronyms / company words. If we find one, fall back.
+      if (!this.matchReasonNamesAreSafe(reason, allowedNameTokens, a, b)) {
+        console.warn(`[MatchingService] Match reason mentioned an unexpected name; using deterministic fallback. text="${reason.slice(0, 200)}"`);
+        throw new Error('NAME_LEAK');
+      }
+      return reason;
     } catch (err) {
       console.log(`[MatchingService] AI reasoning failed, using profile-based fallback:`, err);
       const aRole = a.headline || a.persona;
@@ -768,6 +811,75 @@ You have structured compatibility data — weave in specific details (sector ove
       }
       return `okay so i know someone you'd want to meet — ${aLabel} from ${(a.industries[0] || 'tech').replace(/_/g, ' ')} and ${bLabel} from ${(b.industries[0] || 'tech').replace(/_/g, ' ')} could spark something interesting together.`;
     }
+  }
+
+  // Common words that look like names but aren't — these are safe to appear capitalized.
+  private static SAFE_CAPITALIZED_TOKENS = new Set([
+    'AI', 'ML', 'API', 'B2B', 'B2C', 'D2C', 'SaaS', 'CEO', 'CTO', 'CFO', 'COO', 'VP',
+    'India', 'Bangalore', 'Bengaluru', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune', 'Chennai',
+    'Kolkata', 'NCR', 'US', 'USA', 'UK', 'EU', 'Series', 'Seed', 'Pre-Seed',
+    'LinkedIn', 'Twitter', 'YC', 'Y', 'Combinator', 'Cleya',
+    'I', 'They', 'He', 'She', 'We', 'You', 'It', 'This', 'That', 'There', 'Their',
+    'Founder', 'Investor', 'Operator', 'Talent', 'Partner', 'Angel',
+    'Hi', 'Hey', 'Hello', 'Thanks', 'Thank',
+    'M', 'K', 'L', 'Cr', 'Lakh', 'Lakhs', 'Crore', 'Crores', 'INR', 'USD',
+    'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun',
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ]);
+
+  private matchReasonNamesAreSafe(
+    text: string,
+    allowed: Set<string>,
+    a: ProfileForMatching,
+    b: ProfileForMatching
+  ): boolean {
+    if (!text) return true;
+    // Whitelist: anything from each profile's structured text fields (company, fund, role,
+    // skills, industries, etc.) is fair game and shouldn't trigger a name-leak alarm.
+    const profileTokens = new Set<string>();
+    const collect = (s?: string | null) => {
+      if (!s) return;
+      for (const token of s.split(/[\s,.:;()/\\\-—_]+/)) {
+        const t = token.trim();
+        if (t.length > 1) profileTokens.add(t.toLowerCase());
+      }
+    };
+    for (const p of [a, b]) {
+      collect(p.companyName);
+      collect(p.fundName);
+      collect(p.headline);
+      collect(p.location);
+      collect(p.bio);
+      collect(p.businessDescription);
+      collect(p.investmentThesis);
+      collect(p.keyTractionPoints);
+      collect(p.raiseAmount);
+      collect(p.investmentRange);
+      (p.industries || []).forEach(collect);
+      (p.skills || []).forEach(collect);
+      (p.lookingFor || []).forEach(collect);
+      (p.enrichedData?.domainExpertise || []).forEach(collect);
+      (p.enrichedData?.notableCompanies || []).forEach(collect);
+    }
+
+    // Find capitalized word sequences that look like personal names (e.g. "Aditi", "Akash Gupta").
+    // We only flag tokens that:
+    //   - start with a capital letter and are followed by lowercase letters (looks like a first name),
+    //   - are not in the SAFE_CAPITALIZED_TOKENS list,
+    //   - are not in the allowed name token set,
+    //   - and don't appear in any structured profile field.
+    const candidateNameRe = /\b([A-Z][a-z]{2,})\b/g;
+    let m: RegExpExecArray | null;
+    while ((m = candidateNameRe.exec(text)) !== null) {
+      const token = m[1];
+      const lower = token.toLowerCase();
+      if (allowed.has(lower)) continue;
+      if (MatchingService.SAFE_CAPITALIZED_TOKENS.has(token)) continue;
+      if (profileTokens.has(lower)) continue;
+      // This looks like a personal name we can't account for — reject.
+      return false;
+    }
+    return true;
   }
 
   private formatCompatibilitySignals(signals: CompatibilitySignals): string {
