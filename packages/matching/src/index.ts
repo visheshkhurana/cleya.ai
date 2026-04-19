@@ -474,16 +474,20 @@ export class MatchingEngine {
     const talentPrefMatch = this.scoreTalentPreferences(profileA, profileB);
     const portfolioConflict = this.detectPortfolioConflict(profileA, profileB);
 
+    // Weights bumped on the highest-signal axes (roleMatch and the
+    // founder-context fit) so prototype intros — investor↔founder raising,
+    // recruiter↔talent — score where they should. Other weights shift down
+    // to keep the sum at 1.0.
     const ruleScore =
-      roleMatch * 0.12 +
-      stageMatch * 0.08 +
-      industryMatch * 0.24 +
-      interestMatch * 0.06 +
-      locationMatch * 0.10 +
-      skillMatch * 0.10 +
-      founderContextBoost * 0.12 +
-      tractionFit * 0.10 +
-      talentPrefMatch * 0.08;
+      roleMatch * 0.20 +
+      stageMatch * 0.07 +
+      industryMatch * 0.18 +
+      interestMatch * 0.05 +
+      locationMatch * 0.08 +
+      skillMatch * 0.08 +
+      founderContextBoost * 0.20 +
+      tractionFit * 0.08 +
+      talentPrefMatch * 0.06;
 
     const intentScore = this.scoreIntentAlignment(profileA, profileB);
 
@@ -497,9 +501,17 @@ export class MatchingEngine {
       this.intentWeight * intentScore +
       this.semanticWeight * semanticSimilarity;
 
+    // Skip the sector penalty when at least one side is sector-agnostic
+    // (no industries declared) — e.g. a generalist investor shouldn't be
+    // punished for matching with a vertical-specific founder. The penalty
+    // exists to suppress *mismatched* sectors, not absent ones.
+    const aHasIndustries = (profileA.industries?.length ?? 0) > 0;
+    const bHasIndustries = (profileB.industries?.length ?? 0) > 0;
     let sectorPenalty = 1.0;
-    if (industryMatch <= 0.10) sectorPenalty = 0.75;
-    else if (industryMatch <= 0.20) sectorPenalty = 0.85;
+    if (aHasIndustries && bHasIndustries) {
+      if (industryMatch <= 0.10) sectorPenalty = 0.75;
+      else if (industryMatch <= 0.20) sectorPenalty = 0.85;
+    }
 
     const zeroResult = (_reason: string, conflict: number) => ({
       total: 0,

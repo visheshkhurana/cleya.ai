@@ -30,6 +30,77 @@ function link(text: string, url: string): string {
   return `<a href="${url}" style="color:${brandColor};text-decoration:underline;">${text}</a>`;
 }
 
+// Capitalize the first character of a string (for sentence-start safety).
+function cap(s: string): string {
+  if (!s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// Strip HTML tags then convert to a plain-text body. Keeps line breaks for <p>.
+function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<\s*br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+// Smart money formatter. Detects INR-style raw rupee values and renders both
+// INR (Cr/L) and a USD approximation. Keeps any pre-formatted strings the user
+// already wrote (e.g. "$2M Seed", "₹3 Cr") almost as-is, only normalizing case
+// of "INR" and adding a USD hint where helpful. ~₹83 = $1 USD as of 2026.
+const INR_PER_USD = 83;
+function formatMoney(raw: string | undefined | null, opts?: { defaultCurrency?: 'INR' | 'USD' }): string {
+  if (!raw) return '';
+  const trimmed = String(raw).trim();
+  if (!trimmed) return '';
+
+  // Already has a currency symbol or unit — normalize INR casing and return.
+  const hasUnit = /(₹|\$|inr|usd|cr|crore|lakh|lac|\bl\b|\bk\b|\bm\b|\bb\b)/i.test(trimmed);
+  if (hasUnit) {
+    return trimmed
+      .replace(/\binr\b/gi, 'INR')
+      .replace(/\busd\b/gi, 'USD')
+      .replace(/\b(\d)\s*cr\b/gi, '$1 Cr')
+      .replace(/\b(\d)\s*l\b(?!ak)/gi, '$1 L')
+      .replace(/\b(\d)\s*lakh(s)?\b/gi, '$1 Lakh$2');
+  }
+
+  // Pure number — guess currency from defaults (Indian users default to INR).
+  const num = Number(trimmed.replace(/,/g, ''));
+  if (!Number.isFinite(num) || num <= 0) return trimmed;
+
+  const currency = opts?.defaultCurrency || 'INR';
+  if (currency === 'INR') {
+    const inrPart = num >= 1e7
+      ? `INR ${(num / 1e7).toFixed(num % 1e7 === 0 ? 0 : 1)} Cr`
+      : num >= 1e5
+        ? `INR ${(num / 1e5).toFixed(num % 1e5 === 0 ? 0 : 1)} L`
+        : `INR ${num.toLocaleString('en-IN')}`;
+    const usd = num / INR_PER_USD;
+    const usdPart = usd >= 1e6
+      ? `~$${(usd / 1e6).toFixed(usd >= 1e7 ? 0 : 1)}M`
+      : usd >= 1e3
+        ? `~$${Math.round(usd / 1e3)}k`
+        : `~$${Math.round(usd)}`;
+    return `${inrPart} (${usdPart})`;
+  }
+
+  // USD pure number
+  return num >= 1e6
+    ? `$${(num / 1e6).toFixed(num >= 1e7 ? 0 : 1)}M`
+    : num >= 1e3
+      ? `$${Math.round(num / 1e3)}k`
+      : `$${Math.round(num)}`;
+}
+
 class EmailService {
   private resendAvailable: boolean | null = null;
 
@@ -63,14 +134,31 @@ class EmailService {
     try {
       const { client, fromEmail } = await getUncachableResendClient();
       const senderEmail = fromEmail || env.FROM_EMAIL;
-      const from = `Cleya <${senderEmail}>`;
+      // Personal-looking sender increases the chance Gmail files this in
+      // Primary instead of Updates/Promotions.
+      const from = `Cleya from Cleya.ai <${senderEmail}>`;
+      const replyTo = process.env.REPLY_TO_EMAIL || senderEmail;
+
+      // Plain-text fallback materially helps deliverability + Primary placement.
+      const text = htmlToPlainText(html);
+
+      // RFC 8058 one-click unsubscribe headers tell mailbox providers that
+      // the sender follows best practice — without classifying the message
+      // as a "list" mailing (we don't set List-ID or Precedence:bulk).
+      const unsubscribeUrl = `${env.FRONTEND_URL}/unsubscribe?email=${encodeURIComponent(to)}`;
 
       const result = await client.emails.send({
         from,
         to: [to],
         subject,
         html,
-      });
+        text,
+        reply_to: replyTo,
+        headers: {
+          'List-Unsubscribe': `<${unsubscribeUrl}>, <mailto:unsubscribe@cleya.ai?subject=unsubscribe>`,
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        },
+      } as any);
 
       if (result.error) {
         console.error(`📧 Resend error to ${to}:`, result.error);
@@ -158,46 +246,74 @@ class EmailService {
     }
   ) {
     const firstName = recipientName?.split(' ')[0] || 'there';
+    const matchFirst = matchName?.split(' ')[0] || 'them';
     const scorePercent = Math.round(matchScore * 100);
+    const sectorPretty = matchDetails?.sector
+      ? matchDetails.sector.replace(/_/g, ' ').toLowerCase()
+      : '';
+    const raiseFmt = formatMoney(matchDetails?.raiseAmount, { defaultCurrency: 'INR' });
+    const personaPretty = (matchPersona || 'professional').toLowerCase().replace(/_/g, ' ');
 
     let body = `<p>Hi ${firstName},</p>`;
-    body += `<p>Wanted to put <strong>${matchName}</strong> on your radar`;
 
-    if (matchDetails?.companyName && matchDetails?.raiseAmount) {
-      body += ` — ${matchName.split(' ')[0]} is ${matchDetails.raiseAmount.toLowerCase().includes('raising') ? '' : 'raising '}${matchDetails.raiseAmount}`;
+    // Lead paragraph — every sentence starts with a capital letter.
+    body += `<p>Wanted to put <strong>${matchName}</strong> on your radar`;
+    if (matchDetails?.companyName && raiseFmt) {
+      body += ` — ${matchFirst} is raising <strong>${raiseFmt}</strong>`;
       if (matchDetails.companyName) body += ` for ${matchDetails.companyName}`;
-      if (matchDetails.sector) body += `, building in ${matchDetails.sector.replace(/_/g, ' ').toLowerCase()}`;
+      if (sectorPretty) body += `, building in ${sectorPretty}`;
       body += `.`;
     } else if (matchDetails?.companyName) {
-      body += ` — ${matchPersona.toLowerCase()} at ${matchDetails.companyName}`;
-      if (matchDetails.sector) body += ` in ${matchDetails.sector.replace(/_/g, ' ').toLowerCase()}`;
+      body += ` — ${personaPretty} at ${matchDetails.companyName}`;
+      if (sectorPretty) body += ` in ${sectorPretty}`;
       body += `.`;
     } else {
-      body += ` — ${matchPersona.toLowerCase()}.`;
+      body += ` — ${personaPretty}.`;
     }
     body += `</p>`;
 
-    if (matchDetails?.traction) {
-      body += `<p>${matchDetails.traction}</p>`;
+    // Second paragraph — capitalize the first letter of every sentence.
+    const reasonText = matchDetails?.matchReason
+      || matchDetails?.traction
+      || matchDetails?.bio;
+    if (reasonText) {
+      const sentences = String(reasonText)
+        .split(/(?<=[.!?])\s+/)
+        .map(s => s.trim())
+        .filter(Boolean)
+        .map(cap);
+      body += `<p>${sentences.join(' ')}</p>`;
     }
 
-    if (matchDetails?.bio && !matchDetails?.traction) {
-      body += `<p>${matchDetails.bio}</p>`;
-    }
-
-    if (matchDetails?.matchReason) {
-      body += `<p>${matchDetails.matchReason}</p>`;
-    }
-
+    // LinkedIn line — show the actual URL when we have it, otherwise offer to fetch it.
     if (matchDetails?.linkedinUrl) {
-      body += `<p>Here's ${matchName.split(' ')[0]}'s LinkedIn if you want to take a closer look: ${link(matchDetails.linkedinUrl, matchDetails.linkedinUrl)}</p>`;
+      body += `<p>Here is ${matchFirst}'s LinkedIn so you can take a closer look: ${link(matchDetails.linkedinUrl, matchDetails.linkedinUrl)}</p>`;
+    } else {
+      body += `<p>I'm pulling ${matchFirst}'s LinkedIn for you — reply "send LinkedIn" and I'll forward it right away.</p>`;
     }
 
     body += `<p>I matched you two at <strong>${scorePercent}%</strong> compatibility. ${link('Review this match →', `${env.FRONTEND_URL}/matches`)}</p>`;
+
+    // Closer CTA — explicit consent gate before warm intro.
+    body += `<p><strong>Want me to make the intro?</strong> Just reply "yes" (or hit Accept on the link above) and once I have ${matchFirst}'s confirmation, I'll send the warm intro to both of you over email.</p>`;
     body += `<p>— Cleya</p>`;
 
     const html = plainEmailLayout(body);
-    const subject = `${firstName}, ${matchDetails?.sector ? matchDetails.sector.replace(/_/g, ' ').toLowerCase() + ' ' : ''}connection for you`;
+
+    // Punchy subject line built from the match's profile, not generic.
+    let subject: string;
+    const sectorBit = sectorPretty ? `${sectorPretty} ` : '';
+    if (matchPersona === 'FOUNDER' && raiseFmt) {
+      subject = `${firstName}, want to connect with ${matchFirst} — ${sectorBit}founder raising ${raiseFmt}?`;
+    } else if (matchPersona === 'FOUNDER' && matchDetails?.companyName) {
+      subject = `${firstName}, want to connect with ${matchFirst} — ${sectorBit}founder at ${matchDetails.companyName}?`;
+    } else if (matchPersona === 'INVESTOR') {
+      subject = `${firstName}, want to connect with ${matchFirst} — ${sectorBit}investor?`;
+    } else if (sectorBit) {
+      subject = `${firstName}, want to connect with ${matchFirst} (${sectorBit.trim()} ${personaPretty})?`;
+    } else {
+      subject = `${firstName}, want to connect with ${matchFirst} (${personaPretty})?`;
+    }
     await this.send(recipientEmail, subject, html);
   }
 
