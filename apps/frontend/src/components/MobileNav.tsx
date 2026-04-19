@@ -107,10 +107,10 @@ export default function MobileNav() {
           <div
             ref={drawerRef}
             id="mobile-nav-drawer"
-            className="absolute top-0 right-0 w-72 h-full border-l border-white/5 overflow-y-auto"
+            className="absolute top-0 right-0 w-72 h-full border-l border-white/5 overflow-y-auto flex flex-col"
             style={{ background: '#080D1A' }}
           >
-            <div className="flex items-center justify-between p-4 border-b border-white/5">
+            <div className="flex items-center justify-between p-4 border-b border-white/5 sticky top-0 z-10" style={{ background: '#080D1A' }}>
               <a href="/" className="flex items-center gap-2 no-underline">
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold"
                   style={{ background: '#6C63FF' }}>C</div>
@@ -130,7 +130,7 @@ export default function MobileNav() {
               </div>
             </div>
 
-            <nav className="p-3 space-y-1" aria-label="Main navigation">
+            <nav className="p-3 space-y-1 flex-1" aria-label="Main navigation">
               {navItems.map((item) => {
                 const isActive = pathname === item.href;
                 return (
@@ -150,7 +150,7 @@ export default function MobileNav() {
               })}
             </nav>
 
-            <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/5">
+            <div className="p-4 border-t border-white/5" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
               <button
                 onClick={() => { api.logout().then(() => router.push('/')); }}
                 className="w-full flex items-center gap-3 px-4 py-3 min-h-[48px] rounded-xl text-sm font-medium text-red-400/60 hover:text-red-400 hover:bg-red-500/5 transition"

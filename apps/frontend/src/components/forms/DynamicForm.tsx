@@ -53,16 +53,26 @@ export function DynamicForm({ fields, onSubmit, disabled }: DynamicFormProps) {
     const newErrors: Record<string, string> = {};
     for (const field of fields) {
       if (field.conditional && values[field.conditional.field] !== field.conditional.value) continue;
-      let val = values[field.name];
-      if (field.name === 'linkedinUrl' && val && typeof val === 'string' && !val.startsWith('http')) {
-        val = val.trim() ? `https://linkedin.com/in/${val.trim()}` : '';
-      }
+      const val = values[field.name];
       if (field.required && (!val || (typeof val === 'string' && val.trim() === '') || (Array.isArray(val) && val.length === 0))) {
         newErrors[field.name] = `${field.label} is required`; continue;
       }
       if (!val) continue;
       if (field.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) newErrors[field.name] = 'Invalid email';
-      if (field.type === 'url' && field.name !== 'linkedinUrl') { try { new URL(val); } catch { newErrors[field.name] = 'Invalid URL'; } }
+      if (field.name === 'linkedinUrl' && typeof val === 'string') {
+        const v = val.trim();
+        if (v) {
+          try {
+            const u = new URL(/^https?:\/\//i.test(v) ? v : `https://${v}`);
+            const host = u.hostname.replace(/^www\./, '');
+            if (!/^([a-z]{2,3}\.)?linkedin\.com$/i.test(host) || !/^\/in\/[^/?#]+/.test(u.pathname)) {
+              newErrors[field.name] = 'Enter a valid LinkedIn profile URL (e.g. https://linkedin.com/in/your-handle)';
+            }
+          } catch {
+            newErrors[field.name] = 'Enter a valid LinkedIn profile URL';
+          }
+        }
+      } else if (field.type === 'url' && field.name !== 'linkedinUrl') { try { new URL(val); } catch { newErrors[field.name] = 'Invalid URL'; } }
       if (field.type === 'phone' && val) {
         const phoneErr = validatePhone(val);
         if (phoneErr) newErrors[field.name] = phoneErr;
@@ -81,9 +91,17 @@ export function DynamicForm({ fields, onSubmit, disabled }: DynamicFormProps) {
     setSubmitted(true);
     const submitValues = { ...values };
     if (submitValues.linkedinUrl && typeof submitValues.linkedinUrl === 'string') {
-      const raw = submitValues.linkedinUrl.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\/?/i, '').replace(/^\/+/, '');
-      const slug = raw.split(/[?#/]/)[0].trim();
-      submitValues.linkedinUrl = slug ? `https://linkedin.com/in/${slug}` : '';
+      const v = submitValues.linkedinUrl.trim();
+      if (v) {
+        try {
+          const u = new URL(/^https?:\/\//i.test(v) ? v : `https://${v}`);
+          const host = u.hostname.replace(/^www\./, '');
+          const m = u.pathname.match(/^\/in\/([^/?#]+)/);
+          if (/^([a-z]{2,3}\.)?linkedin\.com$/i.test(host) && m) {
+            submitValues.linkedinUrl = `https://linkedin.com/in/${m[1]}`;
+          }
+        } catch { /* leave as-is; validate() should have caught it */ }
+      }
     }
     onSubmit(submitValues);
   };
@@ -270,35 +288,29 @@ export function DynamicForm({ fields, onSubmit, disabled }: DynamicFormProps) {
             )}
 
             {isLinkedInField(field) && (
-              <div className={`flex items-center rounded-xl border border-white/10 bg-white/5 overflow-hidden focus-within:ring-2 focus-within:ring-brand-violet transition-all`}>
-                <span className="pl-3 pr-1 text-sm text-white/30 whitespace-nowrap select-none">linkedin.com/in/</span>
-                <input
-                  type="text"
-                  value={(values[field.name] || '').replace(/^https?:\/\/(www\.)?linkedin\.com\/in\/?/i, '')}
-                  onChange={(e) => {
-                    let input = e.target.value;
-                    if (/^https?:\/\//i.test(input)) {
-                      try {
-                        const url = new URL(input);
-                        if (/linkedin\.com$/i.test(url.hostname.replace(/^www\./, ''))) {
-                          const pathMatch = url.pathname.match(/^\/in\/([^/?#]+)/);
-                          input = pathMatch ? pathMatch[1] : '';
-                        } else {
-                          input = '';
-                        }
-                      } catch {
-                        input = '';
-                      }
-                    } else {
-                      input = input.replace(/^\/+/, '').split(/[?#/\s]/)[0].trim();
+              <input
+                type="url"
+                inputMode="url"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
+                value={values[field.name] || ''}
+                onChange={(e) => handleChange(field.name, e.target.value)}
+                onBlur={(e) => {
+                  const v = e.target.value.trim();
+                  if (!v) return;
+                  try {
+                    const url = new URL(/^https?:\/\//i.test(v) ? v : `https://${v}`);
+                    if (/linkedin\.com$/i.test(url.hostname.replace(/^www\./, ''))) {
+                      const m = url.pathname.match(/^\/in\/([^/?#]+)/);
+                      if (m) handleChange(field.name, `https://linkedin.com/in/${m[1]}`);
                     }
-                    handleChange(field.name, input ? `https://linkedin.com/in/${input}` : '');
-                  }}
-                  placeholder="your-profile"
-                  disabled={submitted}
-                  className="flex-1 px-2 py-2.5 bg-transparent text-white text-sm placeholder-white/30 focus:outline-none disabled:opacity-40"
-                />
-              </div>
+                  } catch {}
+                }}
+                placeholder="https://linkedin.com/in/your-profile"
+                disabled={submitted}
+                className="input-dark"
+              />
             )}
 
             {!['select', 'multiselect', 'textarea', 'phone'].includes(field.type) && !isLinkedInField(field) && (

@@ -273,6 +273,7 @@ export default function ChatPage() {
 
   const handleTextSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (aiLoading) return;
     if (!inputText.trim()) return;
     if (isOnboarded) {
       handleAIChat(inputText.trim());
@@ -444,15 +445,21 @@ export default function ChatPage() {
       )}
 
       {(currentNode?.type === 'ai_response' || isOnboarded) && !redirecting && (
-        <form onSubmit={handleTextSubmit} className="px-6 lg:px-8 py-4 border-t border-white/5">
-          <div className="flex gap-2">
+        <form
+          onSubmit={handleTextSubmit}
+          className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 border-t border-white/5 sticky bottom-0 z-10 bg-[#0F1629]/95 backdrop-blur-md"
+          style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+        >
+          <div className="flex gap-2 items-stretch">
             <input
               type="text"
+              enterKeyHint="send"
+              autoCapitalize="sentences"
               value={inputText}
               onChange={(e) => setInputText(e.target.value.slice(0, 500))}
               placeholder={t('chat.messagePlaceholder')}
-              className="input-dark flex-1"
-              disabled={aiLoading}
+              className="input-dark flex-1 min-w-0"
+              style={{ fontSize: '16px' }}
               maxLength={500}
             />
             <button

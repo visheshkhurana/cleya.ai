@@ -304,18 +304,28 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">LinkedIn URL</label>
-              <div className="flex items-center rounded-2xl border border-white/10 bg-white/5 overflow-hidden focus-within:ring-2 focus-within:ring-brand-violet transition-all backdrop-blur-sm">
-                <span className="pl-4 pr-1 text-sm text-white/30 whitespace-nowrap select-none">linkedin.com/in/</span>
-                <input type="text"
-                  value={(profile.linkedinUrl || '').replace(/^https?:\/\/(www\.)?linkedin\.com\/in\/?/i, '')}
-                  onChange={(e) => {
-                    const raw = e.target.value.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\/?/i, '').replace(/^\/+/, '');
-                    const slug = raw.split(/[?#/]/)[0].trim();
-                    updateField('linkedinUrl', slug ? `https://linkedin.com/in/${slug}` : '');
-                  }}
-                  placeholder="your-profile"
-                  className="flex-1 px-2 py-3 bg-transparent text-white text-sm placeholder-white/30 focus:outline-none" />
-              </div>
+              <input
+                type="url"
+                inputMode="url"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
+                value={profile.linkedinUrl || ''}
+                onChange={(e) => updateField('linkedinUrl', e.target.value)}
+                onBlur={(e) => {
+                  const v = e.target.value.trim();
+                  if (!v) return;
+                  try {
+                    const url = new URL(/^https?:\/\//i.test(v) ? v : `https://${v}`);
+                    if (/linkedin\.com$/i.test(url.hostname.replace(/^www\./, ''))) {
+                      const m = url.pathname.match(/^\/in\/([^/?#]+)/);
+                      if (m) updateField('linkedinUrl', `https://linkedin.com/in/${m[1]}`);
+                    }
+                  } catch {}
+                }}
+                placeholder="https://linkedin.com/in/your-profile"
+                className="input-dark"
+              />
             </div>
             <div>
               <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Website</label>
