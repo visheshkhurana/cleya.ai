@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "yaxNH_q6Uu9JHQ4mINx8v"
@@ -18,3 +17,21 @@ id = "zZlrH9PxfRgIM7p_SYe73"
 uri = "file://apps/frontend/public/team/arjun.png"
 type = "image"
 title = "Arjun engineering headshot"
+
+[[outputs]]
+id = "hZx5_L8BIAD5JvE4J3hMr"
+uri = "file://docs/notes/matching-algorithm-evolution.md"
+type = "text"
+title = "Matching Algorithm — Evolution & Strategy Note"
+
+[[outputs]]
+id = "_c19EpypvUFwKp0VRdv7D"
+uri = "file://docs/notes/screenshots/homepage-hero.jpg"
+type = "image"
+title = "UI: Homepage Hero (new gradient + CTA halo)"
+
+[[outputs]]
+id = "YOOx7OF2VjLCfPtgGjk7P"
+uri = "file://docs/notes/screenshots/pricing-cards.jpg"
+type = "image"
+title = "UI: Pricing Cards (refreshed surface tokens)"
