@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { api } from '../../lib/api';
 import NotificationCenter from '../../components/NotificationCenter';
 import AppNav from '@/components/AppNav';
-import AppFooter from '@/components/AppFooter';
 import { useTranslation } from '@/lib/i18n';
 
 interface ChatMessage {
@@ -189,7 +188,7 @@ export default function SecretaryPage() {
           </div>
         </div>
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 lg:px-8 py-6 space-y-4" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+        <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-6 lg:px-8 py-6 space-y-4">
           {messages.length === 0 && historyLoaded && (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#6C63FF]/20 to-[#4ECDC4]/20 border border-[#6C63FF]/20 flex items-center justify-center mb-6">
@@ -275,7 +274,6 @@ export default function SecretaryPage() {
           </form>
         </div>
       </div>
-      <AppFooter />
     </AppShell>
   );
 }
