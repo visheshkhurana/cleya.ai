@@ -357,6 +357,7 @@ export default function ChatPage() {
     <AppShell className="flex flex-col overflow-x-hidden">
       <AppNav rightContent={<NotificationCenter />} />
 
+      <div className="flex flex-col w-full" style={{ height: 'calc(100dvh - 52px)' }}>
       {!isOnboarded && currentNode && (
         <div className="px-6 lg:px-8 py-3 border-b border-white/5" style={{ background: 'rgba(8,13,26,0.9)' }}>
           <div className="flex items-center justify-between mb-2">
@@ -478,6 +479,7 @@ export default function ChatPage() {
           )}
         </form>
       )}
+      </div>
       <AppFooter />
     </AppShell>
   );
