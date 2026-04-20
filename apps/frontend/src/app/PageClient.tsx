@@ -1554,7 +1554,7 @@ export default function Home() {
 
       {/* AUTH MODAL */}
       {showAuth && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center"
+        <div className="fixed inset-0 z-[100] overflow-y-auto overscroll-contain flex items-start sm:items-center justify-center py-6 sm:py-10"
           role="dialog" aria-modal="true" aria-label={mode === 'signup' ? 'Sign up' : 'Log in'}
           style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(12px)' }}
           onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
@@ -1564,7 +1564,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.25 }}
-            className="relative w-full max-w-[480px] mx-4 max-h-[92vh] overflow-y-auto"
+            className="relative w-full max-w-[480px] mx-4 my-auto"
           >
             <button onClick={() => closeModal()}
               className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full text-white/40 hover:text-white/80 hover:bg-white/10 transition"
