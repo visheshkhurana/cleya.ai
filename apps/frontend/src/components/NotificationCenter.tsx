@@ -108,7 +108,7 @@ export default function NotificationCenter() {
   };
 
   return (
-    <div ref={dropdownRef} style={{ position: 'relative' }}>
+    <div ref={dropdownRef} style={{ position: 'relative', zIndex: 9999 }}>
       <button
         ref={toggleRef}
         onClick={() => { setIsOpen(!isOpen); if (!isOpen) fetchNotifications(); }}
@@ -163,12 +163,14 @@ export default function NotificationCenter() {
             right: 0,
             width: '380px',
             maxHeight: '480px',
-            background: 'rgba(15,22,41,0.8)',
-            border: '1px solid rgba(108,99,255,0.2)',
+            background: 'rgba(11, 8, 32, 0.98)',
+            backdropFilter: 'blur(24px)',
+            WebkitBackdropFilter: 'blur(24px)',
+            border: '1px solid rgba(139,123,255,0.25)',
             borderRadius: '16px',
             overflow: 'hidden',
             zIndex: 1000,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+            boxShadow: '0 24px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)',
           }}>
           <div style={{
             padding: '16px 20px',
