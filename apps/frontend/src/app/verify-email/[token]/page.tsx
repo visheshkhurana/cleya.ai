@@ -1,6 +1,7 @@
+import { redirect } from 'next/navigation';
+
 export const dynamic = 'force-dynamic';
-import VerifyEmailClient from '../PageClient';
 
 export default function VerifyEmailTokenPage({ params }: { params: { token: string } }) {
-  return <VerifyEmailClient initialToken={params.token} />;
+  redirect(`/verify-email?token=${encodeURIComponent(params.token)}`);
 }

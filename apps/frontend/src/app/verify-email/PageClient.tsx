@@ -4,9 +4,9 @@ import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import AppShell from '@/components/AppShell';
 
-export default function VerifyEmailPage({ initialToken }: { initialToken?: string } = {}) {
+export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
-  const token = initialToken || searchParams.get('token');
+  const token = searchParams.get('token');
   const [status, setStatus] = useState<'loading' | 'success' | 'already' | 'error'>('loading');
   const [error, setError] = useState('');
   const [resendEmail, setResendEmail] = useState('');
