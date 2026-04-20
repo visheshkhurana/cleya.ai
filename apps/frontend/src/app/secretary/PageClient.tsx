@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { api } from '../../lib/api';
 import NotificationCenter from '../../components/NotificationCenter';
 import AppNav from '@/components/AppNav';
+import AppFooter from '@/components/AppFooter';
 import { useTranslation } from '@/lib/i18n';
 
 interface ChatMessage {
@@ -160,7 +161,7 @@ export default function SecretaryPage() {
     <AppShell className="flex flex-col">
       <AppNav rightContent={<NotificationCenter />} />
 
-      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
+      <div className="flex flex-col max-w-4xl mx-auto w-full" style={{ height: 'calc(100dvh - 52px)' }}>
         <div className="px-6 lg:px-8 py-3 flex items-center justify-between border-b border-white/[0.06]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#6C63FF] to-[#4ECDC4] flex items-center justify-center">
@@ -274,6 +275,7 @@ export default function SecretaryPage() {
           </form>
         </div>
       </div>
+      <AppFooter />
     </AppShell>
   );
 }
