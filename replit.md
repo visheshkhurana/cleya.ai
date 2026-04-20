@@ -2,6 +2,31 @@
 
 Imported from: https://github.com/visheshkhurana/cleya-ai-platform
 
+## Operational Gotchas (READ FIRST — recurring issues across sessions)
+
+These are non-obvious things future-me will otherwise rediscover the hard way:
+
+- **`apps/backend/src/index.ts` gets deleted on some workflow restarts.** Restore with:
+  `git show d5dd882:apps/backend/src/index.ts > apps/backend/src/index.ts`
+- **`origin` git remote flips and loses the auth token.** Re-set with:
+  `git remote set-url origin "https://x-access-token:$(printenv GITHUB_PAT)@github.com/visheshkhurana/cleya.ai.git"`
+- **Git identity** for commits: `user.email "agent@cleya.ai"`, `user.name "Cleya Agent"`.
+- **DO NOT change individual user names** — must be preserved exactly as entered from LinkedIn or signup. Match-reason copy uses an explicit name allowlist sanitizer.
+- **Prod DB schema drift**: Replit deploy runs `prisma db push --accept-data-loss` — schema changes can wipe data, be careful.
+- **Email architecture**:
+  - `hello@cleya.ai` is the FROM address only — it is NOT a provisioned inbox. Never use as Reply-To (replies bounce).
+  - All Reply-To headers use `env.REPLY_TO_EMAIL` (defaults to `jivraj@cleya.ai`).
+  - Joint-intro emails (after both parties accept): both addresses on `To:`, both in `reply_to` array, single shared Gmail thread. See `emailService.sendMatchIntroJoint()` in `apps/backend/src/services/email.ts`.
+  - Side-effects in `respondToMatch` are gated by `justAccepted = updated.status === 'ACCEPTED' && match.status !== 'ACCEPTED'` for idempotency.
+- **Test user for previewing auth-protected pages**: `test@cleya.ai` / `test1234`. Re-seed with `npx ts-node apps/backend/scripts/seed-test-user.ts`. Idempotent.
+- **Layout primitives**:
+  - `AppShell` is `min-h-screen flex flex-col` with inner `flex-1 flex flex-col min-h-0`. Pages can use `flex-1` children safely.
+  - `.glass-header` (the top nav) is exactly **52px** tall and has `position: relative; z-index: 50` so dropdowns inside it stack above page content.
+  - For viewport-filling pages (chat, etc.), wrap the main block in `<div style={{ height: 'calc(100dvh - 52px)' }} className="flex flex-col">` so the footer sits below the fold.
+- **Two chat pages exist**: `/chat/PageClient.tsx` (used in production for both onboarding and post-onboarding chat) and `/secretary/PageClient.tsx`. Any chat-layout fix must be applied to BOTH.
+- **Design tokens** (current warm-indigo palette): Canvas `#0B0820`, Surface `#15102E`, Card `#1E1745`; Violet `#8B7BFF`, Teal `#5DECDC`, Magenta `#FF6B9D`.
+- **Email preview**: render-only (no send) via `npx ts-node apps/backend/scripts/preview-emails.ts` → outputs to `docs/email-previews/*.html`. Real send via `apps/backend/scripts/send-demo-emails.ts`.
+
 ## Architecture
 Monorepo with:
 - `apps/frontend` — Next.js 14 on port 5000
