@@ -174,11 +174,10 @@ export default function SettingsPage() {
   };
 
   if (loading) {
-    return (
-      <AppShell className="flex items-center justify-center">
-        <div className="text-white/40 text-base">Loading...</div>
-      </AppShell>
-    );
+    // Skeleton mirrors the real settings layout (page header + stack of
+    // section cards: Account / Password / Session / Export / Notifications
+    // / WhatsApp) so the swap-in when data resolves feels seamless.
+    return <SettingsSkeleton />;
   }
 
   const inputStyle: React.CSSProperties = {
@@ -932,6 +931,138 @@ export default function SettingsPage() {
             </div>
           )}
         </section>
+      </div>
+      <AppFooter />
+    </AppShell>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Loading skeleton                                                    */
+/* ------------------------------------------------------------------ */
+/**
+ * SettingsSkeleton renders a low-fidelity placeholder that mirrors the
+ * real settings layout — page header, then a stack of section cards
+ * (Account / Password / Session / Export / Notifications / WhatsApp).
+ * Same outer chrome, container width, and card styling so the swap-in
+ * when data resolves feels seamless.
+ */
+function SettingsSkeleton() {
+  const Block = ({ className = '', style }: { className?: string; style?: React.CSSProperties }) => (
+    <div className={`rounded-md bg-white/[0.06] ${className}`} style={style} />
+  );
+  const SectionCard = ({ children }: { children: React.ReactNode }) => (
+    <section
+      style={{
+        background: 'rgba(15,22,41,0.8)',
+        border: '1px solid rgba(255,255,255,0.05)',
+        borderRadius: '16px',
+        padding: '28px',
+        marginBottom: '24px',
+      }}
+    >
+      {children}
+    </section>
+  );
+  const SectionHeader = ({ titleWidth = 'w-32' }: { titleWidth?: string }) => (
+    <div className="flex items-center gap-2 mb-5">
+      <Block className="h-5 w-5 rounded-md" />
+      <Block className={`h-4 ${titleWidth}`} />
+    </div>
+  );
+  const FieldRow = () => (
+    <div>
+      <Block className="h-3 w-16 mb-2" />
+      <Block className="h-11 w-full rounded-xl" />
+    </div>
+  );
+
+  return (
+    <AppShell>
+      <AppNav />
+      <div style={{ maxWidth: '640px', margin: '0 auto' }} className="px-6 lg:px-8 py-6 sm:py-10 animate-pulse">
+        <Block className="h-7 w-32 mb-3" />
+        <Block className="h-3 w-64 mb-8 sm:mb-10" />
+
+        {/* Account */}
+        <SectionCard>
+          <SectionHeader titleWidth="w-24" />
+          <div className="grid gap-4">
+            <FieldRow />
+            <FieldRow />
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <Block className="h-3 w-16 mb-2" />
+                <Block className="h-7 w-24 rounded-lg" />
+              </div>
+              <div className="flex-1">
+                <Block className="h-3 w-24 mb-2" />
+                <Block className="h-3.5 w-32" />
+              </div>
+            </div>
+          </div>
+        </SectionCard>
+
+        {/* Change Password */}
+        <SectionCard>
+          <SectionHeader titleWidth="w-40" />
+          <div className="grid gap-4">
+            <FieldRow />
+            <FieldRow />
+            <FieldRow />
+            <Block className="h-11 w-44 rounded-xl mt-1" />
+          </div>
+        </SectionCard>
+
+        {/* Session */}
+        <SectionCard>
+          <SectionHeader titleWidth="w-20" />
+          <Block className="h-11 w-28 rounded-xl" />
+        </SectionCard>
+
+        {/* Export Data */}
+        <SectionCard>
+          <SectionHeader titleWidth="w-36" />
+          <Block className="h-3 w-full mb-2" />
+          <Block className="h-3 w-3/4 mb-4" />
+          <div className="flex gap-3 flex-wrap">
+            <Block className="h-11 w-36 rounded-xl" />
+            <Block className="h-11 w-36 rounded-xl" />
+          </div>
+        </SectionCard>
+
+        {/* Notification Preferences */}
+        <SectionCard>
+          <SectionHeader titleWidth="w-48" />
+          <Block className="h-3 w-3/4 mb-5" />
+          <Block className="h-3 w-12 mb-3" />
+          <div className="grid gap-3 mb-5">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="flex items-center gap-3">
+                <Block className="h-4 w-4 rounded" />
+                <Block className="h-3.5 w-48" />
+              </div>
+            ))}
+          </div>
+          <Block className="h-3 w-20 mb-3" />
+          <div className="grid gap-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="flex items-center gap-3">
+                <Block className="h-4 w-4 rounded" />
+                <Block className="h-3.5 w-56" />
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
+        {/* WhatsApp Integration */}
+        <SectionCard>
+          <SectionHeader titleWidth="w-44" />
+          <Block className="h-3 w-full mb-2" />
+          <Block className="h-3 w-2/3 mb-5" />
+          <Block className="h-14 w-full rounded-xl mb-4" />
+          <Block className="h-11 w-32 rounded-xl" />
+        </SectionCard>
       </div>
       <AppFooter />
     </AppShell>
