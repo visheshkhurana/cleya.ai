@@ -877,22 +877,23 @@ class EmailService {
   /**
    * Day-2 follow-up: still no matches 48h after onboarding.
    *
-   * This is the honest "we haven't found anyone yet, but we'll keep you
-   * posted" note. After this we go quiet until matches actually appear,
-   * so the copy needs to set that expectation cleanly.
+   * Polite, confidence-preserving update. Frames the wait as careful
+   * curation rather than a shortfall, and sets the expectation that we'll
+   * reach out the moment a strong match is ready. After this we go quiet
+   * until matches actually appear.
    */
   async sendMatchInterimDay2(email: string, name?: string) {
     const firstName = name?.split(' ')[0] || 'there';
     const html = plainEmailLayout(`
       <p>Hi ${firstName},</p>
-      <p>Wanted to be straight with you — I haven't been able to find a match worth introducing you to just yet.</p>
-      <p>This usually means the right people aren't on Cleya yet, or your goals are specific enough that I'd rather hold out for a strong fit than send something that wastes your time. Either way, you're not forgotten — your profile stays active and I'll keep searching every day.</p>
-      <p>The moment I find someone genuinely worth meeting, you'll hear from me first.</p>
-      <p>If anything has changed about who you'd like to meet, just hit reply and tell me — that's often the unlock.</p>
+      <p>Just a quick note to keep you in the loop — I'm still curating your matches with care.</p>
+      <p>Great introductions take a little time, and I want every one I send you to be genuinely worth your while. Your profile is active, and I'm reviewing new people joining Cleya every day with you in mind.</p>
+      <p>The moment I find someone truly worth meeting, you'll be the first to know.</p>
+      <p>If anything has shifted about who you'd love to connect with — a role, a sector, a stage, even a specific name — just hit reply. A small detail often opens the door to a great match.</p>
       <p>${link('Open your dashboard →', `${env.FRONTEND_URL}/dashboard`)}</p>
       <p>— Cleya</p>
     `);
-    return this.send(email, `${firstName}, an honest update on your matches`, html);
+    return this.send(email, `${firstName}, a quick update on your matches`, html);
   }
 
   async sendPostIntroFollowUp(email: string, name?: string, matchName?: string) {
