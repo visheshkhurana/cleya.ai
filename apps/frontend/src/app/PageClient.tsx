@@ -1263,14 +1263,6 @@ export default function Home() {
       <section className="relative z-10 min-h-screen flex items-center">
         <div className="relative max-w-[1400px] mx-auto px-6 sm:px-10 lg:px-16 w-full pt-28 pb-20">
           <div className="max-w-4xl lg:max-w-5xl">
-            <div
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-medium uppercase tracking-[0.2em] mb-8 hero-fade-in"
-              style={{ background: 'rgba(108,99,255,0.08)', color: '#9B95FF', border: '1px solid rgba(108,99,255,0.15)', animationDelay: '0.3s' }}
-            >
-              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#9B95FF' }} />
-              {t('hero.badge')}
-            </div>
-
             <h1
               className="font-sans font-bold text-white leading-[1.05] mb-8 tracking-tight hero-fade-in"
               style={{ fontSize: 'clamp(40px, 5.5vw + 16px, 84px)', animationDelay: '0.5s' }}
