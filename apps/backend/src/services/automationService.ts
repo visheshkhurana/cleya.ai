@@ -4,8 +4,20 @@ import { messagingService } from './messagingService';
 import { matchingService } from './matchingService';
 import { whatsappTemplates } from './whatsappTemplates';
 import { matchScheduler } from './matchScheduler';
+import { emailService } from './email';
+
+// If a user has zero matches this many ms after onboarding, send the
+// "still working on your matches" interim email so they're not left
+// staring at an empty dashboard wondering if the product is broken.
+const INTERIM_MATCH_EMAIL_DELAY_MS = 2 * 60 * 60 * 1000; // 2 hours
 
 export class AutomationService {
+  // In-memory dedupe so retried/replayed onboarding completions don't queue
+  // multiple interim-email timers for the same user. Process-local; restart
+  // resets it, which is fine because onboarding completion is the source
+  // event and replays would also need a process to be live to re-trigger.
+  private interimEmailScheduled = new Set<string>();
+
   async onOnboardingComplete(userId: string, context: Record<string, any>) {
     console.log(`Running post-onboarding automation for user ${userId}`);
 
@@ -27,6 +39,8 @@ export class AutomationService {
     matchScheduler.enqueueRecheckPeers(userId).catch((err) =>
       console.log(`[AutoMatch] Peer re-queue failed for ${userId}:`, err)
     );
+
+    this.scheduleInterimMatchEmail(userId, user.email, userName);
 
     if (persona === 'DEAL_PARTNER') {
       this.scheduleDealPartnerScout(userId);
@@ -98,6 +112,49 @@ export class AutomationService {
         }
       }
     }, 3000);
+  }
+
+  /**
+   * Schedules the interim "still working on your matches" email.
+   *
+   * Fires after INTERIM_MATCH_EMAIL_DELAY_MS (2h). At trigger time we
+   * re-check the database — if the user already has at least one
+   * proposed match by then, we skip (the match-proposed email already
+   * communicated the news). Otherwise we send the interim so the user
+   * isn't left wondering whether anything is happening.
+   *
+   * Uses setTimeout for parity with scheduleCall / scheduleDealPartnerScout.
+   * If the process restarts inside the 2h window the timer is lost; that's
+   * an acceptable trade-off for v1 — the worst case is a missed reassurance
+   * email, not a broken match.
+   */
+  private scheduleInterimMatchEmail(userId: string, email: string, userName?: string) {
+    // Idempotency guard: if a timer is already pending for this user, skip.
+    // Prevents duplicate emails when onOnboardingComplete is replayed or
+    // when multiple completion events fire in quick succession.
+    if (this.interimEmailScheduled.has(userId)) {
+      console.log(`[InterimEmail] Already scheduled for ${userId}, skipping duplicate`);
+      return;
+    }
+    this.interimEmailScheduled.add(userId);
+
+    setTimeout(async () => {
+      try {
+        const matchCount = await prisma.match.count({
+          where: { OR: [{ userAId: userId }, { userBId: userId }] },
+        });
+        if (matchCount > 0) {
+          console.log(`[InterimEmail] Skipping for ${userId} — ${matchCount} match(es) already exist`);
+          return;
+        }
+        const ok = await emailService.sendMatchInterim(email, userName);
+        console.log(`[InterimEmail] Sent to ${email} for user ${userId}: ${ok}`);
+      } catch (err) {
+        console.error(`[InterimEmail] Failed to send for ${userId}:`, err);
+      } finally {
+        this.interimEmailScheduled.delete(userId);
+      }
+    }, INTERIM_MATCH_EMAIL_DELAY_MS);
   }
 
   private scheduleCall(userId: string, phoneNumber: string) {

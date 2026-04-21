@@ -196,6 +196,16 @@ export const translations: Record<Locale, Record<string, string>> = {
     'chat.completionNotify': 'We\'ll notify you as soon as we find people worth connecting with. In the meantime, check out your dashboard.',
     'chat.viewMatches': 'View your matches →',
     'chat.orChatWithCleya': 'or chat with Cleya',
+
+    'matching.title': 'We\'re finding your best matches',
+    'matching.subtitle': 'Cleya is scanning India\'s startup ecosystem for people worth your time. This usually takes a few hours — we\'ll email you the moment your matches are ready.',
+    'matching.eta': 'You can close this tab. We\'ll keep working in the background.',
+    'matching.goToDashboard': 'Go to Dashboard →',
+    'matching.orChatWithCleya': 'or chat with Cleya',
+
+    'dashboard.matchesPreparingTitle': 'Your matches are being prepared',
+    'dashboard.matchesPreparingDesc': 'Cleya is finding your best connections right now. We\'ll email you the moment they\'re ready — usually within a few hours.',
+    'dashboard.moreMatchesOnTheWay': 'More matches on the way',
     'chat.completionMessage': '\uD83C\uDF89 **You\'re all set!** Your profile has been created and Cleya is already looking for great connections for you.\n\nRedirecting you to your dashboard...',
     'chat.errorMessage': 'Sorry, I couldn\'t process that right now. Please try again!',
     'chat.loginRequired': 'Please log in to access the chat',
@@ -461,6 +471,16 @@ export const translations: Record<Locale, Record<string, string>> = {
     'chat.completionNotify': 'जैसे ही हमें जुड़ने लायक लोग मिलेंगे, हम आपको सूचित करेंगे। तब तक अपना डैशबोर्ड देखें।',
     'chat.viewMatches': 'अपने मैच देखें →',
     'chat.orChatWithCleya': 'या Cleya से बात करें',
+
+    'matching.title': 'हम आपके लिए बेहतरीन मैच ढूंढ रहे हैं',
+    'matching.subtitle': 'Cleya आपके लिए सही लोगों की तलाश कर रहा है। आमतौर पर इसमें कुछ घंटे लगते हैं — मैच तैयार होते ही हम आपको ईमेल करेंगे।',
+    'matching.eta': 'आप यह टैब बंद कर सकते हैं। हम बैकग्राउंड में काम करते रहेंगे।',
+    'matching.goToDashboard': 'डैशबोर्ड पर जाएं →',
+    'matching.orChatWithCleya': 'या Cleya से बात करें',
+
+    'dashboard.matchesPreparingTitle': 'आपके मैच तैयार किए जा रहे हैं',
+    'dashboard.matchesPreparingDesc': 'Cleya अभी आपके लिए सबसे अच्छे कनेक्शन ढूंढ रहा है। तैयार होते ही हम आपको ईमेल करेंगे — आमतौर पर कुछ घंटों के भीतर।',
+    'dashboard.moreMatchesOnTheWay': 'और मैच आ रहे हैं',
     'chat.completionMessage': '\uD83C\uDF89 **आप तैयार हैं!** आपकी प्रोफ़ाइल बन गई है और Cleya पहले से ही आपके लिए बेहतरीन कनेक्शन ढूंढ रहा है।\n\nआपको डैशबोर्ड पर ले जा रहे हैं...',
     'chat.errorMessage': 'क्षमा करें, अभी यह प्रोसेस नहीं हो सका। कृपया पुनः प्रयास करें!',
     'chat.loginRequired': 'चैट एक्सेस करने के लिए कृपया लॉग इन करें',

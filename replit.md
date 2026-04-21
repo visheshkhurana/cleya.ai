@@ -97,7 +97,8 @@ The matching engine (`packages/matching/src/index.ts`) uses a three-layer hybrid
 - **Service:** `dripCampaignService` (`apps/backend/src/services/dripCampaignService.ts`) — enrolls users into sequences, processes due emails with smart skipping (skip profile nudge if profile complete, skip feedback request if feedback already submitted).
 - **Cron:** Daily at 10:00 IST via `matchScheduler.runDripCampaign()`.
 - **Hooks:** Auto-enrolls on signup (email/Google/LinkedIn via `authService`), auto-enrolls match follow-up + feedback request on match acceptance (`matchingService.respondToMatch`).
-- **Templates:** `emailService` methods: `sendProfileNudge`, `sendHowMatchingWorks`, `sendMatchCheckIn`, `sendPostIntroFollowUp`, `sendFeedbackRequest`. All use existing Cleya brand template.
+- **Templates:** `emailService` methods: `sendProfileNudge`, `sendHowMatchingWorks`, `sendMatchCheckIn`, `sendMatchInterim`, `sendPostIntroFollowUp`, `sendFeedbackRequest`. All use existing Cleya brand template.
+- **Interim match email:** `automationService.scheduleInterimMatchEmail` runs setTimeout(2h) after onboarding completes. If the user still has zero matches, sends `sendMatchInterim`. Idempotent via in-memory `interimEmailScheduled` Set so replayed completion events don't queue duplicate timers. Best-effort (process restart inside the 2h window drops the send).
 - **Dynamic intent signal**: Recent accept/decline patterns infer current intent (e.g., founder declining investors → NOT_FUNDRAISING) and adjust scores
 - **Structured compatibility signals**: LLM match reasoning receives data (sector overlap %, stage fit, check size alignment, traction highlights) for specific introductions
 - **LinkedIn enrichment**: Background job (`linkedinEnrichmentService.ts`) extracts career history, domain expertise, notable companies, exits from profile data + LinkedIn URL via LLM, stores in `profile.extraData.enrichedData`. Runs daily at 3:00 AM IST and on new profile completion.
@@ -338,7 +339,8 @@ All frontend pages use a server/client wrapper pattern for build compatibility:
 - `/dashboard` — User dashboard with stats, matches, invite codes, activity feed, AI chat; stats auto-refresh on visibility change
 - `/profile` — Profile editor; merges `extraData` JSON for persona-specific fields (preferredRole, portfolioSize, etc.)
 - `/matches` — Match listing with qualitative labels + expandable score breakdown (industry/stage/location/goals/skills/role), verification badges, Message button for accepted matches, feedback, search
-- `/chat` — AI onboarding conversation with progress indicator (Step X of 5)
+- `/chat` — AI onboarding conversation with progress indicator (Step X of 5). On `complete_onboarding` action, redirects to `/matching` (not `/dashboard`) so users see a "we're working on it" screen instead of an empty dashboard.
+- `/matching` — Post-onboarding "we're finding your matches" screen. CSS-only animated rings (no Lottie dep), explainer copy, and "Go to Dashboard" CTA. Solves the "empty dashboard feels broken" problem.
 - `/secretary` — AI Secretary chat interface with OpenAI-powered assistant for scheduling meetings, sending follow-ups, daily digest, and Zoom integration; quick prompt suggestions on empty state; action buttons for suggested meeting/followup actions
 - `/settings` — Account settings with phone display (syncs from profile), password change, notification preferences (persisted to CommunicationPreference model), Zoom integration (connect/disconnect), Google Calendar integration (connect/disconnect with email display)
 - `/introductions` — Introduction records with full status lifecycle (PENDING_APPROVAL → APPROVED → SENT → VIEWED → RESPONDED → COMPLETED)

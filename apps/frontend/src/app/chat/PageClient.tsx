@@ -260,8 +260,11 @@ export default function ChatPage() {
         if (data.node.metadata?.action === 'complete_onboarding' || data.node.next === null) {
           localStorage.removeItem(CHAT_STORAGE_KEY);
           analytics.onboardingCompleted(data.node.metadata?.persona || 'unknown');
-          setShowCompletion(true);
-          setCurrentNode(null);
+          // Redirect straight to the dedicated matching screen so the user
+          // never lands on an empty dashboard. The button on /matching
+          // takes them to /dashboard when they're ready to look around.
+          setRedirecting(true);
+          window.location.href = '/matching';
         }
       }
     } catch (err) {
@@ -301,7 +304,11 @@ export default function ChatPage() {
 
   const handleViewMatches = () => {
     setRedirecting(true);
-    window.location.href = '/dashboard';
+    // Send the user to the dedicated "We're matching you" screen instead of
+    // the empty dashboard. The matching screen explains that work is in
+    // progress (animation + inbox-notify message) and offers a button to
+    // continue to the dashboard. Avoids the "looks broken" empty-state.
+    window.location.href = '/matching';
   };
 
   if (loading) {

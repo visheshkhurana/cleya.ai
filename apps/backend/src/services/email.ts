@@ -832,6 +832,27 @@ class EmailService {
     return this.send(email, `${firstName}, your matches are waiting`, html);
   }
 
+  /**
+   * Interim "still working on your matches" email.
+   *
+   * Sent when a freshly onboarded user still has zero matches after a couple
+   * of hours. Matches usually land within 2 hours, so this only fires for
+   * users who would otherwise sit on an empty dashboard wondering whether
+   * the product is broken. Setting expectations beats silence.
+   */
+  async sendMatchInterim(email: string, name?: string) {
+    const firstName = name?.split(' ')[0] || 'there';
+    const html = plainEmailLayout(`
+      <p>Hi ${firstName},</p>
+      <p>Quick note from me — I'm still working on finding your best matches.</p>
+      <p>The right introduction is worth more than a fast one, so I'd rather take a little longer and get it right. Expect to hear from me with your first matches within the next 24 hours.</p>
+      <p>In the meantime, anything else I should know about who you'd love to meet? Just hit reply and tell me — I read every response.</p>
+      <p>${link('Open your dashboard →', `${env.FRONTEND_URL}/dashboard`)}</p>
+      <p>— Cleya</p>
+    `);
+    return this.send(email, `${firstName}, still finding your matches`, html);
+  }
+
   async sendPostIntroFollowUp(email: string, name?: string, matchName?: string) {
     const firstName = name?.split(' ')[0] || 'there';
     const matchFirst = matchName?.split(' ')[0] || 'your match';

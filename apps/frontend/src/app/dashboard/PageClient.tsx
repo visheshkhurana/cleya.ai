@@ -10,6 +10,7 @@ import AppFooter from '@/components/AppFooter';
 import AppShell from '@/components/AppShell';
 import UserAvatar from '@/components/UserAvatar';
 import { personaIcon, personaLabel } from '@/lib/persona';
+import { useTranslation } from '@/lib/i18n';
 
 interface UserProfile {
   persona?: string;
@@ -58,6 +59,7 @@ function getTimeAgo(dateStr: string): string {
 }
 
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [user, setUser] = useState<any>(null);
   const [matchStats, setMatchStats] = useState<MatchStats>({ total: 0, pending: 0, accepted: 0 });
@@ -398,10 +400,68 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {recentMatches.length > 0 && (
+        {/* Empty state for onboarded users with no matches yet — replaces the
+            blank-screen "looks broken" experience. Shows skeleton placeholder
+            cards plus a clear "matches being prepared" message. */}
+        {profile?.isComplete && recentMatches.length === 0 && !findingMatches && (
           <div>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold uppercase tracking-wider gradient-text">Your Matches</h3>
+            </div>
+            <div className="rounded-2xl border p-6 mb-4"
+              style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.06), rgba(78,205,196,0.03))', borderColor: 'rgba(108,99,255,0.18)' }}>
+              <div className="flex items-start gap-4">
+                <div className="relative w-12 h-12 flex-shrink-0">
+                  <span className="absolute inset-0 rounded-2xl animate-ping" style={{ background: 'rgba(108,99,255,0.25)', animationDuration: '2s' }} />
+                  <div className="relative w-12 h-12 rounded-2xl flex items-center justify-center text-2xl"
+                    style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)', boxShadow: '0 4px 16px rgba(108,99,255,0.3)' }}>
+                    🔎
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-base font-semibold text-white mb-1">{t('dashboard.matchesPreparingTitle')}</h4>
+                  <p className="text-sm text-white/55 leading-relaxed">
+                    {t('dashboard.matchesPreparingDesc')}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[0,1,2].map((i) => (
+                <div key={i} className="glass-card-glow p-4 animate-pulse">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-xl flex-shrink-0" style={{ background: 'rgba(255,255,255,0.05)' }} />
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div className="h-3 rounded w-2/3" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                      <div className="h-2 rounded w-1/2" style={{ background: 'rgba(255,255,255,0.04)' }} />
+                    </div>
+                  </div>
+                  <div className="h-2 rounded w-full mb-2" style={{ background: 'rgba(255,255,255,0.04)' }} />
+                  <div className="h-2 rounded w-4/5 mb-4" style={{ background: 'rgba(255,255,255,0.04)' }} />
+                  <div className="h-8 rounded-xl" style={{ background: 'rgba(108,99,255,0.08)' }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {recentMatches.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h3 className="text-sm font-semibold uppercase tracking-wider gradient-text">Your Matches</h3>
+                {/* "More matches on the way" pill — partial-results signal so the
+                    UI feels alive even when the matching pipeline is still
+                    running in the background. Shown when only 1-2 matches have
+                    landed so far for a freshly onboarded user. */}
+                {recentMatches.length > 0 && recentMatches.length < 3 && profile?.isComplete && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium border"
+                    style={{ background: 'rgba(108,99,255,0.1)', borderColor: 'rgba(108,99,255,0.25)', color: '#9B95FF' }}>
+                    <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#9B95FF' }} />
+                    {t('dashboard.moreMatchesOnTheWay')}
+                  </span>
+                )}
+              </div>
               <button onClick={() => router.push('/matches')} className="text-xs text-brand-violet hover:text-brand-violet-hover transition">
                 View All →
               </button>
