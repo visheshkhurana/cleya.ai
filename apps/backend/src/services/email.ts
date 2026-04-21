@@ -845,7 +845,7 @@ class EmailService {
     const html = plainEmailLayout(`
       <p>Hi ${firstName},</p>
       <p>Quick note from me — I'm still working on finding your best matches.</p>
-      <p>The right introduction is worth more than a fast one, so I'd rather take a little longer and get it right. Expect to hear from me with your first matches within the next 24 hours.</p>
+      <p>The right introduction is worth more than a fast one, so I'd rather take a little longer and get it right. I'll be in touch as soon as I have your first matches ready.</p>
       <p>In the meantime, anything else I should know about who you'd love to meet? Just hit reply and tell me — I read every response.</p>
       <p>${link('Open your dashboard →', `${env.FRONTEND_URL}/dashboard`)}</p>
       <p>— Cleya</p>
@@ -866,7 +866,7 @@ class EmailService {
     const html = plainEmailLayout(`
       <p>Hi ${firstName},</p>
       <p>Quick update — I'm still searching for the right people to introduce you to.</p>
-      <p>A day in and I don't yet have a match I'd stake my name on. I'd rather wait for someone genuinely worth your time than send a weak intro just to fill your inbox.</p>
+      <p>I don't yet have a match I'd stake my name on, and I'd rather wait for someone genuinely worth your time than send a weak intro just to fill your inbox.</p>
       <p>If there's anything you'd like to add about who you'd love to meet — a specific role, sector, stage, or even a name — just hit reply. Every detail helps me narrow it down.</p>
       <p>${link('Open your dashboard →', `${env.FRONTEND_URL}/dashboard`)}</p>
       <p>— Cleya</p>
