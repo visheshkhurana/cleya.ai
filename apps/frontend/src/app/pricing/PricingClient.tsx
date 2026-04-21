@@ -161,6 +161,16 @@ export default function PricingClient() {
   const handleSubscribe = async () => {
     setSubscribing(true);
     try {
+      // Auth check up-front: if the visitor isn't signed in, send them
+      // straight to signup the same way the Starter CTA does. Without
+      // this, /subscription/create returns a 401 whose error message
+      // doesn't always match the catch-block string check below, and the
+      // Pro button silently does nothing — making it look like dead text.
+      const me = await api.getMe();
+      if (!me) {
+        window.location.href = '/?action=signup';
+        return;
+      }
       const data = await api.createSubscription();
       if (data.subscriptionId && data.keyId && typeof window !== 'undefined') {
         const script = document.createElement('script');
@@ -191,7 +201,15 @@ export default function PricingClient() {
       }
     } catch (err: any) {
       console.error('Subscription failed:', err);
-      if (err.message?.includes('Missing or invalid authorization') || err.message?.includes('Unauthorized')) {
+      const msg = String(err?.message || '').toLowerCase();
+      // Broaden auth-error detection so any 401-shaped message triggers
+      // the signup redirect instead of a silent toast.
+      if (
+        msg.includes('missing or invalid authorization') ||
+        msg.includes('unauthorized') ||
+        msg.includes('not authenticated') ||
+        msg.includes('401')
+      ) {
         window.location.href = '/?action=signup';
       } else {
         toast.error(err.message || 'Unable to start subscription. Please try again.');
