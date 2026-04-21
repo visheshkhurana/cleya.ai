@@ -105,8 +105,17 @@ app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json({
   limit: '10mb',
   verify: (req: any, _res, buf) => {
-    // Preserve raw body for Razorpay webhook signature verification
-    if (req.originalUrl === '/api/subscription/webhook') {
+    // Preserve raw body for webhook signature verification.
+    // Routes that use HMAC over the exact request bytes:
+    //   - /api/subscription/webhook        Razorpay
+    //   - /api/webhooks/resend             Resend (svix)
+    //   - /api/gupshup/meta-webhook        Meta WhatsApp Cloud API
+    const url = req.originalUrl || '';
+    if (
+      url.startsWith('/api/subscription/webhook') ||
+      url.startsWith('/api/webhooks/resend') ||
+      url.startsWith('/api/gupshup/meta-webhook')
+    ) {
       req.rawBody = buf.toString();
     }
   },
