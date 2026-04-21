@@ -1,10 +1,85 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '@cleya/db';
+import crypto from 'crypto';
+import { env } from '../config/env';
 
 const router = Router();
 
+/**
+ * Verify a Resend (Svix) webhook signature.
+ * Resend sends three headers: svix-id, svix-timestamp, svix-signature.
+ * Signature scheme: base64(HMAC-SHA256(secret_bytes, `${id}.${timestamp}.${rawBody}`)).
+ * The header may contain multiple space-separated `v1,<sig>` entries — match any.
+ * Secret is stored as `whsec_<base64>` and must be base64-decoded before HMAC.
+ */
+function verifyResendSignature(
+  secret: string,
+  svixId: string,
+  svixTimestamp: string,
+  svixSignature: string,
+  rawBody: string,
+): boolean {
+  try {
+    const secretBase64 = secret.startsWith('whsec_') ? secret.slice('whsec_'.length) : secret;
+    const secretBytes = Buffer.from(secretBase64, 'base64');
+    const signedPayload = `${svixId}.${svixTimestamp}.${rawBody}`;
+    const expected = crypto
+      .createHmac('sha256', secretBytes)
+      .update(signedPayload, 'utf8')
+      .digest('base64');
+
+    const provided = svixSignature
+      .split(' ')
+      .map((entry) => entry.trim())
+      .filter((entry) => entry.startsWith('v1,'))
+      .map((entry) => entry.slice('v1,'.length));
+
+    return provided.some((sig) => {
+      const sigBuf = Buffer.from(sig, 'base64');
+      const expBuf = Buffer.from(expected, 'base64');
+      return sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf);
+    });
+  } catch {
+    return false;
+  }
+}
+
 router.post('/resend', async (req: Request, res: Response) => {
   try {
+    // === SIGNATURE VERIFICATION ===
+    // When RESEND_WEBHOOK_SECRET is configured, signature is enforced strictly.
+    // When unset, we log a loud warning and accept (so live webhook ingestion
+    // is not broken). Set RESEND_WEBHOOK_SECRET in Replit secrets + the Resend
+    // dashboard to activate enforcement.
+    if (env.RESEND_WEBHOOK_SECRET) {
+      const svixId = req.headers['svix-id'] as string | undefined;
+      const svixTimestamp = req.headers['svix-timestamp'] as string | undefined;
+      const svixSignature = req.headers['svix-signature'] as string | undefined;
+      const rawBody = (req as any).rawBody as string | undefined;
+
+      if (!svixId || !svixTimestamp || !svixSignature || !rawBody) {
+        console.warn('[ResendWebhook] Rejected: missing svix headers or raw body');
+        return res.status(403).json({ error: 'Invalid signature' });
+      }
+
+      const ok = verifyResendSignature(
+        env.RESEND_WEBHOOK_SECRET,
+        svixId,
+        svixTimestamp,
+        svixSignature,
+        rawBody,
+      );
+      if (!ok) {
+        console.warn('[ResendWebhook] Rejected: signature mismatch');
+        return res.status(403).json({ error: 'Invalid signature' });
+      }
+    } else {
+      console.warn(
+        '[ResendWebhook] RESEND_WEBHOOK_SECRET not configured — accepting webhook without verification. ' +
+          'Set this secret to enforce signature verification in production.',
+      );
+    }
+
     const event = req.body;
     const eventType = event?.type;
     const emailId = event?.data?.email_id;

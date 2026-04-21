@@ -5,11 +5,16 @@ import { twilioWhatsAppService } from '../services/twilioWhatsAppService';
 import { messagingService } from '../services/messagingService';
 import { whatsappBotService } from '../services/whatsappBotService';
 import { env } from '../config/env';
+import { authenticate, requireRole } from '../middleware/auth';
 
 export const gupshupRouter = Router();
 
 gupshupRouter.post('/webhook', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    // === SIGNATURE VERIFICATION ===
+    // Strict when GUPSHUP_WEBHOOK_SECRET is configured; warning + accept when
+    // unset (so live ingestion isn't broken if the env var is missing). Set
+    // the secret in Replit + Gupshup dashboard to activate enforcement.
     const webhookSecret = process.env.GUPSHUP_WEBHOOK_SECRET;
     if (webhookSecret) {
       const incomingKey = (req.query.secret as string) || req.headers['x-gupshup-webhook-secret'] as string;
@@ -18,6 +23,11 @@ gupshupRouter.post('/webhook', async (req: Request, res: Response, next: NextFun
         res.sendStatus(403);
         return;
       }
+    } else {
+      console.warn(
+        '[Gupshup Webhook] GUPSHUP_WEBHOOK_SECRET not configured — accepting webhook without verification. ' +
+          'Set this secret to enforce verification in production.',
+      );
     }
 
     const payload = req.body;
@@ -121,7 +131,7 @@ gupshupRouter.get('/status', (_req: Request, res: Response) => {
   });
 });
 
-gupshupRouter.post('/test-send', async (req: Request, res: Response) => {
+gupshupRouter.post('/test-send', authenticate, requireRole('MANAGER'), async (req: Request, res: Response) => {
   try {
     const { phone, message } = req.body;
     if (!phone || !message) {
@@ -173,15 +183,32 @@ gupshupRouter.get('/meta-webhook', (req: Request, res: Response) => {
 
 // Meta Cloud API webhook events (POST)
 gupshupRouter.post('/meta-webhook', async (req: Request, res: Response) => {
-  // Verify signature if app secret is configured
-  if (env.META_WHATSAPP_APP_SECRET && req.headers['x-hub-signature-256']) {
-    const signature = req.headers['x-hub-signature-256'] as string;
-    const rawBody = typeof req.body === 'string' ? Buffer.from(req.body) : Buffer.from(JSON.stringify(req.body));
-    if (!metaWhatsAppService.verifyWebhookSignature(rawBody, signature)) {
-      console.warn('[Meta Webhook] Invalid signature, rejecting');
+  // === SIGNATURE VERIFICATION ===
+  // Strict when META_WHATSAPP_APP_SECRET is configured: signature header must
+  // be present AND valid. When unset, we log a warning and accept so live
+  // ingestion isn't broken. Set the app secret to activate enforcement.
+  if (env.META_WHATSAPP_APP_SECRET) {
+    const signature = req.headers['x-hub-signature-256'] as string | undefined;
+    if (!signature) {
+      console.warn('[Meta Webhook] Rejected: missing x-hub-signature-256 header');
       res.sendStatus(403);
       return;
     }
+    const rawBody = (req as any).rawBody
+      ? Buffer.from((req as any).rawBody as string)
+      : (typeof req.body === 'string'
+          ? Buffer.from(req.body)
+          : Buffer.from(JSON.stringify(req.body)));
+    if (!metaWhatsAppService.verifyWebhookSignature(rawBody, signature)) {
+      console.warn('[Meta Webhook] Rejected: signature mismatch');
+      res.sendStatus(403);
+      return;
+    }
+  } else {
+    console.warn(
+      '[Meta Webhook] META_WHATSAPP_APP_SECRET not configured — accepting webhook without verification. ' +
+        'Set this secret to enforce verification in production.',
+    );
   }
 
   // Always return 200 immediately per Meta requirements

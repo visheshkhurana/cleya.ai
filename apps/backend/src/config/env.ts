@@ -45,6 +45,7 @@ const envSchema = z.object({
   CLERK_SECRET_KEY: z.string().optional(),
 
   RESEND_API_KEY: z.string().optional(),
+  RESEND_WEBHOOK_SECRET: z.string().optional(),
 
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().default(587),
