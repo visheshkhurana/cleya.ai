@@ -853,6 +853,48 @@ class EmailService {
     return this.send(email, `${firstName}, still finding your matches`, html);
   }
 
+  /**
+   * Day-1 follow-up: still no matches 24h after onboarding.
+   *
+   * Fires if the user is *still* sitting on zero matches a day in
+   * (gated independently of the 2h send — the only condition is
+   * matchCount === 0 at trigger time). Tone matches sendMatchInterim:
+   * keep expectations honest, encourage a reply with more context.
+   */
+  async sendMatchInterimDay1(email: string, name?: string) {
+    const firstName = name?.split(' ')[0] || 'there';
+    const html = plainEmailLayout(`
+      <p>Hi ${firstName},</p>
+      <p>Quick update — I'm still searching for the right people to introduce you to.</p>
+      <p>A day in and I don't yet have a match I'd stake my name on. I'd rather wait for someone genuinely worth your time than send a weak intro just to fill your inbox.</p>
+      <p>If there's anything you'd like to add about who you'd love to meet — a specific role, sector, stage, or even a name — just hit reply. Every detail helps me narrow it down.</p>
+      <p>${link('Open your dashboard →', `${env.FRONTEND_URL}/dashboard`)}</p>
+      <p>— Cleya</p>
+    `);
+    return this.send(email, `${firstName}, still searching for the right match`, html);
+  }
+
+  /**
+   * Day-2 follow-up: still no matches 48h after onboarding.
+   *
+   * This is the honest "we haven't found anyone yet, but we'll keep you
+   * posted" note. After this we go quiet until matches actually appear,
+   * so the copy needs to set that expectation cleanly.
+   */
+  async sendMatchInterimDay2(email: string, name?: string) {
+    const firstName = name?.split(' ')[0] || 'there';
+    const html = plainEmailLayout(`
+      <p>Hi ${firstName},</p>
+      <p>Wanted to be straight with you — I haven't been able to find a match worth introducing you to just yet.</p>
+      <p>This usually means the right people aren't on Cleya yet, or your goals are specific enough that I'd rather hold out for a strong fit than send something that wastes your time. Either way, you're not forgotten — your profile stays active and I'll keep searching every day.</p>
+      <p>The moment I find someone genuinely worth meeting, you'll hear from me first.</p>
+      <p>If anything has changed about who you'd like to meet, just hit reply and tell me — that's often the unlock.</p>
+      <p>${link('Open your dashboard →', `${env.FRONTEND_URL}/dashboard`)}</p>
+      <p>— Cleya</p>
+    `);
+    return this.send(email, `${firstName}, an honest update on your matches`, html);
+  }
+
   async sendPostIntroFollowUp(email: string, name?: string, matchName?: string) {
     const firstName = name?.split(' ')[0] || 'there';
     const matchFirst = matchName?.split(' ')[0] || 'your match';

@@ -6,16 +6,22 @@ import { whatsappTemplates } from './whatsappTemplates';
 import { matchScheduler } from './matchScheduler';
 import { emailService } from './email';
 
-// If a user has zero matches this many ms after onboarding, send the
-// "still working on your matches" interim email so they're not left
-// staring at an empty dashboard wondering if the product is broken.
+// Cadence for the "still working on your matches" reassurance emails.
+// All three fire only if the user STILL has zero matches at trigger time.
+//   T+2h   — first interim ("still finding your matches")
+//   T+24h  — day-1 follow-up ("still searching for the right match")
+//   T+48h  — day-2 honest update ("haven't found one yet, will keep looking")
+// After T+48h we go quiet until matches actually appear.
 const INTERIM_MATCH_EMAIL_DELAY_MS = 2 * 60 * 60 * 1000; // 2 hours
+const INTERIM_MATCH_EMAIL_DAY1_DELAY_MS = 24 * 60 * 60 * 1000; // 24 hours
+const INTERIM_MATCH_EMAIL_DAY2_DELAY_MS = 48 * 60 * 60 * 1000; // 48 hours
 
 export class AutomationService {
   // In-memory dedupe so retried/replayed onboarding completions don't queue
   // multiple interim-email timers for the same user. Process-local; restart
   // resets it, which is fine because onboarding completion is the source
   // event and replays would also need a process to be live to re-trigger.
+  // Keys are composite: `${userId}:${stage}` where stage ∈ {2h, 24h, 48h}.
   private interimEmailScheduled = new Set<string>();
 
   async onOnboardingComplete(userId: string, context: Record<string, any>) {
@@ -41,6 +47,8 @@ export class AutomationService {
     );
 
     this.scheduleInterimMatchEmail(userId, user.email, userName);
+    this.scheduleInterimMatchEmailDay1(userId, user.email, userName);
+    this.scheduleInterimMatchEmailDay2(userId, user.email, userName);
 
     if (persona === 'DEAL_PARTNER') {
       this.scheduleDealPartnerScout(userId);
@@ -129,14 +137,45 @@ export class AutomationService {
    * email, not a broken match.
    */
   private scheduleInterimMatchEmail(userId: string, email: string, userName?: string) {
-    // Idempotency guard: if a timer is already pending for this user, skip.
-    // Prevents duplicate emails when onOnboardingComplete is replayed or
-    // when multiple completion events fire in quick succession.
-    if (this.interimEmailScheduled.has(userId)) {
-      console.log(`[InterimEmail] Already scheduled for ${userId}, skipping duplicate`);
+    this.scheduleInterimEmailStage(userId, email, userName, '2h', INTERIM_MATCH_EMAIL_DELAY_MS, (e, n) =>
+      emailService.sendMatchInterim(e, n)
+    );
+  }
+
+  private scheduleInterimMatchEmailDay1(userId: string, email: string, userName?: string) {
+    this.scheduleInterimEmailStage(userId, email, userName, '24h', INTERIM_MATCH_EMAIL_DAY1_DELAY_MS, (e, n) =>
+      emailService.sendMatchInterimDay1(e, n)
+    );
+  }
+
+  private scheduleInterimMatchEmailDay2(userId: string, email: string, userName?: string) {
+    this.scheduleInterimEmailStage(userId, email, userName, '48h', INTERIM_MATCH_EMAIL_DAY2_DELAY_MS, (e, n) =>
+      emailService.sendMatchInterimDay2(e, n)
+    );
+  }
+
+  /**
+   * Shared scheduler for all three interim-email stages.
+   *
+   * Each stage is dedup-keyed independently (`${userId}:${stage}`) so the
+   * 2h, 24h, and 48h timers don't collide and a replay of onOnboardingComplete
+   * never queues two timers for the same stage. At trigger time we re-check
+   * the database and bail out if any matches now exist.
+   */
+  private scheduleInterimEmailStage(
+    userId: string,
+    email: string,
+    userName: string | undefined,
+    stage: '2h' | '24h' | '48h',
+    delayMs: number,
+    sender: (email: string, name?: string) => Promise<boolean>
+  ) {
+    const dedupeKey = `${userId}:${stage}`;
+    if (this.interimEmailScheduled.has(dedupeKey)) {
+      console.log(`[InterimEmail:${stage}] Already scheduled for ${userId}, skipping duplicate`);
       return;
     }
-    this.interimEmailScheduled.add(userId);
+    this.interimEmailScheduled.add(dedupeKey);
 
     setTimeout(async () => {
       try {
@@ -144,17 +183,17 @@ export class AutomationService {
           where: { OR: [{ userAId: userId }, { userBId: userId }] },
         });
         if (matchCount > 0) {
-          console.log(`[InterimEmail] Skipping for ${userId} — ${matchCount} match(es) already exist`);
+          console.log(`[InterimEmail:${stage}] Skipping for ${userId} — ${matchCount} match(es) already exist`);
           return;
         }
-        const ok = await emailService.sendMatchInterim(email, userName);
-        console.log(`[InterimEmail] Sent to ${email} for user ${userId}: ${ok}`);
+        const ok = await sender(email, userName);
+        console.log(`[InterimEmail:${stage}] Sent to ${email} for user ${userId}: ${ok}`);
       } catch (err) {
-        console.error(`[InterimEmail] Failed to send for ${userId}:`, err);
+        console.error(`[InterimEmail:${stage}] Failed to send for ${userId}:`, err);
       } finally {
-        this.interimEmailScheduled.delete(userId);
+        this.interimEmailScheduled.delete(dedupeKey);
       }
-    }, INTERIM_MATCH_EMAIL_DELAY_MS);
+    }, delayMs);
   }
 
   private scheduleCall(userId: string, phoneNumber: string) {
