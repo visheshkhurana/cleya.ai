@@ -11,7 +11,7 @@ const cityMeta: Record<string, { name: string; description: string }> = {
   },
   delhi: {
     name: 'Delhi NCR',
-    description: "Tap into Delhi NCR's 10,000+ startups. Find investors, co-founders, and talent in logistics, edtech, and B2B commerce on Cleya.ai.",
+    description: "Tap into Delhi NCR's 10,000+ startups. Find investors, co-founders, and operators in logistics, edtech, and B2B commerce on Cleya.ai.",
   },
   hyderabad: {
     name: 'Hyderabad',

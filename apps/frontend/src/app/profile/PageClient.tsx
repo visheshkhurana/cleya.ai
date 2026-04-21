@@ -459,7 +459,7 @@ export default function ProfilePage() {
 
         {isTalent && (
           <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: '#1A2035' }}>
-            <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Talent Details</h3>
+            <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Operator Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Years of Experience</label>

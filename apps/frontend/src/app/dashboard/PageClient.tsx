@@ -607,7 +607,7 @@ export default function DashboardPage() {
                   </div>
                 ))}
               </div>
-              <p className="text-[11px] text-white/30 mt-3">Share with founders, investors, or talent you think should be on Cleya.</p>
+              <p className="text-[11px] text-white/30 mt-3">Share with founders, investors, or operators you think should be on Cleya.</p>
             </div>
           )}
 

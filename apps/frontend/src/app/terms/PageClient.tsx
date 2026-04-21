@@ -19,7 +19,7 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-lg font-semibold text-white mb-3">2. Eligibility</h2>
-            <p>To use Cleya.ai, you must be at least 18 years old and a professional in good standing. The Platform is designed for founders, investors, talent, and operators seeking legitimate professional connections within India&apos;s startup ecosystem and beyond. Cleya.ai reserves the right to deny or revoke access at its sole discretion.</p>
+            <p>To use Cleya.ai, you must be at least 18 years old and a professional in good standing. The Platform is designed for founders, investors, and operators seeking legitimate professional connections within India&apos;s startup ecosystem and beyond. Cleya.ai reserves the right to deny or revoke access at its sole discretion.</p>
           </section>
 
           <section>

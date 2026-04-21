@@ -14,7 +14,7 @@ const highlights = [
   { value: 'Multi-City', label: 'Presence across India\'s key startup hubs' },
   { value: 'AI-Powered', label: 'Semantic matching beyond keywords' },
   { value: 'Curated', label: 'Members-only, invite-driven network' },
-  { value: 'Cross-Role', label: 'Founders, investors & talent matched' },
+  { value: 'Cross-Role', label: 'Founders, investors & operators matched' },
 ];
 
 export default function AboutPage() {
@@ -34,7 +34,7 @@ export default function AboutPage() {
           <h2 className="text-xl font-bold text-white mb-4">Our Mission</h2>
           <p className="text-sm leading-relaxed" style={{ color: '#94A3B8' }}>
             Cleya.ai exists to accelerate India&apos;s startup ecosystem by making meaningful professional connections effortless.
-            We use AI to understand what founders, investors, and talent are truly looking for — then match them with the right people at the right time.
+            We use AI to understand what founders, investors, and operators are truly looking for — then match them with the right people at the right time.
             Our vision is a world where no promising startup fails because the founder couldn&apos;t find the right investor, co-founder, or mentor.
           </p>
         </section>
@@ -78,7 +78,7 @@ export default function AboutPage() {
             {[
               { Icon: Rocket, title: 'Founders', desc: 'Find investors, co-founders, and key hires aligned with your stage and sector.' },
               { Icon: TrendingUp, title: 'Investors', desc: 'Discover vetted deal flow and portfolio synergies matched to your thesis.' },
-              { Icon: Target, title: 'Talent & Operators', desc: 'Connect with high-growth startups hiring now for leadership roles.' },
+              { Icon: Target, title: 'Operators', desc: 'Connect with high-growth startups hiring now for leadership roles.' },
             ].map((p, i) => (
               <div key={i} className="text-center p-5 rounded-xl border border-white/5" style={{ background: 'rgba(108,99,255,0.05)' }}>
                 <div

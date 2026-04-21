@@ -129,7 +129,7 @@ export default function JoinPage() {
                 {[
                   { value: 'FOUNDER', label: 'Founder', icon: '🚀' },
                   { value: 'INVESTOR', label: 'Investor', icon: '💰' },
-                  { value: 'TALENT', label: 'Talent', icon: '⚡' },
+                  { value: 'TALENT', label: 'Operator', icon: '⚡' },
                 ].map((p) => (
                   <button key={p.value} type="button" onClick={() => setSelectedPersona(p.value)}
                     className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl border transition-all duration-200"

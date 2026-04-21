@@ -801,9 +801,9 @@ const ROLE_PERSONAS = [
     previews: USE_CASE_PREVIEWS.INVESTOR,
   },
   {
-    title: 'Talent',
-    tagline: 'Land your next role through relationships.',
-    desc: "Get introduced to founders who are hiring — before the job is posted. Cleya understands what you've built and matches you with the right operators.",
+    title: 'Operators',
+    tagline: 'Land your next operator role through relationships.',
+    desc: "Get introduced to founders who are hiring — before the job is posted. Cleya understands what you've built and matches you with the right founders.",
     bullets: [
       'Roles surfaced from your matched founders',
       'Relationship-led intros, not job boards',

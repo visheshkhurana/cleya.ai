@@ -17,7 +17,7 @@ const features = [
   {
     icon: '🎯',
     title: 'Persona-Specific Profiles',
-    description: 'Whether you\'re a founder raising capital, an investor seeking deals, or talent looking for your next role — your profile is tailored to your goals.',
+    description: 'Whether you\'re a founder raising capital, an investor seeking deals, or an operator looking for your next role — your profile is tailored to your goals.',
   },
   {
     icon: '📊',

@@ -24,7 +24,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     'hero.badge': 'Members-only · Invite or apply',
     'hero.title1': 'Meet the right',
     'hero.title2': 'people. Faster.',
-    'hero.subtitle': 'Cleya is your AI Superconnector — matching founders, investors, and talent across India\'s startup ecosystem.',
+    'hero.subtitle': 'Cleya is your AI Superconnector — matching founders, investors, and operators across India\'s startup ecosystem.',
     'hero.cta': 'Get Started →',
     'hero.secondary': 'See How It Works',
 
@@ -299,7 +299,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     'hero.badge': 'केवल सदस्यों के लिए · आमंत्रण या आवेदन',
     'hero.title1': 'सही लोगों से मिलें',
     'hero.title2': 'तेज़ी से।',
-    'hero.subtitle': 'Cleya आपका AI सुपरकनेक्टर है — भारत के स्टार्टअप इकोसिस्टम में संस्थापकों, निवेशकों और प्रतिभाओं को जोड़ता है।',
+    'hero.subtitle': 'Cleya आपका AI सुपरकनेक्टर है — भारत के स्टार्टअप इकोसिस्टम में संस्थापकों, निवेशकों और ऑपरेटरों को जोड़ता है।',
     'hero.cta': 'शुरू करें →',
     'hero.secondary': 'देखें कैसे काम करता है',
 
