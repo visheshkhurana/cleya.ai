@@ -154,7 +154,7 @@ function CellValue({ value }: { value: string | boolean }) {
 
 export default function PricingClient() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [annual, setAnnual] = useState(false);
+  const [annual, setAnnual] = useState(true);
   const [subscribing, setSubscribing] = useState(false);
   const toast = useToast();
 
