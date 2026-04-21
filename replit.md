@@ -26,6 +26,11 @@ These are non-obvious things future-me will otherwise rediscover the hard way:
 - **Two chat pages exist**: `/chat/PageClient.tsx` (used in production for both onboarding and post-onboarding chat) and `/secretary/PageClient.tsx`. Any chat-layout fix must be applied to BOTH.
 - **Design tokens** (current warm-indigo palette): Canvas `#0B0820`, Surface `#15102E`, Card `#1E1745`; Violet `#8B7BFF`, Teal `#5DECDC`, Magenta `#FF6B9D`.
 - **Email preview**: render-only (no send) via `npx ts-node apps/backend/scripts/preview-emails.ts` → outputs to `docs/email-previews/*.html`. Real send via `apps/backend/scripts/send-demo-emails.ts`.
+- **Webhook signature secrets** (set these in Replit secrets to enforce verification — see `SECURITY_AUDIT_2026-04-20.md`):
+  - `RESEND_WEBHOOK_SECRET` (format: `whsec_<base64>`, from Resend dashboard → Webhooks) — verifies svix-signed Resend webhooks. When unset, webhook is accepted with a loud warning log.
+  - `GUPSHUP_WEBHOOK_SECRET` — same pattern for Gupshup.
+  - `META_WHATSAPP_APP_SECRET` — same pattern for Meta Cloud API webhooks; when set, x-hub-signature-256 header is also required.
+- **`/api/gupshup/test-send` is MANAGER-only** (was previously unauthenticated). Use the test user only for non-MANAGER scenarios; for WhatsApp test sends, log in as a MANAGER role account.
 
 ## Architecture
 Monorepo with:
