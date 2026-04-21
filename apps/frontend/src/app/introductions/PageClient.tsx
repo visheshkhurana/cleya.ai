@@ -134,14 +134,10 @@ export default function IntroductionsPage() {
   const activeCount = introductions.filter(i => ['SENT', 'VIEWED', 'FOLLOWED_UP'].includes(i.status)).length;
 
   if (loading) {
-    return (
-      <AppShell>
-        <div className="flex items-center gap-3">
-          <div className="w-5 h-5 border-2 border-brand-violet border-t-transparent rounded-full animate-spin" />
-          <p className="text-white/40 text-sm">{t('common.loading')}</p>
-        </div>
-      </AppShell>
-    );
+    // Skeleton mirrors the real list layout (header strip + intro cards
+    // with avatar / name / status pill / preview / date) so the swap-in
+    // when data resolves is visually seamless.
+    return <IntroductionsSkeleton />;
   }
 
   return (
@@ -449,5 +445,62 @@ function IntroDetailModal({
         </div>
       </div>
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Loading skeleton                                                    */
+/* ------------------------------------------------------------------ */
+/**
+ * IntroductionsSkeleton renders a low-fidelity placeholder that mirrors
+ * the real list (header strip + intro cards). Same outer chrome and
+ * spacing so the swap-in feels continuous, not like a page reload.
+ */
+function IntroductionsSkeleton() {
+  const Block = ({ className = '', style }: { className?: string; style?: React.CSSProperties }) => (
+    <div className={`rounded-md bg-white/[0.06] ${className}`} style={style} />
+  );
+  const IntroCardSkeleton = () => (
+    <div className="rounded-2xl border border-white/5 p-5" style={{ background: 'rgba(15,22,41,0.8)' }}>
+      <div className="flex items-start gap-4">
+        <Block className="w-12 h-12 rounded-xl flex-shrink-0" />
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Block className="h-4 w-32" />
+            <Block className="h-4 w-16 rounded-full" />
+          </div>
+          <Block className="h-3 w-24" />
+          <Block className="h-3 w-full" />
+          <Block className="h-3 w-2/3" />
+          <Block className="h-2.5 w-20 mt-1" />
+        </div>
+        <Block className="h-4 w-3 flex-shrink-0" />
+      </div>
+    </div>
+  );
+
+  return (
+    <AppShell>
+      <AppNav rightContent={<NotificationCenter />} />
+      <div className="max-w-5xl mx-auto px-6 lg:px-8 pt-3 flex items-center gap-3">
+        <Block className="h-3.5 w-32" />
+        <Block className="h-4 w-20 rounded-full" />
+      </div>
+
+      <div className="max-w-5xl mx-auto px-6 lg:px-8 py-6 animate-pulse">
+        <div className="rounded-xl border p-4 mb-6"
+          style={{ background: 'rgba(108,99,255,0.05)', borderColor: 'rgba(108,99,255,0.15)' }}>
+          <Block className="h-3 w-3/4" />
+        </div>
+
+        <Block className="h-3 w-28 mb-4" />
+        <div className="space-y-3">
+          <IntroCardSkeleton />
+          <IntroCardSkeleton />
+          <IntroCardSkeleton />
+        </div>
+      </div>
+      <AppFooter />
+    </AppShell>
   );
 }

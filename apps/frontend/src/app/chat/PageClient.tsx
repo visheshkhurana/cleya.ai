@@ -312,17 +312,10 @@ export default function ChatPage() {
   };
 
   if (loading) {
-    return (
-      <AppShell className="flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 glow-pulse"
-            style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}>
-            <span className="text-white text-2xl font-bold">C</span>
-          </div>
-          <p className="text-sm text-white/40">{t('chat.startConversation')}</p>
-        </div>
-      </AppShell>
-    );
+    // Skeleton mirrors the chat layout (AppNav + progress strip placeholder
+    // + scrollable bubble area with alternating AI/USER bubbles + sticky
+    // input bar) so the transition from loading to conversation is smooth.
+    return <ChatSkeleton />;
   }
 
   if (showCompletion && !redirecting) {
@@ -486,6 +479,79 @@ export default function ChatPage() {
           )}
         </form>
       )}
+      </div>
+      <AppFooter />
+    </AppShell>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Loading skeleton                                                    */
+/* ------------------------------------------------------------------ */
+/**
+ * ChatSkeleton renders a low-fidelity placeholder that mirrors the chat
+ * page layout (AppNav + onboarding progress strip + alternating message
+ * bubbles + sticky input bar). Keeps the outer chrome identical so the
+ * transition to the live conversation is seamless.
+ */
+function ChatSkeleton() {
+  const Block = ({ className = '', style }: { className?: string; style?: React.CSSProperties }) => (
+    <div className={`rounded-md bg-white/[0.06] ${className}`} style={style} />
+  );
+  const Bubble = ({ side, width }: { side: 'left' | 'right'; width: string }) => (
+    <div className={`flex ${side === 'right' ? 'justify-end' : 'justify-start'} px-2 py-1`}>
+      <div
+        className="rounded-2xl px-4 py-3 space-y-2"
+        style={{
+          width,
+          maxWidth: '75%',
+          background: side === 'right'
+            ? 'linear-gradient(135deg, rgba(108,99,255,0.18), rgba(78,205,196,0.12))'
+            : 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.05)',
+        }}
+      >
+        <Block className="h-3 w-full" />
+        <Block className="h-3 w-4/5" />
+      </div>
+    </div>
+  );
+
+  return (
+    <AppShell className="flex flex-col overflow-x-hidden">
+      <AppNav rightContent={<NotificationCenter />} />
+      <div className="flex flex-col w-full" style={{ height: 'calc(100dvh - 52px)' }}>
+        {/* Onboarding progress strip placeholder */}
+        <div className="px-6 lg:px-8 py-3 border-b border-white/5" style={{ background: 'rgba(8,13,26,0.9)' }}>
+          <div className="flex items-center justify-between mb-2">
+            <Block className="h-3 w-16" />
+            <Block className="h-3 w-20" />
+          </div>
+          <Block className="h-1.5 w-full rounded-full" />
+          <div className="flex justify-between mt-1.5">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Block key={i} className="h-2 w-8" />
+            ))}
+          </div>
+        </div>
+
+        {/* Bubble area */}
+        <div className="flex-1 overflow-y-auto chat-scroll px-6 lg:px-8 py-6 space-y-3 w-full animate-pulse">
+          <Bubble side="left" width="70%" />
+          <Bubble side="left" width="55%" />
+          <Bubble side="right" width="40%" />
+          <Bubble side="left" width="80%" />
+          <Bubble side="right" width="35%" />
+          <Bubble side="left" width="60%" />
+        </div>
+
+        {/* Sticky input bar */}
+        <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 border-t border-white/5 bg-[#0F1629]/95">
+          <div className="flex gap-2 items-stretch">
+            <Block className="h-12 flex-1 rounded-2xl" />
+            <Block className="h-12 w-12 rounded-2xl" />
+          </div>
+        </div>
       </div>
       <AppFooter />
     </AppShell>
