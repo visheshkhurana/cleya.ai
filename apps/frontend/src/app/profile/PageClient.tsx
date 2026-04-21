@@ -191,14 +191,10 @@ export default function ProfilePage() {
   const completenessScore = Math.round(((completenessFields.length - getMissingFields().length) / completenessFields.length) * 100);
 
   if (loading) {
-    return (
-      <AppShell className="flex items-center justify-center">
-        <div className="flex items-center gap-3">
-          <div className="w-5 h-5 border-2 border-brand-violet border-t-transparent rounded-full animate-spin" />
-          <p className="text-slate-400 text-sm">Loading profile...</p>
-        </div>
-      </AppShell>
-    );
+    // Skeleton mirrors the real form layout (identity card, strength bar,
+    // Basic Info, Industries, Professional Details, Availability) so the
+    // transition from skeleton to loaded state is visually seamless.
+    return <ProfileSkeleton />;
   }
 
   const persona = profile.persona || 'OTHER';
@@ -563,6 +559,125 @@ export default function ProfilePage() {
             style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}>
             {saving ? 'Saving...' : saved ? 'Saved ✓' : 'Save Changes'}
           </button>
+        </div>
+      </div>
+
+      <AppFooter />
+    </AppShell>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Loading skeleton                                                    */
+/* ------------------------------------------------------------------ */
+/**
+ * ProfileSkeleton renders a low-fidelity placeholder that mirrors the
+ * shape of the real profile form. Same outer chrome (AppShell + AppNav),
+ * same card containers, same grid breakpoints, and roughly the same
+ * vertical rhythm — so when the data resolves and the real form swaps in
+ * there's no layout shift or flash of empty space.
+ */
+function ProfileSkeleton() {
+  const Block = ({ className = '', style }: { className?: string; style?: React.CSSProperties }) => (
+    <div className={`rounded-md bg-white/[0.06] ${className}`} style={style} />
+  );
+  const FieldBlock = () => (
+    <div>
+      <Block className="h-3 w-24 mb-2" />
+      <Block className="h-10 w-full" />
+    </div>
+  );
+  const SectionCard = ({ children }: { children: React.ReactNode }) => (
+    <div className="rounded-2xl border border-white/5 p-6 space-y-5" style={{ background: '#1A2035' }}>
+      {children}
+    </div>
+  );
+
+  return (
+    <AppShell>
+      <AppNav rightContent={
+        <div className="flex items-center gap-2">
+          <Block className="h-7 w-16 rounded-lg" />
+        </div>
+      } />
+
+      <div className="max-w-3xl mx-auto px-6 lg:px-8 py-8 space-y-6 animate-pulse">
+        {/* Identity card */}
+        <div className="rounded-2xl border border-white/5 p-6 flex items-center gap-4" style={{ background: '#1A2035' }}>
+          <Block className="h-20 w-20 rounded-2xl" />
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center gap-2">
+              <Block className="h-5 w-40" />
+              <Block className="h-4 w-16 rounded-full" />
+            </div>
+            <Block className="h-3 w-56" />
+          </div>
+        </div>
+
+        {/* Profile strength bar */}
+        <div className="rounded-2xl border border-white/5 p-5 space-y-3" style={{ background: '#1A2035' }}>
+          <div className="flex items-center justify-between">
+            <Block className="h-3 w-32" />
+            <Block className="h-3 w-10" />
+          </div>
+          <Block className="h-2 w-full rounded-full" />
+        </div>
+
+        {/* Personal Info / Basic Information */}
+        <SectionCard>
+          <Block className="h-3 w-40" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FieldBlock />
+            <FieldBlock />
+            <FieldBlock />
+            <FieldBlock />
+          </div>
+          <FieldBlock />
+          {/* Bio (taller textarea) */}
+          <div>
+            <Block className="h-3 w-16 mb-2" />
+            <Block className="h-20 w-full" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FieldBlock />
+            <FieldBlock />
+          </div>
+        </SectionCard>
+
+        {/* Industries (chip row) */}
+        <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: '#1A2035' }}>
+          <Block className="h-3 w-24" />
+          <div className="flex flex-wrap gap-2">
+            {[64, 80, 56, 72, 60, 84, 68, 76, 52, 90].map((w, i) => (
+              <Block key={i} className="h-7 rounded-full" style={{ width: `${w}px` }} />
+            ))}
+          </div>
+        </div>
+
+        {/* Professional Details (persona-specific section) */}
+        <SectionCard>
+          <Block className="h-3 w-40" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FieldBlock />
+            <FieldBlock />
+            <FieldBlock />
+            <FieldBlock />
+          </div>
+        </SectionCard>
+
+        {/* Availability & Intro Preferences */}
+        <SectionCard>
+          <Block className="h-3 w-56" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FieldBlock />
+            <FieldBlock />
+          </div>
+          <FieldBlock />
+        </SectionCard>
+
+        {/* Save button placeholder */}
+        <div className="flex justify-end">
+          <Block className="h-10 w-32 rounded-xl" />
         </div>
       </div>
 
