@@ -408,7 +408,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold uppercase tracking-wider gradient-text">Your Matches</h3>
             </div>
-            <div className="rounded-2xl border p-6 mb-4"
+            <div className="rounded-2xl border p-6"
               style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.06), rgba(78,205,196,0.03))', borderColor: 'rgba(108,99,255,0.18)' }}>
               <div className="flex items-start gap-4">
                 <div className="relative w-12 h-12 flex-shrink-0">
@@ -425,22 +425,6 @@ export default function DashboardPage() {
                   </p>
                 </div>
               </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[0,1,2].map((i) => (
-                <div key={i} className="glass-card-glow p-4 animate-pulse">
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-xl flex-shrink-0" style={{ background: 'rgba(255,255,255,0.05)' }} />
-                    <div className="flex-1 min-w-0 space-y-2">
-                      <div className="h-3 rounded w-2/3" style={{ background: 'rgba(255,255,255,0.06)' }} />
-                      <div className="h-2 rounded w-1/2" style={{ background: 'rgba(255,255,255,0.04)' }} />
-                    </div>
-                  </div>
-                  <div className="h-2 rounded w-full mb-2" style={{ background: 'rgba(255,255,255,0.04)' }} />
-                  <div className="h-2 rounded w-4/5 mb-4" style={{ background: 'rgba(255,255,255,0.04)' }} />
-                  <div className="h-8 rounded-xl" style={{ background: 'rgba(108,99,255,0.08)' }} />
-                </div>
-              ))}
             </div>
           </div>
         )}
