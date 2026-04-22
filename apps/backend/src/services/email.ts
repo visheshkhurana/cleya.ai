@@ -896,6 +896,45 @@ class EmailService {
     return this.send(email, `${firstName}, a quick update on your matches`, html);
   }
 
+  /**
+   * Onboarding email for someone introduced to Cleya via a referral
+   * (typically forwarded an invite or emailed hello@cleya.ai directly).
+   * Goal: minimum-friction first response — they can either reply with
+   * a quick blurb (and Cleya matches them manually), or tap through to
+   * sign up themselves. No sales tone, no list of features. Just a
+   * warm "hi, here's the easiest path forward."
+   */
+  async sendReferralOnboarding(
+    email: string,
+    opts?: { name?: string; referrerName?: string }
+  ) {
+    const firstName = opts?.name?.trim().split(/\s+/)[0];
+    const greeting = firstName ? `Hi ${firstName},` : `Hi there,`;
+    const referrerLine = opts?.referrerName
+      ? `<strong>${opts.referrerName}</strong> thought we should meet — and they were right.`
+      : `Someone in your corner thought we should meet — and they were right.`;
+    const subjectName = firstName ? `${firstName}, ` : '';
+
+    const html = plainEmailLayout(`
+      <p>${greeting}</p>
+      <p>${referrerLine} I'm Cleya — an AI superconnector for India's startup ecosystem. My job is to make warm, specific introductions to the right people, at the right time. No spam, no random connects.</p>
+      <p>To get you matched, I just need a quick sense of who you are and who you'd like to meet. <strong>Two ways to do this — pick whichever is easier:</strong></p>
+      <p style="margin:20px 0;padding:16px 20px;background:#f5f7fb;border-left:3px solid ${brandColor};border-radius:6px;">
+        <strong>1. Just hit reply.</strong> Tell me in 2–3 lines:<br/>
+        &nbsp;&nbsp;• What you do (role, company, or what you're building)<br/>
+        &nbsp;&nbsp;• Who you'd love to meet (a founder, an investor, an operator, a hire — be as specific as you want)<br/>
+        I'll take it from there and start matching you manually this week.
+      </p>
+      <p style="margin:20px 0;padding:16px 20px;background:#f5f7fb;border-left:3px solid ${brandColor};border-radius:6px;">
+        <strong>2. Or set yourself up in 2 minutes.</strong> ${link('Sign up at cleya.ai →', `${env.FRONTEND_URL}/?action=signup`)} and chat with me directly. I'll learn your story and start matching automatically.
+      </p>
+      <p>Either path works. Whatever takes the least effort on your end.</p>
+      <p>Looking forward to it.</p>
+      <p>— Cleya<br/><span style="color:#888;font-style:italic;">Your AI networker, on call.</span></p>
+    `);
+    return this.send(email, `${subjectName}welcome to Cleya — let's get you matched`, html);
+  }
+
   async sendPostIntroFollowUp(email: string, name?: string, matchName?: string) {
     const firstName = name?.split(' ')[0] || 'there';
     const matchFirst = matchName?.split(' ')[0] || 'your match';

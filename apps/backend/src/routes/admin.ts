@@ -486,6 +486,33 @@ adminRouter.post('/send-digest', async (_req: Request, res: Response, next: Next
   }
 });
 
+/**
+ * Trigger the referral-onboarding email for a person who landed in our
+ * inbox (forwarded invite, direct email to hello@cleya.ai, or LinkedIn
+ * URL replied to us). Body: { email, name?, referrerName? }.
+ *
+ * This is the manual on-ramp until inbound mail parsing is wired —
+ * see scripts/onboard-referral.ts for a CLI wrapper.
+ */
+adminRouter.post('/referral/onboard', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const schema = z.object({
+      email: z.string().email(),
+      name: z.string().optional(),
+      referrerName: z.string().optional(),
+    });
+    const { email, name, referrerName } = schema.parse(req.body || {});
+    const ok = await emailService.sendReferralOnboarding(email, { name, referrerName });
+    if (!ok) {
+      res.status(502).json({ success: false, error: 'Email send failed (see server logs)' });
+      return;
+    }
+    res.json({ success: true, data: { email, name: name || null, referrerName: referrerName || null } });
+  } catch (error) {
+    next(error);
+  }
+});
+
 adminRouter.post('/referrals/broadcast', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const earlyAccessBonus = req.body?.earlyAccessBonus === true;
