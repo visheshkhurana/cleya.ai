@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.TEST_EMAIL_DOMAINS = void 0;
 exports.profileDataToText = profileDataToText;
 exports.generateEmbedding = generateEmbedding;
 exports.generateAndStoreEmbedding = generateAndStoreEmbedding;
@@ -103,6 +104,24 @@ async function generateAndStoreEmbedding(userId, profileData) {
      DO UPDATE SET vector = $2::vector, content = $3, "updatedAt" = NOW()`, userId, `[${embedding.vector.join(',')}]`, embedding.text);
     return embedding;
 }
+/**
+ * Hard exclusion list for the matching candidate pool. Two rules:
+ *   1. The candidate user MUST have a real `name` (non-null, non-empty).
+ *      Without this guard, downstream notification code falls back to
+ *      synthesizing a "name" from role/company/email — which surfaces
+ *      the same person under different labels and breaks user trust.
+ *   2. Test/seed domains never appear as live matches.
+ *
+ * Kept in one place so vector + rule-based + fallback paths agree.
+ */
+exports.TEST_EMAIL_DOMAINS = [
+    'example.com', 'test.com', 'cleyatest.com', 'cleo.ai',
+    'techstartup.com', 'venturefund.com', 'bigcorp.com',
+    'advisors.io', 'jobhunt.me',
+];
+const TEST_DOMAIN_SQL_PREDICATE = exports.TEST_EMAIL_DOMAINS
+    .map((d) => `LOWER(u.email) NOT LIKE '%@${d.replace(/'/g, "''")}'`)
+    .join(' AND ');
 async function findSimilarByVector(userId, options = {}) {
     const { limit: rawLimit = 20, minSimilarity = 0.3, excludeUserIds = [] } = options;
     const limit = Math.min(Math.max(Math.floor(Number(rawLimit) || 20), 1), 100);
@@ -112,10 +131,13 @@ async function findSimilarByVector(userId, options = {}) {
             1 - (ue1.vector <=> ue2.vector) AS similarity
      FROM user_embeddings ue1
      JOIN user_embeddings ue2 ON ue1."userId" != ue2."userId"
+     JOIN users u ON u.id = ue2."userId"
      WHERE ue1."userId" = $1
        AND ue1.source = 'PROFILE'
        AND ue2.source = 'PROFILE'
        AND ue2."userId" NOT IN (${placeholders})
+       AND u.name IS NOT NULL AND TRIM(u.name) <> ''
+       AND ${TEST_DOMAIN_SQL_PREDICATE}
        AND 1 - (ue1.vector <=> ue2.vector) >= $2
      ORDER BY ue1.vector <=> ue2.vector
      LIMIT $${allExcluded.length + 3}`, userId, minSimilarity, ...allExcluded, limit);
@@ -133,7 +155,10 @@ async function findSimilarByText(queryText, options = {}) {
     SELECT ue."userId",
            1 - (ue.vector <=> $1::vector) AS similarity
     FROM user_embeddings ue
+    JOIN users u ON u.id = ue."userId"
     WHERE ue.source = 'PROFILE'
+      AND u.name IS NOT NULL AND TRIM(u.name) <> ''
+      AND ${TEST_DOMAIN_SQL_PREDICATE}
       AND 1 - (ue.vector <=> $1::vector) >= $2
   `;
     const params = [vectorStr, minSimilarity];
@@ -292,11 +317,16 @@ async function findMatches(userId, limit = 10) {
         select: { userAId: true, userBId: true },
     });
     const alreadyMatchedIds = Array.from(new Set(existingMatches.flatMap((m) => [m.userAId, m.userBId])));
+    const blockedRows = await db_1.prisma.blockedUser.findMany({
+        where: { OR: [{ blockerId: userId }, { blockedId: userId }] },
+        select: { blockerId: true, blockedId: true },
+    });
+    const blockedIds = blockedRows.map((b) => (b.blockerId === userId ? b.blockedId : b.blockerId));
     return hybridMatch(userId, {
         limit,
         vectorCandidatePool: Math.max(limit * 5, 50),
         minScore: 0.35,
-        excludeUserIds: alreadyMatchedIds,
+        excludeUserIds: Array.from(new Set([...alreadyMatchedIds, ...blockedIds])),
     });
 }
 async function hybridMatch(userId, options = {}) {
@@ -606,13 +636,23 @@ async function getRuleBasedCandidates(userProfile, excludeUserIds, limit) {
         where: {
             userId: { notIn: allExcluded },
             isComplete: true,
+            user: {
+                name: { not: null },
+                NOT: exports.TEST_EMAIL_DOMAINS.map((d) => ({
+                    email: { endsWith: `@${d}`, mode: 'insensitive' },
+                })),
+            },
             ...(userProfile.industries.length > 0
                 ? { industries: { hasSome: userProfile.industries } }
                 : {}),
         },
+        include: { user: { select: { name: true } } },
         take: limit,
     });
-    return profiles.map((p) => mapProfileToMatching(p));
+    // Defensive empty-string filter (Prisma `not: null` doesn't catch '').
+    return profiles
+        .filter((p) => p.user?.name && String(p.user.name).trim().length > 0)
+        .map((p) => mapProfileToMatching(p));
 }
 async function getAllCompletedProfiles(excludeUserId, additionalExcludes = []) {
     const allExcluded = [excludeUserId, ...additionalExcludes];
@@ -620,9 +660,18 @@ async function getAllCompletedProfiles(excludeUserId, additionalExcludes = []) {
         where: {
             userId: { notIn: allExcluded },
             isComplete: true,
+            user: {
+                name: { not: null },
+                NOT: exports.TEST_EMAIL_DOMAINS.map((d) => ({
+                    email: { endsWith: `@${d}`, mode: 'insensitive' },
+                })),
+            },
         },
+        include: { user: { select: { name: true } } },
     });
-    return profiles.map((p) => mapProfileToMatching(p));
+    return profiles
+        .filter((p) => p.user?.name && String(p.user.name).trim().length > 0)
+        .map((p) => mapProfileToMatching(p));
 }
 function mapProfileToMatching(p) {
     const extraData = p.extraData;

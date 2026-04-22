@@ -5,6 +5,7 @@ export type ProposalSkipReason =
   | 'SAME_PERSONA'
   | 'DUPLICATE'
   | 'CADENCE_GAP'
+  | 'BLOCKED'
   | 'OTHER';
 
 export type NotificationSkipReason = 'QUIET_HOURS' | 'DAILY_CAP';
@@ -23,6 +24,7 @@ const emptyProposalCounters = (): Record<ProposalSkipReason, number> => ({
   SAME_PERSONA: 0,
   DUPLICATE: 0,
   CADENCE_GAP: 0,
+  BLOCKED: 0,
   OTHER: 0,
 });
 

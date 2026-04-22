@@ -2,6 +2,7 @@ import { messagingService } from './messagingService';
 import { metaWhatsAppService } from './metaWhatsAppService';
 import { gupshupService } from './gupshupService';
 import { prisma } from '@cleya/db';
+import { safeDisplayName, safeFirstName } from '../utils/displayName';
 
 export interface TemplateConfig {
   id: string;
@@ -267,14 +268,14 @@ export class WhatsAppTemplateService {
     ]);
     if (!user || !matchUser) return null;
 
-    const matchName = matchUser.name || matchUser.profile?.currentRole || 'A professional';
+    const matchName = safeDisplayName(matchUser);
     const matchRole = matchUser.profile?.headline || matchUser.profile?.currentRole || '';
     const matchCompany = matchUser.profile?.companyName || '';
     const matchLinkedin = matchUser.profile?.linkedinUrl || '';
 
     let matchReason = '';
     if (matchUser.profile?.raiseAmount && matchUser.profile?.companyName) {
-      matchReason = `${matchName.split(' ')[0]} is raising ${matchUser.profile.raiseAmount} for ${matchUser.profile.companyName}.`;
+      matchReason = `${safeFirstName(matchUser)} is raising ${matchUser.profile.raiseAmount} for ${matchUser.profile.companyName}.`;
       if (matchUser.profile?.keyTractionPoints) {
         matchReason += ` ${matchUser.profile.keyTractionPoints}`;
       }
@@ -304,7 +305,7 @@ export class WhatsAppTemplateService {
     ]);
     if (!user || !matchUser) return null;
 
-    const matchName = matchUser.name || matchUser.profile?.currentRole || 'Your match';
+    const matchName = safeDisplayName(matchUser);
     const matchRole = matchUser.profile?.headline || matchUser.profile?.currentRole || '';
     const matchCompany = matchUser.profile?.companyName || '';
     const matchSector = (matchUser.profile?.industries as string[] | undefined)?.[0]?.replace(/_/g, ' ') || '';

@@ -3,6 +3,7 @@ import { createAIService } from '@cleya/ai';
 import { messagingService } from './messagingService';
 import { activityService } from './activityService';
 import { emailService } from './email';
+import { safeDisplayName, safeFirstName } from '../utils/displayName';
 
 export class IntroductionService {
   private ai = createAIService();
@@ -46,14 +47,14 @@ export class IntroductionService {
             event: 'INTRO_PENDING',
             channel: 'IN_APP',
             title: "It's a match! Review your introduction",
-            body: `Both you and ${userB.profile.currentRole || userB.name || 'your match'} want to connect. Review the introduction before it's sent.`,
+            body: `Both you and ${safeDisplayName(userB)} want to connect. Review the introduction before it's sent.`,
           },
           {
             userId: userB.id,
             event: 'INTRO_PENDING',
             channel: 'IN_APP',
             title: "It's a match! Review your introduction",
-            body: `Both you and ${userA.profile.currentRole || userA.name || 'your match'} want to connect. Review the introduction before it's sent.`,
+            body: `Both you and ${safeDisplayName(userA)} want to connect. Review the introduction before it's sent.`,
           },
         ],
       });
@@ -72,8 +73,8 @@ export class IntroductionService {
     };
 
     await Promise.allSettled([
-      sendNotify(userA.id, userA.phone, userB.profile.currentRole || userB.name || 'your match'),
-      sendNotify(userB.id, userB.phone, userA.profile.currentRole || userA.name || 'your match'),
+      sendNotify(userA.id, userA.phone, safeDisplayName(userB)),
+      sendNotify(userB.id, userB.phone, safeDisplayName(userA)),
     ]);
 
     console.log(`[IntroService] Introduction generated (PENDING_APPROVAL) for match ${matchId}`);
@@ -152,8 +153,8 @@ export class IntroductionService {
     const matchReason = intro.match?.reason || '';
     const profA = userA.profile;
     const profB = userB.profile;
-    const nameA = userA.name || profA?.currentRole || userA.email.split('@')[0];
-    const nameB = userB.name || profB?.currentRole || userB.email.split('@')[0];
+    const nameA = safeDisplayName(userA);
+    const nameB = safeDisplayName(userB);
 
     // NOTE: We deliberately do NOT fire the two separate per-recipient
     // sendIntroductionEmail calls anymore. matchingService.revealContacts
@@ -174,22 +175,22 @@ export class IntroductionService {
             event: 'INTRO_ACCEPTED',
             channel: 'IN_APP',
             title: 'Introduction Sent!',
-            body: `You've been introduced to ${userB.profile?.currentRole || userB.email}. Check your messages!`,
+            body: `You've been introduced to ${safeDisplayName(userB)}. Check your messages!`,
           },
           {
             userId: userB.id,
             event: 'INTRO_ACCEPTED',
             channel: 'IN_APP',
             title: 'Introduction Sent!',
-            body: `You've been introduced to ${userA.profile?.currentRole || userA.email}. Check your messages!`,
+            body: `You've been introduced to ${safeDisplayName(userA)}. Check your messages!`,
           },
         ],
       });
     } catch {}
 
     await Promise.allSettled([
-      activityService.recordIntroSent(userA.id, userB.profile?.currentRole || userB.email),
-      activityService.recordIntroSent(userB.id, userA.profile?.currentRole || userA.email),
+      activityService.recordIntroSent(userA.id, safeDisplayName(userB)),
+      activityService.recordIntroSent(userB.id, safeDisplayName(userA)),
     ]);
 
     console.log(`[IntroService] Introduction SENT for intro ${introId}`);
@@ -270,8 +271,8 @@ export class IntroductionService {
       };
 
       await Promise.allSettled([
-        sendFollowUp(intro.userAId, intro.userA.phone, intro.userB.profile?.currentRole || intro.userB.email),
-        sendFollowUp(intro.userBId, intro.userB.phone, intro.userA.profile?.currentRole || intro.userA.email),
+        sendFollowUp(intro.userAId, intro.userA.phone, safeDisplayName(intro.userB)),
+        sendFollowUp(intro.userBId, intro.userB.phone, safeDisplayName(intro.userA)),
       ]);
 
       await prisma.introductionRecord.update({
@@ -328,14 +329,14 @@ Match reason: ${reason}`,
         {
           role: 'user',
           content: `Person 1:
-- Name: ${userA.name || userA.email.split('@')[0]}
+- Name: ${safeDisplayName(userA)}
 - Title: ${profA.currentRole || 'Professional'} at ${profA.companyName || 'their company'}
 - Bio: ${profA.bio || ''}
 - Goal: ${profA.lookingFor?.join(', ') || 'networking'}
 - Key details: ${profA.keyTractionPoints || profA.investmentThesis || profA.skills?.join(', ') || ''}
 
 Person 2:
-- Name: ${userB.name || userB.email.split('@')[0]}
+- Name: ${safeDisplayName(userB)}
 - Title: ${profB.currentRole || 'Professional'} at ${profB.companyName || 'their company'}
 - Bio: ${profB.bio || ''}
 - Goal: ${profB.lookingFor?.join(', ') || 'networking'}
@@ -346,8 +347,8 @@ Match reason: ${reason}`,
       ]);
       return response.content;
     } catch {
-      const nameA = userA.name || userA.email.split('@')[0];
-      const nameB = userB.name || userB.email.split('@')[0];
+      const nameA = safeFirstName(userA);
+      const nameB = safeFirstName(userB);
       return `Hi ${nameA} and ${nameB},\n\nI'd love to connect you two. ${reason || `Based on your profiles, there's strong potential for a valuable connection.`}\n\nI'll let you two take it from here!\n— Cleya`;
     }
   }

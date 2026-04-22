@@ -1,4 +1,5 @@
 import { prisma } from '@cleya/db';
+import { safeDisplayName, safeFirstName } from '../utils/displayName';
 
 const DEFAULT_TEMPLATES = [
   {
@@ -180,8 +181,8 @@ export class IntroTemplateService {
     const sP = sender.profile;
     const rP = recipient.profile;
     return {
-      senderName: sender.name || sP?.currentRole || sender.email.split('@')[0],
-      senderFirstName: (sender.name || '').split(' ')[0] || '',
+      senderName: safeDisplayName(sender),
+      senderFirstName: safeFirstName(sender),
       senderCompany: sP?.companyName || '',
       senderStage: sP?.companyStage || '',
       senderRaiseAmount: sP?.raiseAmount || '',
@@ -190,8 +191,8 @@ export class IntroTemplateService {
       senderLookingFor: (sP?.lookingFor || []).slice(0, 2).join(', '),
       senderHeadline: sP?.headline || '',
       senderSkills: (sP?.skills || []).slice(0, 4).join(', '),
-      recipientFirstName: (recipient.name || '').split(' ')[0] || recipient.email.split('@')[0],
-      recipientName: recipient.name || rP?.currentRole || recipient.email.split('@')[0],
+      recipientFirstName: safeFirstName(recipient),
+      recipientName: safeDisplayName(recipient),
       recipientCompany: rP?.companyName || '',
       recipientHeadline: rP?.headline || '',
     };

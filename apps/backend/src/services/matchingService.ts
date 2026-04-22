@@ -20,6 +20,7 @@ import {
   recordNotificationSkipped,
 } from './matchMetrics';
 import { razorpayService } from './razorpayService';
+import { safeDisplayName } from '../utils/displayName';
 
 export class MatchingService {
   private ai = createAIService();
@@ -78,6 +79,21 @@ export class MatchingService {
     if (existing) {
       recordProposalSkipped('DUPLICATE');
       throw new AppError(409, 'Match already exists', 'MATCH_EXISTS');
+    }
+
+    // Block proposals between users where either side has blocked the other.
+    const blockedPair = await prisma.blockedUser.findFirst({
+      where: {
+        OR: [
+          { blockerId: userAId, blockedId: userBId },
+          { blockerId: userBId, blockedId: userAId },
+        ],
+      },
+      select: { id: true },
+    });
+    if (blockedPair) {
+      recordProposalSkipped('BLOCKED');
+      throw new AppError(403, 'Proposal blocked: users have blocked each other', 'PROPOSAL_BLOCKED');
     }
 
     // Enforce FREE tier monthly cap centrally for all proposal paths.
@@ -161,8 +177,13 @@ export class MatchingService {
       prisma.user.findUnique({ where: { id: userBId }, include: { profile: true } }),
     ]);
     if (userAData && userBData) {
-      const nameA = userAData.name || userAData.profile?.currentRole || userAData.email.split('@')[0];
-      const nameB = userBData.name || userBData.profile?.currentRole || userBData.email.split('@')[0];
+      // CRITICAL: never synthesize a "name" from role/company/email — doing so
+      // surfaces the same person under different labels and breaks user trust.
+      // Candidates without a real name are filtered out at the matching layer
+      // (see TEST_EMAIL_DOMAINS / name-not-null guards in @cleya/api matching);
+      // this is defense-in-depth in case a no-name user reaches a manual propose.
+      const nameA = safeDisplayName(userAData);
+      const nameB = safeDisplayName(userBData);
       const personaA = userAData.profile?.persona || 'Professional';
       const personaB = userBData.profile?.persona || 'Professional';
       const detailsB = {
@@ -373,7 +394,7 @@ export class MatchingService {
       matchId: match.id,
       partnerId: userB.id,
       contact: {
-        name: userB.name || `${userB.profile?.currentRole} at ${userB.profile?.companyName}`,
+        name: safeDisplayName(userB),
         email: userB.email,
         linkedin: userB.profile?.linkedinUrl,
         headline: userB.profile?.headline,
@@ -385,7 +406,7 @@ export class MatchingService {
       matchId: match.id,
       partnerId: userA.id,
       contact: {
-        name: userA.name || `${userA.profile?.currentRole} at ${userA.profile?.companyName}`,
+        name: safeDisplayName(userA),
         email: userA.email,
         linkedin: userA.profile?.linkedinUrl,
         headline: userA.profile?.headline,
@@ -393,8 +414,8 @@ export class MatchingService {
       },
     });
 
-    const nameA = userA.name || userA.profile?.currentRole || userA.email.split('@')[0];
-    const nameB = userB.name || userB.profile?.currentRole || userB.email.split('@')[0];
+    const nameA = safeDisplayName(userA);
+    const nameB = safeDisplayName(userB);
     const personaA = userA.profile?.persona || 'Professional';
     const personaB = userB.profile?.persona || 'Professional';
 

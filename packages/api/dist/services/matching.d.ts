@@ -60,6 +60,17 @@ export interface HybridMatchResult {
 export declare function profileDataToText(data: ProfileData): string;
 export declare function generateEmbedding(profileData: ProfileData): Promise<EmbeddingResult>;
 export declare function generateAndStoreEmbedding(userId: string, profileData: ProfileData): Promise<EmbeddingResult>;
+/**
+ * Hard exclusion list for the matching candidate pool. Two rules:
+ *   1. The candidate user MUST have a real `name` (non-null, non-empty).
+ *      Without this guard, downstream notification code falls back to
+ *      synthesizing a "name" from role/company/email — which surfaces
+ *      the same person under different labels and breaks user trust.
+ *   2. Test/seed domains never appear as live matches.
+ *
+ * Kept in one place so vector + rule-based + fallback paths agree.
+ */
+export declare const TEST_EMAIL_DOMAINS: string[];
 export declare function findSimilarByVector(userId: string, options?: {
     limit?: number;
     minSimilarity?: number;
