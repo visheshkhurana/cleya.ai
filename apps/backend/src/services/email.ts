@@ -18,7 +18,7 @@ function plainEmailLayout(content: string): string {
 ${content}
 </td></tr>
 <tr><td style="padding-top:32px;border-top:1px solid #eee;margin-top:32px;">
-<p style="color:#999;font-size:12px;margin:16px 0 0;">Cleya.ai — AI Superconnector for India's startup ecosystem</p>
+<p style="color:#999;font-size:12px;margin:16px 0 0;">Cleya.ai — Your AI Networker for India's startup ecosystem</p>
 </td></tr>
 </table>
 </td></tr>
@@ -219,7 +219,7 @@ class EmailService {
   async sendWelcome(email: string) {
     const html = plainEmailLayout(`
       <p>Hey there,</p>
-      <p>Welcome to Cleya — I'm your AI superconnector for India's startup ecosystem.</p>
+      <p>Welcome to Cleya — I'm your AI Networker for India's startup ecosystem.</p>
       <p>Here's how I work: I personally get to know everyone in the network — your story, what you've built, and what you're looking for. Then I make warm, specific introductions where there's a genuine fit.</p>
       <p>No spam. No random connects. Just the right people, at the right time.</p>
       <p><strong>Your next step:</strong> ${link('Tell me about yourself', `${env.FRONTEND_URL}/chat`)} in a quick chat so I can start finding your best matches.</p>
@@ -574,11 +574,11 @@ class EmailService {
     const scorePercent = Math.round(matchScore * 100);
     const html = plainEmailLayout(`
       <p>Hey,</p>
-      <p>Found someone great for you — <strong>${matchName}</strong>, ${scorePercent}% compatibility.</p>
-      <p>${link('Check them out →', `${env.FRONTEND_URL}/matches`)}</p>
+      <p>I'd like to introduce you to <strong>${matchName}</strong> — ${scorePercent}% fit. They're worth your time.</p>
+      <p>${link('See the introduction →', `${env.FRONTEND_URL}/matches`)}</p>
       <p>— Cleya</p>
     `);
-    await this.send(email, `New match: ${matchName} (${scorePercent}%)`, html);
+    await this.send(email, `Cleya wants to introduce you to ${matchName}`, html);
   }
 
   async sendWeeklyDigest(userId: string) {
@@ -630,17 +630,17 @@ class EmailService {
 
     const name = user.name?.split(' ')[0] || user.profile?.currentRole || user.email.split('@')[0];
     let body = `<p>Hi ${name},</p>`;
-    body += `<p>Here's your week in the Cleya network:</p>`;
+    body += `<p>Here's your week with your AI Networker:</p>`;
     body += `<ul style="padding-left:20px;">`;
-    body += `<li><strong>${newMatches}</strong> new match${newMatches !== 1 ? 'es' : ''} found</li>`;
-    body += `<li><strong>${acceptedMatches}</strong> connection${acceptedMatches !== 1 ? 's' : ''} made</li>`;
+    body += `<li><strong>${newMatches}</strong> new introduction${newMatches !== 1 ? 's' : ''} curated for you</li>`;
+    body += `<li><strong>${acceptedMatches}</strong> conversation${acceptedMatches !== 1 ? 's' : ''} started</li>`;
     if (pendingMatches > 0) {
-      body += `<li><strong>${pendingMatches}</strong> match${pendingMatches !== 1 ? 'es' : ''} waiting for your review</li>`;
+      body += `<li><strong>${pendingMatches}</strong> introduction${pendingMatches !== 1 ? 's' : ''} waiting for your review</li>`;
     }
     body += `</ul>`;
 
     if (topMatches.length > 0) {
-      body += `<p style="margin-top:24px;"><strong>Top ${topMatches.length} match${topMatches.length === 1 ? '' : 'es'} this week</strong></p>`;
+      body += `<p style="margin-top:24px;"><strong>Top ${topMatches.length} introduction${topMatches.length === 1 ? '' : 's'} this week</strong></p>`;
       body += `<ul style="padding-left:20px;">`;
       for (const m of topMatches) {
         const isA = m.userAId === userId;
@@ -654,7 +654,7 @@ class EmailService {
     }
 
     if (pendingMatches > 0) {
-      body += `<p>Don't leave them hanging — ${link('review your matches →', `${env.FRONTEND_URL}/matches`)}</p>`;
+      body += `<p>Don't leave them hanging — ${link('review your introductions →', `${env.FRONTEND_URL}/matches`)}</p>`;
     } else {
       body += `<p>${link('See your dashboard →', `${env.FRONTEND_URL}/dashboard`)}</p>`;
     }
@@ -663,14 +663,14 @@ class EmailService {
     try {
       const score = (user.profile as any)?.profileScore ?? 0;
       if (score < 100) {
-        body += `<p style="margin-top:24px;color:#555;"><strong>Profile tip:</strong> Your profile is ${score}% complete. ${link('Finish your profile →', `${env.FRONTEND_URL}/profile`)} for better matches.</p>`;
+        body += `<p style="margin-top:24px;color:#555;"><strong>Profile tip:</strong> Your profile is ${score}% complete. ${link('Finish your profile →', `${env.FRONTEND_URL}/profile`)} so I can curate sharper introductions.</p>`;
       }
     } catch {}
 
     body += `<p>— Cleya</p>`;
 
     const html = plainEmailLayout(body);
-    await this.send(user.email, `Your week: ${newMatches} new match${newMatches !== 1 ? 'es' : ''} on Cleya`, html);
+    await this.send(user.email, `Your week: ${newMatches} new introduction${newMatches !== 1 ? 's' : ''} from Cleya`, html);
   }
 
   async sendMeetingInvite(
@@ -805,18 +805,18 @@ class EmailService {
     const firstName = name?.split(' ')[0] || 'there';
     const html = plainEmailLayout(`
       <p>Hi ${firstName},</p>
-      <p>Wanted to give you a quick peek behind the scenes of how Cleya matches work:</p>
+      <p>Wanted to give you a quick peek behind the scenes of how I work as your AI Networker:</p>
       <ol style="padding-left:20px;line-height:2;">
         <li><strong>I learn about you</strong> — your story, what you've built, and what you're looking for</li>
-        <li><strong>I find your people</strong> — using AI to surface the most relevant connections across the network</li>
-        <li><strong>You review & accept</strong> — no spam intros, you choose who you connect with</li>
-        <li><strong>I make the intro</strong> — once both sides say yes, I share contact details so you can take it from there</li>
+        <li><strong>I meet people on your behalf</strong> — quietly scanning the ecosystem to find the few worth your time</li>
+        <li><strong>You review & accept</strong> — no spam introductions, you choose who you want to meet</li>
+        <li><strong>I make the introduction</strong> — once both sides say yes, I share contact details so the conversation can start</li>
       </ol>
-      <p>The best matches happen when your profile is detailed and up to date.</p>
-      <p>${link('Check your matches →', `${env.FRONTEND_URL}/matches`)}</p>
+      <p>The best introductions happen when your profile is detailed and up to date.</p>
+      <p>${link('See your introductions →', `${env.FRONTEND_URL}/matches`)}</p>
       <p>— Cleya</p>
     `);
-    return this.send(email, 'How Cleya matching works — a quick explainer', html);
+    return this.send(email, 'How your AI Networker works — a quick explainer', html);
   }
 
   async sendMatchCheckIn(email: string, name?: string) {
@@ -824,12 +824,12 @@ class EmailService {
     const html = plainEmailLayout(`
       <p>Hi ${firstName},</p>
       <p>It's been a week since you joined Cleya — time flies!</p>
-      <p>Have you checked your matches lately? I've been working behind the scenes to find the best people for you.</p>
-      <p>${link('See your matches →', `${env.FRONTEND_URL}/matches`)}</p>
-      <p>If you haven't received any matches yet, make sure your profile is complete — that's what powers my recommendations.</p>
+      <p>Have you checked your introductions lately? I've been quietly meeting people on your behalf and curating the few worth your time.</p>
+      <p>${link('See your introductions →', `${env.FRONTEND_URL}/matches`)}</p>
+      <p>If you haven't received any introductions yet, make sure your profile is complete — that's what helps me curate sharper picks for you.</p>
       <p>— Cleya</p>
     `);
-    return this.send(email, `${firstName}, your matches are waiting`, html);
+    return this.send(email, `${firstName}, your introductions are waiting`, html);
   }
 
   /**
@@ -844,13 +844,13 @@ class EmailService {
     const firstName = name?.split(' ')[0] || 'there';
     const html = plainEmailLayout(`
       <p>Hi ${firstName},</p>
-      <p>Quick note from me — I'm still working on finding your best matches.</p>
-      <p>The right introduction is worth more than a fast one, so I'd rather take a little longer and get it right. I'll be in touch as soon as I have your first matches ready.</p>
+      <p>Quick note from me — I'm still meeting people on your behalf to curate your first introductions.</p>
+      <p>The right introduction is worth more than a fast one, so I'd rather take a little longer and get it right. I'll be in touch the moment your first introductions are ready.</p>
       <p>In the meantime, anything else I should know about who you'd love to meet? Just hit reply and tell me — I read every response.</p>
       <p>${link('Open your dashboard →', `${env.FRONTEND_URL}/dashboard`)}</p>
       <p>— Cleya</p>
     `);
-    return this.send(email, `${firstName}, still finding your matches`, html);
+    return this.send(email, `${firstName}, still curating your first introductions`, html);
   }
 
   /**
@@ -865,13 +865,13 @@ class EmailService {
     const firstName = name?.split(' ')[0] || 'there';
     const html = plainEmailLayout(`
       <p>Hi ${firstName},</p>
-      <p>Quick update — I'm still searching for the right people to introduce you to.</p>
-      <p>I don't yet have a match I'd stake my name on, and I'd rather wait for someone genuinely worth your time than send a weak intro just to fill your inbox.</p>
+      <p>Quick update — I'm still meeting people across the ecosystem on your behalf, looking for the right ones to introduce you to.</p>
+      <p>I don't yet have an introduction I'd stake my name on, and I'd rather wait for someone genuinely worth your time than send a weak intro just to fill your inbox.</p>
       <p>If there's anything you'd like to add about who you'd love to meet — a specific role, sector, stage, or even a name — just hit reply. Every detail helps me narrow it down.</p>
       <p>${link('Open your dashboard →', `${env.FRONTEND_URL}/dashboard`)}</p>
       <p>— Cleya</p>
     `);
-    return this.send(email, `${firstName}, still searching for the right match`, html);
+    return this.send(email, `${firstName}, still searching for the right introduction`, html);
   }
 
   /**
@@ -886,14 +886,14 @@ class EmailService {
     const firstName = name?.split(' ')[0] || 'there';
     const html = plainEmailLayout(`
       <p>Hi ${firstName},</p>
-      <p>Just a quick note to keep you in the loop — I'm still curating your matches with care.</p>
-      <p>Great introductions take a little time, and I want every one I send you to be genuinely worth your while. Your profile is active, and I'm reviewing new people joining Cleya every day with you in mind.</p>
+      <p>Just a quick note to keep you in the loop — I'm still curating your introductions with care.</p>
+      <p>Great introductions take a little time, and I want every one I send you to be genuinely worth your while. Your profile is active, and I'm meeting new people joining Cleya every day with you in mind.</p>
       <p>The moment I find someone truly worth meeting, you'll be the first to know.</p>
-      <p>If anything has shifted about who you'd love to connect with — a role, a sector, a stage, even a specific name — just hit reply. A small detail often opens the door to a great match.</p>
+      <p>If anything has shifted about who you'd love to meet — a role, a sector, a stage, even a specific name — just hit reply. A small detail often opens the door to a great introduction.</p>
       <p>${link('Open your dashboard →', `${env.FRONTEND_URL}/dashboard`)}</p>
       <p>— Cleya</p>
     `);
-    return this.send(email, `${firstName}, a quick update on your matches`, html);
+    return this.send(email, `${firstName}, a quick update on your introductions`, html);
   }
 
   /**
@@ -917,31 +917,31 @@ class EmailService {
 
     const html = plainEmailLayout(`
       <p>${greeting}</p>
-      <p>${referrerLine} I'm Cleya — an AI superconnector for India's startup ecosystem. My job is to make warm, specific introductions to the right people, at the right time. No spam, no random connects.</p>
-      <p>To get you matched, I just need a quick sense of who you are and who you'd like to meet. <strong>Two ways to do this — pick whichever is easier:</strong></p>
+      <p>${referrerLine} I'm Cleya — your AI Networker for India's startup ecosystem. My job is to quietly meet thousands of people on your behalf and introduce you to the few worth your time. No spam, no cold DMs, no random connects.</p>
+      <p>To start curating introductions for you, I just need a quick sense of who you are and who you'd like to meet. <strong>Two ways to do this — pick whichever is easier:</strong></p>
       <p style="margin:20px 0;padding:16px 20px;background:#f5f7fb;border-left:3px solid ${brandColor};border-radius:6px;">
         <strong>1. Just hit reply.</strong> Tell me in 2–3 lines:<br/>
         &nbsp;&nbsp;• What you do (role, company, or what you're building)<br/>
         &nbsp;&nbsp;• Who you'd love to meet (a founder, an investor, an operator, a hire — be as specific as you want)<br/>
-        I'll take it from there and start matching you manually this week.
+        I'll take it from there and start curating introductions for you this week.
       </p>
       <p style="margin:20px 0;padding:16px 20px;background:#f5f7fb;border-left:3px solid ${brandColor};border-radius:6px;">
-        <strong>2. Or set yourself up in 2 minutes.</strong> ${link('Sign up at cleya.ai →', `${env.FRONTEND_URL}/?action=signup`)} and chat with me directly. I'll learn your story and start matching automatically.
+        <strong>2. Or set yourself up in 2 minutes.</strong> ${link('Sign up at cleya.ai →', `${env.FRONTEND_URL}/?action=signup`)} and chat with me directly. I'll learn your story and start curating introductions automatically.
       </p>
       <p>Either path works. Whatever takes the least effort on your end.</p>
       <p>Looking forward to it.</p>
-      <p>— Cleya<br/><span style="color:#888;font-style:italic;">Your AI networker, on call.</span></p>
+      <p>— Cleya<br/><span style="color:#888;font-style:italic;">Your AI Networker, on call.</span></p>
     `);
-    return this.send(email, `${subjectName}welcome to Cleya — let's get you matched`, html);
+    return this.send(email, `${subjectName}welcome to Cleya — let's get you introduced`, html);
   }
 
   async sendPostIntroFollowUp(email: string, name?: string, matchName?: string) {
     const firstName = name?.split(' ')[0] || 'there';
-    const matchFirst = matchName?.split(' ')[0] || 'your match';
+    const matchFirst = matchName?.split(' ')[0] || 'the person I introduced you to';
     const html = plainEmailLayout(`
       <p>Hi ${firstName},</p>
-      <p>It's been a few days since I connected you with <strong>${matchFirst}</strong>. How did it go?</p>
-      <p>Whether it was a great conversation or didn't quite click — I'd love to hear. Your feedback helps me find even better matches for you.</p>
+      <p>It's been a few days since I introduced you to <strong>${matchFirst}</strong>. How did it go?</p>
+      <p>Whether it was a great conversation or didn't quite click — I'd love to hear. Your feedback helps me curate sharper introductions for you.</p>
       <p>${link('Share your feedback →', `${env.FRONTEND_URL}/matches`)}</p>
       <p>— Cleya</p>
     `);
@@ -950,16 +950,16 @@ class EmailService {
 
   async sendFeedbackRequest(email: string, name?: string, matchName?: string) {
     const firstName = name?.split(' ')[0] || 'there';
-    const matchFirst = matchName?.split(' ')[0] || 'your recent match';
+    const matchFirst = matchName?.split(' ')[0] || 'your recent introduction';
     const html = plainEmailLayout(`
       <p>Hi ${firstName},</p>
-      <p>Would you take 30 seconds to rate your connection with <strong>${matchFirst}</strong>?</p>
-      <p>A quick rating and a line or two of feedback goes a long way — it helps me learn what works for you and makes future matches even better.</p>
-      <p>${link('Rate this match →', `${env.FRONTEND_URL}/matches`)}</p>
+      <p>Would you take 30 seconds to rate your conversation with <strong>${matchFirst}</strong>?</p>
+      <p>A quick rating and a line or two of feedback goes a long way — it helps me learn what works for you and makes future introductions even sharper.</p>
+      <p>${link('Rate this introduction →', `${env.FRONTEND_URL}/matches`)}</p>
       <p>Thanks for helping make Cleya better for everyone.</p>
       <p>— Cleya</p>
     `);
-    return this.send(email, `Quick feedback on your match with ${matchFirst}?`, html);
+    return this.send(email, `Quick feedback on your introduction with ${matchFirst}?`, html);
   }
 
   async sendReferralInvite(userId: string, opts?: { earlyAccessBonus?: boolean; force?: boolean }) {
@@ -1019,7 +1019,7 @@ class EmailService {
       <hr style="border:none;border-top:1px solid #eee;margin:28px 0 16px;"/>
       <p style="color:#64748b;font-size:13px;margin:0 0 8px;"><em>Forward-friendly note you can copy:</em></p>
       <blockquote style="margin:0;padding:12px 16px;border-left:3px solid ${brandColor};background:#f8fafc;color:#334155;font-size:14px;line-height:1.6;">
-        Hey — I've been using Cleya.ai (an AI superconnector for the Indian startup ecosystem). It quietly figures out who in the network you should actually talk to and makes the intros for you. No spam, no random adds. Worth 2 minutes to set up.<br/><br/>
+        Hey — I've been using Cleya.ai. It's basically an AI Networker for the Indian startup ecosystem: it quietly meets thousands of founders, investors, and operators on your behalf and only introduces you to the few worth your time. No spam, no random adds. Worth 2 minutes to set up.<br/><br/>
         Sign up here: ${link}
       </blockquote>
     `);

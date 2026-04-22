@@ -28,7 +28,7 @@ export default function NotFoundClient() {
             {isLoggedIn ? (
               <>
                 <Link href="/dashboard" className="px-3 py-2 text-sm text-white/50 hover:text-white transition-colors">Dashboard</Link>
-                <Link href="/matches" className="px-3 py-2 text-sm text-white/50 hover:text-white transition-colors">Matches</Link>
+                <Link href="/matches" className="px-3 py-2 text-sm text-white/50 hover:text-white transition-colors">Introductions</Link>
               </>
             ) : (
               <>

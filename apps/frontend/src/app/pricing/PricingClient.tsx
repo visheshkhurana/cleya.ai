@@ -180,9 +180,9 @@ export default function PricingClient() {
             key: data.keyId,
             subscription_id: data.subscriptionId,
             name: 'Cleya.ai',
-            description: 'Pro Subscription - Unlimited Matches',
+            description: 'Pro Subscription - Unlimited Introductions',
             handler: () => {
-              toast.success('Subscription activated! You now have unlimited matches.');
+              toast.success('Subscription activated! You now have unlimited introductions.');
               window.location.href = '/matches';
             },
             modal: {
@@ -406,10 +406,10 @@ export default function PricingClient() {
 
       <section className="border-t border-white/[0.04] py-16 text-center">
         <div className="max-w-xl mx-auto px-6 lg:px-8">
-          <h2 className="text-2xl font-bold text-white mb-3">Ready to find your next big connection?</h2>
+          <h2 className="text-2xl font-bold text-white mb-3">Ready to meet your AI Networker?</h2>
           <p className="text-sm mb-6" style={{ color: '#94A3B8' }}>Join 10,000+ founders, investors, and operators on Cleya.ai.</p>
           <Link href="/?action=signup" className="btn-gold inline-flex">
-            Join Free — 10 Matches/Month
+            Join Free — 10 Introductions/Month
           </Link>
           <p className="text-xs mt-4" style={{ color: 'rgba(255,255,255,0.4)' }}>No credit card required</p>
         </div>

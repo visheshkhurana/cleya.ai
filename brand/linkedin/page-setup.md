@@ -47,7 +47,7 @@ Privately Held
 
 ### Tagline (220 chars max)
 ```
-The AI matchmaker for India's startup ecosystem. Warm intros to founders, investors, and operators — on demand.
+Your AI Networker for India's startup ecosystem. Cleya meets thousands of founders, investors, and operators on your behalf — and introduces you to the few worth your time.
 ```
 
 ### Logo
@@ -65,20 +65,21 @@ Tick it. Click **Create page**.
 
 ### Overview → About us (paste exactly)
 ```
-Cleya is the AI matchmaker for India's startup ecosystem.
+Cleya is your AI Networker for India's startup ecosystem.
+
+Networking shouldn't mean cold-DMing 100 strangers and hoping. Cleya quietly meets thousands of founders, investors, and operators across India on your behalf — and introduces you to the few people genuinely worth your time.
 
 Founders raise faster. Investors see better deals. Operators find their next chapter. Talent meets the team they want to build with.
 
-We replace the awkward LinkedIn cold-DM with something the ecosystem actually needs: a relevance engine that quietly listens to who you are, what you're building, and what you're looking for — then makes the introduction warm, two-sided, and welcomed.
-
 What you get with Cleya:
-• Daily curated matches based on stage, sector, intent, and chemistry — not just keywords.
+• An AI Networker working for you 24/7 — scanning the ecosystem so you don't have to.
+• Curated introductions based on stage, sector, intent, and chemistry — not just keywords.
 • Two-sided opt-in. No spam. No "I came across your profile."
 • AI-drafted intros you approve before they're sent.
 • Built for the Indian context — Bengaluru, Mumbai, Delhi NCR, and beyond.
 
-For founders: find your next investor, co-founder, design partner, or first 10 hires.
-For investors: a high-signal pipeline of founders that match your thesis.
+For founders: get introduced to your next investor, co-founder, design partner, or first 10 hires.
+For investors: get introduced to a high-signal pipeline of founders that match your thesis.
 For operators & angels: the right rooms, the right deals, the right people.
 
 We're building the network India's next decade of founders deserves.
@@ -93,7 +94,7 @@ Join the waitlist → cleya.ai
 
 ### Specialties (paste, LinkedIn will split by comma)
 ```
-Artificial Intelligence, Networking, Founder Community, Venture Capital, Startup Ecosystem, Warm Introductions, Matchmaking, B2B SaaS, Investor Relations, Talent, Co-founder Search, India Startups, Bengaluru, Mumbai, Delhi NCR
+Artificial Intelligence, Networking, AI Networker, Founder Community, Venture Capital, Startup Ecosystem, Warm Introductions, B2B SaaS, Investor Relations, Talent, Co-founder Search, India Startups, Bengaluru, Mumbai, Delhi NCR
 ```
 
 ### Locations → Add primary HQ location
@@ -135,32 +136,32 @@ Tell every team member to do these three things on their personal profile:
 
 **Founder / CEO**
 ```
-Building Cleya — the AI matchmaker for India's startup ecosystem | ex-[Last company]
+Building Cleya — your AI Networker for India's startup ecosystem | ex-[Last company]
 ```
 
 **Co-founder / CTO**
 ```
-Co-founder & CTO at Cleya | Building the AI that connects India's founders, investors, and operators
+Co-founder & CTO at Cleya | Building the AI Networker for India's founders, investors, and operators
 ```
 
 **Head of Growth / GTM**
 ```
-Growth at Cleya | Helping India's founders, investors, and operators find each other through AI
+Growth at Cleya | Helping India's founders, investors, and operators meet the right people through AI
 ```
 
 **Engineer / Designer**
 ```
-[Engineer | Designer] at Cleya — AI matchmaking for India's startup ecosystem
+[Engineer | Designer] at Cleya — your AI Networker for India's startup ecosystem
 ```
 
 **Operator / Ops**
 ```
-Operations at Cleya | We make warm intros happen across India's startup ecosystem
+Operations at Cleya | We make warm introductions happen across India's startup ecosystem
 ```
 
 ### C) Update "About" first line
 ```
-I'm currently building Cleya — the AI matchmaker for India's startup ecosystem.
+I'm currently building Cleya — your AI Networker for India's startup ecosystem.
 ```
 
 ---
@@ -175,7 +176,9 @@ Hi LinkedIn. We're Cleya 👋
 
 India is producing world-class founders, investors, and operators — but the way they find each other hasn't changed in a decade. Cold DMs. Warm intros that take three weeks. "Let me check with someone."
 
-Cleya is the AI matchmaker for India's startup ecosystem. Tell us who you are and what you're looking for; we surface the right person, draft the intro, and let both sides opt in before anything is sent.
+Cleya is your AI Networker for India's startup ecosystem.
+
+Instead of you DM'ing 100 strangers and hoping, Cleya quietly meets thousands of founders, investors, and operators on your behalf — and introduces you to the few worth your time. Both sides opt in before any intro is sent.
 
 No cold outreach. No spam. Just the right room.
 
@@ -194,19 +197,19 @@ Three things changed in the last 18 months:
 
 The result: more high-quality people who genuinely should know each other, separated by a LinkedIn search bar that doesn't understand context.
 
-That's the gap Cleya fills.
+That's why we built an AI Networker. Cleya does the meeting, scanning, and curating for you — so the only intros that reach you are the ones worth your time.
 
 cleya.ai
 ```
 
 ### POST 3 — Day 7
 ```
-60-second tour of how Cleya works:
+60-second tour of how your AI Networker works:
 
-1. Tell us about you — role, sector, stage, what you're looking for.
-2. Our matching engine surfaces the 3 people you most want to meet this week.
-3. We draft the intro. You approve it. They get to opt in too.
-4. Once both sides agree, the conversation starts — warm, contextual, no awkwardness.
+1. Tell Cleya about you — role, sector, stage, what you're looking for.
+2. Cleya quietly meets thousands of people across India's ecosystem on your behalf.
+3. She introduces you to the 2-3 worth your time this week — never more, never noise.
+4. You approve the intro. They opt in too. The conversation starts warm and contextual.
 
 Try it → cleya.ai
 ```
@@ -216,7 +219,7 @@ Try it → cleya.ai
 "[Pull quote from your first happy user — 1–2 sentences max]"
 — [Name, Role, Company]
 
-We built Cleya so this kind of intro could happen every week, for every founder, investor, and operator in India's startup ecosystem.
+We built Cleya so this kind of introduction could happen every week, for every founder, investor, and operator in India's startup ecosystem — without anyone having to send a cold DM.
 
 Join → cleya.ai
 ```
@@ -228,7 +231,7 @@ Join → cleya.ai
 ### A) Each founder re-shares Post 1 from their personal profile
 Copy this on top when re-sharing:
 ```
-After months of building quietly, we're finally live. Cleya is here to fix one of the most broken parts of India's startup ecosystem — finding the right person at the right time.
+After months of building quietly, we're finally live. Cleya is your AI Networker for India's startup ecosystem — built to fix one of the most broken parts of building a company here: finding the right person at the right time, without sending another cold DM.
 
 Would mean a lot if you'd give the page a follow.
 ```
@@ -238,17 +241,17 @@ Page → **Invite connections** (top-right). LinkedIn lets each admin invite ~25
 
 ### C) WhatsApp / personal DM template (for first 50 supporters)
 ```
-Hey [Name] — we just launched Cleya's LinkedIn page today. It's the AI matchmaker we've been building for India's startup ecosystem. Would mean a lot if you'd give it a follow + a quick like on the launch post 🙏 https://www.linkedin.com/company/cleya-ai
+Hey [Name] — we just launched Cleya's LinkedIn page today. It's the AI Networker we've been building for India's startup ecosystem. Would mean a lot if you'd give it a follow + a quick like on the launch post 🙏 https://www.linkedin.com/company/cleya-ai
 ```
 
 ### D) Connection-request note (when team adds new ecosystem people)
 ```
-Hi [Name] — building Cleya, the AI matchmaker for India's startup ecosystem (founders ↔ investors ↔ operators). Following your work and would love to connect.
+Hi [Name] — building Cleya, the AI Networker for India's startup ecosystem (founders ↔ investors ↔ operators). Following your work and would love to connect.
 ```
 
 ### E) Thank-you DM (for the first 100 followers)
 ```
-Hi [Name] — thanks for following Cleya. We're in early access right now and onboarding founders, investors, and operators across Bengaluru, Mumbai, and Delhi. If you (or someone you know) would benefit from better warm intros, here's the link: cleya.ai
+Hi [Name] — thanks for following Cleya. We're in early access right now and onboarding founders, investors, and operators across Bengaluru, Mumbai, and Delhi. If you (or someone you know) would benefit from an AI Networker that handles the meeting and curating for you, here's the link: cleya.ai
 
 Either way, grateful you're along for the ride.
 — [Your name], [Role] at Cleya
@@ -272,7 +275,9 @@ Either way, grateful you're along for the ride.
 
 ## Tone & voice cheat sheet (for future posts)
 
-- Confident, not loud. Quiet relevance engine, not a megaphone.
+- Confident, not loud. Cleya is a quiet AI Networker working in the background, not a megaphone.
+- Always frame Cleya as **doing the work for you**: she meets, scans, curates, introduces. The user does less, not more.
+- "Introductions" (what Cleya brings you) and "Conversations" (what happens after both sides accept) — never "matches".
 - India-native. Use "ecosystem", "founder", "operator", "warm intro" — skip Silicon Valley clichés.
 - Show, don't pitch. Posts read like a smart friend explaining a thing.
 - One emoji per post, max. Only if it earns its place.

@@ -82,11 +82,11 @@ export class MessagingService {
 
   getWelcomeMessage(userName?: string): string {
     const name = userName ? ` ${userName}` : '';
-    return `Hey${name}! Welcome to Cleya 👋 I'm your AI superconnector. I personally talk to everyone in the network, learn their story, and make warm introductions where there's a genuine fit. Let's get started — tell me about yourself so I can find the right people for you.`;
+    return `Hey${name}! Welcome to Cleya 👋 I'm your AI Networker. I quietly meet thousands of people across the network on your behalf and only introduce you to the few worth your time. Let's get started — tell me about yourself so I can curate the right introductions for you.`;
   }
 
   getMatchNotificationMessage(matchName: string): string {
-    return `Hey! I found someone great for you — ${matchName}. I think you two should connect. Check your matches to see why I paired you up.`;
+    return `Hey! I just met ${matchName} on your behalf and think you two should connect. Check your introductions to see why I curated this one for you.`;
   }
 
   getFollowUpMessage(): string {

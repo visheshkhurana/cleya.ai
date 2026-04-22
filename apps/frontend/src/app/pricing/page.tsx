@@ -15,7 +15,7 @@ const faqs = [
   },
   {
     q: 'Can I try before I pay?',
-    a: 'Yes! Every user gets 10 free matches every month. The allowance refreshes automatically. Once you need more, you can subscribe to the Professional plan for unlimited matches and premium features.',
+    a: 'Yes! Every user gets 10 free curated introductions every month. The allowance refreshes automatically. Once you need more, upgrade to the Professional plan for unlimited introductions and premium features.',
   },
   {
     q: 'What makes Cleya different from LinkedIn?',

@@ -21,7 +21,7 @@ const templates: Record<string, TemplateConfig> = {
     gupshupTemplateId: 'cleya_welcome',
     gupshupParamOrder: [],
     buildMessage: (p) =>
-      `Hey! Welcome to Cleya 👋 I'm your AI superconnector. I personally talk to everyone in the network, learn their story, and then make warm introductions where there's a genuine fit.\n\nThe next step is a quick chat where I get to know you — what you've built, and what you're looking for. From there I can start matching you with the right people.\n\nReady? Tap here to get started: ${p.profileUrl || 'https://cleya.ai/chat'}`,
+      `Hey! Welcome to Cleya 👋 I'm your AI Networker. I quietly meet thousands of founders, investors, and operators on your behalf — and only introduce you to the few worth your time.\n\nNext, a quick chat so I can learn about you — what you've built and who you'd love to meet. Then I'll start curating introductions for you.\n\nReady? Tap here to get started: ${p.profileUrl || 'https://cleya.ai/chat'}`,
   },
 
   match_found: {

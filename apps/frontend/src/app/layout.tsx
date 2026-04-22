@@ -24,16 +24,17 @@ const dmMono = DM_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://cleya.ai"),
-  title: "Cleya.ai — AI Superconnector for Indian Startups",
+  title: "Cleya.ai — Your AI Networker for Indian Startups",
   description:
-    "Meet the right investors, founders, and operators. AI-powered warm intros for India's startup ecosystem.",
+    "Cleya meets thousands of founders, investors, and operators on your behalf — and introduces you to the few worth your time.",
   keywords: [
+    "AI networker",
     "AI networking",
-    "founder matching",
-    "investor matching",
+    "founder introductions",
+    "investor introductions",
     "professional networking",
     "startup networking",
-    "AI matchmaking",
+    "warm introductions",
     "India startups",
     "seed funding India",
   ],
@@ -41,15 +42,15 @@ export const metadata: Metadata = {
     type: "website",
     url: "https://cleya.ai",
     siteName: "Cleya.ai",
-    title: "Cleya.ai — AI Superconnector for Indian Startups",
+    title: "Cleya.ai — Your AI Networker for Indian Startups",
     description:
-      "Members-only AI-powered networking for founders, investors, and operators building meaningful connections across India's startup ecosystem.",
+      "Your AI Networker for India's startup ecosystem. Cleya meets thousands of people on your behalf and curates the few worth your time.",
     images: [
       {
         url: "https://cleya.ai/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Cleya.ai — AI Superconnector for Indian Startups",
+        alt: "Cleya.ai — Your AI Networker for Indian Startups",
       },
     ],
     locale: "en_IN",
@@ -58,9 +59,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@cleyaai",
     creator: "@cleyaai",
-    title: "Cleya.ai — AI Superconnector for Indian Startups",
+    title: "Cleya.ai — Your AI Networker for Indian Startups",
     description:
-      "Meet the right investors, founders, and operators. AI-powered warm intros for India's startup ecosystem.",
+      "Cleya meets thousands of founders, investors, and operators on your behalf — and introduces you to the few worth your time.",
     images: ["https://cleya.ai/og-image.png"],
   },
   robots: { index: true, follow: true },
@@ -123,7 +124,7 @@ export default function RootLayout({
           id="organization-schema"
           type="application/ld+json"
           strategy="afterInteractive"
-        >{`{"@context":"https://schema.org","@type":"Organization","name":"Cleya.ai","alternateName":"Cleya","url":"https://cleya.ai","logo":"https://cleya.ai/icon.svg","description":"AI-powered professional networking platform for India's startup ecosystem. Connecting founders, investors, and operators through intelligent matchmaking and warm introductions.","foundingDate":"2025","founders":[{"@type":"Person","name":"Vishesh Khurana","jobTitle":"Founder & CEO"}],"address":{"@type":"PostalAddress","addressLocality":"India","addressCountry":"IN"},"contactPoint":{"@type":"ContactPoint","email":"hello@cleya.ai","contactType":"customer service"},"sameAs":["https://www.linkedin.com/company/cleya-ai"]}`}</Script>
+        >{`{"@context":"https://schema.org","@type":"Organization","name":"Cleya.ai","alternateName":"Cleya","url":"https://cleya.ai","logo":"https://cleya.ai/icon.svg","description":"Your AI Networker for India's startup ecosystem. Cleya meets thousands of founders, investors, and operators on your behalf and introduces you to the few worth your time.","foundingDate":"2025","founders":[{"@type":"Person","name":"Vishesh Khurana","jobTitle":"Founder & CEO"}],"address":{"@type":"PostalAddress","addressLocality":"India","addressCountry":"IN"},"contactPoint":{"@type":"ContactPoint","email":"hello@cleya.ai","contactType":"customer service"},"sameAs":["https://www.linkedin.com/company/cleya-ai"]}`}</Script>
         <Script
           id="software-schema"
           type="application/ld+json"
@@ -133,7 +134,7 @@ export default function RootLayout({
           id="faq-schema"
           type="application/ld+json"
           strategy="afterInteractive"
-        >{`{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is Cleya.ai?","acceptedAnswer":{"@type":"Answer","text":"Cleya.ai is an AI-powered professional networking platform designed for India's startup ecosystem. It connects founders, investors, and operators through intelligent matchmaking and warm introductions."}},{"@type":"Question","name":"How does Cleya.ai match founders with investors?","acceptedAnswer":{"@type":"Answer","text":"Cleya.ai uses AI algorithms to analyze profiles, preferences, industry focus, and goals to create high-quality matches between founders seeking funding and investors looking for opportunities in India's startup ecosystem."}},{"@type":"Question","name":"Is Cleya.ai free to use?","acceptedAnswer":{"@type":"Answer","text":"Cleya.ai offers a free tier with basic networking features. Professional (₹999/mo) and Growth (₹2999/mo) plans provide enhanced AI matching, priority introductions, and advanced analytics."}},{"@type":"Question","name":"Who can join Cleya.ai?","acceptedAnswer":{"@type":"Answer","text":"Cleya.ai is designed for startup founders, angel investors, VCs, operators, and professionals in India's startup ecosystem who want to build meaningful professional connections."}}]}`}</Script>
+        >{`{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is Cleya.ai?","acceptedAnswer":{"@type":"Answer","text":"Cleya.ai is your AI Networker for India's startup ecosystem. Cleya meets thousands of founders, investors, and operators on your behalf and introduces you to the few worth your time."}},{"@type":"Question","name":"How does Cleya.ai introduce founders to investors?","acceptedAnswer":{"@type":"Answer","text":"Cleya.ai analyses your goals, stage, and profile, then quietly screens thousands of people across the network on your behalf and curates a small list of high-signal introductions worth your time."}},{"@type":"Question","name":"Is Cleya.ai free to use?","acceptedAnswer":{"@type":"Answer","text":"Cleya.ai offers a free tier with curated introductions every month. Professional (₹999/mo) and Growth (₹2999/mo) plans unlock unlimited introductions, priority curation, and advanced analytics."}},{"@type":"Question","name":"Who can join Cleya.ai?","acceptedAnswer":{"@type":"Answer","text":"Cleya.ai is designed for startup founders, angel investors, VCs, operators, and professionals in India's startup ecosystem who want to build meaningful professional connections."}}]}`}</Script>
         <Script
           id="website-schema"
           type="application/ld+json"

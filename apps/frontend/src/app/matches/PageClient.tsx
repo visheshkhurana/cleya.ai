@@ -133,16 +133,16 @@ export default function MatchesPage() {
         const matchData = result?.data || result;
         if (matchData?.status === 'ACCEPTED') {
           const partnerId = matchData.userAId === me?.id ? matchData.userBId : matchData.userAId;
-          toast.success('Match accepted! You can now chat with your connection.');
+          toast.success('Introduction accepted! You can now start the conversation.');
           setTimeout(() => {
             router.push(`/messages?partner=${partnerId}`);
           }, 1500);
         } else {
-          toast.success('Match accepted! Waiting for the other person to respond.');
+          toast.success('Introduction accepted! Waiting for the other person to respond.');
         }
       } else {
         analytics.matchRejected(matchId);
-        toast.info('Match passed.');
+        toast.info('Introduction passed.');
       }
       setFeedbackPrompt({ matchId, rating: 0, text: '', action: response });
       await loadData();
@@ -170,9 +170,9 @@ export default function MatchesPage() {
             key: data.keyId,
             subscription_id: data.subscriptionId,
             name: 'Cleya.ai',
-            description: 'Pro Subscription - Unlimited Matches',
+            description: 'Pro Subscription - Unlimited Introductions',
             handler: async () => {
-              toast.success('Subscription activated! You now have unlimited matches.');
+              toast.success('Subscription activated! You now have unlimited introductions.');
               setShowPaywall(false);
               await loadData();
             },
@@ -351,7 +351,7 @@ export default function MatchesPage() {
             </div>
           )}
           <div className="flex-1 space-y-2">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-white/25 mb-2">Match Breakdown</p>
+            <p className="text-[10px] font-medium uppercase tracking-wider text-white/25 mb-2">Why Cleya Curated This</p>
             {validFactors.map(f => {
               const val = Math.round((breakdown[f.key] || 0) * 100);
               return (
@@ -830,14 +830,14 @@ export default function MatchesPage() {
     <AppShell>
       <AppNav rightContent={<NotificationCenter />} />
       <div className="max-w-5xl mx-auto px-6 lg:px-8 py-3 flex items-center justify-between">
-          <h1 className="font-semibold text-white text-sm">Your Matches</h1>
+          <h1 className="font-semibold text-white text-sm">Your Introductions</h1>
           <div className="flex items-center gap-2 sm:gap-3">
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
             className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-white/60 border border-white/10 focus:border-brand-violet/30 focus:outline-none transition appearance-none cursor-pointer"
             style={{ background: 'rgba(15,22,41,0.8)' }}>
-            <option value="score">Best Match</option>
+            <option value="score">Best Fit</option>
             <option value="recent">Most Recent</option>
           </select>
           <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: 'rgba(108,99,255,0.08)' }}>
@@ -876,13 +876,13 @@ export default function MatchesPage() {
                 <div>
                   <p className="text-sm font-medium text-white">
                     {matchStats.paywallActive
-                      ? 'Free match limit reached'
-                      : `${matchStats.matchesRemaining} free match${matchStats.matchesRemaining !== 1 ? 'es' : ''} remaining`}
+                      ? 'Free introduction limit reached'
+                      : `${matchStats.matchesRemaining} free introduction${matchStats.matchesRemaining !== 1 ? 's' : ''} remaining`}
                   </p>
                   <p className="text-xs text-white/40 mt-0.5">
                     {matchStats.paywallActive
-                      ? 'Subscribe to Pro for unlimited matches and introductions'
-                      : `${matchStats.matchesUsed} of ${matchStats.freeMatchLimit} free matches used${matchStats.bonusMatches ? ` (includes ${matchStats.bonusMatches} bonus from referrals)` : ''}`}
+                      ? 'Upgrade to Pro for unlimited introductions and conversations'
+                      : `${matchStats.matchesUsed} of ${matchStats.freeMatchLimit} free introductions used${matchStats.bonusMatches ? ` (includes ${matchStats.bonusMatches} bonus from referrals)` : ''}`}
                   </p>
                 </div>
               </div>
@@ -932,8 +932,8 @@ export default function MatchesPage() {
             {pendingMatches.length === 0 && waitingMatches.length === 0 ? (
               <div className="text-center py-16">
                 <span className="text-5xl block mb-4">🔍</span>
-                <h3 className="text-white font-semibold mb-2">No pending matches</h3>
-                <p className="text-white/40 text-sm mb-6">Cleya is working on finding your best connections</p>
+                <h3 className="text-white font-semibold mb-2">No pending introductions</h3>
+                <p className="text-white/40 text-sm mb-6">Cleya is meeting people on your behalf — fresh introductions land here as she finds the right ones.</p>
                 <button
                   onClick={() => router.push('/dashboard')}
                   className="px-5 py-2.5 rounded-xl text-sm font-medium text-white transition"
@@ -947,7 +947,7 @@ export default function MatchesPage() {
                 {pendingMatches.length > 0 && (
                   <>
                     <p className="text-xs font-medium uppercase tracking-wider text-white/30 mb-3">
-                      {pendingMatches.length} match{pendingMatches.length !== 1 ? 'es' : ''} to review
+                      {pendingMatches.length} introduction{pendingMatches.length !== 1 ? 's' : ''} to review
                     </p>
                     {pendingMatches.map((match) => (
                       <MatchCard key={match.id} match={match} showActions={true} />
@@ -975,13 +975,13 @@ export default function MatchesPage() {
             {acceptedMatches.length === 0 ? (
               <div className="text-center py-16">
                 <span className="text-5xl block mb-4">🤝</span>
-                <h3 className="text-white font-semibold mb-2">No accepted matches yet</h3>
-                <p className="text-white/40 text-sm">When both sides accept, contact info is revealed here</p>
+                <h3 className="text-white font-semibold mb-2">No conversations started yet</h3>
+                <p className="text-white/40 text-sm">When both sides accept an introduction, contact info is revealed here</p>
               </div>
             ) : (
               <>
                 <p className="text-xs font-medium uppercase tracking-wider text-white/30 mb-3">
-                  {acceptedMatches.length} connection{acceptedMatches.length !== 1 ? 's' : ''} made
+                  {acceptedMatches.length} conversation{acceptedMatches.length !== 1 ? 's' : ''} started
                 </p>
                 {acceptedMatches.map((match) => (
                   <MatchCard key={match.id} match={match} showActions={false} />
@@ -996,13 +996,13 @@ export default function MatchesPage() {
             {declinedMatches.length === 0 ? (
               <div className="text-center py-16">
                 <span className="text-5xl block mb-4">📋</span>
-                <h3 className="text-white font-semibold mb-2">No declined matches</h3>
-                <p className="text-white/40 text-sm">Matches that were passed on will appear here</p>
+                <h3 className="text-white font-semibold mb-2">No declined introductions</h3>
+                <p className="text-white/40 text-sm">Introductions you've passed on will appear here</p>
               </div>
             ) : (
               <>
                 <p className="text-xs font-medium uppercase tracking-wider text-white/30 mb-3">
-                  {declinedMatches.length} declined match{declinedMatches.length !== 1 ? 'es' : ''}
+                  {declinedMatches.length} declined introduction{declinedMatches.length !== 1 ? 's' : ''}
                 </p>
                 {declinedMatches.map((match) => (
                   <MatchCard key={match.id} match={match} showActions={false} />
@@ -1076,7 +1076,7 @@ export default function MatchesPage() {
               <span className="text-5xl block mb-4">🚀</span>
               <h2 className="text-xl font-bold text-white mb-2">Upgrade to Pro</h2>
               <p className="text-sm text-white/50">
-                {"You've used all 10 free matches for this month. Subscribe to unlock unlimited matches, introductions, and premium features."}
+                {"You've used all 10 free introductions for this month. Upgrade to Pro for unlimited introductions, conversations, and premium features."}
               </p>
             </div>
 

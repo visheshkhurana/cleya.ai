@@ -186,12 +186,12 @@ export default function DashboardPage() {
       if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
       if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
       if (newCount > 0) {
-        setMatchFeedback({ type: 'success', message: `Found ${newCount} new match${newCount > 1 ? 'es' : ''}! View them in your Matches page.` });
+        setMatchFeedback({ type: 'success', message: `Cleya curated ${newCount} new introduction${newCount > 1 ? 's' : ''} for you. Open your Introductions to review.` });
         redirectTimerRef.current = setTimeout(() => router.push('/matches'), 2000);
       } else if (matchArr.length > 0) {
-        setMatchFeedback({ type: 'info', message: `You have ${matchArr.length} existing match${matchArr.length > 1 ? 'es' : ''}. No new matches found right now.` });
+        setMatchFeedback({ type: 'info', message: `You have ${matchArr.length} existing introduction${matchArr.length > 1 ? 's' : ''}. Cleya hasn't curated anyone new for you right now.` });
       } else {
-        setMatchFeedback({ type: 'info', message: 'No matches found yet. Try updating your profile to improve results.' });
+        setMatchFeedback({ type: 'info', message: 'Cleya is still meeting people on your behalf. Update your profile to help her curate sharper introductions.' });
       }
       feedbackTimerRef.current = setTimeout(() => setMatchFeedback(null), 10000);
     } catch (err: any) {
@@ -395,7 +395,7 @@ export default function DashboardPage() {
               <button onClick={() => { setMatchFeedback(null); if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current); if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current); }} className="text-white/30 hover:text-white/60 flex-shrink-0">×</button>
             </div>
             {matchFeedback.type === 'success' && (
-              <p className="text-xs mt-2 opacity-70">Redirecting to matches page...</p>
+              <p className="text-xs mt-2 opacity-70">Redirecting to your introductions...</p>
             )}
           </div>
         )}
@@ -406,7 +406,7 @@ export default function DashboardPage() {
         {profile?.isComplete && recentMatches.length === 0 && !findingMatches && (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold uppercase tracking-wider gradient-text">Your Matches</h3>
+              <h3 className="text-sm font-semibold uppercase tracking-wider gradient-text">Your Introductions</h3>
             </div>
             <div className="rounded-2xl border p-6"
               style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.06), rgba(78,205,196,0.03))', borderColor: 'rgba(108,99,255,0.18)' }}>
@@ -433,7 +433,7 @@ export default function DashboardPage() {
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3 flex-wrap">
-                <h3 className="text-sm font-semibold uppercase tracking-wider gradient-text">Your Matches</h3>
+                <h3 className="text-sm font-semibold uppercase tracking-wider gradient-text">Your Introductions</h3>
                 {/* "More matches on the way" pill — partial-results signal so the
                     UI feels alive even when the matching pipeline is still
                     running in the background. Shown when only 1-2 matches have
@@ -475,7 +475,7 @@ export default function DashboardPage() {
                               background: scorePercent >= 80 ? 'rgba(108,99,255,0.15)' : scorePercent >= 60 ? 'rgba(108,99,255,0.12)' : 'rgba(108,99,255,0.12)',
                               color: scorePercent >= 80 ? '#9B95FF' : scorePercent >= 60 ? '#9B95FF' : '#94A3B8'
                             }}>
-                            {scorePercent >= 80 ? 'Strong Match' : scorePercent >= 60 ? 'Good Fit' : 'Possible Fit'}
+                            {scorePercent >= 80 ? 'Strong Fit' : scorePercent >= 60 ? 'Good Fit' : 'Possible Fit'}
                           </div>
                         </div>
                         {otherProfile?.persona && (
@@ -520,8 +520,8 @@ export default function DashboardPage() {
                 <span className="text-2xl">🎯</span>
                 <span className="text-xs text-white/20 group-hover:text-white/40 transition">→</span>
               </div>
-              <h3 className="font-semibold text-white text-sm mb-1">View Matches</h3>
-              <p className="text-xs text-white/40">Review proposals</p>
+              <h3 className="font-semibold text-white text-sm mb-1">View Introductions</h3>
+              <p className="text-xs text-white/40">Review who Cleya picked</p>
               {matchStats.pending > 0 && (
                 <p className="text-[11px] mt-1" style={{ color: '#9B95FF' }}>{matchStats.pending} pending</p>
               )}
@@ -537,9 +537,9 @@ export default function DashboardPage() {
                 {findingMatches && <div className="w-4 h-4 border-2 border-brand-violet border-t-transparent rounded-full animate-spin" />}
               </div>
               <h3 className="font-semibold text-white text-sm mb-1">
-                {findingMatches ? 'Finding...' : 'Find Matches'}
+                {findingMatches ? 'Curating...' : 'Ask Cleya for more'}
               </h3>
-              <p className="text-xs text-white/40">Search for connections</p>
+              <p className="text-xs text-white/40">Surface new introductions</p>
             </button>
 
             <button
@@ -617,7 +617,7 @@ export default function DashboardPage() {
                 })}
               </div>
             ) : (
-              <p className="text-xs text-white/30">No activity yet. Start by finding matches or completing your profile!</p>
+              <p className="text-xs text-white/30">No activity yet. Complete your profile so Cleya can start introducing you to people.</p>
             )}
           </div>
         </div>

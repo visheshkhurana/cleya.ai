@@ -65,8 +65,8 @@ twilioRouter.post('/voice', webhookPayloadSizeLimit(256 * 1024), twilioWebhookAu
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Amy">
-    Hey! This is Cleya, your AI Superconnector.
-    I'm calling to help connect you with the right people based on your profile.
+    Hey! This is Cleya, your AI Networker.
+    I'm calling so I can meet you on behalf of the rest of the network and start introducing you to the right people.
     Tell me a bit about what you're working on and who you'd love to meet.
   </Say>
   <Gather input="speech" timeout="5" speechTimeout="auto"

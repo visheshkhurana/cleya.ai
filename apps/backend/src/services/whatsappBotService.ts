@@ -86,7 +86,7 @@ export class WhatsAppBotService {
 
     if (!user) {
       console.log(`[WhatsApp Bot] Message from unknown number ${from}: "${cleanText}"`);
-      await this.sendReply(from, `Hi! I'm Cleya, an AI superconnector for India's startup ecosystem. To get started, please sign up at https://cleya.ai and add your phone number. I'll then be able to help you find the right connections!`);
+      await this.sendReply(from, `Hi! I'm Cleya, your AI Networker for India's startup ecosystem. To get started, please sign up at https://cleya.ai and add your phone number. Then I can begin meeting people on your behalf and introducing you to the few worth your time.`);
       return;
     }
 

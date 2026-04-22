@@ -80,7 +80,7 @@ export default function ReferralPage() {
 
   const shareWhatsApp = () => {
     if (!info?.referralLink) return;
-    const text = `Join Cleya.ai and get matched with the right people for your startup journey! ${info.referralLink}`;
+    const text = `Join Cleya.ai — your AI Networker for India's startup ecosystem. Cleya meets people on your behalf and introduces you to the few worth your time. ${info.referralLink}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 

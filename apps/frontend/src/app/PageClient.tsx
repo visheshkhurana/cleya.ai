@@ -295,7 +295,7 @@ function ProfileSection() {
             <span style={{ color: '#9B95FF' }}>structured intelligence</span>
           </h2>
           <p className="text-base leading-relaxed mb-8 max-w-lg" style={{ color: 'rgba(255,255,255,0.6)' }}>
-            Cleya transforms your professional identity into a rich data profile — then instantly finds your best matches across the network.
+            Cleya turns your professional identity into a rich data profile — so she can meet thousands of people on your behalf and curate the few worth your time.
           </p>
           <div className="grid grid-cols-2 gap-3">
             {DIMENSION_TAGS.map((tag, i) => {
@@ -319,7 +319,7 @@ function ProfileSection() {
             <div className="mt-8">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-1 h-1 rounded-full bg-green-400 animate-pulse" />
-                <span className="text-xs font-medium text-green-400/80 uppercase tracking-wider">Top Matches Found</span>
+                <span className="text-xs font-medium text-green-400/80 uppercase tracking-wider">Top Introductions Curated</span>
               </div>
               <MatchResultCards active={showMatches} />
             </div>
@@ -408,14 +408,14 @@ function ChatDemo() {
           See Cleya in action
         </h2>
         <p className="text-base leading-relaxed mb-10 max-w-lg" style={{ color: 'rgba(255,255,255,0.6)' }}>
-          Tell Cleya what you need. Watch it find, rank, and introduce the right people — in seconds.
+          Tell Cleya what you need. She quietly meets thousands on your behalf — and brings you only the people worth your time.
         </p>
 
         <div className="space-y-6">
           {[
             { label: 'You describe your intent', desc: "Type what you're looking for — a raise, a hire, a partner." },
-            { label: 'Cleya finds your matches', desc: 'AI scores and ranks your network in real time.' },
-            { label: 'One-click warm intro', desc: 'Send a contextual introduction with a single tap.' },
+            { label: 'Cleya meets people for you', desc: 'She scans the ecosystem and curates the few worth your time.' },
+            { label: 'One-tap warm introduction', desc: 'When both sides want to talk, Cleya makes the intro.' },
           ].map((s, i) => (
             <div key={i} className="flex gap-4 items-start transition-all duration-500"
               style={{ opacity: i <= activeStep ? 1 : 0.3 }}>
@@ -477,7 +477,7 @@ function ChatDemo() {
               {step >= 2 && thinkingDots >= 6 && (
                 <div className="flex justify-start">
                   <div className="px-3 py-2 rounded-2xl rounded-bl-md text-[11px] text-white/60" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                    Found <span className="text-white font-medium">3 matches</span> in your network:
+                    Curated <span className="text-white font-medium">3 introductions</span> for you:
                   </div>
                 </div>
               )}
@@ -505,7 +505,7 @@ function ChatDemo() {
                 <div className="flex justify-center pt-1">
                   <button className={`px-5 py-2 rounded-full text-[11px] font-medium text-white transition-all duration-300 ${btnClicked ? 'scale-95 opacity-70' : 'scale-100'}`}
                     style={{ background: 'linear-gradient(135deg, #6C63FF, #4ECDC4)' }}>
-                    Send Intro to Meera I. →
+                    Introduce me to Meera I. →
                   </button>
                 </div>
               )}
@@ -641,13 +641,13 @@ function UseCaseCard({ persona, setShowAuth, setMode, setSelectedPersona }: {
 }
 
 const ACTIVITY_FEED = [
-  { text: 'Meera matched with Vikram', time: '2min ago', color: '#6C63FF' },
+  { text: 'Cleya introduced Meera to Vikram', time: '2min ago', color: '#6C63FF' },
   { text: 'Arjun sent intro to Nandini', time: '5min ago', color: '#4ECDC4' },
-  { text: 'Priya matched with Siddharth', time: '8min ago', color: '#06B6D4' },
+  { text: 'Cleya introduced Priya to Siddharth', time: '8min ago', color: '#06B6D4' },
   { text: 'Rahul connected with Kavya', time: '12min ago', color: '#9B95FF' },
-  { text: 'Deepak matched with Ananya', time: '15min ago', color: '#6C63FF' },
+  { text: 'Cleya introduced Deepak to Ananya', time: '15min ago', color: '#6C63FF' },
   { text: 'Sneha sent intro to Rohan', time: '18min ago', color: '#4ECDC4' },
-  { text: 'Aditya matched with Pooja', time: '22min ago', color: '#06B6D4' },
+  { text: 'Cleya introduced Aditya to Pooja', time: '22min ago', color: '#06B6D4' },
   { text: 'Neha connected with Kartik', time: '25min ago', color: '#9B95FF' },
 ];
 
@@ -775,7 +775,7 @@ const ROLE_PERSONAS = [
     tagline: 'Raise faster. Hire smarter.',
     desc: "Get in front of investors who've already backed companies like yours. Cleya finds the lead-check writers in your sector and warms the intro on your behalf.",
     bullets: [
-      'Targeted matches with active investors in your stage',
+      'Curated introductions to active investors in your stage',
       'Warm intros sent on your behalf — no cold outreach',
       'Senior hires from operator networks you trust',
     ],
@@ -803,9 +803,9 @@ const ROLE_PERSONAS = [
   {
     title: 'Operators',
     tagline: 'Land your next operator role through relationships.',
-    desc: "Get introduced to founders who are hiring — before the job is posted. Cleya understands what you've built and matches you with the right founders.",
+    desc: "Get introduced to founders who are hiring — before the job is posted. Cleya understands what you've built and connects you to the right founders.",
     bullets: [
-      'Roles surfaced from your matched founders',
+      'Roles surfaced from founders Cleya has introduced you to',
       'Relationship-led intros, not job boards',
       'Equity-stage opportunities with strong founders',
     ],
@@ -1267,16 +1267,15 @@ export default function Home() {
               className="font-sans font-bold text-white leading-[1.05] mb-8 tracking-tight hero-fade-in"
               style={{ fontSize: 'clamp(40px, 5.5vw + 16px, 84px)', animationDelay: '0.5s' }}
             >
-              The AI Network That<br />
-              <span className="gradient-text">Connects You to</span><br />
-              <span className="gradient-text">What Matters</span>
+              Meet Your<br />
+              <span className="gradient-text">AI Networker</span>
             </h1>
 
             <div
               className="leading-relaxed mb-12 max-w-xl lg:max-w-2xl hero-fade-in"
               style={{ color: 'rgba(255,255,255,0.6)', fontSize: 'clamp(16px, 1.2vw + 12px, 22px)', animationDelay: '0.7s' }}
             >
-              Whether you want to find a co-founder, investor, or hire — Cleya makes it happen.
+              Stop cold-DMing 100s of strangers. Cleya quietly meets thousands of founders, investors, and operators across India on your behalf — and introduces you to the few worth your time.
             </div>
 
             <div
@@ -1285,7 +1284,7 @@ export default function Home() {
             >
               <GlowButton onClick={() => { setShowAuth(true); setMode('signup'); }}
                 className="group btn-gold cta-glow text-[15px]">
-                Join Free — 10 Matches/Month
+                Join Free — 10 Introductions/Month
                 <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
               </GlowButton>
               <Link href="/pricing" className="btn-ghost group">
