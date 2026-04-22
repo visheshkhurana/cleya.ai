@@ -1,0 +1,24 @@
+<svg width="600" height="160" viewBox="0 0 600 160" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#8B7BFF"/>
+      <stop offset="55%" stop-color="#5DECDC"/>
+      <stop offset="100%" stop-color="#FF6B9D"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="160" fill="#0B0820"/>
+  <g transform="translate(60,80)">
+    <!-- Compact symbol on the left -->
+    <g transform="translate(0,-2)">
+      <path d="M -22 -28 A 32 32 0 0 0 -22 28"
+            fill="none" stroke="url(#grad)" stroke-width="9" stroke-linecap="round"/>
+      <path d="M 22 -28 A 32 32 0 0 1 22 28"
+            fill="none" stroke="url(#grad)" stroke-width="9" stroke-linecap="round" opacity="0.85"/>
+      <circle cx="0" cy="0" r="6" fill="#5DECDC"/>
+    </g>
+  </g>
+  <text x="130" y="100" font-family="Plus Jakarta Sans, -apple-system, Segoe UI, sans-serif"
+        font-size="72" font-weight="700" fill="url(#grad)" letter-spacing="-2">Cleya</text>
+  <text x="130" y="128" font-family="Plus Jakarta Sans, -apple-system, Segoe UI, sans-serif"
+        font-size="14" font-weight="500" fill="#9CA3AF" letter-spacing="2.5">AI MATCHMAKER · INDIA</text>
+</svg>

@@ -35,3 +35,27 @@ id = "YOOx7OF2VjLCfPtgGjk7P"
 uri = "file://docs/notes/screenshots/pricing-cards.jpg"
 type = "image"
 title = "UI: Pricing Cards (refreshed surface tokens)"
+
+[[outputs]]
+id = "JnhOKyy3dEF7b22Ac16GB"
+uri = "file://brand/linkedin/avatar.png"
+type = "image"
+title = "LinkedIn page logo (400×400)"
+
+[[outputs]]
+id = "iyjM4mUphh6hLddnTuUk-"
+uri = "file://brand/linkedin/cover.png"
+type = "image"
+title = "LinkedIn cover image (1584×396)"
+
+[[outputs]]
+id = "AY5eJv0rP9vR7SOHMR9p_"
+uri = "file://brand/linkedin/wordmark.png"
+type = "image"
+title = "Cleya wordmark (for posts & decks)"
+
+[[outputs]]
+id = "ArTwJVFxFjuJlRVJYXf3R"
+uri = "file://brand/linkedin/page-setup.md"
+type = "text"
+title = "LinkedIn page setup brief — copy, About, first posts, checklist"
