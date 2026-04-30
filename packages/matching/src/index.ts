@@ -128,49 +128,84 @@ const SECTOR_FAMILY_SIMILARITY: Record<string, Record<string, number>> = {
   spacetech: { cleantech: 0.15, mobility: 0.20 },
 };
 
+// ─── Display-Score Transform ───
+//
+// Raw scores from the matching engine sit in roughly [0.35, 1.00] after the
+// minScore filter — and a "genuinely good" cross-role match often lands in
+// the 0.45-0.65 band because intent + semantic only carry it so far. Showing
+// "46% compatibility" to a user about a hand-curated intro reads as insulting
+// and erodes trust in the network.
+//
+// We map raw [0.35, 1.00] → displayed [0.72, 0.96] linearly. This is the
+// single source of truth used by the backend (emails, WhatsApp, digests),
+// the web app (match cards, dashboard), and the mobile app. Raw scores are
+// still used for ranking and gating; only the surfaced number is rescaled.
+export const DISPLAY_SCORE_FLOOR = 0.72;
+export const DISPLAY_SCORE_CEILING = 0.96;
+export const RAW_SCORE_FLOOR = 0.35;
+export const RAW_SCORE_CEILING = 1.00;
+
+export function toDisplayScore(raw: number): number {
+  if (!Number.isFinite(raw)) return DISPLAY_SCORE_FLOOR;
+  const clamped = Math.max(RAW_SCORE_FLOOR, Math.min(RAW_SCORE_CEILING, raw));
+  const t = (clamped - RAW_SCORE_FLOOR) / (RAW_SCORE_CEILING - RAW_SCORE_FLOOR);
+  return DISPLAY_SCORE_FLOOR + t * (DISPLAY_SCORE_CEILING - DISPLAY_SCORE_FLOOR);
+}
+
+export function toDisplayPercent(raw: number): number {
+  return Math.round(toDisplayScore(raw) * 100);
+}
+
 // ─── Persona Compatibility Matrix ───
+//
+// Cross-role cells (VC↔founder, talent↔founder, operator↔founder, recruiter↔
+// founder, freelancer↔founder) are intentionally aggressive — the network is
+// most valuable when it bridges adjacent roles, not when it only matches
+// peers. Same-persona cells are kept low because most personas don't benefit
+// from peer matching (FOUNDER↔FOUNDER is gated separately for co-founder
+// search).
 export const PERSONA_COMPATIBILITY: Record<string, Record<string, number>> = {
   FOUNDER: {
     INVESTOR: 0.95,
     ADVISOR: 0.85,
     DEAL_PARTNER: 0.90,
-    VENTURE_PARTNER: 0.80,
+    VENTURE_PARTNER: 0.85,
     FOUNDER: 0.70,
-    OPERATOR: 0.60,
-    TALENT: 0.55,
-    EVENT_PARTICIPANT: 0.65,
-    RECRUITER: 0.40,
-    FREELANCER: 0.50,
-    JOB_SEEKER: 0.45,
-    OTHER: 0.40,
+    OPERATOR: 0.75,
+    TALENT: 0.75,
+    EVENT_PARTICIPANT: 0.70,
+    RECRUITER: 0.55,
+    FREELANCER: 0.60,
+    JOB_SEEKER: 0.55,
+    OTHER: 0.45,
   },
   INVESTOR: {
     FOUNDER: 0.95,
     EVENT_PARTICIPANT: 0.85,
     DEAL_PARTNER: 0.90,
-    VENTURE_PARTNER: 0.75,
-    INVESTOR: 0.65,
-    ADVISOR: 0.55,
-    OPERATOR: 0.40,
-    TALENT: 0.15,
-    RECRUITER: 0.20,
-    FREELANCER: 0.15,
-    JOB_SEEKER: 0.10,
-    OTHER: 0.30,
+    VENTURE_PARTNER: 0.80,
+    INVESTOR: 0.70,
+    ADVISOR: 0.65,
+    OPERATOR: 0.60,
+    TALENT: 0.40,
+    RECRUITER: 0.30,
+    FREELANCER: 0.25,
+    JOB_SEEKER: 0.20,
+    OTHER: 0.35,
   },
   TALENT: {
-    FOUNDER: 0.90,
+    FOUNDER: 0.92,
     RECRUITER: 0.95,
-    OPERATOR: 0.70,
-    ADVISOR: 0.50,
-    TALENT: 0.25,
-    INVESTOR: 0.15,
-    DEAL_PARTNER: 0.20,
-    VENTURE_PARTNER: 0.20,
-    EVENT_PARTICIPANT: 0.30,
-    FREELANCER: 0.30,
-    JOB_SEEKER: 0.20,
-    OTHER: 0.30,
+    OPERATOR: 0.75,
+    ADVISOR: 0.60,
+    TALENT: 0.30,
+    INVESTOR: 0.40,
+    DEAL_PARTNER: 0.35,
+    VENTURE_PARTNER: 0.35,
+    EVENT_PARTICIPANT: 0.40,
+    FREELANCER: 0.40,
+    JOB_SEEKER: 0.25,
+    OTHER: 0.35,
   },
   DEAL_PARTNER: {
     FOUNDER: 0.90,
@@ -229,18 +264,18 @@ export const PERSONA_COMPATIBILITY: Record<string, Record<string, number>> = {
     OTHER: 0.35,
   },
   OPERATOR: {
-    FOUNDER: 0.60,
-    ADVISOR: 0.60,
+    FOUNDER: 0.85,
+    ADVISOR: 0.65,
     OPERATOR: 0.55,
-    TALENT: 0.55,
-    INVESTOR: 0.40,
-    DEAL_PARTNER: 0.45,
-    VENTURE_PARTNER: 0.50,
-    EVENT_PARTICIPANT: 0.45,
-    RECRUITER: 0.50,
-    JOB_SEEKER: 0.45,
-    FREELANCER: 0.40,
-    OTHER: 0.40,
+    TALENT: 0.70,
+    INVESTOR: 0.60,
+    DEAL_PARTNER: 0.55,
+    VENTURE_PARTNER: 0.60,
+    EVENT_PARTICIPANT: 0.55,
+    RECRUITER: 0.60,
+    JOB_SEEKER: 0.50,
+    FREELANCER: 0.50,
+    OTHER: 0.45,
   },
   JOB_SEEKER: {
     RECRUITER: 0.95,
@@ -648,9 +683,9 @@ export class MatchingEngine {
   findMatches(
     user: ProfileForMatching,
     candidates: ProfileForMatching[],
-    options: { limit?: number; minScore?: number } = {}
+    options: { limit?: number; minScore?: number; serendipity?: boolean } = {}
   ): Array<{ profile: ProfileForMatching; score: MatchScore }> {
-    const { limit = 10, minScore = 0.35 } = options;
+    const { limit = 10, minScore = 0.35, serendipity = true } = options;
 
     const intentFiltered = candidates
       .filter((c) => c.userId !== user.userId)
@@ -663,6 +698,31 @@ export class MatchingEngine {
       }))
       .filter((m) => m.score.total >= minScore)
       .sort((a, b) => b.score.total - a.score.total);
+
+    // Serendipity slot — out of every batch of `limit` introductions, reserve
+    // one slot for a high-semantic-fit but cross-sector pick. This keeps the
+    // network from collapsing into the same dense clusters and surfaces
+    // "you wouldn't have thought to ask, but you should meet" intros.
+    //
+    // Picks the best-scoring candidate from positions [limit, limit*3) whose
+    // top sector does NOT overlap with any of the user's sectors. Falls back
+    // to the highest-scoring out-of-cluster candidate if none qualify.
+    if (serendipity && scored.length > limit && limit >= 3) {
+      const topK = scored.slice(0, limit - 1);
+      const tail = scored.slice(limit - 1, Math.min(scored.length, limit * 3));
+      const userSectors = new Set((user.industries || []).map((s) => s.toLowerCase()));
+      const crossSector = tail.find((m) => {
+        const candSectors = (m.profile.industries || []).map((s) => s.toLowerCase());
+        if (candSectors.length === 0 || userSectors.size === 0) return false;
+        return !candSectors.some((s) => userSectors.has(s));
+      });
+      const serendipitous = crossSector || tail[0] || scored[limit - 1];
+      // Avoid duplicate if serendipity pick happened to also be in topK.
+      if (serendipitous && !topK.some((m) => m.profile.userId === serendipitous.profile.userId)) {
+        return [...topK, serendipitous];
+      }
+      return scored.slice(0, limit);
+    }
 
     return scored.slice(0, limit);
   }

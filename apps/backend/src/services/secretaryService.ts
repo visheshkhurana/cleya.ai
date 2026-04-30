@@ -1,5 +1,6 @@
 import { createAIService } from '@cleya/ai';
 import { prisma } from '@cleya/db';
+import { toDisplayPercent } from '@cleya/matching';
 import { createZoomMeeting, isUserZoomConnected } from './zoomService';
 import { emailService } from './email';
 import { sendToUser } from '../websocket/server';
@@ -419,7 +420,7 @@ export async function generateDailyDigest(userId: string): Promise<string> {
       const otherProfile = other.profile;
       digest += `• ${other.name || 'Someone new'} — ${otherProfile?.currentRole || personaLabel[otherProfile?.persona || ''] || 'Professional'}`;
       if (otherProfile?.companyName) digest += ` at ${otherProfile.companyName}`;
-      digest += ` (${Math.round(m.score * 100)}% match)\n`;
+      digest += ` (${toDisplayPercent(m.score)}% match)\n`;
     }
     if (pendingMatches.length > 3) digest += `  ...and ${pendingMatches.length - 3} more\n`;
     digest += `\n`;

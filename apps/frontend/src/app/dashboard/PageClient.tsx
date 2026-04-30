@@ -9,6 +9,7 @@ import { setUser as setSentryUser } from '@/lib/sentry';
 import AppFooter from '@/components/AppFooter';
 import AppShell from '@/components/AppShell';
 import UserAvatar from '@/components/UserAvatar';
+import { toDisplayPercent } from '@/lib/displayScore';
 import { personaIcon, personaLabel } from '@/lib/persona';
 import { useTranslation } from '@/lib/i18n';
 
@@ -454,7 +455,7 @@ export default function DashboardPage() {
               {recentMatches.slice(0, 6).map((match) => {
                 const other = getOtherUser(match);
                 const otherProfile = other.profile;
-                const scorePercent = Math.round((match.score || 0) * 100);
+                const scorePercent = toDisplayPercent(match.score);
                 const myResponse = getMyResponse(match);
                 const isPending = myResponse === 'PENDING' && match.status !== 'REJECTED' && match.status !== 'ACCEPTED';
 

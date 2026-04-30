@@ -46,6 +46,13 @@ const envSchema = z.object({
 
   RESEND_API_KEY: z.string().optional(),
   RESEND_WEBHOOK_SECRET: z.string().optional(),
+  // Resend Inbound: when set, transactional emails use a per-match
+  // signed reply-to address (e.g. `r+<token>@reply.cleya.ai`) so users
+  // can simply hit Reply with "yes" / "no" to accept or decline an
+  // introduction. The inbound webhook routes the parsed message back
+  // through respondToMatch.
+  REPLY_INBOUND_DOMAIN: z.string().optional(),
+  RESEND_INBOUND_SECRET: z.string().optional(),
 
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().default(587),

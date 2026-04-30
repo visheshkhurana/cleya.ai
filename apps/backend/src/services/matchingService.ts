@@ -186,6 +186,8 @@ export class MatchingService {
       const nameB = safeDisplayName(userBData);
       const personaA = userAData.profile?.persona || 'Professional';
       const personaB = userBData.profile?.persona || 'Professional';
+      // Note: matchId + recipientUserId let sendMatchProposed render the
+      // one-click Accept/Decline buttons that work without login.
       const detailsB = {
         companyName: userBData.profile?.companyName || undefined,
         headline: userBData.profile?.headline || userBData.profile?.currentRole || undefined,
@@ -197,6 +199,8 @@ export class MatchingService {
         location: userBData.profile?.location || undefined,
         bio: userBData.profile?.bio || undefined,
         matchReason: reason,
+        matchId: match.id,
+        recipientUserId: userAId,
       };
       const detailsA = {
         companyName: userAData.profile?.companyName || undefined,
@@ -209,6 +213,8 @@ export class MatchingService {
         location: userAData.profile?.location || undefined,
         bio: userAData.profile?.bio || undefined,
         matchReason: reason,
+        matchId: match.id,
+        recipientUserId: userBId,
       };
       const dispatch = async (
         targetUserId: string,
@@ -277,6 +283,21 @@ export class MatchingService {
           body: waBodyB,
         },
       ]);
+
+      // Schedule the 72h non-response feedback nudge for both sides. The
+      // shouldSkip() check inside the drip processor will short-circuit
+      // for whichever user has already responded by then.
+      try {
+        const { dripCampaignService } = await import('./dripCampaignService');
+        dripCampaignService.enrollNonResponseFeedback(userAId, match.id).catch((e) =>
+          console.error('[matchingService] non-response enroll A failed:', e?.message || e),
+        );
+        dripCampaignService.enrollNonResponseFeedback(userBId, match.id).catch((e) =>
+          console.error('[matchingService] non-response enroll B failed:', e?.message || e),
+        );
+      } catch (e) {
+        console.error('[matchingService] enrollNonResponseFeedback import failed:', (e as Error).message);
+      }
     }
 
     return match;
@@ -293,31 +314,79 @@ export class MatchingService {
       throw new AppError(403, 'Not part of this match');
     }
 
-    const updateData: any = {};
+    // RACE-SAFE response recording, done in two atomic steps inside a
+    // single transaction so:
+    //   (a) two concurrent calls for the SAME user can't both succeed —
+    //       updateMany scoped to userXResponse:'PENDING' is the guard.
+    //   (b) two concurrent calls for DIFFERENT users (e.g. both parties
+    //       accept simultaneously) can't leave a stale PENDING_X status.
+    //       We recompute status from the post-update row, not from the
+    //       pre-read snapshot.
+    const responseFieldUpdate: any = {};
     if (isUserA) {
-      updateData.userAResponse = response;
-      updateData.userARespondedAt = new Date();
+      responseFieldUpdate.userAResponse = response;
+      responseFieldUpdate.userARespondedAt = new Date();
     } else {
-      updateData.userBResponse = response;
-      updateData.userBRespondedAt = new Date();
+      responseFieldUpdate.userBResponse = response;
+      responseFieldUpdate.userBRespondedAt = new Date();
     }
+    const guardWhere: any = { id: matchId };
+    if (isUserA) guardWhere.userAResponse = 'PENDING';
+    else guardWhere.userBResponse = 'PENDING';
 
-    const otherResponse = isUserA ? match.userBResponse : match.userAResponse;
+    const { updateResult, updated, justAccepted } = await prisma.$transaction(async (tx) => {
+      const r = await tx.match.updateMany({
+        where: guardWhere,
+        data: responseFieldUpdate,
+      });
 
-    if (response === 'REJECTED') {
-      updateData.status = 'REJECTED';
-    } else if (otherResponse === 'ACCEPTED') {
-      updateData.status = 'ACCEPTED';
-    } else if (otherResponse === 'REJECTED') {
-      updateData.status = 'REJECTED';
-    } else {
-      updateData.status = isUserA ? 'PENDING_B' : 'PENDING_A';
-    }
+      // If the conditional update affected zero rows the caller is a
+      // duplicate — return current state, skip the status recompute.
+      if (r.count === 0) {
+        const cur = await tx.match.findUniqueOrThrow({ where: { id: matchId } });
+        return { updateResult: r, updated: cur, justAccepted: false };
+      }
 
-    const updated = await prisma.match.update({
-      where: { id: matchId },
-      data: updateData,
+      // Re-read the post-update row INSIDE the transaction so we observe
+      // the other user's response if it landed concurrently. Recompute
+      // status from this fresh state — never from the pre-read snapshot.
+      const fresh = await tx.match.findUniqueOrThrow({ where: { id: matchId } });
+      const aResp = fresh.userAResponse;
+      const bResp = fresh.userBResponse;
+      let nextStatus: string;
+      if (aResp === 'REJECTED' || bResp === 'REJECTED') {
+        nextStatus = 'REJECTED';
+      } else if (aResp === 'ACCEPTED' && bResp === 'ACCEPTED') {
+        nextStatus = 'ACCEPTED';
+      } else if (aResp === 'ACCEPTED') {
+        nextStatus = 'PENDING_B';
+      } else if (bResp === 'ACCEPTED') {
+        nextStatus = 'PENDING_A';
+      } else {
+        nextStatus = fresh.status;
+      }
+
+      // Use a CONDITIONAL update on status so exactly one transaction can
+      // win the PENDING_*/REJECTED/whatever -> ACCEPTED transition. This
+      // is what we use to gate side-effects: `justAccepted` is true only
+      // for the single tx whose status flip succeeded.
+      let postRow = fresh;
+      let didFlipToAccepted = false;
+      if (nextStatus !== fresh.status) {
+        const flip = await tx.match.updateMany({
+          where: { id: matchId, status: fresh.status },
+          data: { status: nextStatus as any },
+        });
+        postRow = await tx.match.findUniqueOrThrow({ where: { id: matchId } });
+        didFlipToAccepted = flip.count > 0 && nextStatus === 'ACCEPTED';
+      }
+      return { updateResult: r, updated: postRow, justAccepted: didFlipToAccepted };
     });
+
+    if (updateResult.count === 0) {
+      console.log(`[MatchingService] respondToMatch noop (already responded) match=${matchId} user=${userId}`);
+      return updated;
+    }
 
     // Either user just became "ready" again — re-enqueue so the continuous
     // loop reconsiders them within the next tick instead of waiting for
@@ -329,12 +398,11 @@ export class MatchingService {
       })
       .catch((e) => console.log('[MatchingService] re-enqueue after response failed:', e));
 
-    // Idempotency guard: only fire side-effects (joint email, WhatsApp, deal
-    // progression, drip enrollment) on the FIRST transition to ACCEPTED.
-    // Without this, a network retry or rapid double-tap on the accept button
-    // would trigger duplicate joint intro emails to both parties.
-    const justAccepted = updated.status === 'ACCEPTED' && match.status !== 'ACCEPTED';
-
+    // Idempotency guard: side-effects (joint email, WhatsApp, deal progression,
+    // drip enrollment) fire only for the SINGLE transaction that actually
+    // flipped status to ACCEPTED. The conditional status update inside the
+    // transaction above is what guarantees this — `justAccepted` here comes
+    // straight from that DB-level guard, not from a stale pre-read snapshot.
     if (justAccepted) {
       await this.revealContacts(updated);
       introductionService.sendIntroduction(matchId).catch((e) =>
@@ -957,3 +1025,87 @@ Content rules:
 }
 
 export const matchingService = new MatchingService();
+
+/**
+ * Build 2-3 anonymized teaser strings to embed in profile-nudge emails.
+ * The goal is to show the new user that real, relevant people are already
+ * here without leaking PII before both sides have opted into the intro.
+ *
+ * Strategy:
+ *   1. Read the user's persona (default OTHER if missing)
+ *   2. Pull the persona row from PERSONA_COMPATIBILITY and pick the
+ *      personas they'd most plausibly meet (compat >= 0.6)
+ *   3. Sample up to 6 verified, complete profiles in those personas
+ *   4. Compose anonymized headlines like
+ *      "Series-A SaaS founder, Bangalore" — never any name, email or
+ *      company
+ */
+export async function getProfileNudgeTeasers(userId: string, count = 3): Promise<string[]> {
+  try {
+    const { PERSONA_COMPATIBILITY: PC } = await import('@cleya/matching');
+    const me = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { profile: { select: { persona: true } } },
+    });
+    const persona = me?.profile?.persona || 'OTHER';
+    const compatRow = PC[persona] || {};
+    const wantedPersonas = Object.entries(compatRow)
+      .filter(([, score]) => score >= 0.6)
+      .map(([p]) => p);
+    if (wantedPersonas.length === 0) wantedPersonas.push('FOUNDER', 'INVESTOR', 'OPERATOR');
+
+    const candidates = await prisma.profile.findMany({
+      where: {
+        persona: { in: wantedPersonas },
+        isComplete: true,
+        userId: { not: userId },
+        user: { isActive: true, emailVerified: true },
+      },
+      select: {
+        persona: true,
+        currentRole: true,
+        companyStage: true,
+        industries: true,
+        location: true,
+        investorType: true,
+      },
+      take: count * 4,
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    const teasers: string[] = [];
+    const seen = new Set<string>();
+    for (const c of candidates) {
+      const stage = c.companyStage || c.investorType || '';
+      const industry = (c.industries && c.industries[0]) || '';
+      const role = c.currentRole || personaToReadable(c.persona);
+      const loc = c.location || '';
+      const parts = [stage, industry, role].filter(Boolean).join(' ').trim();
+      const teaser = loc ? `${parts}, ${loc}` : parts;
+      const key = teaser.toLowerCase();
+      if (teaser && !seen.has(key)) {
+        seen.add(key);
+        teasers.push(teaser);
+      }
+      if (teasers.length >= count) break;
+    }
+    return teasers;
+  } catch (e) {
+    console.warn('[getProfileNudgeTeasers] failed:', (e as Error).message);
+    return [];
+  }
+}
+
+function personaToReadable(p: string): string {
+  switch (p) {
+    case 'FOUNDER': return 'founder';
+    case 'INVESTOR': return 'investor';
+    case 'VENTURE_PARTNER': return 'venture partner';
+    case 'TALENT': return 'operator';
+    case 'JOB_SEEKER': return 'job seeker';
+    case 'FREELANCER': return 'freelancer';
+    case 'OPERATOR': return 'operator';
+    case 'DEAL_PARTNER': return 'deal partner';
+    default: return 'professional';
+  }
+}

@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/contexts/AuthContext';
+import { toDisplayPercent } from '@/lib/displayScore';
 import { api, UserProfile, MatchStats } from '@/lib/api';
 import { Colors, personaLabels } from '@/constants/colors';
 
@@ -205,7 +206,7 @@ export default function DashboardScreen() {
                 {matches.map((match: Record<string, unknown>) => {
                   const other = getOtherUser(match);
                   const otherProfile = other?.profile as Record<string, unknown> | undefined;
-                  const score = Math.round(((match.score as number) || 0) * 100);
+                  const score = toDisplayPercent((match.score as number) || 0);
                   return (
                     <TouchableOpacity
                       key={match.id as string}

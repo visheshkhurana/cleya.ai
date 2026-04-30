@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { toDisplayPercent } from '@/lib/displayScore';
 
 interface Factor {
   key: string;
@@ -79,7 +80,7 @@ export default function WhyMatchModal({ matchId, onClose }: { matchId: string; o
               {data.recentActivity && (
                 <span className="flex items-center gap-1">⚡ {data.recentActivity}</span>
               )}
-              <span className="ml-auto font-mono">Overall {Math.round(data.overallScore * 100)}%</span>
+              <span className="ml-auto font-mono">Overall {toDisplayPercent(data.overallScore)}%</span>
             </div>
           </>
         )}

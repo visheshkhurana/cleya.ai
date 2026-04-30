@@ -18,6 +18,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
+import { toDisplayPercent } from '@/lib/displayScore';
 import { Colors, personaLabels, formatIndustry } from '@/constants/colors';
 
 type Tab = 'pending' | 'accepted';
@@ -215,7 +216,7 @@ export default function MatchesScreen() {
   const renderMatch = ({ item: match }: { item: MatchData }) => {
     const other = getOtherUser(match);
     const profile = other?.profile;
-    const score = Math.round((match.score || 0) * 100);
+    const score = toDisplayPercent(match.score);
     const isExpanded = expandedId === match.id;
     const isAccepted = match.status === 'ACCEPTED';
     const showActions = activeTab === 'pending';

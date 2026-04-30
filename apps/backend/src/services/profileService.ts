@@ -66,17 +66,29 @@ export class ProfileService {
   }
 
   async updateProfile(userId: string, data: Record<string, any>) {
+    // Profile saves come in as PATCHes (only changed fields). Completeness
+    // must be evaluated against the *merged* profile state — otherwise a
+    // user who fills every field one-at-a-time never flips isComplete to
+    // true, because each save only sees a single field.
+    const existing = await prisma.profile.findUnique({ where: { userId } });
+    const merged: Record<string, any> = { ...(existing || {}), ...data };
+
+    const sanitized = this.sanitizeProfileData(data);
+    const sanitizedCreate = this.sanitizeProfileData(data);
+    sanitized.isComplete = this.calculateCompleteness(merged) >= 0.75;
+    sanitizedCreate.isComplete = sanitized.isComplete;
+
     const profile = await prisma.profile.upsert({
       where: { userId },
       update: {
-        ...this.sanitizeProfileData(data),
-        completenessScore: this.calculateCompleteness(data),
+        ...sanitized,
+        completenessScore: this.calculateCompleteness(merged),
         updatedAt: new Date(),
       },
       create: {
         userId,
-        ...this.sanitizeProfileData(data),
-        completenessScore: this.calculateCompleteness(data),
+        ...sanitizedCreate,
+        completenessScore: this.calculateCompleteness(merged),
       },
     });
 
@@ -358,8 +370,10 @@ export class ProfileService {
       }
     }
 
-    sanitized.isComplete = this.calculateCompleteness(data) >= 0.75;
-
+    // Note: isComplete is intentionally NOT set here; updateProfile()
+    // computes it against the merged profile state instead. Setting it
+    // here from `data` alone would always read partial PATCHes as
+    // incomplete and never flip the flag true.
     return sanitized;
   }
 }

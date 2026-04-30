@@ -9,6 +9,7 @@ import { analytics } from '@/lib/posthog';
 import { useToast } from '@/components/Toast';
 import AppFooter from '@/components/AppFooter';
 import AppShell from '@/components/AppShell';
+import { toDisplayPercent } from '@/lib/displayScore';
 import UserAvatar from '@/components/UserAvatar';
 import { personaIcon, personaLabel } from '@/lib/persona';
 import WhyMatchModal from '@/components/WhyMatchModal';
@@ -336,7 +337,7 @@ export default function MatchesPage() {
     ];
     const validFactors = factors.filter(f => breakdown[f.key] !== undefined && breakdown[f.key] !== null);
     if (validFactors.length === 0) return null;
-    const scorePercent = overallScore !== undefined && overallScore !== null ? Math.round(overallScore * 100) : null;
+    const scorePercent = overallScore !== undefined && overallScore !== null ? toDisplayPercent(overallScore) : null;
     return (
       <div className="mt-4 rounded-xl p-4" style={{ background: 'rgba(15,22,41,0.6)', border: '1px solid rgba(255,255,255,0.06)' }}>
         <div className="flex items-start gap-4">
@@ -469,7 +470,7 @@ export default function MatchesPage() {
   const FullProfileModal = ({ match, onClose }: { match: MatchData; onClose: () => void }) => {
     const other = getOtherUser(match);
     const profile = other.profile;
-    const scorePercent = Math.round((match.score || 0) * 100);
+    const scorePercent = toDisplayPercent(match.score);
 
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}
@@ -643,7 +644,7 @@ export default function MatchesPage() {
   const MatchCard = ({ match, showActions }: { match: MatchData; showActions: boolean }) => {
     const other = getOtherUser(match);
     const profile = other.profile;
-    const scorePercent = Math.round((match.score || 0) * 100);
+    const scorePercent = toDisplayPercent(match.score);
     const isAccepted = match.status === 'ACCEPTED';
     const [showBreakdown, setShowBreakdown] = useState(false);
 

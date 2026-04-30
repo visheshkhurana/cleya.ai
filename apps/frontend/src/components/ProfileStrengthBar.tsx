@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { useToast } from '@/components/Toast';
 
 interface Item {
   key: string;
@@ -18,10 +19,27 @@ interface Strength {
 export default function ProfileStrengthBar({ compact = false }: { compact?: boolean }) {
   const [data, setData] = useState<Strength | null>(null);
   const [open, setOpen] = useState(!compact);
+  const [me, setMe] = useState<{ email?: string } | null>(null);
+  const [resending, setResending] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     api.getProfileStrength().then((res: any) => setData(res?.data || res)).catch(() => null);
+    api.getMe().then((u: any) => { if (u?.email) setMe({ email: u.email }); }).catch(() => null);
   }, []);
+
+  const handleResendVerification = async () => {
+    if (!me?.email || resending) return;
+    setResending(true);
+    try {
+      await api.resendVerification(me.email);
+      toast.success('Verification email sent — check your inbox.');
+    } catch {
+      toast.error("Couldn't send verification email — try again in a minute.");
+    } finally {
+      setResending(false);
+    }
+  };
 
   if (!data) return null;
   const score = data.score;
@@ -57,6 +75,24 @@ export default function ProfileStrengthBar({ compact = false }: { compact?: bool
             <li key={it.key} className="flex items-center gap-2 text-[11px]">
               <span style={{ color: it.done ? '#4ECDC4' : 'rgba(255,255,255,0.2)' }}>{it.done ? '✓' : '○'}</span>
               <span className={it.done ? 'text-white/60 line-through' : 'text-white/70'}>{it.label}</span>
+              {!it.done && it.key === 'emailVerified' && me?.email && (
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={resending}
+                  className="ml-2 text-[10px] underline text-white/60 hover:text-white disabled:opacity-40"
+                >
+                  {resending ? 'Sending…' : 'Send verification link'}
+                </button>
+              )}
+              {!it.done && it.key === 'phoneVerified' && (
+                <a
+                  href="/settings"
+                  className="ml-2 text-[10px] underline text-white/60 hover:text-white"
+                >
+                  Add phone
+                </a>
+              )}
               <span className="ml-auto text-[10px] text-white/30">+{it.weight}%</span>
             </li>
           ))}

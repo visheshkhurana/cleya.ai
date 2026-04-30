@@ -15,6 +15,8 @@ import { contactRouter } from './routes/contact';
 import { userRouter } from './routes/user';
 import { conversationRouter } from './routes/conversation';
 import { matchRouter } from './routes/match';
+import { matchActionRouter } from './routes/matchAction';
+import { inboundEmailRouter } from './routes/inboundEmail';
 import { callRouter } from './routes/call';
 import { notificationRouter } from './routes/notification';
 import { searchRouter } from './routes/search';
@@ -114,7 +116,8 @@ app.use(express.json({
     if (
       url.startsWith('/api/subscription/webhook') ||
       url.startsWith('/api/webhooks/resend') ||
-      url.startsWith('/api/gupshup/meta-webhook')
+      url.startsWith('/api/gupshup/meta-webhook') ||
+      url.startsWith('/api/inbound/email')
     ) {
       req.rawBody = buf.toString();
     }
@@ -128,6 +131,8 @@ app.use('/api/contact', contactRouter);
 app.use('/api/users', userRouter);
 app.use('/api/conversations', conversationRouter);
 app.use('/api/matches', matchRouter);
+app.use('/api/match', matchActionRouter);
+app.use('/api/inbound', inboundEmailRouter);
 app.use('/api/calls', callRouter);
 app.use('/api/notifications', notificationRouter);
 app.use('/api/search', searchRouter);

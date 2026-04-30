@@ -2,6 +2,7 @@ import { messagingService } from './messagingService';
 import { metaWhatsAppService } from './metaWhatsAppService';
 import { gupshupService } from './gupshupService';
 import { prisma } from '@cleya/db';
+import { toDisplayPercent } from '@cleya/matching';
 import { safeDisplayName, safeFirstName } from '../utils/displayName';
 
 export interface TemplateConfig {
@@ -290,7 +291,7 @@ export class WhatsAppTemplateService {
       matchCompany,
       matchLinkedin,
       matchReason,
-      matchScore: matchScore?.toString() || '90',
+      matchScore: typeof matchScore === 'number' ? toDisplayPercent(matchScore).toString() : '90',
       matchUrl: 'https://cleya.ai/matches',
     });
   }
