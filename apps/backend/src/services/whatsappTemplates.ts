@@ -199,6 +199,37 @@ export class WhatsAppTemplateService {
       return null;
     }
 
+    // A8: Honor user's per-type WhatsApp preferences. The master gate is
+    // user.whatsappOptedIn (already enforced downstream). Here we apply the
+    // category toggles surfaced in /settings — whatsappMatchNotify,
+    // whatsappIntroNotify, whatsappWeeklyDigest. All default to true, so
+    // legacy users without a row keep receiving messages. We bypass the gate
+    // only for `userId === 'admin'` (system test sends).
+    if (userId && userId !== 'admin') {
+      try {
+        const prefs = await prisma.communicationPreference.findUnique({ where: { userId } });
+        if (prefs) {
+          const isMatch = templateId.includes('match');
+          const isIntro = templateId.includes('intro');
+          const isWeekly = templateId.includes('weekly') || templateId.includes('digest');
+          if (isMatch && prefs.whatsappMatchNotify === false) {
+            console.log(`[WhatsApp] Skipped template=${templateId} for user=${userId}: whatsappMatchNotify off`);
+            return null;
+          }
+          if (isIntro && prefs.whatsappIntroNotify === false) {
+            console.log(`[WhatsApp] Skipped template=${templateId} for user=${userId}: whatsappIntroNotify off`);
+            return null;
+          }
+          if (isWeekly && prefs.whatsappWeeklyDigest === false) {
+            console.log(`[WhatsApp] Skipped template=${templateId} for user=${userId}: whatsappWeeklyDigest off`);
+            return null;
+          }
+        }
+      } catch (err) {
+        console.warn(`[WhatsApp] Preference lookup failed for user=${userId}, defaulting to send:`, (err as Error).message);
+      }
+    }
+
     const message = template.buildMessage(params);
 
     let resolvedPhone = phoneNumber;

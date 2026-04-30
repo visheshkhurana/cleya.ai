@@ -53,7 +53,40 @@ interface ProfileData {
   preferredStageRange?: string;
   sectorFocus?: string[];
   checkSizeRange?: string;
+  githubUrl?: string;
+  twitterUrl?: string;
+  portfolioUrl?: string;
+  availabilityStatus?: 'OPEN_TO_ROLES' | 'OPEN_TO_DEALS' | 'NOT_LOOKING' | string;
 }
+
+const PERSONA_OPTIONS: { value: string; label: string }[] = [
+  { value: 'FOUNDER', label: 'Founder' },
+  { value: 'INVESTOR', label: 'Investor' },
+  { value: 'TALENT', label: 'Talent / Operator' },
+  { value: 'JOB_SEEKER', label: 'Job Seeker' },
+  { value: 'FREELANCER', label: 'Freelancer' },
+  { value: 'ADVISOR', label: 'Advisor' },
+  { value: 'DEAL_PARTNER', label: 'Deal Partner' },
+  { value: 'VENTURE_PARTNER', label: 'Venture Partner' },
+  { value: 'RECRUITER', label: 'Recruiter' },
+  { value: 'OPERATOR', label: 'Operator' },
+  { value: 'OTHER', label: 'Other' },
+];
+
+const AVAILABILITY_OPTIONS: { value: string; label: string; hint: string }[] = [
+  { value: 'OPEN_TO_ROLES', label: 'Open to roles', hint: 'Recruiters & founders can reach out' },
+  { value: 'OPEN_TO_DEALS', label: 'Open to deals', hint: 'Founders & investors can reach out' },
+  { value: 'NOT_LOOKING', label: 'Not looking', hint: 'Visible but no inbound asks' },
+];
+
+const LOOKING_FOR_OPTIONS: { value: string; label: string }[] = [
+  { value: 'RAISING', label: 'Raising' },
+  { value: 'HIRING', label: 'Hiring' },
+  { value: 'COFOUNDER', label: 'Co-founder' },
+  { value: 'ADVICE', label: 'Advice' },
+  { value: 'CUSTOMERS', label: 'Customers' },
+  { value: 'INVESTING', label: 'Investing' },
+];
 
 
 const industryOptions = [
@@ -81,8 +114,91 @@ export default function ProfilePage() {
   const [error, setError] = useState('');
   const [customIndustry, setCustomIndustry] = useState('');
   const [showCustomIndustry, setShowCustomIndustry] = useState(false);
+  const [bioGenerating, setBioGenerating] = useState(false);
+  const [skillQuery, setSkillQuery] = useState('');
+  const [skillSuggestions, setSkillSuggestions] = useState<string[]>([]);
   const toast = useToast();
   const router = useRouter();
+
+  const handleGenerateBio = async () => {
+    setBioGenerating(true);
+    try {
+      const result = await api.generateBio();
+      if (result?.bio) {
+        setProfile((prev) => ({ ...prev, bio: result.bio.slice(0, 1000) }));
+        toast.success(`Draft bio added. You have ${result.remaining} AI generations left today.`);
+      } else {
+        toast.error('Could not generate a bio. Please try again.');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Bio generation failed');
+    } finally {
+      setBioGenerating(false);
+    }
+  };
+
+  const updateSkillSuggestions = async (query: string) => {
+    setSkillQuery(query);
+    if (!query.trim()) {
+      setSkillSuggestions([]);
+      return;
+    }
+    const { searchSkills } = await import('@/data/skillsTaxonomy');
+    setSkillSuggestions(searchSkills(query, profile.skills || [], 8));
+  };
+
+  const addSkill = (skill: string) => {
+    const trimmed = skill.trim().slice(0, 100);
+    if (!trimmed) return;
+    const current = profile.skills || [];
+    if (current.length >= 30) {
+      toast.error('Up to 30 skills only.');
+      return;
+    }
+    if (current.some((s) => s.toLowerCase() === trimmed.toLowerCase())) {
+      setSkillQuery('');
+      setSkillSuggestions([]);
+      return;
+    }
+    setProfile((prev) => ({ ...prev, skills: [...current, trimmed] }));
+    setSkillQuery('');
+    setSkillSuggestions([]);
+  };
+
+  const removeSkill = (skill: string) => {
+    setProfile((prev) => ({
+      ...prev,
+      skills: (prev.skills || []).filter((s) => s !== skill),
+    }));
+  };
+
+  const setTopPriority = (priority: string) => {
+    const current = profile.lookingFor || [];
+    if (!priority) {
+      setProfile((prev) => ({ ...prev, lookingFor: current.filter((p) => !LOOKING_FOR_OPTIONS.some((o) => o.value === p) || current.indexOf(p) > 0) }));
+      return;
+    }
+    const rest = current.filter((p) => p !== priority);
+    setProfile((prev) => ({ ...prev, lookingFor: [priority, ...rest] }));
+  };
+
+  const toggleSecondaryAsk = (ask: string) => {
+    const current = profile.lookingFor || [];
+    if (current[0] === ask) return;
+    if (current.includes(ask)) {
+      setProfile((prev) => ({ ...prev, lookingFor: current.filter((p) => p !== ask) }));
+    } else {
+      setProfile((prev) => ({ ...prev, lookingFor: [...current, ask] }));
+    }
+  };
+
+  const setAvailability = (status: string) => {
+    setProfile((prev) => {
+      const next: ProfileData = { ...prev, availabilityStatus: status };
+      if (status === 'NOT_LOOKING') next.openToMeeting = false;
+      return next;
+    });
+  };
 
   useEffect(() => {
     api.getMe().then((user) => {
@@ -247,6 +363,34 @@ export default function ProfilePage() {
 
         <ProfileStrengthBar />
 
+        {/* B8: Availability segmented control — surfaced near the top, not buried */}
+        <div className="rounded-2xl border border-white/5 p-5" style={{ background: '#1A2035' }}>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xs font-semibold text-white/60 uppercase tracking-wider">Availability</h3>
+            <span className="text-[10px] text-white/40">Controls who can reach out</span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {AVAILABILITY_OPTIONS.map((opt) => {
+              const active = profile.availabilityStatus === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setAvailability(opt.value)}
+                  className={`px-3 py-2.5 rounded-xl text-xs font-semibold border transition text-left ${
+                    active
+                      ? 'border-brand-violet/50 text-white'
+                      : 'border-white/10 text-white/60 hover:border-white/20 hover:text-white/80'
+                  }`}
+                  style={active ? { background: 'rgba(108,99,255,0.15)' } : { background: 'rgba(255,255,255,0.03)' }}
+                >
+                  <div>{opt.label}</div>
+                  <div className="text-[10px] font-normal text-white/40 mt-0.5">{opt.hint}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         {error && (
           <div className="rounded-xl p-3 text-sm text-red-400 bg-red-500/10 border border-red-500/20">{error}</div>
@@ -254,6 +398,24 @@ export default function ProfilePage() {
 
         <div className="rounded-2xl border border-white/5 p-6 space-y-5" style={{ background: '#1A2035' }}>
           <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Basic Information</h3>
+
+          {/* A7: Persona is editable from the form, not just shown as a badge */}
+          <div>
+            <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Persona</label>
+            <select
+              value={profile.persona || ''}
+              onChange={(e) => updateField('persona', e.target.value || undefined)}
+              className="input-dark"
+            >
+              <option value="">Select your role on Cleya</option>
+              {PERSONA_OPTIONS.map((p) => (
+                <option key={p.value} value={p.value}>{p.label}</option>
+              ))}
+            </select>
+            <p className="text-[10px] text-white/40 mt-1">
+              Drives who you get matched with. Change anytime if your focus shifts.
+            </p>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -288,13 +450,27 @@ export default function ProfilePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Bio</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-white/40 uppercase tracking-wide">Bio</label>
+              <button
+                type="button"
+                onClick={handleGenerateBio}
+                disabled={bioGenerating}
+                className="px-2.5 py-1 rounded-md text-[10px] font-semibold border border-brand-violet/40 text-brand-violet-hover hover:bg-brand-violet/10 transition disabled:opacity-50"
+              >
+                {bioGenerating ? 'Drafting…' : '✨ Generate with AI'}
+              </button>
+            </div>
             <textarea value={profile.bio || ''} onChange={(e) => updateField('bio', e.target.value.slice(0, 1000))}
-              placeholder="Tell people about yourself..." rows={3}
+              placeholder="e.g. Co-founder of an AI fintech for SMBs in India. Previously led product at Razorpay. Looking for a technical co-founder and seed investors who back early infra bets."
+              rows={4}
               className="input-dark resize-none" maxLength={1000} />
-            <p className="text-[10px] text-right mt-1" style={{ color: (profile.bio?.length || 0) > 900 ? '#ef4444' : '#94A3B8' }}>
-              {profile.bio?.length || 0}/1000
-            </p>
+            <div className="flex items-center justify-between mt-1">
+              <p className="text-[10px] text-white/40">2-3 sentences. Specific beats generic. Names + numbers help.</p>
+              <p className="text-[10px]" style={{ color: (profile.bio?.length || 0) > 900 ? '#ef4444' : '#94A3B8' }}>
+                {profile.bio?.length || 0}/1000
+              </p>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -327,6 +503,25 @@ export default function ProfilePage() {
               <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Website</label>
               <input type="url" value={profile.websiteUrl || ''} onChange={(e) => updateField('websiteUrl', e.target.value)}
                 placeholder="https://..." className="input-dark" />
+            </div>
+            {/* B4-7: Optional links — show in form, render conditionally on read-only views */}
+            <div>
+              <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">GitHub</label>
+              <input type="url" inputMode="url" autoCapitalize="off" autoCorrect="off" spellCheck={false}
+                value={profile.githubUrl || ''} onChange={(e) => updateField('githubUrl', e.target.value)}
+                placeholder="https://github.com/your-handle" className="input-dark" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Twitter / X</label>
+              <input type="url" inputMode="url" autoCapitalize="off" autoCorrect="off" spellCheck={false}
+                value={profile.twitterUrl || ''} onChange={(e) => updateField('twitterUrl', e.target.value)}
+                placeholder="https://x.com/your-handle" className="input-dark" />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Portfolio / Personal Site</label>
+              <input type="url" inputMode="url" autoCapitalize="off" autoCorrect="off" spellCheck={false}
+                value={profile.portfolioUrl || ''} onChange={(e) => updateField('portfolioUrl', e.target.value)}
+                placeholder="https://yourname.com" className="input-dark" />
             </div>
           </div>
         </div>
@@ -373,6 +568,114 @@ export default function ProfilePage() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* B1: Skills with curated taxonomy autocomplete + 30 cap */}
+        <div className="rounded-2xl border border-white/5 p-6 space-y-3" style={{ background: '#1A2035' }}>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Skills</h3>
+            <span className="text-[10px] text-white/40">{(profile.skills || []).length}/30</span>
+          </div>
+          <div className="relative">
+            <input
+              type="text"
+              value={skillQuery}
+              onChange={(e) => updateSkillSuggestions(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (skillSuggestions[0]) addSkill(skillSuggestions[0]);
+                  else if (skillQuery.trim()) addSkill(skillQuery);
+                } else if (e.key === 'Escape') {
+                  setSkillQuery('');
+                  setSkillSuggestions([]);
+                }
+              }}
+              placeholder="Type to search (e.g. 'pro' for Product Management)"
+              className="input-dark"
+              maxLength={100}
+            />
+            {skillSuggestions.length > 0 && (
+              <div className="absolute z-10 left-0 right-0 mt-1 rounded-xl border border-white/10 max-h-56 overflow-y-auto"
+                style={{ background: '#13182B' }}>
+                {skillSuggestions.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => addSkill(s)}
+                    className="block w-full text-left px-3 py-2 text-xs text-white/80 hover:bg-white/5"
+                  >
+                    {s}
+                  </button>
+                ))}
+                {skillQuery.trim() && !skillSuggestions.some((s) => s.toLowerCase() === skillQuery.trim().toLowerCase()) && (
+                  <button
+                    type="button"
+                    onClick={() => addSkill(skillQuery)}
+                    className="block w-full text-left px-3 py-2 text-xs text-brand-violet-hover border-t border-white/5 hover:bg-white/5"
+                  >
+                    + Add "{skillQuery.trim()}" (custom)
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+          {(profile.skills || []).length > 0 && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {(profile.skills || []).map((s) => (
+                <span key={s} className="px-3 py-1.5 rounded-full text-xs font-medium border border-brand-violet/40 text-brand-violet-hover flex items-center gap-1.5"
+                  style={{ background: 'rgba(108,99,255,0.15)' }}>
+                  {s}
+                  <button type="button" onClick={() => removeSkill(s)}
+                    className="text-white/40 hover:text-white/70 text-xs">×</button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* B2: Current Ask — top priority dropdown + secondary multi-select chips */}
+        <div className="rounded-2xl border border-white/5 p-6 space-y-4" style={{ background: '#1A2035' }}>
+          <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Current Ask</h3>
+          <div>
+            <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Top priority right now</label>
+            <select
+              value={(profile.lookingFor && profile.lookingFor[0]) || ''}
+              onChange={(e) => setTopPriority(e.target.value)}
+              className="input-dark"
+            >
+              <option value="">Pick one</option>
+              {LOOKING_FOR_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            <p className="text-[10px] text-white/40 mt-1">Shown first on your match cards. Update whenever your focus shifts.</p>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-white/40 mb-2 uppercase tracking-wide">Also open to</label>
+            <div className="flex flex-wrap gap-2">
+              {LOOKING_FOR_OPTIONS.map((o) => {
+                const isPrimary = (profile.lookingFor || [])[0] === o.value;
+                const isSelected = (profile.lookingFor || []).includes(o.value);
+                return (
+                  <button
+                    key={o.value}
+                    type="button"
+                    disabled={isPrimary}
+                    onClick={() => toggleSecondaryAsk(o.value)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
+                      isSelected
+                        ? 'border-brand-violet/40 text-brand-violet-hover'
+                        : 'border-white/10 text-white/40 hover:border-white/20 hover:text-white/60'
+                    } ${isPrimary ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    style={isSelected ? { background: 'rgba(108,99,255,0.15)' } : { background: 'rgba(255,255,255,0.03)' }}
+                  >
+                    {o.label}{isPrimary ? ' (top)' : ''}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {isFounder && (
@@ -463,9 +766,9 @@ export default function ProfilePage() {
                   placeholder="Years" className="input-dark" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Equity Expectation</label>
+                <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Equity Expectation (%)</label>
                 <input type="text" value={profile.equityExpectation || ''} onChange={(e) => updateField('equityExpectation', e.target.value)}
-                  placeholder="e.g. 0.5% - 2%" className="input-dark" />
+                  placeholder="e.g. 0.5 - 2" className="input-dark" />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-white/40 mb-1.5 uppercase tracking-wide">Preferred Company Stage</label>

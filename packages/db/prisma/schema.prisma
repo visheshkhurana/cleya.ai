@@ -252,6 +252,10 @@ model Profile {
   preferredStageRange    String?
   sectorFocus            String[]               @default([])
   workStyle              WorkStyle?
+  githubUrl              String?
+  twitterUrl             String?
+  portfolioUrl           String?
+  availabilityStatus     String?
   user                   User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([persona])

@@ -272,6 +272,13 @@ class ApiClient {
     });
   }
 
+  async generateBio(): Promise<{ bio: string; remaining: number }> {
+    return this.fetch('/ai/bio', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+  }
+
   // Matches
   async getMatches() {
     return this.fetch('/matches');

@@ -618,7 +618,21 @@ export default function DashboardPage() {
                 })}
               </div>
             ) : (
-              <p className="text-xs text-white/30">No activity yet. Complete your profile so Cleya can start introducing you to people.</p>
+              <div className="space-y-3">
+                <p className="text-xs text-white/50">Nothing here yet. Once you reply to a match or get a new one, it'll show up here.</p>
+                <div className="flex flex-col gap-2 pt-1">
+                  {!profile?.isComplete && (
+                    <a href="/profile" className="inline-flex items-center gap-2 text-xs font-medium px-3 py-2 rounded-lg transition-colors"
+                      style={{ background: 'rgba(108,99,255,0.12)', color: '#9B95FF', border: '1px solid rgba(108,99,255,0.25)' }}>
+                      <span>→</span> Complete your profile
+                    </a>
+                  )}
+                  <a href="/matches" className="inline-flex items-center gap-2 text-xs font-medium px-3 py-2 rounded-lg transition-colors"
+                    style={{ background: 'rgba(78,205,196,0.10)', color: '#7DD3C4', border: '1px solid rgba(78,205,196,0.22)' }}>
+                    <span>→</span> View your matches
+                  </a>
+                </div>
+              </div>
             )}
           </div>
         </div>

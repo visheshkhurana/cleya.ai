@@ -54,6 +54,41 @@ function validateLinkedinUrl(url: string): boolean {
   return /^https?:\/\/(www\.)?linkedin\.com\/in\/[\w-]+\/?$/i.test(url);
 }
 
+/**
+ * Generic HTTP/HTTPS URL validator for user-supplied profile links.
+ *
+ * Rejects any non-http(s) scheme — most importantly `javascript:` and
+ * `data:`, which would otherwise persist to the DB and become an XSS sink
+ * if rendered as a clickable href elsewhere in the product. We use
+ * `new URL()` so malformed inputs throw, then enforce the protocol.
+ * Empty / undefined inputs pass — required-ness is enforced separately.
+ */
+function validateHttpUrl(url: string): boolean {
+  if (!url) return true;
+  try {
+    const u = new URL(url);
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Optional host-allowlist check. We don't require a specific host (users
+ * may legitimately self-host), but we lightly normalize known hosts —
+ * rejecting trivially obvious typos for the most common platforms.
+ */
+function validateOptionalHost(url: string, allowedHosts: string[]): boolean {
+  if (!url) return true;
+  if (allowedHosts.length === 0) return true;
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, '').toLowerCase();
+    return allowedHosts.some((h) => host === h || host.endsWith(`.${h}`));
+  } catch {
+    return false;
+  }
+}
+
 export class ProfileService {
   private ai = createAIService();
 
@@ -103,7 +138,11 @@ export class ProfileService {
       console.log('[ProfileService] Strength recompute failed:', (e as Error).message);
     }
 
-    if (data.linkedinUrl && (profile as any).isComplete) {
+    // A6: Trigger LinkedIn enrichment when the user supplies a LinkedIn URL
+    // and either (a) the profile is now complete OR (b) the company field is
+    // still blank — typically the case we want auto-filled. Single guarded
+    // call avoids duplicate delayed jobs and embedding work.
+    if (data.linkedinUrl && ((profile as any).isComplete || !(profile as any).companyName)) {
       linkedinEnrichmentService.onNewUserSignup(userId);
     }
 
@@ -290,6 +329,7 @@ export class ProfileService {
       'introPreference', 'openToMeeting', 'maxIntrosPerWeek',
       'equityExpectation', 'preferredStage', 'workStyle', 'functionalArea',
       'preferredStageRange', 'sectorFocus', 'checkSizeRange',
+      'githubUrl', 'twitterUrl', 'portfolioUrl', 'availabilityStatus',
       'extraData',
     ];
 
@@ -335,6 +375,31 @@ export class ProfileService {
 
     if (sanitized.linkedinUrl && !validateLinkedinUrl(sanitized.linkedinUrl)) {
       throw new AppError(400, 'Invalid LinkedIn URL. Must be in format: https://linkedin.com/in/your-name', 'INVALID_LINKEDIN_URL');
+    }
+
+    // B4-7: New profile URL fields. Reject anything that isn't http(s) so we
+    // don't persist `javascript:` / `data:` payloads. Also light-host-check
+    // the social fields so people don't paste arbitrary tracking links.
+    const urlFields: { key: string; label: string; hosts: string[]; max: number }[] = [
+      { key: 'websiteUrl', label: 'website URL', hosts: [], max: 500 },
+      { key: 'githubUrl', label: 'GitHub URL', hosts: ['github.com'], max: 200 },
+      { key: 'twitterUrl', label: 'Twitter / X URL', hosts: ['twitter.com', 'x.com'], max: 200 },
+      { key: 'portfolioUrl', label: 'portfolio URL', hosts: [], max: 500 },
+    ];
+    for (const f of urlFields) {
+      const raw = sanitized[f.key];
+      if (raw == null || raw === '') continue;
+      if (typeof raw !== 'string') {
+        throw new AppError(400, `Invalid ${f.label}.`, 'INVALID_URL');
+      }
+      const trimmed = stripHtml(raw).trim().substring(0, f.max);
+      if (!validateHttpUrl(trimmed)) {
+        throw new AppError(400, `Invalid ${f.label}. Must start with http:// or https://`, 'INVALID_URL');
+      }
+      if (!validateOptionalHost(trimmed, f.hosts)) {
+        throw new AppError(400, `Invalid ${f.label}. Expected a ${f.hosts.join(' or ')} link.`, 'INVALID_URL');
+      }
+      sanitized[f.key] = trimmed;
     }
 
     if (Array.isArray(sanitized.skills)) {
