@@ -2612,3 +2612,81 @@ adminRouter.post('/inbound/simulate', async (req: Request, res: Response, next: 
     next(error);
   }
 });
+
+/**
+ * Inbound-email DNS health check.
+ *
+ * Confirms that REPLY_INBOUND_DOMAIN has MX records pointing at Resend (or
+ * AWS SES, which Resend uses under the hood) so real customer email replies
+ * will actually reach our /api/inbound/email webhook in production.
+ */
+adminRouter.get('/inbound/dns-check', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const dns = await import('dns');
+    const env = (await import('../config/env')).env;
+
+    const domain = env.REPLY_INBOUND_DOMAIN || '';
+    const secretConfigured = !!env.RESEND_INBOUND_SECRET;
+
+    if (!domain) {
+      return res.json({
+        success: true,
+        data: {
+          domain: null,
+          mxRecords: [],
+          pointsToResend: false,
+          secretConfigured,
+          status: 'not_configured',
+          message: 'REPLY_INBOUND_DOMAIN is not set. Add it in Secrets and restart.',
+        },
+      });
+    }
+
+    const lookup = (): Promise<Array<{ exchange: string; priority: number }>> =>
+      new Promise((resolve, reject) => {
+        dns.resolveMx(domain, (err, addresses) => {
+          if (err) reject(err);
+          else resolve(addresses || []);
+        });
+      });
+
+    let mxRecords: Array<{ exchange: string; priority: number }> = [];
+    let lookupError: string | null = null;
+    try {
+      mxRecords = await lookup();
+    } catch (e: any) {
+      lookupError = e?.code || e?.message || 'lookup_failed';
+    }
+
+    const isResendOrSes = (host: string) =>
+      /amazonses\.com$/i.test(host) || /resend\.(com|email)$/i.test(host) || /amazonaws\.com$/i.test(host);
+    const pointsToResend = mxRecords.some((r) => isResendOrSes(r.exchange));
+
+    let status: 'ok' | 'wrong_target' | 'no_mx' | 'lookup_failed' | 'no_secret';
+    let message: string;
+
+    if (lookupError === 'ENOTFOUND' || lookupError === 'ENODATA' || mxRecords.length === 0) {
+      status = 'no_mx';
+      message = `No MX records found for ${domain}. Add a Resend MX record at your DNS provider.`;
+    } else if (lookupError) {
+      status = 'lookup_failed';
+      message = `DNS lookup failed: ${lookupError}`;
+    } else if (!pointsToResend) {
+      status = 'wrong_target';
+      message = `${domain} has MX records, but none point to Resend / AWS SES. Update DNS.`;
+    } else if (!secretConfigured) {
+      status = 'no_secret';
+      message = `MX is correct, but RESEND_INBOUND_SECRET is missing. Add it in Secrets so the webhook can verify signatures.`;
+    } else {
+      status = 'ok';
+      message = `${domain} is ready. Real customer replies will route through the webhook.`;
+    }
+
+    res.json({
+      success: true,
+      data: { domain, mxRecords, pointsToResend, secretConfigured, status, message },
+    });
+  } catch (error) {
+    next(error);
+  }
+});

@@ -24,6 +24,15 @@ interface SimResult {
   previewPayload: any;
 }
 
+interface DnsCheck {
+  domain: string | null;
+  mxRecords: Array<{ exchange: string; priority: number }>;
+  pointsToResend: boolean;
+  secretConfigured: boolean;
+  status: 'ok' | 'wrong_target' | 'no_mx' | 'lookup_failed' | 'no_secret' | 'not_configured';
+  message: string;
+}
+
 async function adminFetch(path: string, init?: RequestInit): Promise<any> {
   const csrf = (document.cookie.split('; ').find((c) => c.startsWith('cleo_csrf=')) || '').split('=')[1];
   const headers: Record<string, string> = {
@@ -50,6 +59,8 @@ export default function InboundTestClient() {
   const [draft, setDraft] = useState<{ preview: any; replyTo: string } | null>(null);
   const [result, setResult] = useState<SimResult | null>(null);
   const [busy, setBusy] = useState(false);
+  const [dns, setDns] = useState<DnsCheck | null>(null);
+  const [dnsLoading, setDnsLoading] = useState(false);
 
   useEffect(() => {
     api.getMe()
@@ -58,10 +69,30 @@ export default function InboundTestClient() {
         if (!['MANAGER', 'ADMIN'].includes(u.role)) { router.push('/'); return; }
         setAuthChecked(true);
         load();
+        checkDns();
       })
       .catch(() => router.push('/?action=login'));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function checkDns() {
+    setDnsLoading(true);
+    try {
+      const data: DnsCheck = await adminFetch('/admin/inbound/dns-check');
+      setDns(data);
+    } catch (e: any) {
+      setDns({
+        domain: null,
+        mxRecords: [],
+        pointsToResend: false,
+        secretConfigured: false,
+        status: 'lookup_failed',
+        message: e?.message || 'DNS check failed',
+      });
+    } finally {
+      setDnsLoading(false);
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -149,6 +180,52 @@ export default function InboundTestClient() {
               choose what the user "would" reply, then preview the payload or fire it through the real webhook.
             </p>
           </div>
+
+          {dns && (() => {
+            const ok = dns.status === 'ok';
+            const warn = dns.status === 'no_secret';
+            const bg = ok ? 'rgba(16,185,129,0.06)' : warn ? 'rgba(245,158,11,0.06)' : 'rgba(220,38,38,0.06)';
+            const border = ok ? 'rgba(16,185,129,0.3)' : warn ? 'rgba(245,158,11,0.3)' : 'rgba(220,38,38,0.3)';
+            const dot = ok ? '#10b981' : warn ? '#f59e0b' : '#ef4444';
+            const label = ok ? 'Ready' : warn ? 'Almost ready' : 'Not ready';
+            return (
+              <div className="rounded-2xl p-4 mb-6" style={{ background: bg, border: `1px solid ${border}` }}>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 999, background: dot }} />
+                    <h2 className="text-sm font-semibold text-white">Inbound email DNS — {label}</h2>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={checkDns}
+                    disabled={dnsLoading}
+                    className="text-xs px-3 py-1 rounded-lg text-white/80"
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                  >
+                    {dnsLoading ? 'Checking…' : 'Re-check'}
+                  </button>
+                </div>
+                <p className="text-xs text-white/70 mt-2">{dns.message}</p>
+                {dns.domain && (
+                  <p className="text-[11px] text-white/50 mt-2">
+                    Domain: <code className="text-white/80">{dns.domain}</code>
+                    {' · '}
+                    Webhook secret: <code className="text-white/80">{dns.secretConfigured ? 'set' : 'missing'}</code>
+                  </p>
+                )}
+                {dns.mxRecords.length > 0 && (
+                  <ul className="mt-2 text-[11px] text-white/60 space-y-0.5">
+                    {dns.mxRecords.map((r, i) => (
+                      <li key={i}>
+                        <span className="text-white/40">priority {r.priority} →</span>{' '}
+                        <code className="text-white/85">{r.exchange}</code>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            );
+          })()}
 
           {err && (
             <div className="mb-4 p-3 rounded-xl text-sm" style={{ background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.3)', color: '#fca5a5' }}>
