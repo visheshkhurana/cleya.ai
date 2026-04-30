@@ -2475,3 +2475,140 @@ adminRouter.post('/qa/run', async (_req: Request, res: Response, next: NextFunct
     next(error);
   }
 });
+
+/**
+ * Inbound-email simulator.
+ *
+ * Resend Inbound forwards every reply to /api/inbound/email signed with an
+ * HMAC. To verify the entire reply-by-email pipeline without needing the
+ * MX/DKIM setup to propagate, this admin route:
+ *   - Lists matches with at least one PENDING response side
+ *   - Constructs a fake Resend-shaped payload addressed to the signed
+ *     per-match local part for that user
+ *   - Signs it with RESEND_INBOUND_SECRET (or skips signing in dev)
+ *   - POSTs it to our own /api/inbound/email so we exercise the real route
+ */
+adminRouter.get('/inbound/pending-matches', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const matches = await prisma.match.findMany({
+      where: {
+        OR: [{ userAResponse: 'PENDING' }, { userBResponse: 'PENDING' }],
+        status: { in: ['PENDING_A', 'PENDING_B', 'PENDING'] as any },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+      include: {
+        userA: { select: { id: true, name: true, email: true } },
+        userB: { select: { id: true, name: true, email: true } },
+      },
+    });
+    const rows = matches.flatMap((m) => {
+      const out: any[] = [];
+      if (m.userAResponse === 'PENDING' && m.userA?.email) {
+        out.push({
+          matchId: m.id,
+          userId: m.userA.id,
+          userName: m.userA.name || m.userA.email,
+          userEmail: m.userA.email,
+          partnerName: m.userB?.name || m.userB?.email || 'partner',
+          createdAt: m.createdAt,
+        });
+      }
+      if (m.userBResponse === 'PENDING' && m.userB?.email) {
+        out.push({
+          matchId: m.id,
+          userId: m.userB.id,
+          userName: m.userB.name || m.userB.email,
+          userEmail: m.userB.email,
+          partnerName: m.userA?.name || m.userA?.email || 'partner',
+          createdAt: m.createdAt,
+        });
+      }
+      return out;
+    });
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminRouter.post('/inbound/simulate', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const schema = z.object({
+      matchId: z.string().min(1),
+      userId: z.string().min(1),
+      intent: z.enum(['accept', 'decline']),
+      bodyText: z.string().optional(),
+      dryRun: z.boolean().optional(),
+    });
+    const { matchId, userId, intent, bodyText, dryRun } = schema.parse(req.body);
+
+    const { createInboundReplyLocalPart } = await import('../services/matchActionToken');
+    const { env } = await import('../config/env');
+    const crypto = await import('crypto');
+
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true } });
+    if (!user?.email) return res.status(400).json({ success: false, error: 'user_has_no_email' });
+
+    const replyDomain = env.REPLY_INBOUND_DOMAIN || 'reply.cleya.ai';
+    const localPart = createInboundReplyLocalPart(matchId, userId);
+    const toAddr = `${localPart}@${replyDomain}`;
+    const text = bodyText && bodyText.trim().length > 0
+      ? bodyText
+      : (intent === 'accept' ? 'yes please make the intro' : 'no thanks, not the right fit right now');
+
+    const payload = {
+      type: 'email.received',
+      created_at: new Date().toISOString(),
+      data: {
+        from: user.email,
+        to: [toAddr],
+        subject: 'Re: introduction',
+        text,
+        html: `<p>${text}</p>`,
+      },
+    };
+
+    if (dryRun) {
+      return res.json({ success: true, data: { preview: payload, replyTo: toAddr } });
+    }
+
+    // Sign with the same Svix-style scheme our webhook expects so the
+    // signature path is exercised. In dev with no secret, the webhook
+    // accepts unsigned with a warning and we just send empty headers.
+    const body = JSON.stringify(payload);
+    const headers: Record<string, string> = { 'content-type': 'application/json' };
+    if (env.RESEND_INBOUND_SECRET) {
+      const id = `sim_${Date.now()}`;
+      const ts = String(Math.floor(Date.now() / 1000));
+      const rawSecret = env.RESEND_INBOUND_SECRET.startsWith('whsec_')
+        ? env.RESEND_INBOUND_SECRET.slice(6)
+        : env.RESEND_INBOUND_SECRET;
+      let key = Buffer.from(rawSecret, 'base64');
+      if (!key.length) key = Buffer.from(rawSecret, 'utf8');
+      const sig = crypto.createHmac('sha256', key).update(`${id}.${ts}.${body}`).digest('base64');
+      headers['svix-id'] = id;
+      headers['svix-timestamp'] = ts;
+      headers['svix-signature'] = `v1,${sig}`;
+    }
+
+    const portRaw = process.env.PORT || '3001';
+    const port = /^\d{2,5}$/.test(portRaw) ? portRaw : '3001';
+    const url = `http://127.0.0.1:${port}/api/inbound/email`;
+    const r = await fetch(url, { method: 'POST', headers, body });
+    let json: any = null;
+    try { json = await r.json(); } catch { /* non-json */ }
+
+    res.json({
+      success: r.ok,
+      data: {
+        webhookStatus: r.status,
+        webhookResponse: json,
+        sentTo: toAddr,
+        previewPayload: payload,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
