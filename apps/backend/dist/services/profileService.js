@@ -88,6 +88,44 @@ function validateLinkedinUrl(url) {
         return true;
     return /^https?:\/\/(www\.)?linkedin\.com\/in\/[\w-]+\/?$/i.test(url);
 }
+/**
+ * Generic HTTP/HTTPS URL validator for user-supplied profile links.
+ *
+ * Rejects any non-http(s) scheme — most importantly `javascript:` and
+ * `data:`, which would otherwise persist to the DB and become an XSS sink
+ * if rendered as a clickable href elsewhere in the product. We use
+ * `new URL()` so malformed inputs throw, then enforce the protocol.
+ * Empty / undefined inputs pass — required-ness is enforced separately.
+ */
+function validateHttpUrl(url) {
+    if (!url)
+        return true;
+    try {
+        const u = new URL(url);
+        return u.protocol === 'http:' || u.protocol === 'https:';
+    }
+    catch {
+        return false;
+    }
+}
+/**
+ * Optional host-allowlist check. We don't require a specific host (users
+ * may legitimately self-host), but we lightly normalize known hosts —
+ * rejecting trivially obvious typos for the most common platforms.
+ */
+function validateOptionalHost(url, allowedHosts) {
+    if (!url)
+        return true;
+    if (allowedHosts.length === 0)
+        return true;
+    try {
+        const host = new URL(url).hostname.replace(/^www\./, '').toLowerCase();
+        return allowedHosts.some((h) => host === h || host.endsWith(`.${h}`));
+    }
+    catch {
+        return false;
+    }
+}
 class ProfileService {
     ai = (0, ai_1.createAIService)();
     async getProfile(userId) {
@@ -99,17 +137,27 @@ class ProfileService {
         return profile;
     }
     async updateProfile(userId, data) {
+        // Profile saves come in as PATCHes (only changed fields). Completeness
+        // must be evaluated against the *merged* profile state — otherwise a
+        // user who fills every field one-at-a-time never flips isComplete to
+        // true, because each save only sees a single field.
+        const existing = await db_1.prisma.profile.findUnique({ where: { userId } });
+        const merged = { ...(existing || {}), ...data };
+        const sanitized = this.sanitizeProfileData(data);
+        const sanitizedCreate = this.sanitizeProfileData(data);
+        sanitized.isComplete = this.calculateCompleteness(merged) >= 0.75;
+        sanitizedCreate.isComplete = sanitized.isComplete;
         const profile = await db_1.prisma.profile.upsert({
             where: { userId },
             update: {
-                ...this.sanitizeProfileData(data),
-                completenessScore: this.calculateCompleteness(data),
+                ...sanitized,
+                completenessScore: this.calculateCompleteness(merged),
                 updatedAt: new Date(),
             },
             create: {
                 userId,
-                ...this.sanitizeProfileData(data),
-                completenessScore: this.calculateCompleteness(data),
+                ...sanitizedCreate,
+                completenessScore: this.calculateCompleteness(merged),
             },
         });
         if (data.headline || data.bio || data.skills || data.interests) {
@@ -122,7 +170,11 @@ class ProfileService {
         catch (e) {
             console.log('[ProfileService] Strength recompute failed:', e.message);
         }
-        if (data.linkedinUrl && profile.isComplete) {
+        // A6: Trigger LinkedIn enrichment when the user supplies a LinkedIn URL
+        // and either (a) the profile is now complete OR (b) the company field is
+        // still blank — typically the case we want auto-filled. Single guarded
+        // call avoids duplicate delayed jobs and embedding work.
+        if (data.linkedinUrl && (profile.isComplete || !profile.companyName)) {
             linkedinEnrichmentService_1.linkedinEnrichmentService.onNewUserSignup(userId);
         }
         if (profile.isComplete) {
@@ -293,6 +345,7 @@ class ProfileService {
             'introPreference', 'openToMeeting', 'maxIntrosPerWeek',
             'equityExpectation', 'preferredStage', 'workStyle', 'functionalArea',
             'preferredStageRange', 'sectorFocus', 'checkSizeRange',
+            'githubUrl', 'twitterUrl', 'portfolioUrl', 'availabilityStatus',
             'extraData',
         ];
         const sanitized = {};
@@ -334,6 +387,31 @@ class ProfileService {
         if (sanitized.linkedinUrl && !validateLinkedinUrl(sanitized.linkedinUrl)) {
             throw new errorHandler_1.AppError(400, 'Invalid LinkedIn URL. Must be in format: https://linkedin.com/in/your-name', 'INVALID_LINKEDIN_URL');
         }
+        // B4-7: New profile URL fields. Reject anything that isn't http(s) so we
+        // don't persist `javascript:` / `data:` payloads. Also light-host-check
+        // the social fields so people don't paste arbitrary tracking links.
+        const urlFields = [
+            { key: 'websiteUrl', label: 'website URL', hosts: [], max: 500 },
+            { key: 'githubUrl', label: 'GitHub URL', hosts: ['github.com'], max: 200 },
+            { key: 'twitterUrl', label: 'Twitter / X URL', hosts: ['twitter.com', 'x.com'], max: 200 },
+            { key: 'portfolioUrl', label: 'portfolio URL', hosts: [], max: 500 },
+        ];
+        for (const f of urlFields) {
+            const raw = sanitized[f.key];
+            if (raw == null || raw === '')
+                continue;
+            if (typeof raw !== 'string') {
+                throw new errorHandler_1.AppError(400, `Invalid ${f.label}.`, 'INVALID_URL');
+            }
+            const trimmed = stripHtml(raw).trim().substring(0, f.max);
+            if (!validateHttpUrl(trimmed)) {
+                throw new errorHandler_1.AppError(400, `Invalid ${f.label}. Must start with http:// or https://`, 'INVALID_URL');
+            }
+            if (!validateOptionalHost(trimmed, f.hosts)) {
+                throw new errorHandler_1.AppError(400, `Invalid ${f.label}. Expected a ${f.hosts.join(' or ')} link.`, 'INVALID_URL');
+            }
+            sanitized[f.key] = trimmed;
+        }
         if (Array.isArray(sanitized.skills)) {
             sanitized.skills = sanitized.skills.map((s) => typeof s === 'string' ? stripHtml(s).substring(0, 100) : s);
         }
@@ -365,7 +443,10 @@ class ProfileService {
                 }
             }
         }
-        sanitized.isComplete = this.calculateCompleteness(data) >= 0.75;
+        // Note: isComplete is intentionally NOT set here; updateProfile()
+        // computes it against the merged profile state instead. Setting it
+        // here from `data` alone would always read partial PATCHes as
+        // incomplete and never flip the flag true.
         return sanitized;
     }
 }

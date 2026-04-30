@@ -6,6 +6,7 @@ const ai_1 = require("@cleya/ai");
 const messagingService_1 = require("./messagingService");
 const activityService_1 = require("./activityService");
 const email_1 = require("./email");
+const displayName_1 = require("../utils/displayName");
 class IntroductionService {
     ai = (0, ai_1.createAIService)();
     async generateIntroduction(matchId) {
@@ -44,14 +45,14 @@ class IntroductionService {
                         event: 'INTRO_PENDING',
                         channel: 'IN_APP',
                         title: "It's a match! Review your introduction",
-                        body: `Both you and ${userB.profile.currentRole || userB.name || 'your match'} want to connect. Review the introduction before it's sent.`,
+                        body: `Both you and ${(0, displayName_1.safeDisplayName)(userB)} want to connect. Review the introduction before it's sent.`,
                     },
                     {
                         userId: userB.id,
                         event: 'INTRO_PENDING',
                         channel: 'IN_APP',
                         title: "It's a match! Review your introduction",
-                        body: `Both you and ${userA.profile.currentRole || userA.name || 'your match'} want to connect. Review the introduction before it's sent.`,
+                        body: `Both you and ${(0, displayName_1.safeDisplayName)(userA)} want to connect. Review the introduction before it's sent.`,
                     },
                 ],
             });
@@ -74,8 +75,8 @@ class IntroductionService {
             }
         };
         await Promise.allSettled([
-            sendNotify(userA.id, userA.phone, userB.profile.currentRole || userB.name || 'your match'),
-            sendNotify(userB.id, userB.phone, userA.profile.currentRole || userA.name || 'your match'),
+            sendNotify(userA.id, userA.phone, (0, displayName_1.safeDisplayName)(userB)),
+            sendNotify(userB.id, userB.phone, (0, displayName_1.safeDisplayName)(userA)),
         ]);
         console.log(`[IntroService] Introduction generated (PENDING_APPROVAL) for match ${matchId}`);
         return intro;
@@ -150,26 +151,22 @@ class IntroductionService {
         const matchReason = intro.match?.reason || '';
         const profA = userA.profile;
         const profB = userB.profile;
-        const nameA = userA.name || profA?.currentRole || userA.email.split('@')[0];
-        const nameB = userB.name || profB?.currentRole || userB.email.split('@')[0];
-        email_1.emailService.sendIntroductionEmail(userA.email, nameA, nameB, intro.introText, profB?.linkedinUrl || undefined, {
-            headline: profB?.headline || profB?.currentRole || undefined,
-            companyName: profB?.companyName || undefined,
-            sector: profB?.industries?.[0] || undefined,
-            location: profB?.location || undefined,
-            traction: profB?.keyTractionPoints || undefined,
-            matchReason,
-            partnerUserId: userB.id,
-        }).catch(() => { });
-        email_1.emailService.sendIntroductionEmail(userB.email, nameB, nameA, intro.introText, profA?.linkedinUrl || undefined, {
-            headline: profA?.headline || profA?.currentRole || undefined,
-            companyName: profA?.companyName || undefined,
-            sector: profA?.industries?.[0] || undefined,
-            location: profA?.location || undefined,
-            traction: profA?.keyTractionPoints || undefined,
-            matchReason,
-            partnerUserId: userA.id,
-        }).catch(() => { });
+        const nameA = (0, displayName_1.safeDisplayName)(userA);
+        const nameB = (0, displayName_1.safeDisplayName)(userB);
+        // NOTE: We deliberately do NOT fire the two separate per-recipient
+        // sendIntroductionEmail calls anymore. matchingService.revealContacts
+        // already sends ONE joint Boardy-style intro email (both parties on To:,
+        // single shared thread) the moment the second user accepts. Sending
+        // separate emails here would mean each user receives THREE emails for
+        // the same match — the joint thread + two private notifications — which
+        // is exactly the noise we're trying to avoid. The IntroductionRecord is
+        // still marked SENT above so admin tooling and outcome tracking work.
+        void email_1.emailService; // keep import alive for type checking
+        void matchReason;
+        void profA;
+        void profB;
+        void nameA;
+        void nameB;
         try {
             await db_1.prisma.notification.createMany({
                 data: [
@@ -178,22 +175,22 @@ class IntroductionService {
                         event: 'INTRO_ACCEPTED',
                         channel: 'IN_APP',
                         title: 'Introduction Sent!',
-                        body: `You've been introduced to ${userB.profile?.currentRole || userB.email}. Check your messages!`,
+                        body: `You've been introduced to ${(0, displayName_1.safeDisplayName)(userB)}. Check your messages!`,
                     },
                     {
                         userId: userB.id,
                         event: 'INTRO_ACCEPTED',
                         channel: 'IN_APP',
                         title: 'Introduction Sent!',
-                        body: `You've been introduced to ${userA.profile?.currentRole || userA.email}. Check your messages!`,
+                        body: `You've been introduced to ${(0, displayName_1.safeDisplayName)(userA)}. Check your messages!`,
                     },
                 ],
             });
         }
         catch { }
         await Promise.allSettled([
-            activityService_1.activityService.recordIntroSent(userA.id, userB.profile?.currentRole || userB.email),
-            activityService_1.activityService.recordIntroSent(userB.id, userA.profile?.currentRole || userA.email),
+            activityService_1.activityService.recordIntroSent(userA.id, (0, displayName_1.safeDisplayName)(userB)),
+            activityService_1.activityService.recordIntroSent(userB.id, (0, displayName_1.safeDisplayName)(userA)),
         ]);
         console.log(`[IntroService] Introduction SENT for intro ${introId}`);
         return updated;
@@ -269,8 +266,8 @@ class IntroductionService {
                 }
             };
             await Promise.allSettled([
-                sendFollowUp(intro.userAId, intro.userA.phone, intro.userB.profile?.currentRole || intro.userB.email),
-                sendFollowUp(intro.userBId, intro.userB.phone, intro.userA.profile?.currentRole || intro.userA.email),
+                sendFollowUp(intro.userAId, intro.userA.phone, (0, displayName_1.safeDisplayName)(intro.userB)),
+                sendFollowUp(intro.userBId, intro.userB.phone, (0, displayName_1.safeDisplayName)(intro.userA)),
             ]);
             await db_1.prisma.introductionRecord.update({
                 where: { id: intro.id },
@@ -327,14 +324,14 @@ Match reason: ${reason}`,
                 {
                     role: 'user',
                     content: `Person 1:
-- Name: ${userA.name || userA.email.split('@')[0]}
+- Name: ${(0, displayName_1.safeDisplayName)(userA)}
 - Title: ${profA.currentRole || 'Professional'} at ${profA.companyName || 'their company'}
 - Bio: ${profA.bio || ''}
 - Goal: ${profA.lookingFor?.join(', ') || 'networking'}
 - Key details: ${profA.keyTractionPoints || profA.investmentThesis || profA.skills?.join(', ') || ''}
 
 Person 2:
-- Name: ${userB.name || userB.email.split('@')[0]}
+- Name: ${(0, displayName_1.safeDisplayName)(userB)}
 - Title: ${profB.currentRole || 'Professional'} at ${profB.companyName || 'their company'}
 - Bio: ${profB.bio || ''}
 - Goal: ${profB.lookingFor?.join(', ') || 'networking'}
@@ -346,8 +343,8 @@ Match reason: ${reason}`,
             return response.content;
         }
         catch {
-            const nameA = userA.name || userA.email.split('@')[0];
-            const nameB = userB.name || userB.email.split('@')[0];
+            const nameA = (0, displayName_1.safeFirstName)(userA);
+            const nameB = (0, displayName_1.safeFirstName)(userB);
             return `Hi ${nameA} and ${nameB},\n\nI'd love to connect you two. ${reason || `Based on your profiles, there's strong potential for a valuable connection.`}\n\nI'll let you two take it from here!\n— Cleya`;
         }
     }

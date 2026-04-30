@@ -40,13 +40,27 @@ const envSchema = zod_1.z.object({
     CLERK_PUBLISHABLE_KEY: zod_1.z.string().optional(),
     CLERK_SECRET_KEY: zod_1.z.string().optional(),
     RESEND_API_KEY: zod_1.z.string().optional(),
+    RESEND_WEBHOOK_SECRET: zod_1.z.string().optional(),
+    // Resend Inbound: when set, transactional emails use a per-match
+    // signed reply-to address (e.g. `r+<token>@reply.cleya.ai`) so users
+    // can simply hit Reply with "yes" / "no" to accept or decline an
+    // introduction. The inbound webhook routes the parsed message back
+    // through respondToMatch.
+    REPLY_INBOUND_DOMAIN: zod_1.z.string().optional(),
+    RESEND_INBOUND_SECRET: zod_1.z.string().optional(),
     SMTP_HOST: zod_1.z.string().optional(),
     SMTP_PORT: zod_1.z.coerce.number().default(587),
     SMTP_USER: zod_1.z.string().optional(),
     SMTP_PASS: zod_1.z.string().optional(),
     FROM_EMAIL: zod_1.z.string().default('hello@cleya.ai'),
+    // Reply-To used by all transactional emails. MUST be a real, monitored
+    // mailbox — replies to FROM_EMAIL bounce because hello@cleya.ai isn't
+    // a provisioned account. Default is the founder inbox so a Reply from
+    // a recipient never disappears into the void.
+    REPLY_TO_EMAIL: zod_1.z.string().default('jivraj@cleya.ai'),
     ADMIN_EMAIL: zod_1.z.string().optional(),
     ADMIN_PASSWORD: zod_1.z.string().optional(),
+    SIGNUP_NOTIFY_TO: zod_1.z.string().optional(),
     ZOOM_CLIENT_ID: zod_1.z.string().optional(),
     ZOOM_CLIENT_SECRET: zod_1.z.string().optional(),
     ZOOM_REDIRECT_URI: zod_1.z.string().optional(),

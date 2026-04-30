@@ -1059,7 +1059,9 @@ export async function getProfileNudgeTeasers(userId: string, count = 3): Promise
 
     const candidates = await prisma.profile.findMany({
       where: {
-        persona: { in: wantedPersonas },
+        // wantedPersonas is computed from the PERSONA_COMPATIBILITY map which
+        // is keyed by PersonaType values, so the cast here is safe.
+        persona: { in: wantedPersonas as any },
         isComplete: true,
         userId: { not: userId },
         user: { isActive: true, emailVerified: true },
@@ -1081,7 +1083,7 @@ export async function getProfileNudgeTeasers(userId: string, count = 3): Promise
     for (const c of candidates) {
       const stage = c.companyStage || c.investorType || '';
       const industry = (c.industries && c.industries[0]) || '';
-      const role = c.currentRole || personaToReadable(c.persona);
+      const role = c.currentRole || personaToReadable(c.persona ?? 'OTHER');
       const loc = c.location || '';
       const parts = [stage, industry, role].filter(Boolean).join(' ').trim();
       const teaser = loc ? `${parts}, ${loc}` : parts;

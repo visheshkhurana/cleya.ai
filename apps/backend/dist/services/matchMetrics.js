@@ -13,6 +13,8 @@ const emptyProposalCounters = () => ({
     FREE_LIMIT: 0,
     SAME_PERSONA: 0,
     DUPLICATE: 0,
+    CADENCE_GAP: 0,
+    BLOCKED: 0,
     OTHER: 0,
 });
 const emptyNotificationCounters = () => ({

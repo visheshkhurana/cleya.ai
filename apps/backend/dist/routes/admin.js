@@ -476,6 +476,51 @@ exports.adminRouter.post('/send-digest', async (_req, res, next) => {
         next(error);
     }
 });
+/**
+ * Trigger the referral-onboarding email for a person who landed in our
+ * inbox (forwarded invite, direct email to hello@cleya.ai, or LinkedIn
+ * URL replied to us). Body: { email, name?, referrerName? }.
+ *
+ * This is the manual on-ramp until inbound mail parsing is wired —
+ * see scripts/onboard-referral.ts for a CLI wrapper.
+ */
+exports.adminRouter.post('/referral/onboard', async (req, res, next) => {
+    try {
+        const schema = zod_1.z.object({
+            email: zod_1.z.string().email(),
+            name: zod_1.z.string().optional(),
+            referrerName: zod_1.z.string().optional(),
+        });
+        const { email, name, referrerName } = schema.parse(req.body || {});
+        const ok = await email_1.emailService.sendReferralOnboarding(email, { name, referrerName });
+        if (!ok) {
+            res.status(502).json({ success: false, error: 'Email send failed (see server logs)' });
+            return;
+        }
+        res.json({ success: true, data: { email, name: name || null, referrerName: referrerName || null } });
+    }
+    catch (error) {
+        next(error);
+    }
+});
+exports.adminRouter.post('/referrals/broadcast', async (req, res, next) => {
+    try {
+        const earlyAccessBonus = req.body?.earlyAccessBonus === true;
+        const dryRun = req.body?.dryRun === true;
+        const limit = typeof req.body?.limit === 'number' && req.body.limit > 0 ? Math.min(req.body.limit, 5000) : undefined;
+        const userId = typeof req.body?.userId === 'string' ? req.body.userId : undefined;
+        if (userId) {
+            const ok = await email_1.emailService.sendReferralInvite(userId, { earlyAccessBonus });
+            res.json({ success: true, data: { sent: ok ? 1 : 0, failed: ok ? 0 : 1, total: 1 } });
+            return;
+        }
+        const result = await email_1.emailService.sendReferralInviteToAll({ earlyAccessBonus, limit, dryRun });
+        res.json({ success: true, data: result });
+    }
+    catch (error) {
+        next(error);
+    }
+});
 exports.adminRouter.get('/analytics/overview', async (req, res, next) => {
     try {
         const dateRange = req.query.range || '30d';
@@ -2322,6 +2367,215 @@ exports.adminRouter.post('/qa/run', async (_req, res, next) => {
         const { runDailyQARoutine } = await Promise.resolve().then(() => __importStar(require('../services/qaAutomation')));
         const result = await runDailyQARoutine();
         res.json({ success: true, data: result });
+    }
+    catch (error) {
+        next(error);
+    }
+});
+/**
+ * Inbound-email simulator.
+ *
+ * Resend Inbound forwards every reply to /api/inbound/email signed with an
+ * HMAC. To verify the entire reply-by-email pipeline without needing the
+ * MX/DKIM setup to propagate, this admin route:
+ *   - Lists matches with at least one PENDING response side
+ *   - Constructs a fake Resend-shaped payload addressed to the signed
+ *     per-match local part for that user
+ *   - Signs it with RESEND_INBOUND_SECRET (or skips signing in dev)
+ *   - POSTs it to our own /api/inbound/email so we exercise the real route
+ */
+exports.adminRouter.get('/inbound/pending-matches', async (_req, res, next) => {
+    try {
+        const matches = await db_1.prisma.match.findMany({
+            where: {
+                OR: [{ userAResponse: 'PENDING' }, { userBResponse: 'PENDING' }],
+                status: { in: ['PENDING_A', 'PENDING_B', 'PENDING'] },
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 20,
+            include: {
+                userA: { select: { id: true, name: true, email: true } },
+                userB: { select: { id: true, name: true, email: true } },
+            },
+        });
+        const rows = matches.flatMap((m) => {
+            const out = [];
+            if (m.userAResponse === 'PENDING' && m.userA?.email) {
+                out.push({
+                    matchId: m.id,
+                    userId: m.userA.id,
+                    userName: m.userA.name || m.userA.email,
+                    userEmail: m.userA.email,
+                    partnerName: m.userB?.name || m.userB?.email || 'partner',
+                    createdAt: m.createdAt,
+                });
+            }
+            if (m.userBResponse === 'PENDING' && m.userB?.email) {
+                out.push({
+                    matchId: m.id,
+                    userId: m.userB.id,
+                    userName: m.userB.name || m.userB.email,
+                    userEmail: m.userB.email,
+                    partnerName: m.userA?.name || m.userA?.email || 'partner',
+                    createdAt: m.createdAt,
+                });
+            }
+            return out;
+        });
+        res.json({ success: true, data: rows });
+    }
+    catch (error) {
+        next(error);
+    }
+});
+exports.adminRouter.post('/inbound/simulate', async (req, res, next) => {
+    try {
+        const schema = zod_1.z.object({
+            matchId: zod_1.z.string().min(1),
+            userId: zod_1.z.string().min(1),
+            intent: zod_1.z.enum(['accept', 'decline']),
+            bodyText: zod_1.z.string().optional(),
+            dryRun: zod_1.z.boolean().optional(),
+        });
+        const { matchId, userId, intent, bodyText, dryRun } = schema.parse(req.body);
+        const { createInboundReplyLocalPart } = await Promise.resolve().then(() => __importStar(require('../services/matchActionToken')));
+        const { env } = await Promise.resolve().then(() => __importStar(require('../config/env')));
+        const crypto = await Promise.resolve().then(() => __importStar(require('crypto')));
+        const user = await db_1.prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true } });
+        if (!user?.email)
+            return res.status(400).json({ success: false, error: 'user_has_no_email' });
+        const replyDomain = env.REPLY_INBOUND_DOMAIN || 'reply.cleya.ai';
+        const localPart = createInboundReplyLocalPart(matchId, userId);
+        const toAddr = `${localPart}@${replyDomain}`;
+        const text = bodyText && bodyText.trim().length > 0
+            ? bodyText
+            : (intent === 'accept' ? 'yes please make the intro' : 'no thanks, not the right fit right now');
+        const payload = {
+            type: 'email.received',
+            created_at: new Date().toISOString(),
+            data: {
+                from: user.email,
+                to: [toAddr],
+                subject: 'Re: introduction',
+                text,
+                html: `<p>${text}</p>`,
+            },
+        };
+        if (dryRun) {
+            return res.json({ success: true, data: { preview: payload, replyTo: toAddr } });
+        }
+        // Sign with the same Svix-style scheme our webhook expects so the
+        // signature path is exercised. In dev with no secret, the webhook
+        // accepts unsigned with a warning and we just send empty headers.
+        const body = JSON.stringify(payload);
+        const headers = { 'content-type': 'application/json' };
+        if (env.RESEND_INBOUND_SECRET) {
+            const id = `sim_${Date.now()}`;
+            const ts = String(Math.floor(Date.now() / 1000));
+            const rawSecret = env.RESEND_INBOUND_SECRET.startsWith('whsec_')
+                ? env.RESEND_INBOUND_SECRET.slice(6)
+                : env.RESEND_INBOUND_SECRET;
+            let key = Buffer.from(rawSecret, 'base64');
+            if (!key.length)
+                key = Buffer.from(rawSecret, 'utf8');
+            const sig = crypto.createHmac('sha256', key).update(`${id}.${ts}.${body}`).digest('base64');
+            headers['svix-id'] = id;
+            headers['svix-timestamp'] = ts;
+            headers['svix-signature'] = `v1,${sig}`;
+        }
+        const portRaw = process.env.PORT || '3001';
+        const port = /^\d{2,5}$/.test(portRaw) ? portRaw : '3001';
+        const url = `http://127.0.0.1:${port}/api/inbound/email`;
+        const r = await fetch(url, { method: 'POST', headers, body });
+        let json = null;
+        try {
+            json = await r.json();
+        }
+        catch { /* non-json */ }
+        res.json({
+            success: r.ok,
+            data: {
+                webhookStatus: r.status,
+                webhookResponse: json,
+                sentTo: toAddr,
+                previewPayload: payload,
+            },
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+});
+/**
+ * Inbound-email DNS health check.
+ *
+ * Confirms that REPLY_INBOUND_DOMAIN has MX records pointing at Resend (or
+ * AWS SES, which Resend uses under the hood) so real customer email replies
+ * will actually reach our /api/inbound/email webhook in production.
+ */
+exports.adminRouter.get('/inbound/dns-check', async (_req, res, next) => {
+    try {
+        const dns = await Promise.resolve().then(() => __importStar(require('dns')));
+        const env = (await Promise.resolve().then(() => __importStar(require('../config/env')))).env;
+        const domain = env.REPLY_INBOUND_DOMAIN || '';
+        const secretConfigured = !!env.RESEND_INBOUND_SECRET;
+        if (!domain) {
+            return res.json({
+                success: true,
+                data: {
+                    domain: null,
+                    mxRecords: [],
+                    pointsToResend: false,
+                    secretConfigured,
+                    status: 'not_configured',
+                    message: 'REPLY_INBOUND_DOMAIN is not set. Add it in Secrets and restart.',
+                },
+            });
+        }
+        const lookup = () => new Promise((resolve, reject) => {
+            dns.resolveMx(domain, (err, addresses) => {
+                if (err)
+                    reject(err);
+                else
+                    resolve(addresses || []);
+            });
+        });
+        let mxRecords = [];
+        let lookupError = null;
+        try {
+            mxRecords = await lookup();
+        }
+        catch (e) {
+            lookupError = e?.code || e?.message || 'lookup_failed';
+        }
+        const isResendOrSes = (host) => /amazonses\.com$/i.test(host) || /resend\.(com|email)$/i.test(host) || /amazonaws\.com$/i.test(host);
+        const pointsToResend = mxRecords.some((r) => isResendOrSes(r.exchange));
+        let status;
+        let message;
+        if (lookupError === 'ENOTFOUND' || lookupError === 'ENODATA' || mxRecords.length === 0) {
+            status = 'no_mx';
+            message = `No MX records found for ${domain}. Add a Resend MX record at your DNS provider.`;
+        }
+        else if (lookupError) {
+            status = 'lookup_failed';
+            message = `DNS lookup failed: ${lookupError}`;
+        }
+        else if (!pointsToResend) {
+            status = 'wrong_target';
+            message = `${domain} has MX records, but none point to Resend / AWS SES. Update DNS.`;
+        }
+        else if (!secretConfigured) {
+            status = 'no_secret';
+            message = `MX is correct, but RESEND_INBOUND_SECRET is missing. Add it in Secrets so the webhook can verify signatures.`;
+        }
+        else {
+            status = 'ok';
+            message = `${domain} is ready. Real customer replies will route through the webhook.`;
+        }
+        res.json({
+            success: true,
+            data: { domain, mxRecords, pointsToResend, secretConfigured, status, message },
+        });
     }
     catch (error) {
         next(error);

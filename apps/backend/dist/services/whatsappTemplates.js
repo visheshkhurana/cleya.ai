@@ -5,6 +5,8 @@ const messagingService_1 = require("./messagingService");
 const metaWhatsAppService_1 = require("./metaWhatsAppService");
 const gupshupService_1 = require("./gupshupService");
 const db_1 = require("@cleya/db");
+const matching_1 = require("@cleya/matching");
+const displayName_1 = require("../utils/displayName");
 const templates = {
     welcome: {
         id: 'welcome',
@@ -12,7 +14,7 @@ const templates = {
         description: 'Sent when a new user signs up',
         gupshupTemplateId: 'cleya_welcome',
         gupshupParamOrder: [],
-        buildMessage: (p) => `Hey! Welcome to Cleya 👋 I'm your AI superconnector. I personally talk to everyone in the network, learn their story, and then make warm introductions where there's a genuine fit.\n\nThe next step is a quick chat where I get to know you — what you've built, and what you're looking for. From there I can start matching you with the right people.\n\nReady? Tap here to get started: ${p.profileUrl || 'https://cleya.ai/chat'}`,
+        buildMessage: (p) => `Hey! Welcome to Cleya 👋 I'm your AI Networker. I quietly meet thousands of founders, investors, and operators on your behalf — and only introduce you to the few worth your time.\n\nNext, a quick chat so I can learn about you — what you've built and who you'd love to meet. Then I'll start curating introductions for you.\n\nReady? Tap here to get started: ${p.profileUrl || 'https://cleya.ai/chat'}`,
     },
     match_found: {
         id: 'match_found',
@@ -167,6 +169,37 @@ class WhatsAppTemplateService {
             console.error(`Template ${templateId} not found`);
             return null;
         }
+        // A8: Honor user's per-type WhatsApp preferences. The master gate is
+        // user.whatsappOptedIn (already enforced downstream). Here we apply the
+        // category toggles surfaced in /settings — whatsappMatchNotify,
+        // whatsappIntroNotify, whatsappWeeklyDigest. All default to true, so
+        // legacy users without a row keep receiving messages. We bypass the gate
+        // only for `userId === 'admin'` (system test sends).
+        if (userId && userId !== 'admin') {
+            try {
+                const prefs = await db_1.prisma.communicationPreference.findUnique({ where: { userId } });
+                if (prefs) {
+                    const isMatch = templateId.includes('match');
+                    const isIntro = templateId.includes('intro');
+                    const isWeekly = templateId.includes('weekly') || templateId.includes('digest');
+                    if (isMatch && prefs.whatsappMatchNotify === false) {
+                        console.log(`[WhatsApp] Skipped template=${templateId} for user=${userId}: whatsappMatchNotify off`);
+                        return null;
+                    }
+                    if (isIntro && prefs.whatsappIntroNotify === false) {
+                        console.log(`[WhatsApp] Skipped template=${templateId} for user=${userId}: whatsappIntroNotify off`);
+                        return null;
+                    }
+                    if (isWeekly && prefs.whatsappWeeklyDigest === false) {
+                        console.log(`[WhatsApp] Skipped template=${templateId} for user=${userId}: whatsappWeeklyDigest off`);
+                        return null;
+                    }
+                }
+            }
+            catch (err) {
+                console.warn(`[WhatsApp] Preference lookup failed for user=${userId}, defaulting to send:`, err.message);
+            }
+        }
         const message = template.buildMessage(params);
         let resolvedPhone = phoneNumber;
         if (!resolvedPhone && userId && userId !== 'admin') {
@@ -238,13 +271,13 @@ class WhatsAppTemplateService {
         ]);
         if (!user || !matchUser)
             return null;
-        const matchName = matchUser.name || matchUser.profile?.currentRole || 'A professional';
+        const matchName = (0, displayName_1.safeDisplayName)(matchUser);
         const matchRole = matchUser.profile?.headline || matchUser.profile?.currentRole || '';
         const matchCompany = matchUser.profile?.companyName || '';
         const matchLinkedin = matchUser.profile?.linkedinUrl || '';
         let matchReason = '';
         if (matchUser.profile?.raiseAmount && matchUser.profile?.companyName) {
-            matchReason = `${matchName.split(' ')[0]} is raising ${matchUser.profile.raiseAmount} for ${matchUser.profile.companyName}.`;
+            matchReason = `${(0, displayName_1.safeFirstName)(matchUser)} is raising ${matchUser.profile.raiseAmount} for ${matchUser.profile.companyName}.`;
             if (matchUser.profile?.keyTractionPoints) {
                 matchReason += ` ${matchUser.profile.keyTractionPoints}`;
             }
@@ -259,7 +292,7 @@ class WhatsAppTemplateService {
             matchCompany,
             matchLinkedin,
             matchReason,
-            matchScore: matchScore?.toString() || '90',
+            matchScore: typeof matchScore === 'number' ? (0, matching_1.toDisplayPercent)(matchScore).toString() : '90',
             matchUrl: 'https://cleya.ai/matches',
         });
     }
@@ -273,7 +306,7 @@ class WhatsAppTemplateService {
         ]);
         if (!user || !matchUser)
             return null;
-        const matchName = matchUser.name || matchUser.profile?.currentRole || 'Your match';
+        const matchName = (0, displayName_1.safeDisplayName)(matchUser);
         const matchRole = matchUser.profile?.headline || matchUser.profile?.currentRole || '';
         const matchCompany = matchUser.profile?.companyName || '';
         const matchSector = matchUser.profile?.industries?.[0]?.replace(/_/g, ' ') || '';

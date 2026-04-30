@@ -85,6 +85,10 @@ export declare class AuthService {
                 preferredStageRange: string | null;
                 sectorFocus: string[];
                 workStyle: import(".prisma/client").$Enums.WorkStyle | null;
+                githubUrl: string | null;
+                twitterUrl: string | null;
+                portfolioUrl: string | null;
+                availabilityStatus: string | null;
             } | null;
         };
         token: string | null;
@@ -170,6 +174,10 @@ export declare class AuthService {
                 preferredStageRange: string | null;
                 sectorFocus: string[];
                 workStyle: import(".prisma/client").$Enums.WorkStyle | null;
+                githubUrl: string | null;
+                twitterUrl: string | null;
+                portfolioUrl: string | null;
+                availabilityStatus: string | null;
             } | null;
         };
         token: string;
@@ -252,6 +260,10 @@ export declare class AuthService {
                 preferredStageRange: string | null;
                 sectorFocus: string[];
                 workStyle: import(".prisma/client").$Enums.WorkStyle | null;
+                githubUrl: string | null;
+                twitterUrl: string | null;
+                portfolioUrl: string | null;
+                availabilityStatus: string | null;
             } | null;
         };
         token: string;
@@ -343,6 +355,10 @@ export declare class AuthService {
             preferredStageRange: string | null;
             sectorFocus: string[];
             workStyle: import(".prisma/client").$Enums.WorkStyle | null;
+            githubUrl: string | null;
+            twitterUrl: string | null;
+            portfolioUrl: string | null;
+            availabilityStatus: string | null;
         } | null;
         createdAt: Date;
     }>;
@@ -426,6 +442,10 @@ export declare class AuthService {
                 preferredStageRange: string | null;
                 sectorFocus: string[];
                 workStyle: import(".prisma/client").$Enums.WorkStyle | null;
+                githubUrl: string | null;
+                twitterUrl: string | null;
+                portfolioUrl: string | null;
+                availabilityStatus: string | null;
             } | null;
         };
         token: string;
@@ -512,6 +532,10 @@ export declare class AuthService {
                 preferredStageRange: string | null;
                 sectorFocus: string[];
                 workStyle: import(".prisma/client").$Enums.WorkStyle | null;
+                githubUrl: string | null;
+                twitterUrl: string | null;
+                portfolioUrl: string | null;
+                availabilityStatus: string | null;
             } | null;
         };
         token: string;
@@ -604,6 +628,10 @@ export declare class AuthService {
                 preferredStageRange: string | null;
                 sectorFocus: string[];
                 workStyle: import(".prisma/client").$Enums.WorkStyle | null;
+                githubUrl: string | null;
+                twitterUrl: string | null;
+                portfolioUrl: string | null;
+                availabilityStatus: string | null;
             } | null;
         };
         token: string;
@@ -644,6 +672,7 @@ export declare class AuthService {
         verificationTokenExpiry: Date | null;
         referredBy: string | null;
         bonusMatches: number;
+        referralInviteSentAt: Date | null;
     } | null>;
     resetPassword(email: string, newPassword: string): Promise<void>;
     verifyEmail(userId: string): Promise<void>;

@@ -72,6 +72,12 @@ export interface CompatibilitySignals {
     tractionHighlights: string[];
     conflictFlags: string[];
 }
+export declare const DISPLAY_SCORE_FLOOR = 0.72;
+export declare const DISPLAY_SCORE_CEILING = 0.96;
+export declare const RAW_SCORE_FLOOR = 0.35;
+export declare const RAW_SCORE_CEILING = 1;
+export declare function toDisplayScore(raw: number): number;
+export declare function toDisplayPercent(raw: number): number;
 export declare const PERSONA_COMPATIBILITY: Record<string, Record<string, number>>;
 export declare const EXPERTISE_TAGS: Record<string, string[]>;
 export declare function normalizeToExpertiseTags(inputs: string[]): string[];
@@ -88,6 +94,7 @@ export declare class MatchingEngine {
     findMatches(user: ProfileForMatching, candidates: ProfileForMatching[], options?: {
         limit?: number;
         minScore?: number;
+        serendipity?: boolean;
     }): Array<{
         profile: ProfileForMatching;
         score: MatchScore;

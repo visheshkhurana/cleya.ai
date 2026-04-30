@@ -34,6 +34,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.matchingService = exports.MatchingService = void 0;
+exports.getProfileNudgeTeasers = getProfileNudgeTeasers;
 const db_1 = require("@cleya/db");
 const matching_1 = require("@cleya/matching");
 const ai_1 = require("@cleya/ai");
@@ -47,6 +48,7 @@ const whatsappTemplates_1 = require("./whatsappTemplates");
 const matchAntiSpam_1 = require("./matchAntiSpam");
 const matchMetrics_1 = require("./matchMetrics");
 const razorpayService_1 = require("./razorpayService");
+const displayName_1 = require("../utils/displayName");
 class MatchingService {
     ai = (0, ai_1.createAIService)();
     async findMatchesForUser(userId, limit = 10) {
@@ -99,6 +101,20 @@ class MatchingService {
             (0, matchMetrics_1.recordProposalSkipped)('DUPLICATE');
             throw new errorHandler_1.AppError(409, 'Match already exists', 'MATCH_EXISTS');
         }
+        // Block proposals between users where either side has blocked the other.
+        const blockedPair = await db_1.prisma.blockedUser.findFirst({
+            where: {
+                OR: [
+                    { blockerId: userAId, blockedId: userBId },
+                    { blockerId: userBId, blockedId: userAId },
+                ],
+            },
+            select: { id: true },
+        });
+        if (blockedPair) {
+            (0, matchMetrics_1.recordProposalSkipped)('BLOCKED');
+            throw new errorHandler_1.AppError(403, 'Proposal blocked: users have blocked each other', 'PROPOSAL_BLOCKED');
+        }
         // Enforce FREE tier monthly cap centrally for all proposal paths.
         for (const id of [userAId, userBId]) {
             const paywall = await razorpayService_1.razorpayService.checkPaywall(id);
@@ -125,7 +141,12 @@ class MatchingService {
         }
         const score = matching_1.matchingEngine.score(profileA, profileB);
         console.log(`[MatchingService] Generating AI reasoning for match: ${userAId} <-> ${userBId}`);
-        const reason = await this.generateMatchReason(profileA, profileB);
+        const userPair = await db_1.prisma.user.findMany({
+            where: { id: { in: [userAId, userBId] } },
+            select: { id: true, name: true },
+        });
+        const nameById = new Map(userPair.map((u) => [u.id, u.name || '']));
+        const reason = await this.generateMatchReason(profileA, profileB, nameById.get(userAId) || '', nameById.get(userBId) || '');
         console.log(`[MatchingService] Generated reasoning (${reason.length} chars): "${reason.substring(0, 80)}..."`);
         const match = await db_1.prisma.match.create({
             data: {
@@ -157,10 +178,17 @@ class MatchingService {
             db_1.prisma.user.findUnique({ where: { id: userBId }, include: { profile: true } }),
         ]);
         if (userAData && userBData) {
-            const nameA = userAData.name || userAData.profile?.currentRole || userAData.email.split('@')[0];
-            const nameB = userBData.name || userBData.profile?.currentRole || userBData.email.split('@')[0];
+            // CRITICAL: never synthesize a "name" from role/company/email — doing so
+            // surfaces the same person under different labels and breaks user trust.
+            // Candidates without a real name are filtered out at the matching layer
+            // (see TEST_EMAIL_DOMAINS / name-not-null guards in @cleya/api matching);
+            // this is defense-in-depth in case a no-name user reaches a manual propose.
+            const nameA = (0, displayName_1.safeDisplayName)(userAData);
+            const nameB = (0, displayName_1.safeDisplayName)(userBData);
             const personaA = userAData.profile?.persona || 'Professional';
             const personaB = userBData.profile?.persona || 'Professional';
+            // Note: matchId + recipientUserId let sendMatchProposed render the
+            // one-click Accept/Decline buttons that work without login.
             const detailsB = {
                 companyName: userBData.profile?.companyName || undefined,
                 headline: userBData.profile?.headline || userBData.profile?.currentRole || undefined,
@@ -172,6 +200,8 @@ class MatchingService {
                 location: userBData.profile?.location || undefined,
                 bio: userBData.profile?.bio || undefined,
                 matchReason: reason,
+                matchId: match.id,
+                recipientUserId: userAId,
             };
             const detailsA = {
                 companyName: userAData.profile?.companyName || undefined,
@@ -184,6 +214,8 @@ class MatchingService {
                 location: userAData.profile?.location || undefined,
                 bio: userAData.profile?.bio || undefined,
                 matchReason: reason,
+                matchId: match.id,
+                recipientUserId: userBId,
             };
             const dispatch = async (targetUserId, action, channel, body) => {
                 const policy = await (0, matchAntiSpam_1.evaluateNotificationPolicy)(targetUserId);
@@ -239,6 +271,17 @@ class MatchingService {
                     body: waBodyB,
                 },
             ]);
+            // Schedule the 72h non-response feedback nudge for both sides. The
+            // shouldSkip() check inside the drip processor will short-circuit
+            // for whichever user has already responded by then.
+            try {
+                const { dripCampaignService } = await Promise.resolve().then(() => __importStar(require('./dripCampaignService')));
+                dripCampaignService.enrollNonResponseFeedback(userAId, match.id).catch((e) => console.error('[matchingService] non-response enroll A failed:', e?.message || e));
+                dripCampaignService.enrollNonResponseFeedback(userBId, match.id).catch((e) => console.error('[matchingService] non-response enroll B failed:', e?.message || e));
+            }
+            catch (e) {
+                console.error('[matchingService] enrollNonResponseFeedback import failed:', e.message);
+            }
         }
         return match;
     }
@@ -251,32 +294,81 @@ class MatchingService {
         if (!isUserA && !isUserB) {
             throw new errorHandler_1.AppError(403, 'Not part of this match');
         }
-        const updateData = {};
+        // RACE-SAFE response recording, done in two atomic steps inside a
+        // single transaction so:
+        //   (a) two concurrent calls for the SAME user can't both succeed —
+        //       updateMany scoped to userXResponse:'PENDING' is the guard.
+        //   (b) two concurrent calls for DIFFERENT users (e.g. both parties
+        //       accept simultaneously) can't leave a stale PENDING_X status.
+        //       We recompute status from the post-update row, not from the
+        //       pre-read snapshot.
+        const responseFieldUpdate = {};
         if (isUserA) {
-            updateData.userAResponse = response;
-            updateData.userARespondedAt = new Date();
+            responseFieldUpdate.userAResponse = response;
+            responseFieldUpdate.userARespondedAt = new Date();
         }
         else {
-            updateData.userBResponse = response;
-            updateData.userBRespondedAt = new Date();
+            responseFieldUpdate.userBResponse = response;
+            responseFieldUpdate.userBRespondedAt = new Date();
         }
-        const otherResponse = isUserA ? match.userBResponse : match.userAResponse;
-        if (response === 'REJECTED') {
-            updateData.status = 'REJECTED';
-        }
-        else if (otherResponse === 'ACCEPTED') {
-            updateData.status = 'ACCEPTED';
-        }
-        else if (otherResponse === 'REJECTED') {
-            updateData.status = 'REJECTED';
-        }
-        else {
-            updateData.status = isUserA ? 'PENDING_B' : 'PENDING_A';
-        }
-        const updated = await db_1.prisma.match.update({
-            where: { id: matchId },
-            data: updateData,
+        const guardWhere = { id: matchId };
+        if (isUserA)
+            guardWhere.userAResponse = 'PENDING';
+        else
+            guardWhere.userBResponse = 'PENDING';
+        const { updateResult, updated, justAccepted } = await db_1.prisma.$transaction(async (tx) => {
+            const r = await tx.match.updateMany({
+                where: guardWhere,
+                data: responseFieldUpdate,
+            });
+            // If the conditional update affected zero rows the caller is a
+            // duplicate — return current state, skip the status recompute.
+            if (r.count === 0) {
+                const cur = await tx.match.findUniqueOrThrow({ where: { id: matchId } });
+                return { updateResult: r, updated: cur, justAccepted: false };
+            }
+            // Re-read the post-update row INSIDE the transaction so we observe
+            // the other user's response if it landed concurrently. Recompute
+            // status from this fresh state — never from the pre-read snapshot.
+            const fresh = await tx.match.findUniqueOrThrow({ where: { id: matchId } });
+            const aResp = fresh.userAResponse;
+            const bResp = fresh.userBResponse;
+            let nextStatus;
+            if (aResp === 'REJECTED' || bResp === 'REJECTED') {
+                nextStatus = 'REJECTED';
+            }
+            else if (aResp === 'ACCEPTED' && bResp === 'ACCEPTED') {
+                nextStatus = 'ACCEPTED';
+            }
+            else if (aResp === 'ACCEPTED') {
+                nextStatus = 'PENDING_B';
+            }
+            else if (bResp === 'ACCEPTED') {
+                nextStatus = 'PENDING_A';
+            }
+            else {
+                nextStatus = fresh.status;
+            }
+            // Use a CONDITIONAL update on status so exactly one transaction can
+            // win the PENDING_*/REJECTED/whatever -> ACCEPTED transition. This
+            // is what we use to gate side-effects: `justAccepted` is true only
+            // for the single tx whose status flip succeeded.
+            let postRow = fresh;
+            let didFlipToAccepted = false;
+            if (nextStatus !== fresh.status) {
+                const flip = await tx.match.updateMany({
+                    where: { id: matchId, status: fresh.status },
+                    data: { status: nextStatus },
+                });
+                postRow = await tx.match.findUniqueOrThrow({ where: { id: matchId } });
+                didFlipToAccepted = flip.count > 0 && nextStatus === 'ACCEPTED';
+            }
+            return { updateResult: r, updated: postRow, justAccepted: didFlipToAccepted };
         });
+        if (updateResult.count === 0) {
+            console.log(`[MatchingService] respondToMatch noop (already responded) match=${matchId} user=${userId}`);
+            return updated;
+        }
         // Either user just became "ready" again — re-enqueue so the continuous
         // loop reconsiders them within the next tick instead of waiting for
         // the periodic revisit window.
@@ -285,7 +377,12 @@ class MatchingService {
             matchScheduler.enqueueUserCheck(updated.userBId);
         })
             .catch((e) => console.log('[MatchingService] re-enqueue after response failed:', e));
-        if (updated.status === 'ACCEPTED') {
+        // Idempotency guard: side-effects (joint email, WhatsApp, deal progression,
+        // drip enrollment) fire only for the SINGLE transaction that actually
+        // flipped status to ACCEPTED. The conditional status update inside the
+        // transaction above is what guarantees this — `justAccepted` here comes
+        // straight from that DB-level guard, not from a stale pre-read snapshot.
+        if (justAccepted) {
             await this.revealContacts(updated);
             introductionService_1.introductionService.sendIntroduction(matchId).catch((e) => console.log('[MatchingService] Intro send failed:', e));
             this.progressDealOnAcceptance(updated.userAId, updated.userBId).catch((e) => console.log('[MatchingService] Deal progression failed:', e));
@@ -319,7 +416,7 @@ class MatchingService {
             matchId: match.id,
             partnerId: userB.id,
             contact: {
-                name: userB.name || `${userB.profile?.currentRole} at ${userB.profile?.companyName}`,
+                name: (0, displayName_1.safeDisplayName)(userB),
                 email: userB.email,
                 linkedin: userB.profile?.linkedinUrl,
                 headline: userB.profile?.headline,
@@ -330,36 +427,64 @@ class MatchingService {
             matchId: match.id,
             partnerId: userA.id,
             contact: {
-                name: userA.name || `${userA.profile?.currentRole} at ${userA.profile?.companyName}`,
+                name: (0, displayName_1.safeDisplayName)(userA),
                 email: userA.email,
                 linkedin: userA.profile?.linkedinUrl,
                 headline: userA.profile?.headline,
                 companyName: userA.profile?.companyName,
             },
         });
-        const nameA = userA.name || userA.profile?.currentRole || userA.email.split('@')[0];
-        const nameB = userB.name || userB.profile?.currentRole || userB.email.split('@')[0];
+        const nameA = (0, displayName_1.safeDisplayName)(userA);
+        const nameB = (0, displayName_1.safeDisplayName)(userB);
         const personaA = userA.profile?.persona || 'Professional';
         const personaB = userB.profile?.persona || 'Professional';
         const matchReason = match.reason || '';
-        email_1.emailService.sendMatchAccepted(userA.email, nameA, nameB, personaB, userB.email, userB.profile?.linkedinUrl || undefined, {
-            headline: userB.profile?.headline || userB.profile?.currentRole || undefined,
-            companyName: userB.profile?.companyName || undefined,
-            sector: userB.profile?.industries?.[0] || undefined,
-            location: userB.profile?.location || undefined,
-            traction: userB.profile?.keyTractionPoints || undefined,
-            matchReason: matchReason,
-            matchUserId: userB.id,
-        }).catch(() => { });
-        email_1.emailService.sendMatchAccepted(userB.email, nameB, nameA, personaA, userA.email, userA.profile?.linkedinUrl || undefined, {
-            headline: userA.profile?.headline || userA.profile?.currentRole || undefined,
-            companyName: userA.profile?.companyName || undefined,
-            sector: userA.profile?.industries?.[0] || undefined,
-            location: userA.profile?.location || undefined,
-            traction: userA.profile?.keyTractionPoints || undefined,
-            matchReason: matchReason,
-            matchUserId: userA.id,
-        }).catch(() => { });
+        // CRITICAL: send ONE joint introduction email with both parties on the
+        // To: line (Boardy-style). This is what makes the network feel like a
+        // real warm introduction instead of two strangers each receiving a
+        // private notification. Reply-To is set to both addresses so a Reply
+        // goes straight to the OTHER person — no bouncing off hello@cleya.ai.
+        //
+        // We try to pick up any pre-generated talking points from the
+        // IntroductionRecord (created by introductionService.generateIntroduction
+        // which fires in parallel). If they aren't ready yet we still send
+        // immediately — talking points are a nice-to-have, the joint thread is
+        // the must-have.
+        let talkingPoints;
+        try {
+            const introRec = await db_1.prisma.introductionRecord.findUnique({
+                where: { matchId: match.id },
+                select: { talkingPoints: true },
+            });
+            if (Array.isArray(introRec?.talkingPoints)) {
+                talkingPoints = introRec.talkingPoints.filter((x) => typeof x === 'string');
+            }
+        }
+        catch { }
+        email_1.emailService
+            .sendMatchIntroJoint({
+            emailA: userA.email,
+            nameA,
+            emailB: userB.email,
+            nameB,
+            personaA,
+            personaB,
+            headlineA: userA.profile?.headline || userA.profile?.currentRole || undefined,
+            headlineB: userB.profile?.headline || userB.profile?.currentRole || undefined,
+            companyA: userA.profile?.companyName || undefined,
+            companyB: userB.profile?.companyName || undefined,
+            sectorA: userA.profile?.industries?.[0] || undefined,
+            sectorB: userB.profile?.industries?.[0] || undefined,
+            locationA: userA.profile?.location || undefined,
+            locationB: userB.profile?.location || undefined,
+            tractionA: userA.profile?.keyTractionPoints || undefined,
+            tractionB: userB.profile?.keyTractionPoints || undefined,
+            linkedinA: userA.profile?.linkedinUrl || undefined,
+            linkedinB: userB.profile?.linkedinUrl || undefined,
+            matchReason,
+            talkingPoints,
+        })
+            .catch((e) => console.log('[MatchingService] Joint intro email failed:', e));
         const welcomeContent = `Hey! Cleya just connected us — excited to chat with you! 👋`;
         try {
             await db_1.prisma.directMessage.create({
@@ -623,9 +748,22 @@ class MatchingService {
         console.log(`[EventMatch] Matched ${results.length} participants for event ${eventId}`);
         return results;
     }
-    async generateMatchReason(a, b) {
-        const describeProfile = (p) => {
+    async generateMatchReason(a, b, rawNameA = '', rawNameB = '') {
+        // Defense against the LLM hallucinating other people's names from bio/business text:
+        // we sanitize the inputs and then validate the output. If the model invents a name
+        // that isn't one of the two people we're connecting, we fall back to the deterministic
+        // template instead of shipping a confusing email.
+        const nameA = (rawNameA || '').trim();
+        const nameB = (rawNameB || '').trim();
+        const firstA = nameA.split(/\s+/)[0] || '';
+        const firstB = nameB.split(/\s+/)[0] || '';
+        const allowedNameTokens = new Set([nameA, nameB, firstA, firstB]
+            .filter(Boolean)
+            .flatMap((n) => n.split(/\s+/))
+            .map((t) => t.toLowerCase()));
+        const describeProfile = (p, label, displayName) => {
             const parts = [];
+            parts.push(`Refer to this person ONLY as "${displayName}" (or first name). Do not introduce any other personal name from the text below.`);
             parts.push(`Persona: ${p.persona}`);
             if (p.headline)
                 parts.push(`Role: ${p.headline}`);
@@ -661,7 +799,7 @@ class MatchingService {
                 parts.push(`Notable companies: ${p.enrichedData.notableCompanies.join(', ')}`);
             if (p.enrichedData?.exits?.length)
                 parts.push(`Exits: ${p.enrichedData.exits.join(', ')}`);
-            return parts.join('. ');
+            return `[${label}]\n${parts.join('. ')}`;
         };
         const signals = matching_1.matchingEngine.computeCompatibilitySignals(a, b);
         const signalsSummary = this.formatCompatibilitySignals(signals);
@@ -669,25 +807,39 @@ class MatchingService {
             const response = await this.ai.chat([
                 {
                     role: 'system',
-                    content: `You are Cleya, an AI superconnector. Write a warm referral — like a mutual friend texting someone about a person they should meet. Start with a phrase like "thought of someone for you" or "okay so i know someone you'd want to meet" or "had to connect you two."
+                    content: `You are Cleya, an AI superconnector. Write a warm referral — like a mutual friend texting someone about a person they should meet. Start with a phrase like "Thought of someone for you" or "Had to connect you two" or "Okay, so I know someone you'd want to meet".
 
-Write 2-3 sentences max. Use casual, lowercase tone. Make it feel personal, not algorithmic.
+Write 2-3 sentences max. Casual but proper-cased English (sentences capitalized, names always Title Case, proper nouns capitalized). Make it feel personal and psychological, not algorithmic. Lead with the human angle (the bet they're making, what they're chasing, where they have unusual leverage) — then bridge to the concrete value exchange.
 
-Rules:
-- Reference SPECIFIC details: actual role titles, company names, traction numbers, fund names, check sizes, sectors, and locations.
-- Explain the concrete value exchange: what each person gets from the connection (deal flow, fundraising, hiring, domain expertise, market access).
-- If traction data exists, mention it ("they're at $X MRR", "growing Y% MoM", "raised $Z").
-- Never use generic phrases like "complementary backgrounds", "synergy", "mutual benefit", or "valuable connection".
-- Never start with "Both" — lead with the most compelling detail about one person, then bridge to the other.
+NAME RULES (critical):
+- The ONLY people you are allowed to name in this message are: "${nameA}" and "${nameB}".
+- If the bio, business description, or any field contains a different person's name, IGNORE it. Never use any other personal name. Use "they", "she", or "he" instead.
+- Use first names ("${firstA}", "${firstB}") for warmth, ALWAYS Title Case (e.g. "Vikramaditya", never "vikramaditya").
 
-You have structured compatibility data — weave in specific details (sector overlap, check size fit, traction numbers, shared geography) naturally.`,
+BANNED filler words (never use these — they are generic and unconvincing):
+- "super driven", "passionate", "ambitious", "go-getter", "rockstar", "ninja", "10x", "hustler", "dynamic", "results-oriented".
+- "complementary", "synergy", "mutual benefit", "valuable connection", "great fit" (without specifics), "perfect match".
+
+Content rules:
+- Lead with one CONCRETE specific about ${firstB || 'this person'}: a stage ("post-Series-A"), a sector ("vertical SaaS for D2C"), a number ("₹4Cr ARR in 18 months"), a notable company ("ex-Razorpay growth"), or a clear bet ("convinced India needs a real X"). Not adjectives.
+- Then bridge to why ${firstA || 'the recipient'} specifically should care: the concrete value exchange (deal flow, capital, hiring, domain expertise, market access, intros).
+- If traction, raise size, or check-size data exists, weave one in — don't list stats.
+- Never start with "Both" — lead with one person, then bridge to the other.`,
                 },
                 {
                     role: 'user',
-                    content: `Person A: ${describeProfile(a)}\n\nPerson B: ${describeProfile(b)}\n\n--- COMPATIBILITY SIGNALS ---\n${signalsSummary}\n\nWrite 2-3 specific, data-backed sentences about why they should connect.`,
+                    content: `${describeProfile(a, 'PERSON A — recipient', nameA || 'them')}\n\n${describeProfile(b, 'PERSON B — the match being introduced', nameB || 'them')}\n\n--- COMPATIBILITY SIGNALS ---\n${signalsSummary}\n\nWrite 2-3 sentences. Lead with the human/psychological angle on ${firstB || 'PERSON B'}, then explain why ${firstA || 'PERSON A'} should want to meet them.`,
                 },
             ]);
-            return response.content;
+            const reason = (response.content || '').trim();
+            // Validate: reject any output that introduces a personal name not in the allowed set.
+            // Heuristic: scan for capitalized first-name-like tokens that aren't in our whitelist
+            // and aren't common acronyms / company words. If we find one, fall back.
+            if (!this.matchReasonNamesAreSafe(reason, allowedNameTokens, a, b)) {
+                console.warn(`[MatchingService] Match reason mentioned an unexpected name; using deterministic fallback. text="${reason.slice(0, 200)}"`);
+                throw new Error('NAME_LEAK');
+            }
+            return reason;
         }
         catch (err) {
             console.log(`[MatchingService] AI reasoning failed, using profile-based fallback:`, err);
@@ -718,6 +870,73 @@ You have structured compatibility data — weave in specific details (sector ove
             return `okay so i know someone you'd want to meet — ${aLabel} from ${(a.industries[0] || 'tech').replace(/_/g, ' ')} and ${bLabel} from ${(b.industries[0] || 'tech').replace(/_/g, ' ')} could spark something interesting together.`;
         }
     }
+    // Common words that look like names but aren't — these are safe to appear capitalized.
+    static SAFE_CAPITALIZED_TOKENS = new Set([
+        'AI', 'ML', 'API', 'B2B', 'B2C', 'D2C', 'SaaS', 'CEO', 'CTO', 'CFO', 'COO', 'VP',
+        'India', 'Bangalore', 'Bengaluru', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune', 'Chennai',
+        'Kolkata', 'NCR', 'US', 'USA', 'UK', 'EU', 'Series', 'Seed', 'Pre-Seed',
+        'LinkedIn', 'Twitter', 'YC', 'Y', 'Combinator', 'Cleya',
+        'I', 'They', 'He', 'She', 'We', 'You', 'It', 'This', 'That', 'There', 'Their',
+        'Founder', 'Investor', 'Operator', 'Talent', 'Partner', 'Angel',
+        'Hi', 'Hey', 'Hello', 'Thanks', 'Thank',
+        'M', 'K', 'L', 'Cr', 'Lakh', 'Lakhs', 'Crore', 'Crores', 'INR', 'USD',
+        'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun',
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ]);
+    matchReasonNamesAreSafe(text, allowed, a, b) {
+        if (!text)
+            return true;
+        // Whitelist: anything from each profile's structured text fields (company, fund, role,
+        // skills, industries, etc.) is fair game and shouldn't trigger a name-leak alarm.
+        const profileTokens = new Set();
+        const collect = (s) => {
+            if (!s)
+                return;
+            for (const token of s.split(/[\s,.:;()/\\\-—_]+/)) {
+                const t = token.trim();
+                if (t.length > 1)
+                    profileTokens.add(t.toLowerCase());
+            }
+        };
+        for (const p of [a, b]) {
+            collect(p.companyName);
+            collect(p.fundName);
+            collect(p.headline);
+            collect(p.location);
+            collect(p.bio);
+            collect(p.businessDescription);
+            collect(p.investmentThesis);
+            collect(p.keyTractionPoints);
+            collect(p.raiseAmount);
+            collect(p.investmentRange);
+            (p.industries || []).forEach(collect);
+            (p.skills || []).forEach(collect);
+            (p.lookingFor || []).forEach(collect);
+            (p.enrichedData?.domainExpertise || []).forEach(collect);
+            (p.enrichedData?.notableCompanies || []).forEach(collect);
+        }
+        // Find capitalized word sequences that look like personal names (e.g. "Aditi", "Akash Gupta").
+        // We only flag tokens that:
+        //   - start with a capital letter and are followed by lowercase letters (looks like a first name),
+        //   - are not in the SAFE_CAPITALIZED_TOKENS list,
+        //   - are not in the allowed name token set,
+        //   - and don't appear in any structured profile field.
+        const candidateNameRe = /\b([A-Z][a-z]{2,})\b/g;
+        let m;
+        while ((m = candidateNameRe.exec(text)) !== null) {
+            const token = m[1];
+            const lower = token.toLowerCase();
+            if (allowed.has(lower))
+                continue;
+            if (MatchingService.SAFE_CAPITALIZED_TOKENS.has(token))
+                continue;
+            if (profileTokens.has(lower))
+                continue;
+            // This looks like a personal name we can't account for — reject.
+            return false;
+        }
+        return true;
+    }
     formatCompatibilitySignals(signals) {
         const lines = [];
         lines.push(`Sector overlap: ${signals.sectorOverlapPct}%`);
@@ -735,4 +954,89 @@ You have structured compatibility data — weave in specific details (sector ove
 }
 exports.MatchingService = MatchingService;
 exports.matchingService = new MatchingService();
+/**
+ * Build 2-3 anonymized teaser strings to embed in profile-nudge emails.
+ * The goal is to show the new user that real, relevant people are already
+ * here without leaking PII before both sides have opted into the intro.
+ *
+ * Strategy:
+ *   1. Read the user's persona (default OTHER if missing)
+ *   2. Pull the persona row from PERSONA_COMPATIBILITY and pick the
+ *      personas they'd most plausibly meet (compat >= 0.6)
+ *   3. Sample up to 6 verified, complete profiles in those personas
+ *   4. Compose anonymized headlines like
+ *      "Series-A SaaS founder, Bangalore" — never any name, email or
+ *      company
+ */
+async function getProfileNudgeTeasers(userId, count = 3) {
+    try {
+        const { PERSONA_COMPATIBILITY: PC } = await Promise.resolve().then(() => __importStar(require('@cleya/matching')));
+        const me = await db_1.prisma.user.findUnique({
+            where: { id: userId },
+            select: { profile: { select: { persona: true } } },
+        });
+        const persona = me?.profile?.persona || 'OTHER';
+        const compatRow = PC[persona] || {};
+        const wantedPersonas = Object.entries(compatRow)
+            .filter(([, score]) => score >= 0.6)
+            .map(([p]) => p);
+        if (wantedPersonas.length === 0)
+            wantedPersonas.push('FOUNDER', 'INVESTOR', 'OPERATOR');
+        const candidates = await db_1.prisma.profile.findMany({
+            where: {
+                // wantedPersonas is computed from the PERSONA_COMPATIBILITY map which
+                // is keyed by PersonaType values, so the cast here is safe.
+                persona: { in: wantedPersonas },
+                isComplete: true,
+                userId: { not: userId },
+                user: { isActive: true, emailVerified: true },
+            },
+            select: {
+                persona: true,
+                currentRole: true,
+                companyStage: true,
+                industries: true,
+                location: true,
+                investorType: true,
+            },
+            take: count * 4,
+            orderBy: { updatedAt: 'desc' },
+        });
+        const teasers = [];
+        const seen = new Set();
+        for (const c of candidates) {
+            const stage = c.companyStage || c.investorType || '';
+            const industry = (c.industries && c.industries[0]) || '';
+            const role = c.currentRole || personaToReadable(c.persona ?? 'OTHER');
+            const loc = c.location || '';
+            const parts = [stage, industry, role].filter(Boolean).join(' ').trim();
+            const teaser = loc ? `${parts}, ${loc}` : parts;
+            const key = teaser.toLowerCase();
+            if (teaser && !seen.has(key)) {
+                seen.add(key);
+                teasers.push(teaser);
+            }
+            if (teasers.length >= count)
+                break;
+        }
+        return teasers;
+    }
+    catch (e) {
+        console.warn('[getProfileNudgeTeasers] failed:', e.message);
+        return [];
+    }
+}
+function personaToReadable(p) {
+    switch (p) {
+        case 'FOUNDER': return 'founder';
+        case 'INVESTOR': return 'investor';
+        case 'VENTURE_PARTNER': return 'venture partner';
+        case 'TALENT': return 'operator';
+        case 'JOB_SEEKER': return 'job seeker';
+        case 'FREELANCER': return 'freelancer';
+        case 'OPERATOR': return 'operator';
+        case 'DEAL_PARTNER': return 'deal partner';
+        default: return 'professional';
+    }
+}
 //# sourceMappingURL=matchingService.js.map

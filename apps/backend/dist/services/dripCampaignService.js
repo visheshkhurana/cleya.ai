@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.dripCampaignService = void 0;
 const db_1 = require("@cleya/db");
 const email_1 = require("./email");
+const matchingService_1 = require("./matchingService");
 const ONBOARDING_SEQUENCE = [
     { emailKey: 'profile_nudge', delayDays: 1, sequence: 'ONBOARDING' },
     { emailKey: 'how_matching_works', delayDays: 3, sequence: 'ONBOARDING' },
@@ -14,6 +15,11 @@ const MATCH_FOLLOWUP_SEQUENCE = [
 const FEEDBACK_REQUEST_SEQUENCE = [
     { emailKey: 'feedback_request', delayDays: 5, sequence: 'FEEDBACK_REQUEST' },
 ];
+// Non-response feedback: 72h after a match is proposed, if the recipient
+// hasn't accepted or declined, ask "why didn't this land?" with 4 quick-
+// tap reasons. Re-uses the FEEDBACK_REQUEST sequence bucket so we don't
+// need a schema migration; the emailKey prefix is what disambiguates.
+const NON_RESPONSE_DELAY_HOURS = 72;
 class DripCampaignService {
     async enrollOnboarding(userId) {
         const user = await db_1.prisma.user.findUnique({ where: { id: userId } });
@@ -68,6 +74,36 @@ class DripCampaignService {
             }
         }
         console.log(`[DripCampaign] Enrolled user ${userId} in match follow-up for match ${matchId}`);
+    }
+    /**
+     * Schedule a one-shot non-response feedback email 72h after a match is
+     * proposed. Idempotent per (userId, matchId) thanks to the unique
+     * (userId, sequence, emailKey) constraint plus our matchId-suffixed key.
+     * The shouldSkip() check will short-circuit if the user has since
+     * responded or already left feedback.
+     */
+    async enrollNonResponseFeedback(userId, matchId) {
+        const scheduledFor = new Date(Date.now() + NON_RESPONSE_DELAY_HOURS * 60 * 60 * 1000);
+        try {
+            await db_1.prisma.dripEmail.create({
+                data: {
+                    userId,
+                    sequence: 'FEEDBACK_REQUEST',
+                    emailKey: `non_response_feedback_${matchId}`,
+                    scheduledFor,
+                    matchId,
+                },
+            });
+            console.log(`[DripCampaign] Scheduled 72h non-response feedback for user ${userId}, match ${matchId}`);
+        }
+        catch (err) {
+            if (err.code === 'P2002') {
+                // Already scheduled — no-op.
+            }
+            else {
+                console.error(`[DripCampaign] enrollNonResponseFeedback failed for user ${userId}:`, err?.message || err);
+            }
+        }
     }
     async enrollFeedbackRequest(userId, matchId) {
         const now = new Date();
@@ -199,6 +235,26 @@ class DripCampaignService {
                     return true;
             }
         }
+        if (drip.emailKey.startsWith('non_response_feedback_')) {
+            if (!drip.matchId)
+                return true;
+            // Skip if this user has already responded or already left feedback
+            // for the match — the whole point of this nudge is to surface
+            // *unanswered* introductions.
+            const [feedback, match] = await Promise.all([
+                db_1.prisma.matchFeedback.findUnique({
+                    where: { matchId_userId: { matchId: drip.matchId, userId: user.id } },
+                }),
+                db_1.prisma.match.findUnique({ where: { id: drip.matchId } }),
+            ]);
+            if (feedback)
+                return true;
+            if (!match)
+                return true;
+            const myResponse = match.userAId === user.id ? match.userAResponse : match.userBResponse;
+            if (myResponse !== 'PENDING')
+                return true;
+        }
         return false;
     }
     async hasMatches(userId) {
@@ -214,7 +270,8 @@ class DripCampaignService {
         const email = user.email;
         const name = user.name || user.profile?.currentRole;
         if (drip.emailKey === 'profile_nudge') {
-            return email_1.emailService.sendProfileNudge(email, name);
+            const teasers = await (0, matchingService_1.getProfileNudgeTeasers)(user.id, 3).catch(() => []);
+            return email_1.emailService.sendProfileNudge(email, name, teasers);
         }
         if (drip.emailKey === 'how_matching_works') {
             return email_1.emailService.sendHowMatchingWorks(email, name);
@@ -229,6 +286,18 @@ class DripCampaignService {
         if (drip.emailKey.startsWith('feedback_request_') && drip.matchId) {
             const matchName = await this.getOtherUserName(drip.matchId, user.id);
             return email_1.emailService.sendFeedbackRequest(email, name, matchName);
+        }
+        if (drip.emailKey.startsWith('non_response_feedback_') && drip.matchId) {
+            const partnerName = await this.getOtherUserName(drip.matchId, user.id);
+            if (!partnerName)
+                return false;
+            return email_1.emailService.sendNonResponseFeedback({
+                to: email,
+                recipientName: name || 'there',
+                partnerName,
+                matchId: drip.matchId,
+                recipientUserId: user.id,
+            });
         }
         console.warn(`[DripCampaign] Unknown email key: ${drip.emailKey}`);
         return false;

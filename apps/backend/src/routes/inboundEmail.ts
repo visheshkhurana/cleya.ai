@@ -151,7 +151,12 @@ inboundEmailRouter.post('/email', async (req: Request, res: Response) => {
   // Resend payload shape (see https://resend.com/docs/dashboard/webhooks):
   //   { type: 'email.received', data: { from, to, subject, text, html, ... } }
   const data = payload?.data || payload;
-  const toAddrs: string[] = Array.isArray(data?.to) ? data.to : (data?.to ? [data.to] : []);
+  // Resend can deliver `to` as a plain string, an array of strings, or an
+  // array of `{ email, name }` objects depending on provider config — handle
+  // all three.
+  const toAddrs: Array<string | { email?: string }> = Array.isArray(data?.to)
+    ? data.to
+    : (data?.to ? [data.to] : []);
   const fromAddr: string = (data?.from?.email || data?.from || '').toString().toLowerCase();
   const text: string | undefined = data?.text || data?.body_plain || data?.bodyPlain;
 

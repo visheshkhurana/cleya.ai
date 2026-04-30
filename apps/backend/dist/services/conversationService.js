@@ -25,7 +25,20 @@ class ConversationService {
             where: { userId, flowId, status: 'ACTIVE' },
         });
         if (existing) {
-            return this.resumeConversation(existing.id);
+            // Recovery: if the saved currentNode no longer exists in the (possibly updated) flow,
+            // OR is a stale transition like an investor message that was renamed, abandon the
+            // stale conversation and start fresh so the user is never stuck on a missing node.
+            const flow = this.engine.getFlow(flowId);
+            const stillValid = !!(flow && existing.currentNode && flow.nodes[existing.currentNode]);
+            if (stillValid) {
+                return this.resumeConversation(existing.id);
+            }
+            console.log(`[Conversation] Stale node "${existing.currentNode}" for user ${userId}; abandoning conversation ${existing.id} and restarting.`);
+            await db_1.prisma.conversation.update({
+                where: { id: existing.id },
+                data: { status: 'ABANDONED', completedAt: new Date() },
+            });
+            // Fall through to start a brand-new conversation.
         }
         const result = this.engine.start(flowId, '');
         const conversation = await db_1.prisma.conversation.create({

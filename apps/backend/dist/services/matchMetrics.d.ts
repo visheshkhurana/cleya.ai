@@ -1,4 +1,4 @@
-export type ProposalSkipReason = 'DAILY_CAP' | 'COOLDOWN' | 'FREE_LIMIT' | 'SAME_PERSONA' | 'DUPLICATE' | 'OTHER';
+export type ProposalSkipReason = 'DAILY_CAP' | 'COOLDOWN' | 'FREE_LIMIT' | 'SAME_PERSONA' | 'DUPLICATE' | 'CADENCE_GAP' | 'BLOCKED' | 'OTHER';
 export type NotificationSkipReason = 'QUIET_HOURS' | 'DAILY_CAP';
 export interface MatchMetrics {
     proposalsCreated: number;

@@ -1,11 +1,71 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.webhookRouter = void 0;
 const express_1 = require("express");
 const db_1 = require("@cleya/db");
+const crypto_1 = __importDefault(require("crypto"));
+const env_1 = require("../config/env");
 const router = (0, express_1.Router)();
+/**
+ * Verify a Resend (Svix) webhook signature.
+ * Resend sends three headers: svix-id, svix-timestamp, svix-signature.
+ * Signature scheme: base64(HMAC-SHA256(secret_bytes, `${id}.${timestamp}.${rawBody}`)).
+ * The header may contain multiple space-separated `v1,<sig>` entries — match any.
+ * Secret is stored as `whsec_<base64>` and must be base64-decoded before HMAC.
+ */
+function verifyResendSignature(secret, svixId, svixTimestamp, svixSignature, rawBody) {
+    try {
+        const secretBase64 = secret.startsWith('whsec_') ? secret.slice('whsec_'.length) : secret;
+        const secretBytes = Buffer.from(secretBase64, 'base64');
+        const signedPayload = `${svixId}.${svixTimestamp}.${rawBody}`;
+        const expected = crypto_1.default
+            .createHmac('sha256', secretBytes)
+            .update(signedPayload, 'utf8')
+            .digest('base64');
+        const provided = svixSignature
+            .split(' ')
+            .map((entry) => entry.trim())
+            .filter((entry) => entry.startsWith('v1,'))
+            .map((entry) => entry.slice('v1,'.length));
+        return provided.some((sig) => {
+            const sigBuf = Buffer.from(sig, 'base64');
+            const expBuf = Buffer.from(expected, 'base64');
+            return sigBuf.length === expBuf.length && crypto_1.default.timingSafeEqual(sigBuf, expBuf);
+        });
+    }
+    catch {
+        return false;
+    }
+}
 router.post('/resend', async (req, res) => {
     try {
+        // === SIGNATURE VERIFICATION ===
+        // When RESEND_WEBHOOK_SECRET is configured, signature is enforced strictly.
+        // When unset, we log a loud warning and accept (so live webhook ingestion
+        // is not broken). Set RESEND_WEBHOOK_SECRET in Replit secrets + the Resend
+        // dashboard to activate enforcement.
+        if (env_1.env.RESEND_WEBHOOK_SECRET) {
+            const svixId = req.headers['svix-id'];
+            const svixTimestamp = req.headers['svix-timestamp'];
+            const svixSignature = req.headers['svix-signature'];
+            const rawBody = req.rawBody;
+            if (!svixId || !svixTimestamp || !svixSignature || !rawBody) {
+                console.warn('[ResendWebhook] Rejected: missing svix headers or raw body');
+                return res.status(403).json({ error: 'Invalid signature' });
+            }
+            const ok = verifyResendSignature(env_1.env.RESEND_WEBHOOK_SECRET, svixId, svixTimestamp, svixSignature, rawBody);
+            if (!ok) {
+                console.warn('[ResendWebhook] Rejected: signature mismatch');
+                return res.status(403).json({ error: 'Invalid signature' });
+            }
+        }
+        else {
+            console.warn('[ResendWebhook] RESEND_WEBHOOK_SECRET not configured — accepting webhook without verification. ' +
+                'Set this secret to enforce signature verification in production.');
+        }
         const event = req.body;
         const eventType = event?.type;
         const emailId = event?.data?.email_id;

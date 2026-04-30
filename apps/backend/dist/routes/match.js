@@ -138,6 +138,20 @@ exports.matchRouter.post('/find-and-propose', auth_1.authenticate, auth_1.requir
 exports.matchRouter.post('/propose', auth_1.authenticate, auth_1.requireEmailVerified, (0, validation_1.validate)(validation_1.matchProposeSchema), async (req, res, next) => {
     try {
         const { userAId, userBId } = req.body;
+        // Access control: only an admin (MANAGER+) may propose a match between
+        // two arbitrary users. A regular user may only propose matches that
+        // include themselves on one side. Without this guard any verified user
+        // can force-create proposals between strangers — bypassing the candidate
+        // pool's no-name / test-domain filter and spamming real users.
+        const callerId = req.user.userId;
+        const callerRole = req.user?.role;
+        const isAdmin = callerRole === 'MANAGER' || callerRole === 'ADMIN' || callerRole === 'OWNER';
+        if (!isAdmin && callerId !== userAId && callerId !== userBId) {
+            return res.status(403).json({
+                success: false,
+                error: { message: 'You can only propose matches that include yourself.' },
+            });
+        }
         const match = await matchingService_1.matchingService.proposeMatch(userAId, userBId);
         res.status(201).json({ success: true, data: match });
     }

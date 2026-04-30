@@ -168,11 +168,11 @@ export declare class MatchingService {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        stage: import(".prisma/client").$Enums.CompanyStage | null;
         notes: string | null;
         dealPartnerId: string;
         founderId: string;
         industry: string | null;
-        stage: import(".prisma/client").$Enums.CompanyStage | null;
         introSent: boolean;
         introSentAt: Date | null;
         responseStatus: import(".prisma/client").$Enums.DealResponse | null;
@@ -195,7 +195,24 @@ export declare class MatchingService {
         matchesProposed: number;
     }[]>;
     private generateMatchReason;
+    private static SAFE_CAPITALIZED_TOKENS;
+    private matchReasonNamesAreSafe;
     private formatCompatibilitySignals;
 }
 export declare const matchingService: MatchingService;
+/**
+ * Build 2-3 anonymized teaser strings to embed in profile-nudge emails.
+ * The goal is to show the new user that real, relevant people are already
+ * here without leaking PII before both sides have opted into the intro.
+ *
+ * Strategy:
+ *   1. Read the user's persona (default OTHER if missing)
+ *   2. Pull the persona row from PERSONA_COMPATIBILITY and pick the
+ *      personas they'd most plausibly meet (compat >= 0.6)
+ *   3. Sample up to 6 verified, complete profiles in those personas
+ *   4. Compose anonymized headlines like
+ *      "Series-A SaaS founder, Bangalore" — never any name, email or
+ *      company
+ */
+export declare function getProfileNudgeTeasers(userId: string, count?: number): Promise<string[]>;
 //# sourceMappingURL=matchingService.d.ts.map

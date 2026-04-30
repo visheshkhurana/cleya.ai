@@ -6,9 +6,9 @@ export declare class IntroductionService {
         createdAt: Date;
         updatedAt: Date;
         sentAt: Date | null;
+        matchId: string;
         userBId: string;
         userAId: string;
-        matchId: string;
         talkingPoints: string[];
         scheduledAt: Date | null;
         notes: string | null;
@@ -25,9 +25,9 @@ export declare class IntroductionService {
         createdAt: Date;
         updatedAt: Date;
         sentAt: Date | null;
+        matchId: string;
         userBId: string;
         userAId: string;
-        matchId: string;
         talkingPoints: string[];
         scheduledAt: Date | null;
         notes: string | null;
@@ -108,6 +108,10 @@ export declare class IntroductionService {
                 preferredStageRange: string | null;
                 sectorFocus: string[];
                 workStyle: import(".prisma/client").$Enums.WorkStyle | null;
+                githubUrl: string | null;
+                twitterUrl: string | null;
+                portfolioUrl: string | null;
+                availabilityStatus: string | null;
             } | null;
         } & {
             id: string;
@@ -144,6 +148,7 @@ export declare class IntroductionService {
             verificationTokenExpiry: Date | null;
             referredBy: string | null;
             bonusMatches: number;
+            referralInviteSentAt: Date | null;
         };
         userB: {
             profile: {
@@ -215,6 +220,10 @@ export declare class IntroductionService {
                 preferredStageRange: string | null;
                 sectorFocus: string[];
                 workStyle: import(".prisma/client").$Enums.WorkStyle | null;
+                githubUrl: string | null;
+                twitterUrl: string | null;
+                portfolioUrl: string | null;
+                availabilityStatus: string | null;
             } | null;
         } & {
             id: string;
@@ -251,6 +260,7 @@ export declare class IntroductionService {
             verificationTokenExpiry: Date | null;
             referredBy: string | null;
             bonusMatches: number;
+            referralInviteSentAt: Date | null;
         };
     } & {
         status: import(".prisma/client").$Enums.IntroductionStatus;
@@ -258,9 +268,9 @@ export declare class IntroductionService {
         createdAt: Date;
         updatedAt: Date;
         sentAt: Date | null;
+        matchId: string;
         userBId: string;
         userAId: string;
-        matchId: string;
         talkingPoints: string[];
         scheduledAt: Date | null;
         notes: string | null;
@@ -278,9 +288,9 @@ export declare class IntroductionService {
         createdAt: Date;
         updatedAt: Date;
         sentAt: Date | null;
+        matchId: string;
         userBId: string;
         userAId: string;
-        matchId: string;
         talkingPoints: string[];
         scheduledAt: Date | null;
         notes: string | null;

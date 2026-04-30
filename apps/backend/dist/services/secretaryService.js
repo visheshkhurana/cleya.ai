@@ -41,6 +41,7 @@ exports.clearConversationHistory = clearConversationHistory;
 exports.onMatchAccepted = onMatchAccepted;
 const ai_1 = require("@cleya/ai");
 const db_1 = require("@cleya/db");
+const matching_1 = require("@cleya/matching");
 const zoomService_1 = require("./zoomService");
 const email_1 = require("./email");
 const server_1 = require("../websocket/server");
@@ -400,7 +401,7 @@ async function generateDailyDigest(userId) {
             digest += `• ${other.name || 'Someone new'} — ${otherProfile?.currentRole || personaLabel[otherProfile?.persona || ''] || 'Professional'}`;
             if (otherProfile?.companyName)
                 digest += ` at ${otherProfile.companyName}`;
-            digest += ` (${Math.round(m.score * 100)}% match)\n`;
+            digest += ` (${(0, matching_1.toDisplayPercent)(m.score)}% match)\n`;
         }
         if (pendingMatches.length > 3)
             digest += `  ...and ${pendingMatches.length - 3} more\n`;

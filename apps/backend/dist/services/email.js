@@ -1,9 +1,44 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.emailService = void 0;
 const env_1 = require("../config/env");
 const db_1 = require("@cleya/db");
 const resendClient_1 = require("./resendClient");
+const matching_1 = require("@cleya/matching");
+const matchActionToken_1 = require("./matchActionToken");
 const brandColor = '#0D9488';
 function plainEmailLayout(content) {
     return `<!DOCTYPE html>
@@ -19,7 +54,7 @@ function plainEmailLayout(content) {
 ${content}
 </td></tr>
 <tr><td style="padding-top:32px;border-top:1px solid #eee;margin-top:32px;">
-<p style="color:#999;font-size:12px;margin:16px 0 0;">Cleya.ai — AI Superconnector for India's startup ecosystem</p>
+<p style="color:#999;font-size:12px;margin:16px 0 0;">Cleya.ai — Your AI Networker for India's startup ecosystem</p>
 </td></tr>
 </table>
 </td></tr>
@@ -28,6 +63,85 @@ ${content}
 }
 function link(text, url) {
     return `<a href="${url}" style="color:${brandColor};text-decoration:underline;">${text}</a>`;
+}
+// Capitalize the first character of a string (for sentence-start safety).
+function cap(s) {
+    if (!s)
+        return s;
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
+// Escape user-derived strings before injecting them into HTML email bodies.
+function escapeHtml(s) {
+    if (!s)
+        return '';
+    return s
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+// Strip HTML tags then convert to a plain-text body. Keeps line breaks for <p>.
+function htmlToPlainText(html) {
+    return html
+        .replace(/<\s*br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+}
+// Smart money formatter. Detects INR-style raw rupee values and renders both
+// INR (Cr/L) and a USD approximation. Keeps any pre-formatted strings the user
+// already wrote (e.g. "$2M Seed", "₹3 Cr") almost as-is, only normalizing case
+// of "INR" and adding a USD hint where helpful. ~₹83 = $1 USD as of 2026.
+const INR_PER_USD = 83;
+function formatMoney(raw, opts) {
+    if (!raw)
+        return '';
+    const trimmed = String(raw).trim();
+    if (!trimmed)
+        return '';
+    // Already has a currency symbol or unit — normalize INR casing and return.
+    const hasUnit = /(₹|\$|inr|usd|cr|crore|lakh|lac|\bl\b|\bk\b|\bm\b|\bb\b)/i.test(trimmed);
+    if (hasUnit) {
+        return trimmed
+            .replace(/\binr\b/gi, 'INR')
+            .replace(/\busd\b/gi, 'USD')
+            .replace(/\b(\d)\s*cr\b/gi, '$1 Cr')
+            .replace(/\b(\d)\s*l\b(?!ak)/gi, '$1 L')
+            .replace(/\b(\d)\s*lakh(s)?\b/gi, '$1 Lakh$2');
+    }
+    // Pure number — guess currency from defaults (Indian users default to INR).
+    const num = Number(trimmed.replace(/,/g, ''));
+    if (!Number.isFinite(num) || num <= 0)
+        return trimmed;
+    const currency = opts?.defaultCurrency || 'INR';
+    if (currency === 'INR') {
+        const inrPart = num >= 1e7
+            ? `INR ${(num / 1e7).toFixed(num % 1e7 === 0 ? 0 : 1)} Cr`
+            : num >= 1e5
+                ? `INR ${(num / 1e5).toFixed(num % 1e5 === 0 ? 0 : 1)} L`
+                : `INR ${num.toLocaleString('en-IN')}`;
+        const usd = num / INR_PER_USD;
+        const usdPart = usd >= 1e6
+            ? `~$${(usd / 1e6).toFixed(usd >= 1e7 ? 0 : 1)}M`
+            : usd >= 1e3
+                ? `~$${Math.round(usd / 1e3)}k`
+                : `~$${Math.round(usd)}`;
+        return `${inrPart} (${usdPart})`;
+    }
+    // USD pure number
+    return num >= 1e6
+        ? `$${(num / 1e6).toFixed(num >= 1e7 ? 0 : 1)}M`
+        : num >= 1e3
+            ? `$${Math.round(num / 1e3)}k`
+            : `$${Math.round(num)}`;
 }
 class EmailService {
     resendAvailable = null;
@@ -52,16 +166,34 @@ class EmailService {
             return false;
         }
     }
-    async send(to, subject, html) {
+    async send(to, subject, html, opts) {
         try {
             const { client, fromEmail } = await (0, resendClient_1.getUncachableResendClient)();
             const senderEmail = fromEmail || env_1.env.FROM_EMAIL;
-            const from = `Cleya <${senderEmail}>`;
+            // Personal-looking sender increases the chance Gmail files this in
+            // Primary instead of Updates/Promotions.
+            const from = `Cleya from Cleya.ai <${senderEmail}>`;
+            // Caller-supplied reply-to wins (used by sendMatchProposed for the
+            // signed per-match address). Otherwise fall back to the configured
+            // monitored mailbox — never the unprovisioned FROM_EMAIL.
+            const replyTo = opts?.replyTo || env_1.env.REPLY_TO_EMAIL || senderEmail;
+            // Plain-text fallback materially helps deliverability + Primary placement.
+            const text = htmlToPlainText(html);
+            // RFC 8058 one-click unsubscribe headers tell mailbox providers that
+            // the sender follows best practice — without classifying the message
+            // as a "list" mailing (we don't set List-ID or Precedence:bulk).
+            const unsubscribeUrl = `${env_1.env.FRONTEND_URL}/unsubscribe?email=${encodeURIComponent(to)}`;
             const result = await client.emails.send({
                 from,
                 to: [to],
                 subject,
                 html,
+                text,
+                reply_to: replyTo,
+                headers: {
+                    'List-Unsubscribe': `<${unsubscribeUrl}>, <mailto:unsubscribe@cleya.ai?subject=unsubscribe>`,
+                    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+                },
             });
             if (result.error) {
                 console.error(`📧 Resend error to ${to}:`, result.error);
@@ -85,58 +217,305 @@ class EmailService {
         const wrapped = `<div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;padding:24px;background:#0F1629;color:#fff;border-radius:12px">${html}<hr style="border-color:rgba(255,255,255,0.1);margin:24px 0"/><p style="color:rgba(255,255,255,0.4);font-size:12px">Cleya Moderation — automated alert</p></div>`;
         return this.send(to, subject, wrapped);
     }
+    async sendNewSignupNotification(opts) {
+        const recipients = (env_1.env.SIGNUP_NOTIFY_TO || 'jivraj@cleya.ai')
+            .split(',').map(s => s.trim()).filter(Boolean);
+        if (recipients.length === 0)
+            return;
+        const when = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+        const safe = (s) => s.replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]));
+        const html = `
+      <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;background:#0F1629;color:#fff;border-radius:12px">
+        <h2 style="margin:0 0 12px;color:#9B95FF">New Cleya signup</h2>
+        <p style="margin:0 0 16px;color:rgba(255,255,255,0.7)">A new user just joined the network.</p>
+        <table style="width:100%;border-collapse:collapse;font-size:14px">
+          <tr><td style="padding:6px 0;color:rgba(255,255,255,0.5);width:110px">Email</td><td style="padding:6px 0"><strong>${safe(opts.email)}</strong></td></tr>
+          ${opts.name ? `<tr><td style="padding:6px 0;color:rgba(255,255,255,0.5)">Name</td><td style="padding:6px 0">${safe(opts.name)}</td></tr>` : ''}
+          <tr><td style="padding:6px 0;color:rgba(255,255,255,0.5)">Provider</td><td style="padding:6px 0">${opts.provider}</td></tr>
+          ${opts.userId ? `<tr><td style="padding:6px 0;color:rgba(255,255,255,0.5)">User ID</td><td style="padding:6px 0;font-family:monospace;font-size:12px">${safe(opts.userId)}</td></tr>` : ''}
+          <tr><td style="padding:6px 0;color:rgba(255,255,255,0.5)">When</td><td style="padding:6px 0">${when}</td></tr>
+        </table>
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:20px 0"/>
+        <p style="color:rgba(255,255,255,0.4);font-size:12px;margin:0">Cleya — automated signup notification</p>
+      </div>`;
+        const subject = `New signup: ${opts.email}${opts.provider !== 'email' ? ` (via ${opts.provider})` : ''}`;
+        await Promise.all(recipients.map(to => this.send(to, subject, html).catch(() => false)));
+    }
     async sendWelcome(email) {
         const html = plainEmailLayout(`
       <p>Hey there,</p>
-      <p>Welcome to Cleya — I'm your AI superconnector for India's startup ecosystem.</p>
-      <p>Here's how I work: I personally get to know everyone in the network — your story, what you've built, and what you're looking for. Then I make warm, specific introductions where there's a genuine fit.</p>
-      <p>No spam. No random connects. Just the right people, at the right time.</p>
-      <p><strong>Your next step:</strong> ${link('Tell me about yourself', `${env_1.env.FRONTEND_URL}/chat`)} in a quick chat so I can start finding your best matches.</p>
-      <p>Looking forward to connecting you with some incredible people.</p>
+      <p>I'm Cleya — your AI Networker for India's startup ecosystem.</p>
+      <p>Here's the deal: every week I talk to thousands of founders, investors, operators and builders on your behalf. I learn what each of them is working on, what they're looking for, and where the real fit is. Then I curate the handful of conversations that are actually worth your time and make the warm intro myself.</p>
+      <p>No cold spam. No random "let's connect". Just the right people, at the right moment, with context already built in.</p>
+      <p><strong>Your one next step:</strong> ${link('tell me about yourself', `${env_1.env.FRONTEND_URL}/chat`)} in a 3-minute chat. The richer your profile, the sharper my introductions get.</p>
+      <p>Talk soon — I'm already looking for the first few people you should meet.</p>
       <p>— Cleya</p>
     `);
-        await this.send(email, 'Welcome to Cleya — let\'s find your people', html);
+        const ok = await this.send(email, "Welcome to Cleya — let's find your people", html);
+        if (ok) {
+            console.log(`[welcome.sent ok] ${email}`);
+        }
+        else {
+            console.error(`[welcome.sent fail] ${email}`);
+        }
+        return ok;
     }
     async sendMatchProposed(recipientEmail, recipientName, matchName, matchPersona, matchScore, matchDetails) {
         const firstName = recipientName?.split(' ')[0] || 'there';
-        const scorePercent = Math.round(matchScore * 100);
+        const matchFirst = matchName?.split(' ')[0] || 'them';
+        // Use the displayed compatibility band (72-96%) — the raw score is still
+        // the source of truth for ranking. See toDisplayPercent in @cleya/matching.
+        const scorePercent = (0, matching_1.toDisplayPercent)(matchScore);
+        const sectorPretty = matchDetails?.sector
+            ? matchDetails.sector.replace(/_/g, ' ').toLowerCase()
+            : '';
+        const personaPretty = (matchPersona || 'professional').toLowerCase().replace(/_/g, ' ');
+        // Stage label — used in subject lines and the lead paragraph instead of
+        // disclosing the actual fundraising amount.
+        const stagePretty = matchDetails?.stage
+            ? matchDetails.stage.replace(/_/g, ' ').toLowerCase()
+            : '';
         let body = `<p>Hi ${firstName},</p>`;
+        // Lead paragraph — every sentence starts with a capital letter. We do
+        // NOT disclose specific fundraising amounts here; users have told us it
+        // feels intrusive. Stage and sector tell the same story without numbers.
         body += `<p>Wanted to put <strong>${matchName}</strong> on your radar`;
-        if (matchDetails?.companyName && matchDetails?.raiseAmount) {
-            body += ` — ${matchName.split(' ')[0]} is ${matchDetails.raiseAmount.toLowerCase().includes('raising') ? '' : 'raising '}${matchDetails.raiseAmount}`;
-            if (matchDetails.companyName)
-                body += ` for ${matchDetails.companyName}`;
-            if (matchDetails.sector)
-                body += `, building in ${matchDetails.sector.replace(/_/g, ' ').toLowerCase()}`;
+        if (matchDetails?.companyName) {
+            body += ` — ${personaPretty} at ${matchDetails.companyName}`;
+            if (sectorPretty)
+                body += ` (${sectorPretty})`;
+            if (stagePretty && matchPersona === 'FOUNDER')
+                body += `, ${stagePretty}`;
             body += `.`;
         }
-        else if (matchDetails?.companyName) {
-            body += ` — ${matchPersona.toLowerCase()} at ${matchDetails.companyName}`;
-            if (matchDetails.sector)
-                body += ` in ${matchDetails.sector.replace(/_/g, ' ').toLowerCase()}`;
-            body += `.`;
+        else if (sectorPretty) {
+            body += ` — ${sectorPretty} ${personaPretty}.`;
         }
         else {
-            body += ` — ${matchPersona.toLowerCase()}.`;
+            body += ` — ${personaPretty}.`;
         }
         body += `</p>`;
-        if (matchDetails?.traction) {
-            body += `<p>${matchDetails.traction}</p>`;
+        // Second paragraph — the AI-generated reason or traction line.
+        // Capitalize the first letter of every sentence and ensure terminal
+        // punctuation so the email reads polished, not auto-generated.
+        const reasonText = matchDetails?.matchReason
+            || matchDetails?.traction
+            || matchDetails?.bio;
+        if (reasonText) {
+            const sentences = String(reasonText)
+                .split(/(?<=[.!?])\s+/)
+                .map(s => s.trim())
+                .filter(Boolean)
+                .map(cap)
+                .map(s => /[.!?]$/.test(s) ? s : `${s}.`);
+            body += `<p>${sentences.join(' ')}</p>`;
         }
-        if (matchDetails?.bio && !matchDetails?.traction) {
-            body += `<p>${matchDetails.bio}</p>`;
-        }
-        if (matchDetails?.matchReason) {
-            body += `<p>${matchDetails.matchReason}</p>`;
-        }
+        // LinkedIn line.
         if (matchDetails?.linkedinUrl) {
-            body += `<p>Here's ${matchName.split(' ')[0]}'s LinkedIn if you want to take a closer look: ${link(matchDetails.linkedinUrl, matchDetails.linkedinUrl)}</p>`;
+            body += `<p>Here's ${matchFirst}'s LinkedIn so you can take a closer look: ${link(matchDetails.linkedinUrl, matchDetails.linkedinUrl)}.</p>`;
         }
-        body += `<p>I matched you two at <strong>${scorePercent}%</strong> compatibility. ${link('Review this match →', `${env_1.env.FRONTEND_URL}/matches`)}</p>`;
+        else {
+            body += `<p>I'm pulling ${matchFirst}'s LinkedIn for you — reply "send LinkedIn" and I'll forward it right away.</p>`;
+        }
+        body += `<p>I matched you two at <strong>${scorePercent}%</strong> compatibility based on what each of you is looking for.</p>`;
+        // One-click Accept / Decline buttons. If we have a matchId + recipient
+        // userId we generate signed tokens so the user can respond without ever
+        // logging in. Falls back to the dashboard link if those are missing
+        // (legacy callers that don't pass matchId yet).
+        if (matchDetails?.matchId && matchDetails?.recipientUserId) {
+            const acceptToken = (0, matchActionToken_1.createMatchActionToken)({
+                matchId: matchDetails.matchId,
+                userId: matchDetails.recipientUserId,
+                action: 'accept',
+            });
+            const declineToken = (0, matchActionToken_1.createMatchActionToken)({
+                matchId: matchDetails.matchId,
+                userId: matchDetails.recipientUserId,
+                action: 'decline',
+            });
+            const acceptUrl = `${env_1.env.BACKEND_URL}/api/match/respond?token=${acceptToken}`;
+            const declineUrl = `${env_1.env.BACKEND_URL}/api/match/respond?token=${declineToken}`;
+            body += `<table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;"><tr><td align="center">`;
+            body += `<a href="${acceptUrl}" style="display:inline-block;padding:12px 28px;background:${brandColor};color:#fff;font-weight:600;font-size:15px;border-radius:8px;text-decoration:none;margin:4px 8px;">Yes, make the intro →</a>`;
+            body += `<a href="${declineUrl}" style="display:inline-block;padding:12px 28px;background:#f1f5f9;color:#475569;font-weight:600;font-size:15px;border-radius:8px;text-decoration:none;margin:4px 8px;">Not this one</a>`;
+            body += `</td></tr></table>`;
+            body += `<p style="font-size:13px;color:#64748b;">One click — no login needed. Or just reply "yes" to this email and I'll handle the rest.</p>`;
+        }
+        else {
+            body += `<p>${link('Review this introduction →', `${env_1.env.FRONTEND_URL}/matches`)}</p>`;
+            body += `<p><strong>Want me to make the intro?</strong> Just reply "yes" and once I have ${matchFirst}'s confirmation, I'll send the warm intro to both of you over email.</p>`;
+        }
         body += `<p>— Cleya</p>`;
         const html = plainEmailLayout(body);
-        const subject = `${firstName}, ${matchDetails?.sector ? matchDetails.sector.replace(/_/g, ' ').toLowerCase() + ' ' : ''}connection for you`;
-        await this.send(recipientEmail, subject, html);
+        // If Resend Inbound is configured AND we know the matchId + recipient,
+        // address the reply-to header to a signed per-match local part. The
+        // user can then literally hit Reply and type "yes" to accept — the
+        // inbound webhook will route the message back through respondToMatch.
+        let replyToOverride;
+        if (env_1.env.REPLY_INBOUND_DOMAIN && matchDetails?.matchId && matchDetails?.recipientUserId) {
+            const localPart = (0, matchActionToken_1.createInboundReplyLocalPart)(matchDetails.matchId, matchDetails.recipientUserId);
+            replyToOverride = `${localPart}@${env_1.env.REPLY_INBOUND_DOMAIN}`;
+        }
+        // Hooky subject line — always describes the person, never discloses
+        // money. Order of preference: company + sector → company → sector +
+        // persona → persona alone.
+        let subject;
+        const sectorBit = sectorPretty ? `${sectorPretty} ` : '';
+        if (matchPersona === 'FOUNDER' && matchDetails?.companyName && sectorPretty) {
+            subject = `${firstName}, you should meet ${matchFirst} — ${sectorPretty} founder at ${matchDetails.companyName}`;
+        }
+        else if (matchPersona === 'FOUNDER' && matchDetails?.companyName) {
+            subject = `${firstName}, you should meet ${matchFirst} — founder at ${matchDetails.companyName}`;
+        }
+        else if (matchPersona === 'INVESTOR' && sectorPretty) {
+            subject = `${firstName}, you should meet ${matchFirst} — ${sectorPretty} investor`;
+        }
+        else if (matchPersona === 'INVESTOR') {
+            subject = `${firstName}, you should meet ${matchFirst} — investor`;
+        }
+        else if (sectorBit) {
+            subject = `${firstName}, you should meet ${matchFirst} — ${sectorBit.trim()} ${personaPretty}`;
+        }
+        else {
+            subject = `${firstName}, you should meet ${matchFirst} — ${personaPretty}`;
+        }
+        await this.send(recipientEmail, subject, html, replyToOverride ? { replyTo: replyToOverride } : undefined);
+    }
+    /**
+     * Instant acknowledgement when a user accepts or declines via email.
+     * Fired from the one-click match action route AND from the Resend Inbound
+     * webhook so both paths give the same "OK, I have conveyed your message"
+     * confirmation the user expects.
+     */
+    async sendIntroResponseAck(opts) {
+        const first = opts.responderName?.split(' ')[0] || 'there';
+        const partnerFirst = opts.partnerName?.split(' ')[0] || opts.partnerName;
+        let body = `<p>Hi ${first},</p>`;
+        if (opts.action === 'decline') {
+            body += `<p>Got it — I won't push this one through. Thanks for the quick reply; it helps me curate sharper introductions for you next time.</p>`;
+            body += `<p>— Cleya</p>`;
+            return await this.send(opts.to, `Noted — passing on the intro with ${partnerFirst}`, plainEmailLayout(body));
+        }
+        if (opts.bothAccepted) {
+            body += `<p>${opts.partnerName} also said yes. The warm introduction is hitting both your inboxes right now — one shared thread, contacts already exchanged. Take it from there.</p>`;
+            body += `<p>— Cleya</p>`;
+            return await this.send(opts.to, `You're connected with ${partnerFirst} — intro sent`, plainEmailLayout(body));
+        }
+        body += `<p>OK, I've conveyed your interest to <strong>${opts.partnerName}</strong>. The moment they say yes too, I'll send the warm intro to both of you over email so you can take it from there.</p>`;
+        body += `<p>I'll keep you posted.</p>`;
+        body += `<p>— Cleya</p>`;
+        return await this.send(opts.to, `Got it — I'll reach out to ${partnerFirst}`, plainEmailLayout(body));
+    }
+    /**
+     * Boardy-style joint introduction email.
+     *
+     * Fires ONE email with BOTH parties on To:, so they share a single thread
+     * (just like the Boardy "to bigansh.agarwal, me" pattern). Reply-To is set
+     * to both addresses so a Reply naturally lands in the OTHER person's inbox
+     * — no more bouncing off hello@cleya.ai because hitting Reply replies to
+     * the partner's mailbox, not to a non-existent Cleya alias.
+     *
+     * This is what should fire automatically the moment the second person
+     * accepts a match — it is the actual "warm intro" that makes the network
+     * worth being in.
+     */
+    async sendMatchIntroJoint(opts) {
+        // HTML-escape every user-controlled field. Names, headlines, company
+        // names, match reason, talking points and even sector strings can all
+        // contain characters that would otherwise inject markup or scripts
+        // into the recipient's mail client.
+        const esc = (s) => s.replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]));
+        const escOpt = (s) => (s ? esc(s) : undefined);
+        const firstA = esc((opts.nameA || '').split(' ')[0] || 'there');
+        const firstB = esc((opts.nameB || '').split(' ')[0] || 'there');
+        const personMeta = (persona, company, sector, location) => {
+            const parts = [];
+            if (persona)
+                parts.push(esc(persona.replace(/_/g, ' ').toLowerCase()));
+            if (company)
+                parts.push(esc(company));
+            if (sector)
+                parts.push(esc(sector.replace(/_/g, ' ').toLowerCase()));
+            if (location)
+                parts.push(esc(location));
+            return parts.join(' · ');
+        };
+        const personCard = (name, headline, meta, traction, email, linkedin) => {
+            let card = `<table width="100%" cellpadding="0" cellspacing="0" style="margin:12px 0;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;"><tr><td style="padding:18px;">`;
+            card += `<p style="margin:0 0 4px;font-size:16px;font-weight:600;color:#1e293b;">${esc(name)}</p>`;
+            if (headline)
+                card += `<p style="margin:0 0 4px;font-size:13px;color:#64748b;">${esc(headline)}</p>`;
+            if (meta)
+                card += `<p style="margin:0 0 8px;font-size:12px;color:#94a3b8;">${meta}</p>`;
+            if (traction)
+                card += `<p style="margin:0 0 8px;font-size:13px;color:#334155;">📈 ${esc(traction)}</p>`;
+            const links = [];
+            if (email)
+                links.push(`📧 <a href="mailto:${encodeURIComponent(email)}" style="color:${brandColor};">${esc(email)}</a>`);
+            if (linkedin) {
+                // Only allow http(s) URLs in href to block javascript: payloads.
+                const safeUrl = /^https?:\/\//i.test(linkedin) ? linkedin : '#';
+                links.push(`🔗 <a href="${esc(safeUrl)}" style="color:${brandColor};">LinkedIn</a>`);
+            }
+            if (links.length)
+                card += `<p style="margin:0;font-size:13px;">${links.join(' &nbsp;·&nbsp; ')}</p>`;
+            card += `</td></tr></table>`;
+            return card;
+        };
+        let body = `<p>Hi ${firstA} and ${firstB},</p>`;
+        body += `<p>Excited to introduce you two — I think there's a real reason for this conversation to happen.</p>`;
+        if (opts.matchReason) {
+            body += `<p style="line-height:1.6;">${esc(opts.matchReason)}</p>`;
+        }
+        body += personCard(opts.nameA, escOpt(opts.headlineA), personMeta(opts.personaA, opts.companyA, opts.sectorA, opts.locationA), escOpt(opts.tractionA), opts.emailA, opts.linkedinA);
+        body += personCard(opts.nameB, escOpt(opts.headlineB), personMeta(opts.personaB, opts.companyB, opts.sectorB, opts.locationB), escOpt(opts.tractionB), opts.emailB, opts.linkedinB);
+        if (opts.talkingPoints && opts.talkingPoints.length > 0) {
+            body += `<p style="margin-top:20px;font-weight:600;color:#1e293b;">A few things you could dig into:</p>`;
+            body += `<ul style="margin:0 0 16px;padding-left:20px;color:#334155;line-height:1.6;">`;
+            for (const tp of opts.talkingPoints.slice(0, 5)) {
+                body += `<li style="margin-bottom:6px;">${esc(tp)}</li>`;
+            }
+            body += `</ul>`;
+        }
+        body += `<p style="margin-top:20px;">I'll let you two take it from here — just hit Reply All and pick a time that works.</p>`;
+        body += `<p style="font-size:13px;color:#94a3b8;">Tip: first impressions matter — try to reply within 24 hours while this is top-of-mind.</p>`;
+        body += `<p>Cheers,<br>Cleya</p>`;
+        const html = plainEmailLayout(body);
+        const subject = `Cleya intro: ${opts.nameA} ↔ ${opts.nameB}`;
+        try {
+            const { client, fromEmail } = await (0, resendClient_1.getUncachableResendClient)();
+            const senderEmail = fromEmail || env_1.env.FROM_EMAIL;
+            const from = `Cleya from Cleya.ai <${senderEmail}>`;
+            const text = htmlToPlainText(html);
+            // Both recipients on To: + Reply-To set to both, so a Reply-All
+            // naturally CCs the partner and a plain Reply still lands in a real
+            // mailbox (never on the unprovisioned hello@cleya.ai alias).
+            // Resend SDK accepts string | string[] for reply_to.
+            // List-Unsubscribe headers retained for Gmail/Yahoo 2024 deliverability.
+            const unsubscribeUrlA = `${env_1.env.FRONTEND_URL}/unsubscribe?email=${encodeURIComponent(opts.emailA)}`;
+            const result = await client.emails.send({
+                from,
+                to: [opts.emailA, opts.emailB],
+                subject,
+                html,
+                text,
+                reply_to: [opts.emailA, opts.emailB],
+                headers: {
+                    'List-Unsubscribe': `<${unsubscribeUrlA}>, <mailto:unsubscribe@cleya.ai?subject=unsubscribe>`,
+                    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+                },
+            });
+            if (result.error) {
+                console.error(`📧 Joint intro email error to ${opts.emailA},${opts.emailB}:`, result.error);
+                return false;
+            }
+            console.log(`📧 Joint intro sent: ${opts.emailA} ↔ ${opts.emailB} (id: ${result.data?.id})`);
+            return true;
+        }
+        catch (err) {
+            console.error(`📧 Joint intro email failed:`, err?.message || err);
+            return false;
+        }
     }
     async sendMatchAccepted(recipientEmail, recipientName, matchName, matchPersona, matchEmail, matchLinkedin, matchDetails) {
         const firstName = recipientName?.split(' ')[0] || 'there';
@@ -207,14 +586,15 @@ class EmailService {
         await this.send(email, 'Verify your email — Cleya', html);
     }
     async sendNewMatch(email, matchName, matchScore) {
-        const scorePercent = Math.round(matchScore * 100);
+        const scorePercent = (0, matching_1.toDisplayPercent)(matchScore);
+        const matchFirst = matchName?.split(' ')[0] || matchName;
         const html = plainEmailLayout(`
       <p>Hey,</p>
-      <p>Found someone great for you — <strong>${matchName}</strong>, ${scorePercent}% compatibility.</p>
-      <p>${link('Check them out →', `${env_1.env.FRONTEND_URL}/matches`)}</p>
+      <p>I'd like to introduce you to <strong>${matchName}</strong> — ${scorePercent}% fit. They're worth your time.</p>
+      <p>${link('See the introduction →', `${env_1.env.FRONTEND_URL}/matches`)}</p>
       <p>— Cleya</p>
     `);
-        await this.send(email, `New match: ${matchName} (${scorePercent}%)`, html);
+        await this.send(email, `You should meet ${matchFirst}`, html);
     }
     async sendWeeklyDigest(userId) {
         const user = await db_1.prisma.user.findUnique({
@@ -263,29 +643,29 @@ class EmailService {
         ]);
         const name = user.name?.split(' ')[0] || user.profile?.currentRole || user.email.split('@')[0];
         let body = `<p>Hi ${name},</p>`;
-        body += `<p>Here's your week in the Cleya network:</p>`;
+        body += `<p>Here's your week with your AI Networker:</p>`;
         body += `<ul style="padding-left:20px;">`;
-        body += `<li><strong>${newMatches}</strong> new match${newMatches !== 1 ? 'es' : ''} found</li>`;
-        body += `<li><strong>${acceptedMatches}</strong> connection${acceptedMatches !== 1 ? 's' : ''} made</li>`;
+        body += `<li><strong>${newMatches}</strong> new introduction${newMatches !== 1 ? 's' : ''} curated for you</li>`;
+        body += `<li><strong>${acceptedMatches}</strong> conversation${acceptedMatches !== 1 ? 's' : ''} started</li>`;
         if (pendingMatches > 0) {
-            body += `<li><strong>${pendingMatches}</strong> match${pendingMatches !== 1 ? 'es' : ''} waiting for your review</li>`;
+            body += `<li><strong>${pendingMatches}</strong> introduction${pendingMatches !== 1 ? 's' : ''} waiting for your review</li>`;
         }
         body += `</ul>`;
         if (topMatches.length > 0) {
-            body += `<p style="margin-top:24px;"><strong>Top ${topMatches.length} match${topMatches.length === 1 ? '' : 'es'} this week</strong></p>`;
+            body += `<p style="margin-top:24px;"><strong>Top ${topMatches.length} introduction${topMatches.length === 1 ? '' : 's'} this week</strong></p>`;
             body += `<ul style="padding-left:20px;">`;
             for (const m of topMatches) {
                 const isA = m.userAId === userId;
                 const other = isA ? m.userB : m.userA;
                 const headline = other?.profile?.headline || other?.profile?.companyName || other?.name || 'A new connection';
                 const persona = other?.profile?.persona ? ` · ${other.profile.persona}` : '';
-                const score = Math.round(m.score * 100);
+                const score = (0, matching_1.toDisplayPercent)(m.score);
                 body += `<li>${headline}${persona} — <strong>${score}% fit</strong></li>`;
             }
             body += `</ul>`;
         }
         if (pendingMatches > 0) {
-            body += `<p>Don't leave them hanging — ${link('review your matches →', `${env_1.env.FRONTEND_URL}/matches`)}</p>`;
+            body += `<p>Don't leave them hanging — ${link('review your introductions →', `${env_1.env.FRONTEND_URL}/matches`)}</p>`;
         }
         else {
             body += `<p>${link('See your dashboard →', `${env_1.env.FRONTEND_URL}/dashboard`)}</p>`;
@@ -294,13 +674,13 @@ class EmailService {
         try {
             const score = user.profile?.profileScore ?? 0;
             if (score < 100) {
-                body += `<p style="margin-top:24px;color:#555;"><strong>Profile tip:</strong> Your profile is ${score}% complete. ${link('Finish your profile →', `${env_1.env.FRONTEND_URL}/profile`)} for better matches.</p>`;
+                body += `<p style="margin-top:24px;color:#555;"><strong>Profile tip:</strong> Your profile is ${score}% complete. ${link('Finish your profile →', `${env_1.env.FRONTEND_URL}/profile`)} so I can curate sharper introductions.</p>`;
             }
         }
         catch { }
         body += `<p>— Cleya</p>`;
         const html = plainEmailLayout(body);
-        await this.send(user.email, `Your week: ${newMatches} new match${newMatches !== 1 ? 'es' : ''} on Cleya`, html);
+        await this.send(user.email, `Your week: ${newMatches} new introduction${newMatches !== 1 ? 's' : ''} from Cleya`, html);
     }
     async sendMeetingInvite(to, otherName, title, meetingTime, duration, meetingUrl) {
         const timeStr = meetingTime.toLocaleDateString('en-IN', {
@@ -389,12 +769,28 @@ class EmailService {
             'END:VEVENT', 'END:VCALENDAR',
         ].filter(Boolean).join('\r\n');
     }
-    async sendProfileNudge(email, name) {
+    async sendProfileNudge(email, name, teasers) {
         const firstName = name?.split(' ')[0] || 'there';
+        // Anonymized teaser cards: a tiny, trust-building "look who's already
+        // here" preview. Render only when we have at least one teaser; never
+        // fall back to fake placeholders.
+        const teaserHtml = (teasers && teasers.length > 0)
+            ? `
+      <p style="margin-bottom:8px;">A peek at the kind of people I'd line up for you:</p>
+      <div style="margin:0 0 16px 0;">
+        ${teasers.slice(0, 3).map(t => `
+          <div style="background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.25);border-radius:10px;padding:12px 14px;margin-bottom:8px;color:#E5E7EB;font-size:14px;">
+            • ${escapeHtml(t)}
+          </div>
+        `).join('')}
+      </div>
+      `
+            : '';
         const html = plainEmailLayout(`
       <p>Hi ${firstName},</p>
       <p>Quick reminder — you signed up for Cleya but haven't finished your profile yet.</p>
       <p>The more I know about you, the better I can match you with the right people in the ecosystem. It takes about 2 minutes.</p>
+      ${teaserHtml}
       <p><strong>${link('Complete your profile →', `${env_1.env.FRONTEND_URL}/chat`)}</strong></p>
       <p>— Cleya</p>
     `);
@@ -404,55 +800,275 @@ class EmailService {
         const firstName = name?.split(' ')[0] || 'there';
         const html = plainEmailLayout(`
       <p>Hi ${firstName},</p>
-      <p>Wanted to give you a quick peek behind the scenes of how Cleya matches work:</p>
+      <p>Wanted to give you a quick peek behind the scenes of how I work as your AI Networker:</p>
       <ol style="padding-left:20px;line-height:2;">
         <li><strong>I learn about you</strong> — your story, what you've built, and what you're looking for</li>
-        <li><strong>I find your people</strong> — using AI to surface the most relevant connections across the network</li>
-        <li><strong>You review & accept</strong> — no spam intros, you choose who you connect with</li>
-        <li><strong>I make the intro</strong> — once both sides say yes, I share contact details so you can take it from there</li>
+        <li><strong>I meet people on your behalf</strong> — quietly scanning the ecosystem to find the few worth your time</li>
+        <li><strong>You review & accept</strong> — no spam introductions, you choose who you want to meet</li>
+        <li><strong>I make the introduction</strong> — once both sides say yes, I share contact details so the conversation can start</li>
       </ol>
-      <p>The best matches happen when your profile is detailed and up to date.</p>
-      <p>${link('Check your matches →', `${env_1.env.FRONTEND_URL}/matches`)}</p>
+      <p>The best introductions happen when your profile is detailed and up to date.</p>
+      <p>${link('See your introductions →', `${env_1.env.FRONTEND_URL}/matches`)}</p>
       <p>— Cleya</p>
     `);
-        return this.send(email, 'How Cleya matching works — a quick explainer', html);
+        return this.send(email, 'How your AI Networker works — a quick explainer', html);
     }
     async sendMatchCheckIn(email, name) {
         const firstName = name?.split(' ')[0] || 'there';
         const html = plainEmailLayout(`
       <p>Hi ${firstName},</p>
       <p>It's been a week since you joined Cleya — time flies!</p>
-      <p>Have you checked your matches lately? I've been working behind the scenes to find the best people for you.</p>
-      <p>${link('See your matches →', `${env_1.env.FRONTEND_URL}/matches`)}</p>
-      <p>If you haven't received any matches yet, make sure your profile is complete — that's what powers my recommendations.</p>
+      <p>Have you checked your introductions lately? I've been quietly meeting people on your behalf and curating the few worth your time.</p>
+      <p>${link('See your introductions →', `${env_1.env.FRONTEND_URL}/matches`)}</p>
+      <p>If you haven't received any introductions yet, make sure your profile is complete — that's what helps me curate sharper picks for you.</p>
       <p>— Cleya</p>
     `);
-        return this.send(email, `${firstName}, your matches are waiting`, html);
+        return this.send(email, `${firstName}, your introductions are waiting`, html);
+    }
+    /**
+     * Interim "still working on your matches" email.
+     *
+     * Sent when a freshly onboarded user still has zero matches after a couple
+     * of hours. Matches usually land within 2 hours, so this only fires for
+     * users who would otherwise sit on an empty dashboard wondering whether
+     * the product is broken. Setting expectations beats silence.
+     */
+    async sendMatchInterim(email, name) {
+        const firstName = name?.split(' ')[0] || 'there';
+        const html = plainEmailLayout(`
+      <p>Hi ${firstName},</p>
+      <p>Quick note from me — I'm still meeting people on your behalf to curate your first introductions.</p>
+      <p>The right introduction is worth more than a fast one, so I'd rather take a little longer and get it right. I'll be in touch the moment your first introductions are ready.</p>
+      <p>In the meantime, anything else I should know about who you'd love to meet? Just hit reply and tell me — I read every response.</p>
+      <p>${link('Open your dashboard →', `${env_1.env.FRONTEND_URL}/dashboard`)}</p>
+      <p>— Cleya</p>
+    `);
+        return this.send(email, `${firstName}, still curating your first introductions`, html);
+    }
+    /**
+     * Day-1 follow-up: still no matches 24h after onboarding.
+     *
+     * Fires if the user is *still* sitting on zero matches a day in
+     * (gated independently of the 2h send — the only condition is
+     * matchCount === 0 at trigger time). Tone matches sendMatchInterim:
+     * keep expectations honest, encourage a reply with more context.
+     */
+    async sendMatchInterimDay1(email, name) {
+        const firstName = name?.split(' ')[0] || 'there';
+        const html = plainEmailLayout(`
+      <p>Hi ${firstName},</p>
+      <p>Quick update — I'm still meeting people across the ecosystem on your behalf, looking for the right ones to introduce you to.</p>
+      <p>I don't yet have an introduction I'd stake my name on, and I'd rather wait for someone genuinely worth your time than send a weak intro just to fill your inbox.</p>
+      <p>If there's anything you'd like to add about who you'd love to meet — a specific role, sector, stage, or even a name — just hit reply. Every detail helps me narrow it down.</p>
+      <p>${link('Open your dashboard →', `${env_1.env.FRONTEND_URL}/dashboard`)}</p>
+      <p>— Cleya</p>
+    `);
+        return this.send(email, `${firstName}, still searching for the right introduction`, html);
+    }
+    /**
+     * Day-2 follow-up: still no matches 48h after onboarding.
+     *
+     * Polite, confidence-preserving update. Frames the wait as careful
+     * curation rather than a shortfall, and sets the expectation that we'll
+     * reach out the moment a strong match is ready. After this we go quiet
+     * until matches actually appear.
+     */
+    async sendMatchInterimDay2(email, name) {
+        const firstName = name?.split(' ')[0] || 'there';
+        const html = plainEmailLayout(`
+      <p>Hi ${firstName},</p>
+      <p>Just a quick note to keep you in the loop — I'm still curating your introductions with care.</p>
+      <p>Great introductions take a little time, and I want every one I send you to be genuinely worth your while. Your profile is active, and I'm meeting new people joining Cleya every day with you in mind.</p>
+      <p>The moment I find someone truly worth meeting, you'll be the first to know.</p>
+      <p>If anything has shifted about who you'd love to meet — a role, a sector, a stage, even a specific name — just hit reply. A small detail often opens the door to a great introduction.</p>
+      <p>${link('Open your dashboard →', `${env_1.env.FRONTEND_URL}/dashboard`)}</p>
+      <p>— Cleya</p>
+    `);
+        return this.send(email, `${firstName}, a quick update on your introductions`, html);
+    }
+    /**
+     * Onboarding email for someone introduced to Cleya via a referral
+     * (typically forwarded an invite or emailed hello@cleya.ai directly).
+     * Goal: minimum-friction first response — they can either reply with
+     * a quick blurb (and Cleya matches them manually), or tap through to
+     * sign up themselves. No sales tone, no list of features. Just a
+     * warm "hi, here's the easiest path forward."
+     */
+    async sendReferralOnboarding(email, opts) {
+        const firstName = opts?.name?.trim().split(/\s+/)[0];
+        const greeting = firstName ? `Hi ${firstName},` : `Hi there,`;
+        const referrerLine = opts?.referrerName
+            ? `<strong>${opts.referrerName}</strong> thought we should meet — and they were right.`
+            : `Someone in your corner thought we should meet — and they were right.`;
+        const subjectName = firstName ? `${firstName}, ` : '';
+        const html = plainEmailLayout(`
+      <p>${greeting}</p>
+      <p>${referrerLine} I'm Cleya — your AI Networker for India's startup ecosystem. My job is to quietly meet thousands of people on your behalf and introduce you to the few worth your time. No spam, no cold DMs, no random connects.</p>
+      <p>To start curating introductions for you, I just need a quick sense of who you are and who you'd like to meet. <strong>Two ways to do this — pick whichever is easier:</strong></p>
+      <p style="margin:20px 0;padding:16px 20px;background:#f5f7fb;border-left:3px solid ${brandColor};border-radius:6px;">
+        <strong>1. Just hit reply.</strong> Tell me in 2–3 lines:<br/>
+        &nbsp;&nbsp;• What you do (role, company, or what you're building)<br/>
+        &nbsp;&nbsp;• Who you'd love to meet (a founder, an investor, an operator, a hire — be as specific as you want)<br/>
+        I'll take it from there and start curating introductions for you this week.
+      </p>
+      <p style="margin:20px 0;padding:16px 20px;background:#f5f7fb;border-left:3px solid ${brandColor};border-radius:6px;">
+        <strong>2. Or set yourself up in 2 minutes.</strong> ${link('Sign up at cleya.ai →', `${env_1.env.FRONTEND_URL}/?action=signup`)} and chat with me directly. I'll learn your story and start curating introductions automatically.
+      </p>
+      <p>Either path works. Whatever takes the least effort on your end.</p>
+      <p>Looking forward to it.</p>
+      <p>— Cleya<br/><span style="color:#888;font-style:italic;">Your AI Networker, on call.</span></p>
+    `);
+        return this.send(email, `${subjectName}welcome to Cleya — let's get you introduced`, html);
     }
     async sendPostIntroFollowUp(email, name, matchName) {
         const firstName = name?.split(' ')[0] || 'there';
-        const matchFirst = matchName?.split(' ')[0] || 'your match';
+        const matchFirst = matchName?.split(' ')[0] || 'the person I introduced you to';
         const html = plainEmailLayout(`
       <p>Hi ${firstName},</p>
-      <p>It's been a few days since I connected you with <strong>${matchFirst}</strong>. How did it go?</p>
-      <p>Whether it was a great conversation or didn't quite click — I'd love to hear. Your feedback helps me find even better matches for you.</p>
+      <p>It's been a few days since I introduced you to <strong>${matchFirst}</strong>. How did it go?</p>
+      <p>Whether it was a great conversation or didn't quite click — I'd love to hear. Your feedback helps me curate sharper introductions for you.</p>
       <p>${link('Share your feedback →', `${env_1.env.FRONTEND_URL}/matches`)}</p>
       <p>— Cleya</p>
     `);
         return this.send(email, `How was your intro with ${matchFirst}?`, html);
     }
+    /**
+     * Sent 72h after a match is proposed if the recipient has neither
+     * accepted nor declined. We give them four single-tap reasons so we
+     * can quietly improve future curation. Each button is a signed
+     * feedback URL that records a MatchFeedback row server-side.
+     */
+    async sendNonResponseFeedback(opts) {
+        const { createFeedbackToken, FEEDBACK_REASONS, FEEDBACK_REASON_LABELS } = await Promise.resolve().then(() => __importStar(require('./matchActionToken')));
+        const firstName = opts.recipientName?.split(' ')[0] || 'there';
+        const partnerFirst = opts.partnerName?.split(' ')[0] || 'them';
+        const base = env_1.env.BACKEND_URL || `http://localhost:${env_1.env.PORT || 3001}`;
+        const buttons = FEEDBACK_REASONS.map((reason) => {
+            const token = createFeedbackToken({
+                matchId: opts.matchId,
+                userId: opts.recipientUserId,
+                reason,
+            });
+            const url = `${base}/api/match/feedback?token=${encodeURIComponent(token)}`;
+            return `<a href="${url}" style="display:inline-block;margin:4px 6px 4px 0;padding:10px 16px;background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.4);color:#ffffff;text-decoration:none;border-radius:8px;font-size:13px;">${escapeHtml(FEEDBACK_REASON_LABELS[reason])}</a>`;
+        }).join('');
+        const html = plainEmailLayout(`
+      <p>Hi ${escapeHtml(firstName)},</p>
+      <p>I sent over an introduction to <strong>${escapeHtml(partnerFirst)}</strong> a few days ago and hadn't heard back. No pressure either way — but a single tap below would help me curate sharper picks for you next time.</p>
+      <p style="margin:8px 0 4px;font-weight:600;">Why didn't this one land?</p>
+      <div style="margin:8px 0 16px;">${buttons}</div>
+      <p style="font-size:13px;color:#9CA3AF;">If you'd still like to say yes, ${link('open the introduction', `${env_1.env.FRONTEND_URL}/matches`)} — it's still waiting.</p>
+      <p>— Cleya</p>
+    `);
+        return this.send(opts.to, `Quick tap: was ${partnerFirst} the wrong fit?`, html);
+    }
     async sendFeedbackRequest(email, name, matchName) {
         const firstName = name?.split(' ')[0] || 'there';
-        const matchFirst = matchName?.split(' ')[0] || 'your recent match';
+        const matchFirst = matchName?.split(' ')[0] || 'your recent introduction';
         const html = plainEmailLayout(`
       <p>Hi ${firstName},</p>
-      <p>Would you take 30 seconds to rate your connection with <strong>${matchFirst}</strong>?</p>
-      <p>A quick rating and a line or two of feedback goes a long way — it helps me learn what works for you and makes future matches even better.</p>
-      <p>${link('Rate this match →', `${env_1.env.FRONTEND_URL}/matches`)}</p>
+      <p>Would you take 30 seconds to rate your conversation with <strong>${matchFirst}</strong>?</p>
+      <p>A quick rating and a line or two of feedback goes a long way — it helps me learn what works for you and makes future introductions even sharper.</p>
+      <p>${link('Rate this introduction →', `${env_1.env.FRONTEND_URL}/matches`)}</p>
       <p>Thanks for helping make Cleya better for everyone.</p>
       <p>— Cleya</p>
     `);
-        return this.send(email, `Quick feedback on your match with ${matchFirst}?`, html);
+        return this.send(email, `Quick feedback on your introduction with ${matchFirst}?`, html);
+    }
+    async sendReferralInvite(userId, opts) {
+        const user = await db_1.prisma.user.findUnique({
+            where: { id: userId },
+            select: { email: true, name: true, referralCode: true, isActive: true, role: true, referralInviteSentAt: true },
+        });
+        if (!user || !user.email || !user.isActive)
+            return false;
+        // Dedup: skip if we already sent this campaign within the last 7 days,
+        // unless explicitly forced (e.g. admin re-test for a single user).
+        if (!opts?.force && user.referralInviteSentAt) {
+            const ageDays = (Date.now() - user.referralInviteSentAt.getTime()) / 86400000;
+            if (ageDays < 7) {
+                console.log(`📧 Referral invite skipped (sent ${ageDays.toFixed(1)}d ago) for ${user.email}`);
+                return false;
+            }
+        }
+        const firstName = user.name?.split(' ')[0] || 'there';
+        let code = user.referralCode;
+        if (!code) {
+            // Persist a unique referralCode before sending. Retry on @unique collision.
+            const base = (user.name || 'cleya').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8) || 'cleya';
+            let saved = null;
+            for (let attempt = 0; attempt < 5 && !saved; attempt++) {
+                const candidate = `${base}${Math.random().toString(36).slice(2, 7)}`;
+                try {
+                    await db_1.prisma.user.update({ where: { id: userId }, data: { referralCode: candidate } });
+                    saved = candidate;
+                }
+                catch (err) {
+                    if (err?.code !== 'P2002') {
+                        console.error(`📧 Referral code persist failed for ${userId}:`, err?.message || err);
+                        return false;
+                    }
+                    // unique collision — try again
+                }
+            }
+            if (!saved) {
+                console.error(`📧 Could not assign a unique referral code for ${userId} after retries`);
+                return false;
+            }
+            code = saved;
+        }
+        const link = `${env_1.env.FRONTEND_URL}/?ref=${code}`;
+        const bonus = opts?.earlyAccessBonus ? 10 : 5;
+        const bonusLine = opts?.earlyAccessBonus
+            ? `As an early member, you get <strong>${bonus} bonus intros per friend</strong> (double the usual) when they finish their profile — only this week.`
+            : `You'll get <strong>${bonus} bonus intros</strong> for each friend who joins and completes their profile.`;
+        const html = plainEmailLayout(`
+      <p>Hi ${firstName},</p>
+      <p>Quick ask — if there are 1 or 2 people in your circle who'd genuinely benefit from warm intros in the Indian startup ecosystem, would you forward this to them?</p>
+      <p>${bonusLine}</p>
+      <p>The easiest way: <strong>just forward this email</strong> and tell them what you're getting out of Cleya. Or share your link directly:</p>
+      <p style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;font-family:monospace;font-size:13px;word-break:break-all;">${link}</p>
+      <p style="color:#64748b;font-size:13px;">Manage referrals: ${link.replace('/?ref=' + code, '/referral')}</p>
+      <p>— Cleya</p>
+      <hr style="border:none;border-top:1px solid #eee;margin:28px 0 16px;"/>
+      <p style="color:#64748b;font-size:13px;margin:0 0 8px;"><em>Forward-friendly note you can copy:</em></p>
+      <blockquote style="margin:0;padding:12px 16px;border-left:3px solid ${brandColor};background:#f8fafc;color:#334155;font-size:14px;line-height:1.6;">
+        Hey — I've been using Cleya.ai. It's basically an AI Networker for the Indian startup ecosystem: it quietly meets thousands of founders, investors, and operators on your behalf and only introduces you to the few worth your time. No spam, no random adds. Worth 2 minutes to set up.<br/><br/>
+        Sign up here: ${link}
+      </blockquote>
+    `);
+        const result = await this.send(user.email, `${firstName}, a small favour (and ${bonus} bonus intros)`, html);
+        if (result) {
+            await db_1.prisma.user.update({ where: { id: userId }, data: { referralInviteSentAt: new Date() } }).catch(() => null);
+        }
+        return result;
+    }
+    async sendReferralInviteToAll(opts) {
+        const users = await db_1.prisma.user.findMany({
+            where: { role: 'USER', isActive: true },
+            select: { id: true, email: true },
+            orderBy: { createdAt: 'asc' },
+            ...(opts?.limit ? { take: opts.limit } : {}),
+        });
+        if (opts?.dryRun)
+            return { sent: 0, failed: 0, total: users.length, dryRun: true };
+        let sent = 0, failed = 0;
+        for (const u of users) {
+            try {
+                const ok = await this.sendReferralInvite(u.id, { earlyAccessBonus: opts?.earlyAccessBonus });
+                if (ok)
+                    sent++;
+                else
+                    failed++;
+            }
+            catch (err) {
+                console.error(`Referral invite failed for ${u.id}:`, err);
+                failed++;
+            }
+            // Gentle pacing to respect Resend rate limits
+            await new Promise(r => setTimeout(r, 250));
+        }
+        return { sent, failed, total: users.length };
     }
     async sendDigestToAll() {
         const users = await db_1.prisma.user.findMany({

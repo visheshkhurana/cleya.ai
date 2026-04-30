@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.introTemplateService = exports.IntroTemplateService = void 0;
 const db_1 = require("@cleya/db");
+const displayName_1 = require("../utils/displayName");
 const DEFAULT_TEMPLATES = [
     {
         key: 'fundraising',
@@ -179,8 +180,8 @@ class IntroTemplateService {
         const sP = sender.profile;
         const rP = recipient.profile;
         return {
-            senderName: sender.name || sP?.currentRole || sender.email.split('@')[0],
-            senderFirstName: (sender.name || '').split(' ')[0] || '',
+            senderName: (0, displayName_1.safeDisplayName)(sender),
+            senderFirstName: (0, displayName_1.safeFirstName)(sender),
             senderCompany: sP?.companyName || '',
             senderStage: sP?.companyStage || '',
             senderRaiseAmount: sP?.raiseAmount || '',
@@ -189,8 +190,8 @@ class IntroTemplateService {
             senderLookingFor: (sP?.lookingFor || []).slice(0, 2).join(', '),
             senderHeadline: sP?.headline || '',
             senderSkills: (sP?.skills || []).slice(0, 4).join(', '),
-            recipientFirstName: (recipient.name || '').split(' ')[0] || recipient.email.split('@')[0],
-            recipientName: recipient.name || rP?.currentRole || recipient.email.split('@')[0],
+            recipientFirstName: (0, displayName_1.safeFirstName)(recipient),
+            recipientName: (0, displayName_1.safeDisplayName)(recipient),
             recipientCompany: rP?.companyName || '',
             recipientHeadline: rP?.headline || '',
         };

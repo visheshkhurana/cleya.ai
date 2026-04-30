@@ -7,7 +7,23 @@ const messagingService_1 = require("./messagingService");
 const matchingService_1 = require("./matchingService");
 const whatsappTemplates_1 = require("./whatsappTemplates");
 const matchScheduler_1 = require("./matchScheduler");
+const email_1 = require("./email");
+// Cadence for the "still working on your matches" reassurance emails.
+// All three fire only if the user STILL has zero matches at trigger time.
+//   T+2h   — first interim ("still finding your matches")
+//   T+24h  — day-1 follow-up ("still searching for the right match")
+//   T+48h  — day-2 honest update ("haven't found one yet, will keep looking")
+// After T+48h we go quiet until matches actually appear.
+const INTERIM_MATCH_EMAIL_DELAY_MS = 2 * 60 * 60 * 1000; // 2 hours
+const INTERIM_MATCH_EMAIL_DAY1_DELAY_MS = 24 * 60 * 60 * 1000; // 24 hours
+const INTERIM_MATCH_EMAIL_DAY2_DELAY_MS = 48 * 60 * 60 * 1000; // 48 hours
 class AutomationService {
+    // In-memory dedupe so retried/replayed onboarding completions don't queue
+    // multiple interim-email timers for the same user. Process-local; restart
+    // resets it, which is fine because onboarding completion is the source
+    // event and replays would also need a process to be live to re-trigger.
+    // Keys are composite: `${userId}:${stage}` where stage ∈ {2h, 24h, 48h}.
+    interimEmailScheduled = new Set();
     async onOnboardingComplete(userId, context) {
         console.log(`Running post-onboarding automation for user ${userId}`);
         const user = await db_1.prisma.user.findUnique({
@@ -23,6 +39,9 @@ class AutomationService {
         const persona = user.profile?.persona;
         matchScheduler_1.matchScheduler.enqueueUserCheck(userId);
         matchScheduler_1.matchScheduler.enqueueRecheckPeers(userId).catch((err) => console.log(`[AutoMatch] Peer re-queue failed for ${userId}:`, err));
+        this.scheduleInterimMatchEmail(userId, user.email, userName);
+        this.scheduleInterimMatchEmailDay1(userId, user.email, userName);
+        this.scheduleInterimMatchEmailDay2(userId, user.email, userName);
         if (persona === 'DEAL_PARTNER') {
             this.scheduleDealPartnerScout(userId);
         }
@@ -88,6 +107,64 @@ class AutomationService {
                 }
             }
         }, 3000);
+    }
+    /**
+     * Schedules the interim "still working on your matches" email.
+     *
+     * Fires after INTERIM_MATCH_EMAIL_DELAY_MS (2h). At trigger time we
+     * re-check the database — if the user already has at least one
+     * proposed match by then, we skip (the match-proposed email already
+     * communicated the news). Otherwise we send the interim so the user
+     * isn't left wondering whether anything is happening.
+     *
+     * Uses setTimeout for parity with scheduleCall / scheduleDealPartnerScout.
+     * If the process restarts inside the 2h window the timer is lost; that's
+     * an acceptable trade-off for v1 — the worst case is a missed reassurance
+     * email, not a broken match.
+     */
+    scheduleInterimMatchEmail(userId, email, userName) {
+        this.scheduleInterimEmailStage(userId, email, userName, '2h', INTERIM_MATCH_EMAIL_DELAY_MS, (e, n) => email_1.emailService.sendMatchInterim(e, n));
+    }
+    scheduleInterimMatchEmailDay1(userId, email, userName) {
+        this.scheduleInterimEmailStage(userId, email, userName, '24h', INTERIM_MATCH_EMAIL_DAY1_DELAY_MS, (e, n) => email_1.emailService.sendMatchInterimDay1(e, n));
+    }
+    scheduleInterimMatchEmailDay2(userId, email, userName) {
+        this.scheduleInterimEmailStage(userId, email, userName, '48h', INTERIM_MATCH_EMAIL_DAY2_DELAY_MS, (e, n) => email_1.emailService.sendMatchInterimDay2(e, n));
+    }
+    /**
+     * Shared scheduler for all three interim-email stages.
+     *
+     * Each stage is dedup-keyed independently (`${userId}:${stage}`) so the
+     * 2h, 24h, and 48h timers don't collide and a replay of onOnboardingComplete
+     * never queues two timers for the same stage. At trigger time we re-check
+     * the database and bail out if any matches now exist.
+     */
+    scheduleInterimEmailStage(userId, email, userName, stage, delayMs, sender) {
+        const dedupeKey = `${userId}:${stage}`;
+        if (this.interimEmailScheduled.has(dedupeKey)) {
+            console.log(`[InterimEmail:${stage}] Already scheduled for ${userId}, skipping duplicate`);
+            return;
+        }
+        this.interimEmailScheduled.add(dedupeKey);
+        setTimeout(async () => {
+            try {
+                const matchCount = await db_1.prisma.match.count({
+                    where: { OR: [{ userAId: userId }, { userBId: userId }] },
+                });
+                if (matchCount > 0) {
+                    console.log(`[InterimEmail:${stage}] Skipping for ${userId} — ${matchCount} match(es) already exist`);
+                    return;
+                }
+                const ok = await sender(email, userName);
+                console.log(`[InterimEmail:${stage}] Sent to ${email} for user ${userId}: ${ok}`);
+            }
+            catch (err) {
+                console.error(`[InterimEmail:${stage}] Failed to send for ${userId}:`, err);
+            }
+            finally {
+                this.interimEmailScheduled.delete(dedupeKey);
+            }
+        }, delayMs);
     }
     scheduleCall(userId, phoneNumber) {
         setTimeout(async () => {

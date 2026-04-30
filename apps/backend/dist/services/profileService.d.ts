@@ -69,6 +69,10 @@ export declare class ProfileService {
         preferredStageRange: string | null;
         sectorFocus: string[];
         workStyle: import(".prisma/client").$Enums.WorkStyle | null;
+        githubUrl: string | null;
+        twitterUrl: string | null;
+        portfolioUrl: string | null;
+        availabilityStatus: string | null;
     }>;
     updateProfile(userId: string, data: Record<string, any>): Promise<{
         userId: string;
@@ -139,6 +143,10 @@ export declare class ProfileService {
         preferredStageRange: string | null;
         sectorFocus: string[];
         workStyle: import(".prisma/client").$Enums.WorkStyle | null;
+        githubUrl: string | null;
+        twitterUrl: string | null;
+        portfolioUrl: string | null;
+        availabilityStatus: string | null;
     }>;
     updateFromConversation(userId: string, context: Record<string, any>): Promise<{
         userId: string;
@@ -209,6 +217,10 @@ export declare class ProfileService {
         preferredStageRange: string | null;
         sectorFocus: string[];
         workStyle: import(".prisma/client").$Enums.WorkStyle | null;
+        githubUrl: string | null;
+        twitterUrl: string | null;
+        portfolioUrl: string | null;
+        availabilityStatus: string | null;
     }>;
     generateEmbedding(userId: string, profile: any): Promise<void>;
     calculateCompleteness(data: Record<string, any>): number;

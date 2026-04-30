@@ -4,7 +4,9 @@
 // Three-layer scoring: Rule-based + Intent + Semantic
 // ============================================
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.matchingEngine = exports.MatchingEngine = exports.EXPERTISE_TAGS = exports.PERSONA_COMPATIBILITY = void 0;
+exports.matchingEngine = exports.MatchingEngine = exports.EXPERTISE_TAGS = exports.PERSONA_COMPATIBILITY = exports.RAW_SCORE_CEILING = exports.RAW_SCORE_FLOOR = exports.DISPLAY_SCORE_CEILING = exports.DISPLAY_SCORE_FLOOR = void 0;
+exports.toDisplayScore = toDisplayScore;
+exports.toDisplayPercent = toDisplayPercent;
 exports.normalizeToExpertiseTags = normalizeToExpertiseTags;
 const SECTOR_FAMILIES = {
     fintech: ['fintech', 'payments', 'payment automation', 'lending', 'insurtech', 'neobanking', 'wealth management', 'financial services', 'banking', 'defi', 'crypto', 'blockchain finance', 'regtech'],
@@ -48,49 +50,82 @@ const SECTOR_FAMILY_SIMILARITY = {
     proptech: { fintech: 0.15, ecommerce: 0.15 },
     spacetech: { cleantech: 0.15, mobility: 0.20 },
 };
+// ─── Display-Score Transform ───
+//
+// Raw scores from the matching engine sit in roughly [0.35, 1.00] after the
+// minScore filter — and a "genuinely good" cross-role match often lands in
+// the 0.45-0.65 band because intent + semantic only carry it so far. Showing
+// "46% compatibility" to a user about a hand-curated intro reads as insulting
+// and erodes trust in the network.
+//
+// We map raw [0.35, 1.00] → displayed [0.72, 0.96] linearly. This is the
+// single source of truth used by the backend (emails, WhatsApp, digests),
+// the web app (match cards, dashboard), and the mobile app. Raw scores are
+// still used for ranking and gating; only the surfaced number is rescaled.
+exports.DISPLAY_SCORE_FLOOR = 0.72;
+exports.DISPLAY_SCORE_CEILING = 0.96;
+exports.RAW_SCORE_FLOOR = 0.35;
+exports.RAW_SCORE_CEILING = 1.00;
+function toDisplayScore(raw) {
+    if (!Number.isFinite(raw))
+        return exports.DISPLAY_SCORE_FLOOR;
+    const clamped = Math.max(exports.RAW_SCORE_FLOOR, Math.min(exports.RAW_SCORE_CEILING, raw));
+    const t = (clamped - exports.RAW_SCORE_FLOOR) / (exports.RAW_SCORE_CEILING - exports.RAW_SCORE_FLOOR);
+    return exports.DISPLAY_SCORE_FLOOR + t * (exports.DISPLAY_SCORE_CEILING - exports.DISPLAY_SCORE_FLOOR);
+}
+function toDisplayPercent(raw) {
+    return Math.round(toDisplayScore(raw) * 100);
+}
 // ─── Persona Compatibility Matrix ───
+//
+// Cross-role cells (VC↔founder, talent↔founder, operator↔founder, recruiter↔
+// founder, freelancer↔founder) are intentionally aggressive — the network is
+// most valuable when it bridges adjacent roles, not when it only matches
+// peers. Same-persona cells are kept low because most personas don't benefit
+// from peer matching (FOUNDER↔FOUNDER is gated separately for co-founder
+// search).
 exports.PERSONA_COMPATIBILITY = {
     FOUNDER: {
         INVESTOR: 0.95,
         ADVISOR: 0.85,
         DEAL_PARTNER: 0.90,
-        VENTURE_PARTNER: 0.80,
+        VENTURE_PARTNER: 0.85,
         FOUNDER: 0.70,
-        OPERATOR: 0.60,
-        TALENT: 0.55,
-        EVENT_PARTICIPANT: 0.65,
-        RECRUITER: 0.40,
-        FREELANCER: 0.50,
-        JOB_SEEKER: 0.45,
-        OTHER: 0.40,
+        OPERATOR: 0.75,
+        TALENT: 0.75,
+        EVENT_PARTICIPANT: 0.70,
+        RECRUITER: 0.55,
+        FREELANCER: 0.60,
+        JOB_SEEKER: 0.55,
+        OTHER: 0.45,
     },
     INVESTOR: {
         FOUNDER: 0.95,
         EVENT_PARTICIPANT: 0.85,
         DEAL_PARTNER: 0.90,
-        VENTURE_PARTNER: 0.75,
-        INVESTOR: 0.65,
-        ADVISOR: 0.55,
-        OPERATOR: 0.40,
-        TALENT: 0.15,
-        RECRUITER: 0.20,
-        FREELANCER: 0.15,
-        JOB_SEEKER: 0.10,
-        OTHER: 0.30,
+        VENTURE_PARTNER: 0.80,
+        INVESTOR: 0.70,
+        ADVISOR: 0.65,
+        OPERATOR: 0.60,
+        TALENT: 0.40,
+        RECRUITER: 0.30,
+        FREELANCER: 0.25,
+        JOB_SEEKER: 0.20,
+        OTHER: 0.35,
     },
     TALENT: {
-        FOUNDER: 0.90,
+        FOUNDER: 0.92,
         RECRUITER: 0.95,
-        OPERATOR: 0.70,
-        ADVISOR: 0.50,
-        TALENT: 0.25,
-        INVESTOR: 0.15,
-        DEAL_PARTNER: 0.20,
-        VENTURE_PARTNER: 0.20,
-        EVENT_PARTICIPANT: 0.30,
-        FREELANCER: 0.30,
-        JOB_SEEKER: 0.20,
-        OTHER: 0.30,
+        OPERATOR: 0.75,
+        ADVISOR: 0.60,
+        TALENT: 0.30,
+        INVESTOR: 0.40,
+        DEAL_PARTNER: 0.35,
+        VENTURE_PARTNER: 0.35,
+        EVENT_PARTICIPANT: 0.40,
+        FREELANCER: 0.40,
+        JOB_SEEKER: 0.25,
+        OTHER: 0.35,
     },
     DEAL_PARTNER: {
         FOUNDER: 0.90,
@@ -149,18 +184,18 @@ exports.PERSONA_COMPATIBILITY = {
         OTHER: 0.35,
     },
     OPERATOR: {
-        FOUNDER: 0.60,
-        ADVISOR: 0.60,
+        FOUNDER: 0.85,
+        ADVISOR: 0.65,
         OPERATOR: 0.55,
-        TALENT: 0.55,
-        INVESTOR: 0.40,
-        DEAL_PARTNER: 0.45,
-        VENTURE_PARTNER: 0.50,
-        EVENT_PARTICIPANT: 0.45,
-        RECRUITER: 0.50,
-        JOB_SEEKER: 0.45,
-        FREELANCER: 0.40,
-        OTHER: 0.40,
+        TALENT: 0.70,
+        INVESTOR: 0.60,
+        DEAL_PARTNER: 0.55,
+        VENTURE_PARTNER: 0.60,
+        EVENT_PARTICIPANT: 0.55,
+        RECRUITER: 0.60,
+        JOB_SEEKER: 0.50,
+        FREELANCER: 0.50,
+        OTHER: 0.45,
     },
     JOB_SEEKER: {
         RECRUITER: 0.95,
@@ -380,15 +415,19 @@ class MatchingEngine {
         const tractionFit = this.scoreTractionStageAlignment(profileA, profileB);
         const talentPrefMatch = this.scoreTalentPreferences(profileA, profileB);
         const portfolioConflict = this.detectPortfolioConflict(profileA, profileB);
-        const ruleScore = roleMatch * 0.12 +
-            stageMatch * 0.08 +
-            industryMatch * 0.24 +
-            interestMatch * 0.06 +
-            locationMatch * 0.10 +
-            skillMatch * 0.10 +
-            founderContextBoost * 0.12 +
-            tractionFit * 0.10 +
-            talentPrefMatch * 0.08;
+        // Weights bumped on the highest-signal axes (roleMatch and the
+        // founder-context fit) so prototype intros — investor↔founder raising,
+        // recruiter↔talent — score where they should. Other weights shift down
+        // to keep the sum at 1.0.
+        const ruleScore = roleMatch * 0.20 +
+            stageMatch * 0.07 +
+            industryMatch * 0.18 +
+            interestMatch * 0.05 +
+            locationMatch * 0.08 +
+            skillMatch * 0.08 +
+            founderContextBoost * 0.20 +
+            tractionFit * 0.08 +
+            talentPrefMatch * 0.06;
         const intentScore = this.scoreIntentAlignment(profileA, profileB);
         let semanticSimilarity = 0;
         if (profileA.embedding && profileB.embedding) {
@@ -397,11 +436,19 @@ class MatchingEngine {
         const total = this.ruleWeight * ruleScore +
             this.intentWeight * intentScore +
             this.semanticWeight * semanticSimilarity;
+        // Skip the sector penalty when at least one side is sector-agnostic
+        // (no industries declared) — e.g. a generalist investor shouldn't be
+        // punished for matching with a vertical-specific founder. The penalty
+        // exists to suppress *mismatched* sectors, not absent ones.
+        const aHasIndustries = (profileA.industries?.length ?? 0) > 0;
+        const bHasIndustries = (profileB.industries?.length ?? 0) > 0;
         let sectorPenalty = 1.0;
-        if (industryMatch <= 0.10)
-            sectorPenalty = 0.75;
-        else if (industryMatch <= 0.20)
-            sectorPenalty = 0.85;
+        if (aHasIndustries && bHasIndustries) {
+            if (industryMatch <= 0.10)
+                sectorPenalty = 0.75;
+            else if (industryMatch <= 0.20)
+                sectorPenalty = 0.85;
+        }
         const zeroResult = (_reason, conflict) => ({
             total: 0,
             ruleScore: 0,
@@ -531,7 +578,7 @@ class MatchingEngine {
         return false;
     }
     findMatches(user, candidates, options = {}) {
-        const { limit = 10, minScore = 0.35 } = options;
+        const { limit = 10, minScore = 0.35, serendipity = true } = options;
         const intentFiltered = candidates
             .filter((c) => c.userId !== user.userId)
             .filter((c) => this.passesIntentFilter(user, c));
@@ -542,6 +589,31 @@ class MatchingEngine {
         }))
             .filter((m) => m.score.total >= minScore)
             .sort((a, b) => b.score.total - a.score.total);
+        // Serendipity slot — out of every batch of `limit` introductions, reserve
+        // one slot for a high-semantic-fit but cross-sector pick. This keeps the
+        // network from collapsing into the same dense clusters and surfaces
+        // "you wouldn't have thought to ask, but you should meet" intros.
+        //
+        // Picks the best-scoring candidate from positions [limit, limit*3) whose
+        // top sector does NOT overlap with any of the user's sectors. Falls back
+        // to the highest-scoring out-of-cluster candidate if none qualify.
+        if (serendipity && scored.length > limit && limit >= 3) {
+            const topK = scored.slice(0, limit - 1);
+            const tail = scored.slice(limit - 1, Math.min(scored.length, limit * 3));
+            const userSectors = new Set((user.industries || []).map((s) => s.toLowerCase()));
+            const crossSector = tail.find((m) => {
+                const candSectors = (m.profile.industries || []).map((s) => s.toLowerCase());
+                if (candSectors.length === 0 || userSectors.size === 0)
+                    return false;
+                return !candSectors.some((s) => userSectors.has(s));
+            });
+            const serendipitous = crossSector || tail[0] || scored[limit - 1];
+            // Avoid duplicate if serendipity pick happened to also be in topK.
+            if (serendipitous && !topK.some((m) => m.profile.userId === serendipitous.profile.userId)) {
+                return [...topK, serendipitous];
+            }
+            return scored.slice(0, limit);
+        }
         return scored.slice(0, limit);
     }
     // --- Scoring Functions ---

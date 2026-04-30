@@ -34,7 +34,7 @@ function campaignEmailLayout(subject, body, unsubscribeId) {
 ${body}
 </td></tr>
 <tr><td style="padding-top:32px;border-top:1px solid #eee;margin-top:32px;">
-<p style="color:#999;font-size:12px;margin:16px 0 0;">Cleya.ai — AI Superconnector for India's startup ecosystem</p>
+<p style="color:#999;font-size:12px;margin:16px 0 0;">Cleya.ai — Your AI Networker for India's startup ecosystem</p>
 <p style="color:#bbb;font-size:11px;margin:8px 0 0;"><a href="${unsubscribeUrl}" style="color:#bbb;text-decoration:underline;">Unsubscribe</a></p>
 </td></tr>
 </table>

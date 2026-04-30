@@ -52,6 +52,8 @@ const contact_1 = require("./routes/contact");
 const user_1 = require("./routes/user");
 const conversation_1 = require("./routes/conversation");
 const match_1 = require("./routes/match");
+const matchAction_1 = require("./routes/matchAction");
+const inboundEmail_1 = require("./routes/inboundEmail");
 const call_1 = require("./routes/call");
 const notification_1 = require("./routes/notification");
 const search_1 = require("./routes/search");
@@ -74,6 +76,7 @@ const secretary_1 = require("./routes/secretary");
 const zoom_1 = require("./routes/zoom");
 const deal_1 = require("./routes/deal");
 const aiChat_1 = require("./routes/aiChat");
+const aiBio_1 = require("./routes/aiBio");
 const twilio_1 = require("./routes/twilio");
 const whatsapp_1 = require("./routes/whatsapp");
 const gupshup_1 = require("./routes/gupshup");
@@ -138,8 +141,16 @@ app.use((0, morgan_1.default)(env_1.env.NODE_ENV === 'production' ? 'combined' :
 app.use(express_1.default.json({
     limit: '10mb',
     verify: (req, _res, buf) => {
-        // Preserve raw body for Razorpay webhook signature verification
-        if (req.originalUrl === '/api/subscription/webhook') {
+        // Preserve raw body for webhook signature verification.
+        // Routes that use HMAC over the exact request bytes:
+        //   - /api/subscription/webhook        Razorpay
+        //   - /api/webhooks/resend             Resend (svix)
+        //   - /api/gupshup/meta-webhook        Meta WhatsApp Cloud API
+        const url = req.originalUrl || '';
+        if (url.startsWith('/api/subscription/webhook') ||
+            url.startsWith('/api/webhooks/resend') ||
+            url.startsWith('/api/gupshup/meta-webhook') ||
+            url.startsWith('/api/inbound/email')) {
             req.rawBody = buf.toString();
         }
     },
@@ -151,6 +162,8 @@ app.use('/api/contact', contact_1.contactRouter);
 app.use('/api/users', user_1.userRouter);
 app.use('/api/conversations', conversation_1.conversationRouter);
 app.use('/api/matches', match_1.matchRouter);
+app.use('/api/match', matchAction_1.matchActionRouter);
+app.use('/api/inbound', inboundEmail_1.inboundEmailRouter);
 app.use('/api/calls', call_1.callRouter);
 app.use('/api/notifications', notification_1.notificationRouter);
 app.use('/api/search', search_1.searchRouter);
@@ -175,6 +188,7 @@ app.use('/api/secretary', secretary_1.secretaryRouter);
 app.use('/api/zoom', zoom_1.zoomRouter);
 app.use('/api/deals', deal_1.dealRouter);
 app.use('/api/ai-chat', aiChat_1.aiChatRouter);
+app.use('/api/ai', aiBio_1.aiBioRouter);
 app.use('/api/twilio', twilio_1.twilioRouter);
 app.use('/api/whatsapp', whatsapp_1.whatsappRouter);
 app.use('/api/gupshup', gupshup_1.gupshupRouter);

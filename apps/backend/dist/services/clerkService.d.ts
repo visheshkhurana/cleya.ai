@@ -90,6 +90,10 @@ export declare const clerkService: {
                 preferredStageRange: string | null;
                 sectorFocus: string[];
                 workStyle: import(".prisma/client").$Enums.WorkStyle | null;
+                githubUrl: string | null;
+                twitterUrl: string | null;
+                portfolioUrl: string | null;
+                availabilityStatus: string | null;
             } | null;
         };
         token: string;

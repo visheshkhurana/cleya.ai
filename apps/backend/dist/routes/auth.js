@@ -129,6 +129,12 @@ exports.authRouter.post('/signup', rateLimit_1.signupLimiter, (0, recaptcha_1.ve
     try {
         const data = signupSchema.parse(req.body);
         const result = await authService_1.authService.signup(data);
+        email_1.emailService.sendNewSignupNotification({
+            email: data.email,
+            name: data.name || null,
+            provider: 'email',
+            userId: result.user.id,
+        }).catch((e) => console.error('[Auth/Email] Signup notify failed:', e));
         const smtpConfigured = !!(env_1.env.SMTP_HOST && env_1.env.SMTP_USER && env_1.env.SMTP_PASS);
         if (smtpConfigured) {
             email_1.emailService.sendWelcome(data.email).catch(() => { });
@@ -263,6 +269,12 @@ exports.authRouter.get('/google/callback', async (req, res) => {
         });
         if (result.isNew) {
             email_1.emailService.sendWelcome(profile.email).catch(() => { });
+            email_1.emailService.sendNewSignupNotification({
+                email: profile.email,
+                name: profile.name || null,
+                provider: 'google',
+                userId: result.user.id,
+            }).catch((e) => console.error('[Auth/Google] Signup notify failed:', e));
             if (result.user.phone) {
                 gupshupService_1.gupshupService.optInUser(result.user.phone).then((optInResult) => {
                     if (!optInResult?.success)
@@ -410,6 +422,12 @@ exports.authRouter.get('/linkedin/callback', async (req, res) => {
         });
         if (result.isNew) {
             email_1.emailService.sendWelcome(profile.email).catch(() => { });
+            email_1.emailService.sendNewSignupNotification({
+                email: profile.email,
+                name: profile.name || null,
+                provider: 'linkedin',
+                userId: result.user.id,
+            }).catch((e) => console.error('[Auth/LinkedIn] Signup notify failed:', e));
             if (result.user.phone) {
                 gupshupService_1.gupshupService.optInUser(result.user.phone).then((optInResult) => {
                     if (!optInResult?.success)
@@ -450,6 +468,14 @@ exports.authRouter.post('/clerk/exchange', rateLimit_1.loginLimiter, async (req,
         }).parse(req.body);
         const result = await clerkService_1.clerkService.exchangeSessionToken(sessionToken);
         securityLogger_1.securityLogger.authEvent(req, result.isNew ? 'SIGNUP' : 'LOGIN_SUCCESS', 'SUCCESS', result.user.id, { provider: 'clerk', isNew: result.isNew });
+        if (result.isNew) {
+            email_1.emailService.sendNewSignupNotification({
+                email: result.user.email,
+                name: null,
+                provider: 'clerk',
+                userId: result.user.id,
+            }).catch((e) => console.error('[Auth/Clerk] Signup notify failed:', e));
+        }
         if (platform !== 'mobile') {
             setAuthCookie(res, result.token);
         }
