@@ -65,3 +65,9 @@ id = "wkjyvOV7xGglBLDhqaSqW"
 uri = "file://exports/cleya-mobile-source.tar.gz"
 type = "unspecified"
 title = "Cleya Mobile App — Full Source (iOS + Android)"
+
+[[outputs]]
+id = "nZ_oHp6OUAGX2uMuDVA3A"
+uri = "file://exports/cleya-mobile-ios-android-native.tar.gz"
+type = "unspecified"
+title = "Cleya Mobile — Native iOS + Android Projects (Xcode + Gradle)"
