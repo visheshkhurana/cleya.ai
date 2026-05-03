@@ -310,12 +310,30 @@ class EmailService {
                 .map(s => /[.!?]$/.test(s) ? s : `${s}.`);
             body += `<p>${sentences.join(' ')}</p>`;
         }
-        // LinkedIn line.
+        // Compute the reply-to override UP FRONT so the email body never makes a
+        // "just reply yes" promise that the system can't actually keep. We only
+        // route inbound replies back into respondToMatch when Resend Inbound is
+        // configured (REPLY_INBOUND_DOMAIN + RESEND_INBOUND_SECRET). Without it,
+        // a reply lands in REPLY_TO_EMAIL (a human inbox) and never auto-accepts
+        // the match — so we must NOT tell the user to "just reply yes".
+        let replyToOverride;
+        const inboundReplyEnabled = !!(env_1.env.REPLY_INBOUND_DOMAIN &&
+            matchDetails?.matchId &&
+            matchDetails?.recipientUserId);
+        if (inboundReplyEnabled && matchDetails?.matchId && matchDetails?.recipientUserId) {
+            const localPart = (0, matchActionToken_1.createInboundReplyLocalPart)(matchDetails.matchId, matchDetails.recipientUserId);
+            replyToOverride = `${localPart}@${env_1.env.REPLY_INBOUND_DOMAIN}`;
+        }
+        // LinkedIn line. The "reply 'send LinkedIn'" prompt is also gated on
+        // inbound replies being wired up — otherwise it's another broken promise.
         if (matchDetails?.linkedinUrl) {
             body += `<p>Here's ${matchFirst}'s LinkedIn so you can take a closer look: ${link(matchDetails.linkedinUrl, matchDetails.linkedinUrl)}.</p>`;
         }
-        else {
+        else if (inboundReplyEnabled) {
             body += `<p>I'm pulling ${matchFirst}'s LinkedIn for you — reply "send LinkedIn" and I'll forward it right away.</p>`;
+        }
+        else {
+            body += `<p>I'll surface ${matchFirst}'s LinkedIn on your matches page once I have it.</p>`;
         }
         body += `<p>I matched you two at <strong>${scorePercent}%</strong> compatibility based on what each of you is looking for.</p>`;
         // One-click Accept / Decline buttons. If we have a matchId + recipient
@@ -339,23 +357,24 @@ class EmailService {
             body += `<a href="${acceptUrl}" style="display:inline-block;padding:12px 28px;background:${brandColor};color:#fff;font-weight:600;font-size:15px;border-radius:8px;text-decoration:none;margin:4px 8px;">Yes, make the intro →</a>`;
             body += `<a href="${declineUrl}" style="display:inline-block;padding:12px 28px;background:#f1f5f9;color:#475569;font-weight:600;font-size:15px;border-radius:8px;text-decoration:none;margin:4px 8px;">Not this one</a>`;
             body += `</td></tr></table>`;
-            body += `<p style="font-size:13px;color:#64748b;">One click — no login needed. Or just reply "yes" to this email and I'll handle the rest.</p>`;
+            if (inboundReplyEnabled) {
+                body += `<p style="font-size:13px;color:#64748b;">One click — no login needed. Or just reply "yes" to this email and I'll handle the rest.</p>`;
+            }
+            else {
+                body += `<p style="font-size:13px;color:#64748b;">One click — no login needed.</p>`;
+            }
         }
         else {
             body += `<p>${link('Review this introduction →', `${env_1.env.FRONTEND_URL}/matches`)}</p>`;
-            body += `<p><strong>Want me to make the intro?</strong> Just reply "yes" and once I have ${matchFirst}'s confirmation, I'll send the warm intro to both of you over email.</p>`;
+            if (inboundReplyEnabled) {
+                body += `<p><strong>Want me to make the intro?</strong> Just reply "yes" and once I have ${matchFirst}'s confirmation, I'll send the warm intro to both of you over email.</p>`;
+            }
+            else {
+                body += `<p><strong>Want me to make the intro?</strong> Open your matches page and tap accept — once I have ${matchFirst}'s confirmation, I'll send the warm intro to both of you over email.</p>`;
+            }
         }
         body += `<p>— Cleya</p>`;
         const html = plainEmailLayout(body);
-        // If Resend Inbound is configured AND we know the matchId + recipient,
-        // address the reply-to header to a signed per-match local part. The
-        // user can then literally hit Reply and type "yes" to accept — the
-        // inbound webhook will route the message back through respondToMatch.
-        let replyToOverride;
-        if (env_1.env.REPLY_INBOUND_DOMAIN && matchDetails?.matchId && matchDetails?.recipientUserId) {
-            const localPart = (0, matchActionToken_1.createInboundReplyLocalPart)(matchDetails.matchId, matchDetails.recipientUserId);
-            replyToOverride = `${localPart}@${env_1.env.REPLY_INBOUND_DOMAIN}`;
-        }
         // Hooky subject line — always describes the person, never discloses
         // money. Order of preference: company + sector → company → sector +
         // persona → persona alone.
