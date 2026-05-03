@@ -59,3 +59,9 @@ id = "ArTwJVFxFjuJlRVJYXf3R"
 uri = "file://brand/linkedin/page-setup.md"
 type = "text"
 title = "LinkedIn Launch Pack — every field, every post, copy-paste ready"
+
+[[outputs]]
+id = "wkjyvOV7xGglBLDhqaSqW"
+uri = "file://exports/cleya-mobile-source.tar.gz"
+type = "unspecified"
+title = "Cleya Mobile App — Full Source (iOS + Android)"
