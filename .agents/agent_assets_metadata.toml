@@ -71,3 +71,15 @@ id = "nZ_oHp6OUAGX2uMuDVA3A"
 uri = "file://exports/cleya-mobile-ios-android-native.tar.gz"
 type = "unspecified"
 title = "Cleya Mobile — Native iOS + Android Projects (Xcode + Gradle)"
+
+[[outputs]]
+id = "AaWe_LjVD_xfsoW7MWM_k"
+uri = "file://exports/cleya-mobile-handover.tar.gz"
+type = "unspecified"
+title = "Cleya Mobile — Source Code + Handover Doc (single archive)"
+
+[[outputs]]
+id = "fmy0UVpRVvRSrgr3NeC-C"
+uri = "file://exports/HANDOVER.md"
+type = "text"
+title = "HANDOVER.md — Standalone (Rork import + App Store publish guide)"
