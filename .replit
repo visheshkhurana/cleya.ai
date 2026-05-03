@@ -144,7 +144,7 @@ qwIDAQAB
 GA4_PROPERTY_ID = "530514964"
 
 [userenv.development]
-BACKEND_URL = "https://boardy-ai-platform.replit.dev:3001"
+BACKEND_URL = "http://localhost:3001"
 FRONTEND_URL = "https://cleya.ai"
 
 [userenv.production]
