@@ -70,7 +70,6 @@ const ALLOWED_HOSTS = [
   env.CORS_ORIGIN,
   'https://cleya.ai',
   'https://www.cleya.ai',
-  'https://boardy-ai-platform.replit.app',
 ].filter(Boolean) as string[];
 
 const REPLIT_DEV_DOMAIN = process.env.REPLIT_DEV_DOMAIN;

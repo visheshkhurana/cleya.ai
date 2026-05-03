@@ -440,7 +440,7 @@ class MatchingService {
         const personaB = userB.profile?.persona || 'Professional';
         const matchReason = match.reason || '';
         // CRITICAL: send ONE joint introduction email with both parties on the
-        // To: line (Boardy-style). This is what makes the network feel like a
+        // To: line (joint-intro style). This is what makes the network feel like a
         // real warm introduction instead of two strangers each receiving a
         // private notification. Reply-To is set to both addresses so a Reply
         // goes straight to the OTHER person — no bouncing off hello@cleya.ai.

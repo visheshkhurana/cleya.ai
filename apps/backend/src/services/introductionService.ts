@@ -158,7 +158,7 @@ export class IntroductionService {
 
     // NOTE: We deliberately do NOT fire the two separate per-recipient
     // sendIntroductionEmail calls anymore. matchingService.revealContacts
-    // already sends ONE joint Boardy-style intro email (both parties on To:,
+    // already sends ONE joint intro email (both parties on To:,
     // single shared thread) the moment the second user accepts. Sending
     // separate emails here would mean each user receives THREE emails for
     // the same match — the joint thread + two private notifications — which

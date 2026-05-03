@@ -52,7 +52,7 @@
     }
   );
 
-  console.log('--- Step 3: Joint intro email (Boardy-style, after BOTH accept) ---');
+  console.log('--- Step 3: Joint intro email (after BOTH accept) ---');
   // For the joint demo, both addresses ARE the two parties so you can see
   // the same shared thread in both inboxes — exactly what would happen
   // with two real users who both said yes.

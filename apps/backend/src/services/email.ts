@@ -437,10 +437,10 @@ class EmailService {
   }
 
   /**
-   * Boardy-style joint introduction email.
+   * Joint introduction email.
    *
    * Fires ONE email with BOTH parties on To:, so they share a single thread
-   * (just like the Boardy "to bigansh.agarwal, me" pattern). Reply-To is set
+   * (a shared "to person-a, me" pattern). Reply-To is set
    * to both addresses so a Reply naturally lands in the OTHER person's inbox
    * — no more bouncing off hello@cleya.ai because hitting Reply replies to
    * the partner's mailbox, not to a non-existent Cleya alias.
