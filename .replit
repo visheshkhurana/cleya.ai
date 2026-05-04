@@ -98,7 +98,6 @@ GUPSHUP_API_KEY = "sk_3c07d74e1e9a4785aae88e25a09b43f8"
 GUPSHUP_APP_NAME = "cleyaai"
 GUPSHUP_SOURCE_NUMBER = "13688005877"
 GUPSHUP_TEMPLATE_NAMESPACE = "48b37188_29c7_4cff_ae93_e8fcbc6d0bd7"
-GOOGLE_REDIRECT_URI = "https://boardy-ai-platform.replit.app/api/calendar/callback"
 ADMIN_SECRET_TOKEN = "8ef1a1e636a5573f17bf0bed7b8abfdd4a5f6d1c583f8f24f992e66362cdbe2e"
 JWT_PRIVATE_KEY = """
 -----BEGIN PRIVATE KEY-----
@@ -144,12 +143,14 @@ qwIDAQAB
 GA4_PROPERTY_ID = "530514964"
 
 [userenv.development]
-BACKEND_URL = "http://localhost:3001"
 FRONTEND_URL = "https://cleya.ai"
+BACKEND_URL = "http://localhost:3001"
+GOOGLE_REDIRECT_URI = "https://cleya.ai/api/calendar/callback"
 
 [userenv.production]
-BACKEND_URL = "https://boardy-ai-platform.replit.app"
 FRONTEND_URL = "https://cleya.ai"
+BACKEND_URL = "https://cleya.ai"
+GOOGLE_REDIRECT_URI = "https://cleya.ai/api/calendar/callback"
 
 [postMerge]
 path = "scripts/post-merge.sh"
