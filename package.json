@@ -39,6 +39,10 @@
   },
   "overrides": {
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "axios": "1.16.0",
+    "@clerk/clerk-js": "5.125.10",
+    "@clerk/clerk-react": "5.61.6",
+    "@clerk/shared": "4.10.0"
   }
 }

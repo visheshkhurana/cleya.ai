@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.17.0",
-    "@clerk/backend": "^3.2.11",
+    "@clerk/backend": "^3.4.5",
     "@cleya/api": "*",
     "@cleya/db": "*",
     "@cleya/types": "*",
