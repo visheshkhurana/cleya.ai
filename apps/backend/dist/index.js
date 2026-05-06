@@ -99,6 +99,16 @@ if (env_1.env.SENTRY_DSN) {
 }
 const app = (0, express_1.default)();
 app.set('trust proxy', 1);
+app.use((req, res, next) => {
+    const host = (req.headers.host || '').toLowerCase();
+    const isLegacyHost = host.includes('boardy-ai-platform') || host.endsWith('.replit.app');
+    const isHealthCheck = req.path === '/api/health' || req.path === '/health';
+    if (isLegacyHost && !isHealthCheck) {
+        const target = `https://cleya.ai${req.originalUrl}`;
+        return res.redirect(301, target);
+    }
+    next();
+});
 const ALLOWED_HOSTS = [
     env_1.env.FRONTEND_URL,
     env_1.env.CORS_ORIGIN,

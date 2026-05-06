@@ -13,7 +13,7 @@
     "test:e2e:install": "playwright install --with-deps chromium"
   },
   "dependencies": {
-    "@clerk/nextjs": "^5.7.6",
+    "@clerk/nextjs": "^6.39.3",
     "@react-three/drei": "^9.92.7",
     "@react-three/fiber": "^8.15.12",
     "@types/three": "^0.183.1",
