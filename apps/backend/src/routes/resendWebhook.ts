@@ -88,6 +88,33 @@ router.post('/resend', async (req: Request, res: Response) => {
       return res.status(200).json({ received: true, skipped: 'missing data' });
     }
 
+    // === Universal email_events log ===
+    // Persist *every* Resend webhook into email_events (regardless of whether
+    // the message belongs to an outreach campaign). This gives us a single
+    // queryable funnel: sent / delivered / opened / clicked / bounced /
+    // complained — across drip emails, transactional sends, and outreach.
+    try {
+      const toAddrRaw = event?.data?.to;
+      const toEmail = Array.isArray(toAddrRaw) ? toAddrRaw[0] : (toAddrRaw || 'unknown');
+      const subject = event?.data?.subject || null;
+      const fromUser = await prisma.user.findFirst({
+        where: { email: toEmail },
+        select: { id: true },
+      });
+      await prisma.emailEvent.create({
+        data: {
+          userId: fromUser?.id ?? null,
+          resendId: emailId,
+          toEmail,
+          event: eventType,
+          subject,
+          metadata: event?.data ?? {},
+        },
+      });
+    } catch (logErr: any) {
+      console.warn('[ResendWebhook] email_events log failed:', logErr?.message || logErr);
+    }
+
     // Find recipient by resend_email_id
     const recipients: any[] = await prisma.$queryRawUnsafe(
       `SELECT id, campaign_id, status FROM outreach_recipients WHERE resend_email_id = $1 LIMIT 1`,

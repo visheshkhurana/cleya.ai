@@ -972,6 +972,57 @@ class EmailService {
     return this.send(email, 'How your AI Networker works — a quick explainer', html);
   }
 
+  /**
+   * Dormant comeback email with a one-click magic-login button.
+   *
+   * Issues a short-TTL JWT, embeds it in a magic-link URL pointing at
+   * `/api/auth/magic`. Lands the user in `/matches` with a fresh
+   * session — no password, no friction. Sent on day 30 by the
+   * ONBOARDING drip if the user has not logged in since signup.
+   */
+  async sendDormantMagicLink(userId: string, email: string, name?: string): Promise<boolean> {
+    const firstName = name?.split(' ')[0] || 'there';
+    let magicUrl: string;
+    try {
+      const { authService } = await import('./authService');
+      const token = authService.generateMagicLinkToken(userId);
+      magicUrl = `${env.FRONTEND_URL}/api/auth/magic?token=${encodeURIComponent(token)}&next=${encodeURIComponent('/matches')}`;
+    } catch (err) {
+      console.error('[Email] sendDormantMagicLink token error:', err);
+      magicUrl = `${env.FRONTEND_URL}/login`;
+    }
+
+    const html = plainEmailLayout(`
+      <p>Hi ${firstName},</p>
+      <p>Your network on Cleya kept growing while you were away.</p>
+      <p>I've been quietly meeting founders, investors and operators in the ecosystem on your behalf. Some of them I'd really like you to see.</p>
+      <p style="margin-top:20px;">
+        <a href="${magicUrl}" style="display:inline-block;background:${brandColor};color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:600;">Open Cleya — no password needed →</a>
+      </p>
+      <p style="color:#666;font-size:13px;margin-top:14px;">This link signs you in for 15 minutes, then expires. If it wasn't you, ignore this email.</p>
+      <p>— Cleya</p>
+    `);
+    return this.send(email, `${firstName}, your network grew while you were away`, html);
+  }
+
+  /**
+   * Generic magic-link email used by the on-demand `/api/auth/magic-link`
+   * route. Same look as the dormant email but with neutral copy.
+   */
+  async sendMagicLink(email: string, magicUrl: string, name?: string | null): Promise<boolean> {
+    const firstName = name?.split(' ')[0] || 'there';
+    const html = plainEmailLayout(`
+      <p>Hi ${firstName},</p>
+      <p>Click the button below to sign in to Cleya. This link is valid for 15 minutes and can only be used once.</p>
+      <p style="margin-top:20px;">
+        <a href="${magicUrl}" style="display:inline-block;background:${brandColor};color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:600;">Sign in to Cleya →</a>
+      </p>
+      <p style="color:#666;font-size:13px;margin-top:14px;">If you didn't request this, you can safely ignore this email.</p>
+      <p>— Cleya</p>
+    `);
+    return this.send(email, 'Your Cleya sign-in link', html);
+  }
+
   async sendMatchCheckIn(email: string, name?: string) {
     const firstName = name?.split(' ')[0] || 'there';
     const html = plainEmailLayout(`

@@ -62,6 +62,14 @@ export function authenticate(req: Request, _res: Response, next: NextFunction) {
     return next(new AppError(401, 'MFA verification required', 'MFA_REQUIRED'));
   }
 
+  // Reject scoped tokens that aren't valid session tokens. Magic-link
+  // and elevated-action tokens share the JWT_SECRET but must only be
+  // consumed by their dedicated endpoints (/api/auth/magic, etc).
+  if ((payload as any).magic === true || (payload as any).elevated === true) {
+    securityLogger.authEvent(req, 'TOKEN_INVALID', 'FAILURE', payload.userId || null, { reason: 'scoped_token_misuse' });
+    return next(new AppError(401, 'Invalid token scope', 'TOKEN_SCOPE_INVALID'));
+  }
+
   const role = (payload.role || 'VIEWER').toUpperCase() as RoleType;
 
   if (role === 'ADMIN') {

@@ -96,6 +96,63 @@ async function issueVerificationToken(userId: string, email: string) {
   return token;
 }
 
+/**
+ * Magic-link request: any visitor can ask for a sign-in link to their email.
+ * Replies 200 in all cases (including unknown email) to avoid disclosing
+ * which addresses have accounts. Rate-limited via the same passwordReset
+ * limiter — 5 requests / 15 min per IP is plenty for a real human.
+ */
+const magicLinkRequestSchema = z.object({ email: z.string().email().max(255) });
+
+authRouter.post('/magic-link', passwordResetLimiter, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsed = magicLinkRequestSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(200).json({ ok: true });
+    }
+    const email = parsed.data.email.toLowerCase();
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true, name: true, isActive: true },
+    });
+    if (user && user.isActive) {
+      const token = authService.generateMagicLinkToken(user.id);
+      const baseUrl = getBaseUrl(req);
+      const next = typeof req.body?.next === 'string' && req.body.next.startsWith('/') ? req.body.next : '/matches';
+      const magicUrl = `${baseUrl}/api/auth/magic?token=${encodeURIComponent(token)}&next=${encodeURIComponent(next)}`;
+      emailService.sendMagicLink(user.email, magicUrl, user.name).catch((err) =>
+        console.error('[Auth] sendMagicLink failed:', err)
+      );
+      securityLogger.authEvent(req, 'PASSWORD_RESET_REQUEST', 'SUCCESS', user.id, { kind: 'magic_link' });
+    }
+    return res.status(200).json({ ok: true });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+/**
+ * Magic-link consumer: GET so it works directly from an email button.
+ * Verifies the token, mints a real session JWT, sets the cookie, and
+ * 302s to the requested `next` path (defaults to /matches).
+ */
+authRouter.get('/magic', async (req: Request, res: Response) => {
+  const token = typeof req.query.token === 'string' ? req.query.token : '';
+  const nextParam = typeof req.query.next === 'string' && req.query.next.startsWith('/') ? req.query.next : '/matches';
+  if (!token) {
+    return res.redirect(302, `${env.FRONTEND_URL}/login?error=magic_link_invalid`);
+  }
+  try {
+    const result = await authService.exchangeMagicLink(token);
+    setAuthCookie(res, result.token);
+    securityLogger.authEvent(req, 'LOGIN_SUCCESS', 'SUCCESS', result.user.id, { method: 'magic_link' });
+    return res.redirect(302, `${env.FRONTEND_URL}${nextParam}`);
+  } catch (err: any) {
+    securityLogger.authEvent(req, 'LOGIN_FAILURE', 'FAILURE', null, { method: 'magic_link', error: err?.message });
+    return res.redirect(302, `${env.FRONTEND_URL}/login?error=magic_link_expired`);
+  }
+});
+
 authRouter.post('/signup', signupLimiter, verifyRecaptcha('signup'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = signupSchema.parse(req.body);

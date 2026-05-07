@@ -55,6 +55,7 @@ import { matchScheduler } from './services/matchScheduler';
 import { agentScheduler } from './services/agentScheduler';
 import { installAIUsageTracking } from './services/aiUsageTracker';
 import { startLogRetentionJob } from './services/securityLogger';
+import { dripCampaignService } from './services/dripCampaignService';
 
 if (env.SENTRY_DSN) {
   Sentry.init({
@@ -196,6 +197,12 @@ server.listen(PORT, '0.0.0.0', async () => {
   console.log(`   Environment: ${env.NODE_ENV}`);
   installAIUsageTracking();
   startLogRetentionJob();
+  // One-shot backfill on boot: enroll any pre-existing users into the
+  // ONBOARDING drip so they actually start receiving comeback nudges.
+  // Idempotent — users already enrolled are skipped.
+  dripCampaignService.backfillOnboarding(60).catch((err) =>
+    console.error('[DripCampaign] backfillOnboarding failed:', err)
+  );
   matchScheduler.start();
   introTemplateService.ensureDefaultsSeeded().catch(err =>
     console.error('[IntroTemplate] Seeding failed:', err)

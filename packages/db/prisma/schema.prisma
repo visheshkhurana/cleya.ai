@@ -448,6 +448,25 @@ model Notification {
   @@map("notifications")
 }
 
+model EmailEvent {
+  id          String   @id @default(cuid())
+  userId      String?
+  emailKey    String?
+  resendId    String?
+  toEmail     String
+  event       String
+  subject     String?
+  metadata    Json?
+  occurredAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([toEmail])
+  @@index([resendId])
+  @@index([event])
+  @@index([occurredAt])
+  @@map("email_events")
+}
+
 model MessageRecord {
   id             String         @id @default(cuid())
   userId         String
