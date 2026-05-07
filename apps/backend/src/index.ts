@@ -53,6 +53,8 @@ import { investorRouter } from './routes/investor';
 import { introTemplateService } from './services/introTemplateService';
 import { matchScheduler } from './services/matchScheduler';
 import { agentScheduler } from './services/agentScheduler';
+import { installAIUsageTracking } from './services/aiUsageTracker';
+import { startLogRetentionJob } from './services/securityLogger';
 
 if (env.SENTRY_DSN) {
   Sentry.init({
@@ -192,6 +194,8 @@ setupWebSocket(server);
 server.listen(PORT, '0.0.0.0', async () => {
   console.log(`🚀 Cleya.ai backend running on port ${PORT}`);
   console.log(`   Environment: ${env.NODE_ENV}`);
+  installAIUsageTracking();
+  startLogRetentionJob();
   matchScheduler.start();
   introTemplateService.ensureDefaultsSeeded().catch(err =>
     console.error('[IntroTemplate] Seeding failed:', err)

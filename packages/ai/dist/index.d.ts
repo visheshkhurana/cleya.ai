@@ -34,6 +34,22 @@ export declare const MODEL_COST_PER_1K_TOKENS: Record<string, {
     output: number;
 }>;
 export declare function estimateCostUSD(model: string, promptTokens: number, completionTokens: number): number;
+/**
+ * Pluggable usage reporter. The backend installs an implementation that
+ * writes to the `ai_usage_daily` table. We keep the contract here (rather
+ * than calling Prisma from this package) to avoid a circular dependency
+ * between `packages/ai` and `packages/db`. If no reporter is installed,
+ * usage tracking is a no-op.
+ */
+export interface UsageReporter {
+    onSuccess: (provider: string, model: string, usage?: {
+        promptTokens: number;
+        completionTokens: number;
+        totalTokens: number;
+    }) => void;
+    onError: (provider: string, model: string, err?: unknown) => void;
+}
+export declare function setUsageReporter(reporter: UsageReporter | null): void;
 export declare class AIService {
     private openai?;
     private anthropic?;

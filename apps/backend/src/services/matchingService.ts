@@ -21,6 +21,7 @@ import {
 } from './matchMetrics';
 import { razorpayService } from './razorpayService';
 import { safeDisplayName } from '../utils/displayName';
+import { activityService } from './activityService';
 
 export class MatchingService {
   private ai = createAIService();
@@ -171,6 +172,29 @@ export class MatchingService {
       reason,
       score: score.total,
     });
+
+    // Engagement-audit hook: record the proposal in both users' activity
+    // feeds so the audit trail isn't blank. We use the names already
+    // resolved above (or 'Someone' as a safe fallback). Fire-and-forget.
+    (async () => {
+      try {
+        const userPair2 = await prisma.user.findMany({
+          where: { id: { in: [userAId, userBId] } },
+          select: { id: true, name: true, email: true, profile: { select: { headline: true } } },
+        });
+        const byId = new Map(userPair2.map((u) => [u.id, u] as const));
+        const aUser = byId.get(userAId);
+        const bUser = byId.get(userBId);
+        const aName = aUser ? safeDisplayName(aUser as any) : 'Someone';
+        const bName = bUser ? safeDisplayName(bUser as any) : 'Someone';
+        await Promise.all([
+          activityService.recordMatchProposed(userAId, bName, match.id, score.total),
+          activityService.recordMatchProposed(userBId, aName, match.id, score.total),
+        ]);
+      } catch (e) {
+        console.log('[MatchingService] activity recordMatchProposed failed:', (e as Error).message);
+      }
+    })();
 
     const [userAData, userBData] = await Promise.all([
       prisma.user.findUnique({ where: { id: userAId }, include: { profile: true } }),
@@ -388,6 +412,24 @@ export class MatchingService {
       return updated;
     }
 
+    // Engagement-audit hook: surface the response in the activity feed.
+    // Uses the post-update row so the recorded type matches the actual
+    // ACCEPTED/REJECTED that landed (vs. the requested response, which
+    // could be wrong if a duplicate update lost the race).
+    (async () => {
+      try {
+        const otherUserId = isUserA ? updated.userBId : updated.userAId;
+        const otherUser = await prisma.user.findUnique({
+          where: { id: otherUserId },
+          select: { name: true, email: true, profile: { select: { headline: true } } },
+        });
+        const otherName = otherUser ? safeDisplayName(otherUser as any) : undefined;
+        await activityService.recordMatchResponded(userId, matchId, response, otherName);
+      } catch (e) {
+        console.log('[MatchingService] activity recordMatchResponded failed:', (e as Error).message);
+      }
+    })();
+
     // Either user just became "ready" again — re-enqueue so the continuous
     // loop reconsiders them within the next tick instead of waiting for
     // the periodic revisit window.
@@ -601,6 +643,32 @@ export class MatchingService {
       orderBy: { score: 'desc' },
     });
 
+    // Auto-mark each returned match as "viewed" by the requesting user. The
+    // engagement audit found 0 / N matches had a viewedAt timestamp because
+    // the dedicated POST /:id/view endpoint was rarely called from the
+    // client. Recording it here on the list-fetch ensures the funnel metric
+    // ("did the user actually see this match?") is reliable. We batch the
+    // updates and swallow errors so a tracker failure never breaks the
+    // primary list response.
+    const now = new Date();
+    const idsToMarkA = matches.filter((m) => m.userAId === userId && !m.userAViewedAt).map((m) => m.id);
+    const idsToMarkB = matches.filter((m) => m.userBId === userId && !m.userBViewedAt).map((m) => m.id);
+    if (idsToMarkA.length || idsToMarkB.length) {
+      Promise.all([
+        idsToMarkA.length
+          ? prisma.match.updateMany({ where: { id: { in: idsToMarkA } }, data: { userAViewedAt: now } })
+          : null,
+        idsToMarkB.length
+          ? prisma.match.updateMany({ where: { id: { in: idsToMarkB } }, data: { userBViewedAt: now } })
+          : null,
+      ]).catch((e) => console.log('[MatchingService] auto-mark viewed failed:', (e as Error).message));
+      // Fire one activity per newly-viewed match (idempotent: only fires
+      // for matches that didn't already have a viewedAt for this user).
+      [...idsToMarkA, ...idsToMarkB].forEach((mid) =>
+        activityService.recordMatchViewed(userId, mid).catch(() => {})
+      );
+    }
+
     return matches.map((m) => {
       const isAccepted = m.status === 'ACCEPTED';
       const isUserA = m.userAId === userId;
@@ -625,10 +693,14 @@ export class MatchingService {
     if (!isUserA && !isUserB) throw new AppError(403, 'Not part of this match');
 
     if (isUserA && !match.userAViewedAt) {
-      return prisma.match.update({ where: { id: matchId }, data: { userAViewedAt: new Date() } });
+      const updated = await prisma.match.update({ where: { id: matchId }, data: { userAViewedAt: new Date() } });
+      activityService.recordMatchViewed(userId, matchId).catch(() => {});
+      return updated;
     }
     if (isUserB && !match.userBViewedAt) {
-      return prisma.match.update({ where: { id: matchId }, data: { userBViewedAt: new Date() } });
+      const updated = await prisma.match.update({ where: { id: matchId }, data: { userBViewedAt: new Date() } });
+      activityService.recordMatchViewed(userId, matchId).catch(() => {});
+      return updated;
     }
     return match;
   }

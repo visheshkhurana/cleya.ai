@@ -135,10 +135,13 @@ authRouter.post('/signup', signupLimiter, verifyRecaptcha('signup'), async (req:
 });
 
 authRouter.post('/login', loginLimiter, verifyRecaptcha('login'), async (req: Request, res: Response, next: NextFunction) => {
+  let parsedEmail: string | undefined;
   try {
     const data = loginSchema.parse(req.body);
+    parsedEmail = data.email;
     const result = await authService.login(data);
     setAuthCookie(res, result.token);
+    securityLogger.authEvent(req, 'LOGIN_SUCCESS', 'SUCCESS', result.user.id, { email: result.user.email });
     res.json({ success: true, data: result });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
@@ -152,12 +155,20 @@ authRouter.post('/login', loginLimiter, verifyRecaptcha('login'), async (req: Re
       });
       return;
     }
+    securityLogger.authEvent(req, 'LOGIN_FAILURE', 'FAILURE', null, {
+      email: parsedEmail,
+      reason: error?.code || error?.message || 'unknown',
+    });
+    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || 'unknown';
+    checkRepeatedAuthFailures(req, ip).catch(() => {});
     next(error);
   }
 });
 
-authRouter.post('/logout', (_req: Request, res: Response) => {
+authRouter.post('/logout', (req: Request, res: Response) => {
+  const userId = (req as any).user?.userId ?? null;
   res.clearCookie('cleo_auth', { httpOnly: true, secure: true, sameSite: 'lax', path: '/' });
+  securityLogger.authEvent(req, 'LOGOUT', 'SUCCESS', userId);
   res.json({ success: true, message: 'Logged out' });
 });
 

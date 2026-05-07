@@ -74,6 +74,44 @@ export function estimateCostUSD(model: string, promptTokens: number, completionT
   return (promptTokens / 1000) * rates.input + (completionTokens / 1000) * rates.output;
 }
 
+/**
+ * Pluggable usage reporter. The backend installs an implementation that
+ * writes to the `ai_usage_daily` table. We keep the contract here (rather
+ * than calling Prisma from this package) to avoid a circular dependency
+ * between `packages/ai` and `packages/db`. If no reporter is installed,
+ * usage tracking is a no-op.
+ */
+export interface UsageReporter {
+  onSuccess: (
+    provider: string,
+    model: string,
+    usage?: { promptTokens: number; completionTokens: number; totalTokens: number }
+  ) => void;
+  onError: (provider: string, model: string, err?: unknown) => void;
+}
+
+let _usageReporter: UsageReporter | null = null;
+
+export function setUsageReporter(reporter: UsageReporter | null): void {
+  _usageReporter = reporter;
+}
+
+function reportSuccess(provider: string, model: string, usage?: LLMResponse['usage']): void {
+  try {
+    _usageReporter?.onSuccess(provider, model, usage);
+  } catch {
+    /* never let telemetry break the caller */
+  }
+}
+
+function reportError(provider: string, model: string, err: unknown): void {
+  try {
+    _usageReporter?.onError(provider, model, err);
+  } catch {
+    /* never let telemetry break the caller */
+  }
+}
+
 export class AIService {
   private openai?: OpenAI;
   private anthropic?: Anthropic;
@@ -122,18 +160,23 @@ export class AIService {
         max_tokens: options?.maxTokens ?? this.config.maxTokens ?? 2048,
       }, { signal: controller.signal as any });
 
+      const usage = response.usage
+        ? {
+            promptTokens: response.usage.prompt_tokens,
+            completionTokens: response.usage.completion_tokens,
+            totalTokens: response.usage.total_tokens,
+          }
+        : undefined;
+      reportSuccess('openai', model, usage);
       return {
         content: response.choices[0]?.message?.content || '',
         model,
         provider: 'openai',
-        usage: response.usage
-          ? {
-              promptTokens: response.usage.prompt_tokens,
-              completionTokens: response.usage.completion_tokens,
-              totalTokens: response.usage.total_tokens,
-            }
-          : undefined,
+        usage,
       };
+    } catch (err) {
+      reportError('openai', model, err);
+      throw err;
     } finally {
       clearTimeout(timeout);
     }
@@ -151,25 +194,31 @@ export class AIService {
         content: m.content,
       }));
 
-    const response = await this.anthropic.messages.create({
-      model,
-      max_tokens: options?.maxTokens ?? this.config.maxTokens ?? 2048,
-      system: systemMsg?.content,
-      messages: chatMessages,
-    });
+    try {
+      const response = await this.anthropic.messages.create({
+        model,
+        max_tokens: options?.maxTokens ?? this.config.maxTokens ?? 2048,
+        system: systemMsg?.content,
+        messages: chatMessages,
+      });
 
-    const textBlock = response.content.find((b) => b.type === 'text');
-
-    return {
-      content: textBlock?.text || '',
-      model,
-      provider: 'anthropic',
-      usage: {
+      const textBlock = response.content.find((b) => b.type === 'text');
+      const usage = {
         promptTokens: response.usage.input_tokens,
         completionTokens: response.usage.output_tokens,
         totalTokens: response.usage.input_tokens + response.usage.output_tokens,
-      },
-    };
+      };
+      reportSuccess('anthropic', model, usage);
+      return {
+        content: textBlock?.text || '',
+        model,
+        provider: 'anthropic',
+        usage,
+      };
+    } catch (err) {
+      reportError('anthropic', model, err);
+      throw err;
+    }
   }
 
   private async chatGoogle(messages: LLMMessage[], options?: Partial<LLMConfig>): Promise<LLMResponse> {
@@ -193,23 +242,30 @@ export class AIService {
       parts: [{ text: m.content }],
     }));
 
-    const result = await genModel.generateContent({ contents });
-    const response = result.response;
-    const text = response.text();
-    const usageMetadata = response.usageMetadata;
+    try {
+      const result = await genModel.generateContent({ contents });
+      const response = result.response;
+      const text = response.text();
+      const usageMetadata = response.usageMetadata;
 
-    return {
-      content: text || '',
-      model,
-      provider: 'google',
-      usage: usageMetadata
+      const usage = usageMetadata
         ? {
             promptTokens: usageMetadata.promptTokenCount || 0,
             completionTokens: usageMetadata.candidatesTokenCount || 0,
             totalTokens: usageMetadata.totalTokenCount || 0,
           }
-        : undefined,
-    };
+        : undefined;
+      reportSuccess('google', model, usage);
+      return {
+        content: text || '',
+        model,
+        provider: 'google',
+        usage,
+      };
+    } catch (err) {
+      reportError('google', model, err);
+      throw err;
+    }
   }
 
   async embed(text: string): Promise<EmbeddingResponse> {
