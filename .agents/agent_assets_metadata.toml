@@ -89,3 +89,9 @@ id = "_WbAkh9WynMajIzHFHJUK"
 uri = "file://exports/engagement-audit-2026-05-06.md"
 type = "text"
 title = "Cleya.ai Engagement & User Data Audit"
+
+[[outputs]]
+id = "M26Uy62txPGwTJWZkGlWC"
+uri = "file://exports/engagement-improvement-plan-2026-05-07.md"
+type = "text"
+title = "Engagement Audit & Re-Engagement Plan (2026-05-07)"
