@@ -47,6 +47,7 @@ import { subscriptionRouter } from './routes/subscription';
 import { webhookRouter } from './routes/resendWebhook';
 import { introTemplateRouter } from './routes/introTemplate';
 import { investorRouter } from './routes/investor';
+import { jarvisRouter } from './routes/jarvis';
 import { introTemplateService } from './services/introTemplateService';
 import { matchScheduler } from './services/matchScheduler';
 import { agentScheduler } from './services/agentScheduler';
@@ -161,6 +162,10 @@ app.use('/api/health', healthRouter);
 app.use('/api/subscription', subscriptionRouter);
 app.use('/api/webhooks', webhookRouter);
 app.use('/api/investors', investorRouter);
+// JARVIS read/write integration. HMAC-authed (jarvisAuth middleware in
+// the router itself); see apps/backend/src/routes/jarvis.ts for the
+// metrics + actions contract. JARVIS_SHARED_SECRET env var required.
+app.use('/api/jarvis', jarvisRouter);
 
 if (env.SENTRY_DSN) {
   Sentry.setupExpressErrorHandler(app);
