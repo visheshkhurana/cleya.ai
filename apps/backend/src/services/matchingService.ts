@@ -283,12 +283,25 @@ export class MatchingService {
         }
       };
 
+      // Engagement kill-switch: per the audit, 0% of match-proposed emails
+      // were getting opened. If we've sent the same user 3 of these in 7d
+      // with zero opens, suppress the email and let WhatsApp / in-app
+      // carry the proposal instead. Keeps us off spam folders and stops
+      // burning sender reputation on dead inboxes.
+      const { shouldKillMatchProposedEmail } = await import('./emailKillSwitch');
+      const [killA, killB] = await Promise.all([
+        shouldKillMatchProposedEmail(userAId).catch(() => false),
+        shouldKillMatchProposedEmail(userBId).catch(() => false),
+      ]);
+      if (killA) console.log(`[MatchingService] Email kill-switch active for ${userAId} — routing to WhatsApp/in-app only`);
+      if (killB) console.log(`[MatchingService] Email kill-switch active for ${userBId} — routing to WhatsApp/in-app only`);
+
       void dispatchUserChain(userAId, [
-        {
+        ...(killA ? [] : [{
           action: () => emailService.sendMatchProposed(userAData.email, nameA, nameB, personaB, score.total, detailsB),
-          channel: 'EMAIL',
+          channel: 'EMAIL' as const,
           body: emailBodyA,
-        },
+        }]),
         {
           action: () => whatsappTemplates.triggerMatchFound(userAId, userBId, score.total),
           channel: 'WHATSAPP',
@@ -296,11 +309,11 @@ export class MatchingService {
         },
       ]);
       void dispatchUserChain(userBId, [
-        {
+        ...(killB ? [] : [{
           action: () => emailService.sendMatchProposed(userBData.email, nameB, nameA, personaA, score.total, detailsA),
-          channel: 'EMAIL',
+          channel: 'EMAIL' as const,
           body: emailBodyB,
-        },
+        }]),
         {
           action: () => whatsappTemplates.triggerMatchFound(userBId, userAId, score.total),
           channel: 'WHATSAPP',
@@ -447,6 +460,32 @@ export class MatchingService {
     // straight from that DB-level guard, not from a stale pre-read snapshot.
     if (justAccepted) {
       await this.revealContacts(updated);
+      // Mirror match-acceptance into in-app notifications for both users so
+      // the bell + dashboard reflect it on their next visit. Audit P0:
+      // notifications table was a 0-row dead end before this.
+      try {
+        const { recordSent } = await import('./notificationMirror');
+        await Promise.all([
+          recordSent({
+            userId: updated.userAId,
+            channel: 'IN_APP',
+            event: 'INTRO_ACCEPTED',
+            title: 'You both accepted — intro on the way',
+            body: 'Your match is ready. Check the joint introduction email or jump to messages.',
+            metadata: { matchId },
+          }),
+          recordSent({
+            userId: updated.userBId,
+            channel: 'IN_APP',
+            event: 'INTRO_ACCEPTED',
+            title: 'You both accepted — intro on the way',
+            body: 'Your match is ready. Check the joint introduction email or jump to messages.',
+            metadata: { matchId },
+          }),
+        ]);
+      } catch (e) {
+        console.log('[MatchingService] notification mirror (accepted) failed:', e);
+      }
       introductionService.sendIntroduction(matchId).catch((e) =>
         console.log('[MatchingService] Intro send failed:', e)
       );

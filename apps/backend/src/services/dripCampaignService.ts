@@ -11,8 +11,16 @@ type SequenceDefinition = {
 
 const ONBOARDING_SEQUENCE: SequenceDefinition[] = [
   { emailKey: 'profile_nudge', delayDays: 1, sequence: 'ONBOARDING' },
+  // Day-2 partial-onboarding rescue: skipped automatically if the user
+  // completes their profile in the meantime. Different copy + intent
+  // from the day-1 profile_nudge — this one assumes they already saw
+  // the first nudge and still drifted off.
+  { emailKey: 'partial_onboarding_2d', delayDays: 2, sequence: 'ONBOARDING' },
   { emailKey: 'how_matching_works', delayDays: 3, sequence: 'ONBOARDING' },
   { emailKey: 'match_check_in', delayDays: 7, sequence: 'ONBOARDING' },
+  // Day-10 social-proof pull. Skipped if the user has logged in since
+  // signup OR if there are no new candidates we could surface.
+  { emailKey: 'new_founders_10d', delayDays: 10, sequence: 'ONBOARDING' },
   // Dormant comeback: 30d after signup, send a magic-login email
   // (no password required) — the cheapest possible path back to active.
   // shouldSkip() will fast-path this if the user has logged in since.
@@ -313,6 +321,30 @@ class DripCampaignService {
       return profile?.isComplete === true && await this.hasMatches(user.id);
     }
 
+    if (drip.emailKey === 'partial_onboarding_2d') {
+      // Pure profile-completion check. If they finished it after the
+      // day-1 profile_nudge, we have nothing to nudge them about.
+      return profile?.isComplete === true;
+    }
+
+    if (drip.emailKey === 'new_founders_10d') {
+      // Skip if the user has already logged in since signing up
+      // (re-engaged on their own — leave them alone for now).
+      const recentLogin = await prisma.securityLog.findFirst({
+        where: { userId: user.id, action: 'LOGIN_SUCCESS', timestamp: { gte: user.createdAt } },
+        select: { id: true },
+      });
+      if (recentLogin) return true;
+      // Skip if there's nothing fresh to actually show them — the
+      // email's whole pitch is "new people joined", so silently dropping
+      // it when there *aren't* any beats sending a hollow nudge.
+      const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+      const newJoiners = await prisma.user.count({
+        where: { createdAt: { gte: since }, isActive: true, NOT: { id: user.id } },
+      });
+      return newJoiners === 0;
+    }
+
     if (drip.emailKey === 'dormant_magic_30d') {
       // Skip if the user has logged in any time after they signed up
       // (i.e. they're not actually dormant). Anchor on user.createdAt
@@ -392,6 +424,22 @@ class DripCampaignService {
     if (drip.emailKey === 'match_check_in') {
       const ok = await emailService.sendMatchCheckIn(email, name);
       if (ok) mirror('Your introductions are waiting');
+      return ok;
+    }
+
+    if (drip.emailKey === 'partial_onboarding_2d') {
+      const ok = await emailService.sendPartialOnboardingNudge(user.id, email, name);
+      if (ok) mirror('Two questions away from your first introductions');
+      return ok;
+    }
+
+    if (drip.emailKey === 'new_founders_10d') {
+      const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+      const joinedCount = await prisma.user.count({
+        where: { createdAt: { gte: since }, isActive: true, NOT: { id: user.id } },
+      });
+      const ok = await emailService.sendNewFoundersNudge(user.id, email, name, joinedCount);
+      if (ok) mirror('New people in your network worth a look');
       return ok;
     }
 
