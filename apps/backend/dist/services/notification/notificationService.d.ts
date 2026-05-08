@@ -16,8 +16,8 @@ export declare class NotificationService {
         channel: import(".prisma/client").$Enums.NotificationChannel;
         createdAt: Date;
         metadata: import("@prisma/client/runtime/library").JsonValue | null;
-        event: import(".prisma/client").$Enums.NotificationEvent;
         title: string;
+        event: import(".prisma/client").$Enums.NotificationEvent;
         sentAt: Date | null;
         readAt: Date | null;
     }>;
@@ -28,8 +28,8 @@ export declare class NotificationService {
         channel: import(".prisma/client").$Enums.NotificationChannel;
         createdAt: Date;
         metadata: import("@prisma/client/runtime/library").JsonValue | null;
-        event: import(".prisma/client").$Enums.NotificationEvent;
         title: string;
+        event: import(".prisma/client").$Enums.NotificationEvent;
         sentAt: Date | null;
         readAt: Date | null;
     }>[]>;
@@ -44,8 +44,8 @@ export declare class NotificationService {
         channel: import(".prisma/client").$Enums.NotificationChannel;
         createdAt: Date;
         metadata: import("@prisma/client/runtime/library").JsonValue | null;
-        event: import(".prisma/client").$Enums.NotificationEvent;
         title: string;
+        event: import(".prisma/client").$Enums.NotificationEvent;
         sentAt: Date | null;
         readAt: Date | null;
     }[]>;

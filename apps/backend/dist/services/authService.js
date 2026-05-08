@@ -560,6 +560,40 @@ class AuthService {
             expiresIn,
         });
     }
+    /**
+     * Issue a short-TTL magic-link token. Carries `magic: true` so the
+     * `/api/auth/magic` consumer can verify scope before exchanging it
+     * for a full session cookie. 15-minute window keeps replay risk low
+     * even though we don't enforce single-use server-side.
+     */
+    generateMagicLinkToken(userId) {
+        return jsonwebtoken_1.default.sign({ userId, magic: true, issuedAt: Math.floor(Date.now() / 1000) }, env_1.env.JWT_SECRET, { expiresIn: '15m' });
+    }
+    /**
+     * Consume a magic-link token: verify, ensure scope, hydrate the user,
+     * and mint a normal session JWT for the auth cookie.
+     */
+    async exchangeMagicLink(token) {
+        let payload;
+        try {
+            payload = jsonwebtoken_1.default.verify(token, env_1.env.JWT_SECRET);
+        }
+        catch {
+            throw new errorHandler_1.AppError(401, 'Magic link is invalid or expired', 'MAGIC_LINK_INVALID');
+        }
+        if (!payload?.magic || !payload?.userId) {
+            throw new errorHandler_1.AppError(401, 'Magic link is invalid', 'MAGIC_LINK_INVALID');
+        }
+        const user = await db_1.prisma.user.findUnique({
+            where: { id: payload.userId },
+            select: { id: true, email: true, role: true, isActive: true },
+        });
+        if (!user || !user.isActive) {
+            throw new errorHandler_1.AppError(401, 'Account unavailable', 'ACCOUNT_DISABLED');
+        }
+        const sessionToken = this.generateToken(user);
+        return { token: sessionToken, user };
+    }
     generateMfaToken(user) {
         const payload = {
             userId: user.id,

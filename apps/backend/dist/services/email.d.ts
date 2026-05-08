@@ -105,6 +105,32 @@ declare class EmailService {
     private generateICS;
     sendProfileNudge(email: string, name?: string, teasers?: string[]): Promise<boolean>;
     sendHowMatchingWorks(email: string, name?: string): Promise<boolean>;
+    /**
+     * Dormant comeback email with a one-click magic-login button.
+     *
+     * Issues a short-TTL JWT, embeds it in a magic-link URL pointing at
+     * `/api/auth/magic`. Lands the user in `/matches` with a fresh
+     * session — no password, no friction. Sent on day 30 by the
+     * ONBOARDING drip if the user has not logged in since signup.
+     */
+    sendDormantMagicLink(userId: string, email: string, name?: string): Promise<boolean>;
+    /**
+     * Day 2: user signed up but stalled mid-onboarding. Drops them straight
+     * back into the chat to finish the remaining questions. Hard-skip if
+     * profile.isComplete by the time the drip ticks.
+     */
+    sendPartialOnboardingNudge(userId: string, email: string, name?: string | null): Promise<boolean>;
+    /**
+     * Day 10: user has gone quiet, but new founders / investors have joined
+     * since they last visited. Lightweight social-proof pull rather than
+     * another "finish your profile" nudge — they've already seen that.
+     */
+    sendNewFoundersNudge(userId: string, email: string, name?: string | null, joinedCount?: number): Promise<boolean>;
+    /**
+     * Generic magic-link email used by the on-demand `/api/auth/magic-link`
+     * route. Same look as the dormant email but with neutral copy.
+     */
+    sendMagicLink(email: string, magicUrl: string, name?: string | null): Promise<boolean>;
     sendMatchCheckIn(email: string, name?: string): Promise<boolean>;
     /**
      * Interim "still working on your matches" email.

@@ -49,6 +49,7 @@ const matchAntiSpam_1 = require("./matchAntiSpam");
 const matchMetrics_1 = require("./matchMetrics");
 const razorpayService_1 = require("./razorpayService");
 const displayName_1 = require("../utils/displayName");
+const activityService_1 = require("./activityService");
 class MatchingService {
     ai = (0, ai_1.createAIService)();
     async findMatchesForUser(userId, limit = 10) {
@@ -173,6 +174,29 @@ class MatchingService {
             reason,
             score: score.total,
         });
+        // Engagement-audit hook: record the proposal in both users' activity
+        // feeds so the audit trail isn't blank. We use the names already
+        // resolved above (or 'Someone' as a safe fallback). Fire-and-forget.
+        (async () => {
+            try {
+                const userPair2 = await db_1.prisma.user.findMany({
+                    where: { id: { in: [userAId, userBId] } },
+                    select: { id: true, name: true, email: true, profile: { select: { headline: true } } },
+                });
+                const byId = new Map(userPair2.map((u) => [u.id, u]));
+                const aUser = byId.get(userAId);
+                const bUser = byId.get(userBId);
+                const aName = aUser ? (0, displayName_1.safeDisplayName)(aUser) : 'Someone';
+                const bName = bUser ? (0, displayName_1.safeDisplayName)(bUser) : 'Someone';
+                await Promise.all([
+                    activityService_1.activityService.recordMatchProposed(userAId, bName, match.id, score.total),
+                    activityService_1.activityService.recordMatchProposed(userBId, aName, match.id, score.total),
+                ]);
+            }
+            catch (e) {
+                console.log('[MatchingService] activity recordMatchProposed failed:', e.message);
+            }
+        })();
         const [userAData, userBData] = await Promise.all([
             db_1.prisma.user.findUnique({ where: { id: userAId }, include: { profile: true } }),
             db_1.prisma.user.findUnique({ where: { id: userBId }, include: { profile: true } }),
@@ -247,12 +271,26 @@ class MatchingService {
                     await dispatch(targetUserId, s.action, s.channel, s.body).catch((e) => console.log(`[MatchingService] dispatch ${s.channel} for ${targetUserId} unhandled:`, e));
                 }
             };
+            // Engagement kill-switch: per the audit, 0% of match-proposed emails
+            // were getting opened. If we've sent the same user 3 of these in 7d
+            // with zero opens, suppress the email and let WhatsApp / in-app
+            // carry the proposal instead. Keeps us off spam folders and stops
+            // burning sender reputation on dead inboxes.
+            const { shouldKillMatchProposedEmail } = await Promise.resolve().then(() => __importStar(require('./emailKillSwitch')));
+            const [killA, killB] = await Promise.all([
+                shouldKillMatchProposedEmail(userAId).catch(() => false),
+                shouldKillMatchProposedEmail(userBId).catch(() => false),
+            ]);
+            if (killA)
+                console.log(`[MatchingService] Email kill-switch active for ${userAId} — routing to WhatsApp/in-app only`);
+            if (killB)
+                console.log(`[MatchingService] Email kill-switch active for ${userBId} — routing to WhatsApp/in-app only`);
             void dispatchUserChain(userAId, [
-                {
-                    action: () => email_1.emailService.sendMatchProposed(userAData.email, nameA, nameB, personaB, score.total, detailsB),
-                    channel: 'EMAIL',
-                    body: emailBodyA,
-                },
+                ...(killA ? [] : [{
+                        action: () => email_1.emailService.sendMatchProposed(userAData.email, nameA, nameB, personaB, score.total, detailsB),
+                        channel: 'EMAIL',
+                        body: emailBodyA,
+                    }]),
                 {
                     action: () => whatsappTemplates_1.whatsappTemplates.triggerMatchFound(userAId, userBId, score.total),
                     channel: 'WHATSAPP',
@@ -260,11 +298,11 @@ class MatchingService {
                 },
             ]);
             void dispatchUserChain(userBId, [
-                {
-                    action: () => email_1.emailService.sendMatchProposed(userBData.email, nameB, nameA, personaA, score.total, detailsA),
-                    channel: 'EMAIL',
-                    body: emailBodyB,
-                },
+                ...(killB ? [] : [{
+                        action: () => email_1.emailService.sendMatchProposed(userBData.email, nameB, nameA, personaA, score.total, detailsA),
+                        channel: 'EMAIL',
+                        body: emailBodyB,
+                    }]),
                 {
                     action: () => whatsappTemplates_1.whatsappTemplates.triggerMatchFound(userBId, userAId, score.total),
                     channel: 'WHATSAPP',
@@ -369,6 +407,24 @@ class MatchingService {
             console.log(`[MatchingService] respondToMatch noop (already responded) match=${matchId} user=${userId}`);
             return updated;
         }
+        // Engagement-audit hook: surface the response in the activity feed.
+        // Uses the post-update row so the recorded type matches the actual
+        // ACCEPTED/REJECTED that landed (vs. the requested response, which
+        // could be wrong if a duplicate update lost the race).
+        (async () => {
+            try {
+                const otherUserId = isUserA ? updated.userBId : updated.userAId;
+                const otherUser = await db_1.prisma.user.findUnique({
+                    where: { id: otherUserId },
+                    select: { name: true, email: true, profile: { select: { headline: true } } },
+                });
+                const otherName = otherUser ? (0, displayName_1.safeDisplayName)(otherUser) : undefined;
+                await activityService_1.activityService.recordMatchResponded(userId, matchId, response, otherName);
+            }
+            catch (e) {
+                console.log('[MatchingService] activity recordMatchResponded failed:', e.message);
+            }
+        })();
         // Either user just became "ready" again — re-enqueue so the continuous
         // loop reconsiders them within the next tick instead of waiting for
         // the periodic revisit window.
@@ -384,6 +440,33 @@ class MatchingService {
         // straight from that DB-level guard, not from a stale pre-read snapshot.
         if (justAccepted) {
             await this.revealContacts(updated);
+            // Mirror match-acceptance into in-app notifications for both users so
+            // the bell + dashboard reflect it on their next visit. Audit P0:
+            // notifications table was a 0-row dead end before this.
+            try {
+                const { recordSent } = await Promise.resolve().then(() => __importStar(require('./notificationMirror')));
+                await Promise.all([
+                    recordSent({
+                        userId: updated.userAId,
+                        channel: 'IN_APP',
+                        event: 'INTRO_ACCEPTED',
+                        title: 'You both accepted — intro on the way',
+                        body: 'Your match is ready. Check the joint introduction email or jump to messages.',
+                        metadata: { matchId },
+                    }),
+                    recordSent({
+                        userId: updated.userBId,
+                        channel: 'IN_APP',
+                        event: 'INTRO_ACCEPTED',
+                        title: 'You both accepted — intro on the way',
+                        body: 'Your match is ready. Check the joint introduction email or jump to messages.',
+                        metadata: { matchId },
+                    }),
+                ]);
+            }
+            catch (e) {
+                console.log('[MatchingService] notification mirror (accepted) failed:', e);
+            }
             introductionService_1.introductionService.sendIntroduction(matchId).catch((e) => console.log('[MatchingService] Intro send failed:', e));
             this.progressDealOnAcceptance(updated.userAId, updated.userBId).catch((e) => console.log('[MatchingService] Deal progression failed:', e));
             (0, secretaryService_1.onMatchAccepted)(matchId, updated.userAId, updated.userBId).catch((e) => console.log('[MatchingService] Secretary match notification failed:', e));
@@ -546,6 +629,29 @@ class MatchingService {
             },
             orderBy: { score: 'desc' },
         });
+        // Auto-mark each returned match as "viewed" by the requesting user. The
+        // engagement audit found 0 / N matches had a viewedAt timestamp because
+        // the dedicated POST /:id/view endpoint was rarely called from the
+        // client. Recording it here on the list-fetch ensures the funnel metric
+        // ("did the user actually see this match?") is reliable. We batch the
+        // updates and swallow errors so a tracker failure never breaks the
+        // primary list response.
+        const now = new Date();
+        const idsToMarkA = matches.filter((m) => m.userAId === userId && !m.userAViewedAt).map((m) => m.id);
+        const idsToMarkB = matches.filter((m) => m.userBId === userId && !m.userBViewedAt).map((m) => m.id);
+        if (idsToMarkA.length || idsToMarkB.length) {
+            Promise.all([
+                idsToMarkA.length
+                    ? db_1.prisma.match.updateMany({ where: { id: { in: idsToMarkA } }, data: { userAViewedAt: now } })
+                    : null,
+                idsToMarkB.length
+                    ? db_1.prisma.match.updateMany({ where: { id: { in: idsToMarkB } }, data: { userBViewedAt: now } })
+                    : null,
+            ]).catch((e) => console.log('[MatchingService] auto-mark viewed failed:', e.message));
+            // Fire one activity per newly-viewed match (idempotent: only fires
+            // for matches that didn't already have a viewedAt for this user).
+            [...idsToMarkA, ...idsToMarkB].forEach((mid) => activityService_1.activityService.recordMatchViewed(userId, mid).catch(() => { }));
+        }
         return matches.map((m) => {
             const isAccepted = m.status === 'ACCEPTED';
             const isUserA = m.userAId === userId;
@@ -568,10 +674,14 @@ class MatchingService {
         if (!isUserA && !isUserB)
             throw new errorHandler_1.AppError(403, 'Not part of this match');
         if (isUserA && !match.userAViewedAt) {
-            return db_1.prisma.match.update({ where: { id: matchId }, data: { userAViewedAt: new Date() } });
+            const updated = await db_1.prisma.match.update({ where: { id: matchId }, data: { userAViewedAt: new Date() } });
+            activityService_1.activityService.recordMatchViewed(userId, matchId).catch(() => { });
+            return updated;
         }
         if (isUserB && !match.userBViewedAt) {
-            return db_1.prisma.match.update({ where: { id: matchId }, data: { userBViewedAt: new Date() } });
+            const updated = await db_1.prisma.match.update({ where: { id: matchId }, data: { userBViewedAt: new Date() } });
+            activityService_1.activityService.recordMatchViewed(userId, matchId).catch(() => { });
+            return updated;
         }
         return match;
     }

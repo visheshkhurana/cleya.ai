@@ -90,6 +90,9 @@ const investor_1 = require("./routes/investor");
 const introTemplateService_1 = require("./services/introTemplateService");
 const matchScheduler_1 = require("./services/matchScheduler");
 const agentScheduler_1 = require("./services/agentScheduler");
+const aiUsageTracker_1 = require("./services/aiUsageTracker");
+const securityLogger_1 = require("./services/securityLogger");
+const dripCampaignService_1 = require("./services/dripCampaignService");
 if (env_1.env.SENTRY_DSN) {
     Sentry.init({
         dsn: env_1.env.SENTRY_DSN,
@@ -217,6 +220,12 @@ const server = (0, http_1.createServer)(app);
 server.listen(PORT, '0.0.0.0', async () => {
     console.log(`🚀 Cleya.ai backend running on port ${PORT}`);
     console.log(`   Environment: ${env_1.env.NODE_ENV}`);
+    (0, aiUsageTracker_1.installAIUsageTracking)();
+    (0, securityLogger_1.startLogRetentionJob)();
+    // One-shot backfill on boot: enroll any pre-existing users into the
+    // ONBOARDING drip so they actually start receiving comeback nudges.
+    // Idempotent — users already enrolled are skipped.
+    dripCampaignService_1.dripCampaignService.backfillOnboarding(60).catch((err) => console.error('[DripCampaign] backfillOnboarding failed:', err));
     matchScheduler_1.matchScheduler.start();
     introTemplateService_1.introTemplateService.ensureDefaultsSeeded().catch(err => console.error('[IntroTemplate] Seeding failed:', err));
     agentScheduler_1.agentScheduler.start().catch(err => console.error('[AgentScheduler] Failed to start:', err));

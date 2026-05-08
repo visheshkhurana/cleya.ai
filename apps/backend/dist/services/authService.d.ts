@@ -684,6 +684,25 @@ export declare class AuthService {
         email: string;
         role: string;
     }): string;
+    /**
+     * Issue a short-TTL magic-link token. Carries `magic: true` so the
+     * `/api/auth/magic` consumer can verify scope before exchanging it
+     * for a full session cookie. 15-minute window keeps replay risk low
+     * even though we don't enforce single-use server-side.
+     */
+    generateMagicLinkToken(userId: string): string;
+    /**
+     * Consume a magic-link token: verify, ensure scope, hydrate the user,
+     * and mint a normal session JWT for the auth cookie.
+     */
+    exchangeMagicLink(token: string): Promise<{
+        token: string;
+        user: {
+            id: string;
+            email: string;
+            role: string;
+        };
+    }>;
     generateMfaToken(user: {
         id: string;
         email: string;

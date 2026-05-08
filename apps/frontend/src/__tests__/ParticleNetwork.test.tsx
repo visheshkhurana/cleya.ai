@@ -41,7 +41,10 @@ describe('ParticleNetwork', () => {
       fillStyle: '',
       lineWidth: 1,
     } as unknown as CanvasRenderingContext2D;
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx as unknown as RenderingContext);
+    // Cast to `any` because `getContext` is an overloaded method — TS's
+    // overload resolution picks GPUCanvasContext for the most specific
+    // mockReturnValue overload, which doesn't match our 2D mock.
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx as any);
   });
 
   afterEach(() => {

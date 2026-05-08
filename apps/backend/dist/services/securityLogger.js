@@ -39,9 +39,46 @@ function toJsonValue(obj) {
         return undefined;
     return obj;
 }
+/**
+ * In-memory throttle for noisy auth-failure events. The audit found 364
+ * `TOKEN_INVALID` writes from a small set of IPs replaying stale tokens
+ * — most likely an old browser tab or mobile-app session. We still want
+ * to LOG the first few attempts (so a real attacker is visible), but
+ * after `THROTTLE_THRESHOLD` writes from the same (action, ip) within
+ * the window we drop additional writes for `THROTTLE_WINDOW_MS`. This
+ * keeps the audit table useful instead of being 99% noise.
+ */
+const THROTTLE_THRESHOLD = 5;
+const THROTTLE_WINDOW_MS = 15 * 60 * 1000;
+const THROTTLED_ACTIONS = new Set(['TOKEN_INVALID']);
+const recentFailures = new Map();
+function shouldThrottle(action, ipAddress) {
+    if (!THROTTLED_ACTIONS.has(action))
+        return false;
+    const key = `${action}:${ipAddress}`;
+    const now = Date.now();
+    const entry = recentFailures.get(key);
+    if (!entry || now - entry.windowStart > THROTTLE_WINDOW_MS) {
+        recentFailures.set(key, { count: 1, windowStart: now });
+        return false;
+    }
+    entry.count += 1;
+    return entry.count > THROTTLE_THRESHOLD;
+}
+// Clear the throttle cache periodically so it can't grow without bound.
+setInterval(() => {
+    const cutoff = Date.now() - THROTTLE_WINDOW_MS;
+    for (const [k, v] of recentFailures) {
+        if (v.windowStart < cutoff)
+            recentFailures.delete(k);
+    }
+}, THROTTLE_WINDOW_MS).unref?.();
 exports.securityLogger = {
     authEvent(req, action, result, userId, metadata) {
         const { ipAddress, userAgent } = extractRequestInfo(req);
+        if (shouldThrottle(action, ipAddress)) {
+            return; // suppressed — same IP already over threshold for this action
+        }
         const severity = result === 'FAILURE' ? 'WARNING' : 'INFO';
         writeLog({ userId, action, result, severity, ipAddress, userAgent, metadata: toJsonValue(metadata) });
     },

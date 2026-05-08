@@ -125,6 +125,60 @@ async function issueVerificationToken(userId, email) {
     email_1.emailService.sendEmailVerification(email, token).catch(() => { });
     return token;
 }
+/**
+ * Magic-link request: any visitor can ask for a sign-in link to their email.
+ * Replies 200 in all cases (including unknown email) to avoid disclosing
+ * which addresses have accounts. Rate-limited via the same passwordReset
+ * limiter — 5 requests / 15 min per IP is plenty for a real human.
+ */
+const magicLinkRequestSchema = zod_1.z.object({ email: zod_1.z.string().email().max(255) });
+exports.authRouter.post('/magic-link', rateLimit_1.passwordResetLimiter, async (req, res, next) => {
+    try {
+        const parsed = magicLinkRequestSchema.safeParse(req.body);
+        if (!parsed.success) {
+            return res.status(200).json({ ok: true });
+        }
+        const email = parsed.data.email.toLowerCase();
+        const user = await db_1.prisma.user.findUnique({
+            where: { email },
+            select: { id: true, email: true, name: true, isActive: true },
+        });
+        if (user && user.isActive) {
+            const token = authService_1.authService.generateMagicLinkToken(user.id);
+            const baseUrl = getBaseUrl(req);
+            const next = typeof req.body?.next === 'string' && req.body.next.startsWith('/') ? req.body.next : '/matches';
+            const magicUrl = `${baseUrl}/api/auth/magic?token=${encodeURIComponent(token)}&next=${encodeURIComponent(next)}`;
+            email_1.emailService.sendMagicLink(user.email, magicUrl, user.name).catch((err) => console.error('[Auth] sendMagicLink failed:', err));
+            securityLogger_1.securityLogger.authEvent(req, 'PASSWORD_RESET_REQUEST', 'SUCCESS', user.id, { kind: 'magic_link' });
+        }
+        return res.status(200).json({ ok: true });
+    }
+    catch (error) {
+        return next(error);
+    }
+});
+/**
+ * Magic-link consumer: GET so it works directly from an email button.
+ * Verifies the token, mints a real session JWT, sets the cookie, and
+ * 302s to the requested `next` path (defaults to /matches).
+ */
+exports.authRouter.get('/magic', async (req, res) => {
+    const token = typeof req.query.token === 'string' ? req.query.token : '';
+    const nextParam = typeof req.query.next === 'string' && req.query.next.startsWith('/') ? req.query.next : '/matches';
+    if (!token) {
+        return res.redirect(302, `${env_1.env.FRONTEND_URL}/login?error=magic_link_invalid`);
+    }
+    try {
+        const result = await authService_1.authService.exchangeMagicLink(token);
+        setAuthCookie(res, result.token);
+        securityLogger_1.securityLogger.authEvent(req, 'LOGIN_SUCCESS', 'SUCCESS', result.user.id, { method: 'magic_link' });
+        return res.redirect(302, `${env_1.env.FRONTEND_URL}${nextParam}`);
+    }
+    catch (err) {
+        securityLogger_1.securityLogger.authEvent(req, 'LOGIN_FAILURE', 'FAILURE', null, { method: 'magic_link', error: err?.message });
+        return res.redirect(302, `${env_1.env.FRONTEND_URL}/login?error=magic_link_expired`);
+    }
+});
 exports.authRouter.post('/signup', rateLimit_1.signupLimiter, (0, recaptcha_1.verifyRecaptcha)('signup'), async (req, res, next) => {
     try {
         const data = signupSchema.parse(req.body);
@@ -165,10 +219,13 @@ exports.authRouter.post('/signup', rateLimit_1.signupLimiter, (0, recaptcha_1.ve
     }
 });
 exports.authRouter.post('/login', rateLimit_1.loginLimiter, (0, recaptcha_1.verifyRecaptcha)('login'), async (req, res, next) => {
+    let parsedEmail;
     try {
         const data = loginSchema.parse(req.body);
+        parsedEmail = data.email;
         const result = await authService_1.authService.login(data);
         setAuthCookie(res, result.token);
+        securityLogger_1.securityLogger.authEvent(req, 'LOGIN_SUCCESS', 'SUCCESS', result.user.id, { email: result.user.email });
         res.json({ success: true, data: result });
     }
     catch (error) {
@@ -183,11 +240,19 @@ exports.authRouter.post('/login', rateLimit_1.loginLimiter, (0, recaptcha_1.veri
             });
             return;
         }
+        securityLogger_1.securityLogger.authEvent(req, 'LOGIN_FAILURE', 'FAILURE', null, {
+            email: parsedEmail,
+            reason: error?.code || error?.message || 'unknown',
+        });
+        const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || 'unknown';
+        (0, securityLogger_1.checkRepeatedAuthFailures)(req, ip).catch(() => { });
         next(error);
     }
 });
-exports.authRouter.post('/logout', (_req, res) => {
+exports.authRouter.post('/logout', (req, res) => {
+    const userId = req.user?.userId ?? null;
     res.clearCookie('cleo_auth', { httpOnly: true, secure: true, sameSite: 'lax', path: '/' });
+    securityLogger_1.securityLogger.authEvent(req, 'LOGOUT', 'SUCCESS', userId);
     res.json({ success: true, message: 'Logged out' });
 });
 exports.authRouter.get('/me', auth_1.authenticate, async (req, res, next) => {

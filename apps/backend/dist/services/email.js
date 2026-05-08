@@ -199,8 +199,27 @@ class EmailService {
                 console.error(`📧 Resend error to ${to}:`, result.error);
                 return false;
             }
-            console.log(`📧 Email sent to ${to}: ${subject} (id: ${result.data?.id})`);
+            const resendId = result.data?.id || null;
+            console.log(`📧 Email sent to ${to}: ${subject} (id: ${resendId})`);
             this.resendAvailable = true;
+            // Stamp a 'sent' EmailEvent immediately if the caller passed an
+            // emailKey. This is what powers the kill-switch + funnel: webhook
+            // events ('delivered'/'opened'/'clicked'/'bounced') arrive later
+            // and are joinable by resendId. Without this row we'd only see
+            // delivered/opened — never the full funnel denominator.
+            if (opts?.emailKey) {
+                db_1.prisma.emailEvent.create({
+                    data: {
+                        userId: opts.userId ?? null,
+                        emailKey: opts.emailKey,
+                        resendId,
+                        toEmail: to,
+                        event: 'sent',
+                        subject,
+                        metadata: {},
+                    },
+                }).catch((err) => console.warn('[Email] sent-event log failed:', err?.message || err));
+            }
             return true;
         }
         catch (err) {
@@ -398,7 +417,11 @@ class EmailService {
         else {
             subject = `${firstName}, you should meet ${matchFirst} — ${personaPretty}`;
         }
-        await this.send(recipientEmail, subject, html, replyToOverride ? { replyTo: replyToOverride } : undefined);
+        await this.send(recipientEmail, subject, html, {
+            ...(replyToOverride ? { replyTo: replyToOverride } : {}),
+            userId: matchDetails?.recipientUserId ?? null,
+            emailKey: 'match_proposed',
+        });
     }
     /**
      * Instant acknowledgement when a user accepts or declines via email.
@@ -580,7 +603,9 @@ class EmailService {
         body += `<p style="font-size:13px;color:#94a3b8;">Pro tip: reach out within 48 hours while the connection is fresh.</p>`;
         body += `<p>— Cleya</p>`;
         const html = plainEmailLayout(body);
-        await this.send(recipientEmail, `You and ${matchName} are connected!`, html);
+        await this.send(recipientEmail, `You and ${matchName} are connected!`, html, {
+            emailKey: 'match_accepted',
+        });
     }
     async sendPasswordReset(email, token) {
         const resetUrl = `${env_1.env.FRONTEND_URL}/reset-password?token=${token}`;
@@ -683,12 +708,26 @@ class EmailService {
             }
             body += `</ul>`;
         }
-        if (pendingMatches > 0) {
-            body += `<p>Don't leave them hanging — ${link('review your introductions →', `${env_1.env.FRONTEND_URL}/matches`)}</p>`;
+        // One-click magic-login CTA — the audit's #1 ask for the digest. With
+        // a 15-min TTL session token in the URL, the user lands inside the app
+        // logged in. No password screen, no friction — that's what the data
+        // says converts the comeback click into an actual return visit.
+        let magicCta;
+        try {
+            const { authService } = await Promise.resolve().then(() => __importStar(require('./authService')));
+            const magicToken = authService.generateMagicLinkToken(userId);
+            const nextPath = pendingMatches > 0 ? '/matches' : '/dashboard';
+            const magicUrl = `${env_1.env.FRONTEND_URL}/api/auth/magic?token=${encodeURIComponent(magicToken)}&next=${encodeURIComponent(nextPath)}`;
+            magicCta = pendingMatches > 0
+                ? `<p>Don't leave them hanging — <a href="${magicUrl}" style="color:${brandColor};font-weight:600;">review your introductions (one click, no login) →</a></p>`
+                : `<p><a href="${magicUrl}" style="color:${brandColor};font-weight:600;">See your dashboard (one click, no login) →</a></p>`;
         }
-        else {
-            body += `<p>${link('See your dashboard →', `${env_1.env.FRONTEND_URL}/dashboard`)}</p>`;
+        catch {
+            magicCta = pendingMatches > 0
+                ? `<p>Don't leave them hanging — ${link('review your introductions →', `${env_1.env.FRONTEND_URL}/matches`)}</p>`
+                : `<p>${link('See your dashboard →', `${env_1.env.FRONTEND_URL}/dashboard`)}</p>`;
         }
+        body += magicCta;
         // Profile strength tip
         try {
             const score = user.profile?.profileScore ?? 0;
@@ -699,7 +738,13 @@ class EmailService {
         catch { }
         body += `<p>— Cleya</p>`;
         const html = plainEmailLayout(body);
-        await this.send(user.email, `Your week: ${newMatches} new introduction${newMatches !== 1 ? 's' : ''} from Cleya`, html);
+        const subject = `Your week: ${newMatches} new introduction${newMatches !== 1 ? 's' : ''} from Cleya`;
+        const ok = await this.send(user.email, subject, html, { userId, emailKey: 'weekly_digest' });
+        if (ok) {
+            // Mirror to in-app notifications so the bell shows the digest too.
+            const { recordEmailSent } = await Promise.resolve().then(() => __importStar(require('./notificationMirror')));
+            recordEmailSent({ userId, emailKey: 'weekly_digest', subject, metadata: { newMatches, pendingMatches, acceptedMatches } }).catch(() => { });
+        }
     }
     async sendMeetingInvite(to, otherName, title, meetingTime, duration, meetingUrl) {
         const timeStr = meetingTime.toLocaleDateString('en-IN', {
@@ -831,6 +876,120 @@ class EmailService {
       <p>— Cleya</p>
     `);
         return this.send(email, 'How your AI Networker works — a quick explainer', html);
+    }
+    /**
+     * Dormant comeback email with a one-click magic-login button.
+     *
+     * Issues a short-TTL JWT, embeds it in a magic-link URL pointing at
+     * `/api/auth/magic`. Lands the user in `/matches` with a fresh
+     * session — no password, no friction. Sent on day 30 by the
+     * ONBOARDING drip if the user has not logged in since signup.
+     */
+    async sendDormantMagicLink(userId, email, name) {
+        const firstName = name?.split(' ')[0] || 'there';
+        let magicUrl;
+        try {
+            const { authService } = await Promise.resolve().then(() => __importStar(require('./authService')));
+            const token = authService.generateMagicLinkToken(userId);
+            magicUrl = `${env_1.env.FRONTEND_URL}/api/auth/magic?token=${encodeURIComponent(token)}&next=${encodeURIComponent('/matches')}`;
+        }
+        catch (err) {
+            console.error('[Email] sendDormantMagicLink token error:', err);
+            magicUrl = `${env_1.env.FRONTEND_URL}/login`;
+        }
+        const html = plainEmailLayout(`
+      <p>Hi ${firstName},</p>
+      <p>Your network on Cleya kept growing while you were away.</p>
+      <p>I've been quietly meeting founders, investors and operators in the ecosystem on your behalf. Some of them I'd really like you to see.</p>
+      <p style="margin-top:20px;">
+        <a href="${magicUrl}" style="display:inline-block;background:${brandColor};color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:600;">Open Cleya — no password needed →</a>
+      </p>
+      <p style="color:#666;font-size:13px;margin-top:14px;">This link signs you in for 15 minutes, then expires. If it wasn't you, ignore this email.</p>
+      <p>— Cleya</p>
+    `);
+        return this.send(email, `${firstName}, your network grew while you were away`, html, {
+            userId, emailKey: 'dormant_magic_30d',
+        });
+    }
+    /**
+     * Day 2: user signed up but stalled mid-onboarding. Drops them straight
+     * back into the chat to finish the remaining questions. Hard-skip if
+     * profile.isComplete by the time the drip ticks.
+     */
+    async sendPartialOnboardingNudge(userId, email, name) {
+        const firstName = (name || '').split(' ')[0] || 'there';
+        let url;
+        try {
+            const { authService } = await Promise.resolve().then(() => __importStar(require('./authService')));
+            const token = authService.generateMagicLinkToken(userId);
+            url = `${env_1.env.FRONTEND_URL}/api/auth/magic?token=${encodeURIComponent(token)}&next=${encodeURIComponent('/chat')}`;
+        }
+        catch {
+            url = `${env_1.env.FRONTEND_URL}/chat`;
+        }
+        const html = plainEmailLayout(`
+      <p>Hi ${firstName},</p>
+      <p>You're partway through setting up your Cleya profile — just a couple of questions left.</p>
+      <p>Every additional answer sharpens the introductions I curate for you. The difference between a 30%-complete profile and a 100%-complete one is the difference between generic suggestions and the right person at the right moment.</p>
+      <p style="margin-top:20px;">
+        <a href="${url}" style="display:inline-block;background:${brandColor};color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:600;">Pick up where you left off →</a>
+      </p>
+      <p style="color:#666;font-size:13px;margin-top:14px;">This link signs you straight in — no password needed.</p>
+      <p>— Cleya</p>
+    `);
+        return this.send(email, `${firstName}, two questions away from your first introductions`, html, {
+            userId, emailKey: 'partial_onboarding_2d',
+        });
+    }
+    /**
+     * Day 10: user has gone quiet, but new founders / investors have joined
+     * since they last visited. Lightweight social-proof pull rather than
+     * another "finish your profile" nudge — they've already seen that.
+     */
+    async sendNewFoundersNudge(userId, email, name, joinedCount) {
+        const firstName = (name || '').split(' ')[0] || 'there';
+        let url;
+        try {
+            const { authService } = await Promise.resolve().then(() => __importStar(require('./authService')));
+            const token = authService.generateMagicLinkToken(userId);
+            url = `${env_1.env.FRONTEND_URL}/api/auth/magic?token=${encodeURIComponent(token)}&next=${encodeURIComponent('/matches')}`;
+        }
+        catch {
+            url = `${env_1.env.FRONTEND_URL}/matches`;
+        }
+        const headline = joinedCount && joinedCount > 0
+            ? `${joinedCount} new founders, investors and operators just joined Cleya`
+            : `New founders, investors and operators just joined Cleya`;
+        const html = plainEmailLayout(`
+      <p>Hi ${firstName},</p>
+      <p>${headline} — and a few of them look like a strong fit for what you're working on.</p>
+      <p>Take 30 seconds to glance at your queue. If something catches your eye, accept the intro and I'll handle the rest.</p>
+      <p style="margin-top:20px;">
+        <a href="${url}" style="display:inline-block;background:${brandColor};color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:600;">See who joined →</a>
+      </p>
+      <p style="color:#666;font-size:13px;margin-top:14px;">One-click sign-in, no password.</p>
+      <p>— Cleya</p>
+    `);
+        return this.send(email, `${firstName}, new people in your network worth a look`, html, {
+            userId, emailKey: 'new_founders_10d',
+        });
+    }
+    /**
+     * Generic magic-link email used by the on-demand `/api/auth/magic-link`
+     * route. Same look as the dormant email but with neutral copy.
+     */
+    async sendMagicLink(email, magicUrl, name) {
+        const firstName = name?.split(' ')[0] || 'there';
+        const html = plainEmailLayout(`
+      <p>Hi ${firstName},</p>
+      <p>Click the button below to sign in to Cleya. This link is valid for 15 minutes and can only be used once.</p>
+      <p style="margin-top:20px;">
+        <a href="${magicUrl}" style="display:inline-block;background:${brandColor};color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:600;">Sign in to Cleya →</a>
+      </p>
+      <p style="color:#666;font-size:13px;margin-top:14px;">If you didn't request this, you can safely ignore this email.</p>
+      <p>— Cleya</p>
+    `);
+        return this.send(email, 'Your Cleya sign-in link', html, { emailKey: 'magic_link' });
     }
     async sendMatchCheckIn(email, name) {
         const firstName = name?.split(' ')[0] || 'there';

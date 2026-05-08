@@ -39,6 +39,7 @@ const ai_1 = require("@cleya/ai");
 const api_1 = require("@cleya/api");
 const errorHandler_1 = require("../middleware/errorHandler");
 const linkedinEnrichmentService_1 = require("./linkedinEnrichmentService");
+const activityService_1 = require("./activityService");
 function stripHtml(str) {
     return str.replace(/<[^>]*>/g, '').replace(/&[a-z]+;/gi, ' ').trim();
 }
@@ -82,6 +83,66 @@ function normalizeMoneyValue(value) {
     }
     const num = parseSingleMoneyToken(lower);
     return num > 0 ? String(num) : value;
+}
+/**
+ * Canonicalize free-text city strings so analytics, matching, and reporting
+ * don't fragment the same place into multiple buckets ("Bangalore" vs
+ * "Bengaluru, India" vs "bangalore   "). Strategy:
+ *   1) trim + collapse whitespace
+ *   2) drop a trailing ", India"-style country qualifier
+ *   3) lookup in an alias map; fall back to Title Case of the cleaned input
+ * Pure function — safe to call on every profile write.
+ */
+const CITY_ALIASES = {
+    'bangalore': 'Bengaluru',
+    'bengaluru': 'Bengaluru',
+    'blr': 'Bengaluru',
+    'bombay': 'Mumbai',
+    'mumbai': 'Mumbai',
+    'bom': 'Mumbai',
+    'delhi': 'Delhi NCR',
+    'new delhi': 'Delhi NCR',
+    'ncr': 'Delhi NCR',
+    'delhi ncr': 'Delhi NCR',
+    'gurgaon': 'Delhi NCR',
+    'gurugram': 'Delhi NCR',
+    'noida': 'Delhi NCR',
+    'hyderabad': 'Hyderabad',
+    'hyd': 'Hyderabad',
+    'chennai': 'Chennai',
+    'madras': 'Chennai',
+    'pune': 'Pune',
+    'kolkata': 'Kolkata',
+    'calcutta': 'Kolkata',
+    'ahmedabad': 'Ahmedabad',
+    'jaipur': 'Jaipur',
+    'kochi': 'Kochi',
+    'cochin': 'Kochi',
+    'sf': 'San Francisco',
+    'san francisco': 'San Francisco',
+    'sfo': 'San Francisco',
+    'nyc': 'New York',
+    'new york': 'New York',
+    'new york city': 'New York',
+    'london': 'London',
+    'singapore': 'Singapore',
+    'dubai': 'Dubai',
+};
+function normalizeLocation(value) {
+    if (!value || typeof value !== 'string')
+        return undefined;
+    let cleaned = value.trim().replace(/\s+/g, ' ');
+    if (!cleaned)
+        return undefined;
+    // Drop trailing country qualifier (", India", " - India", etc.) and any
+    // state suffix ("Bengaluru, Karnataka") so the city alone keys the alias.
+    cleaned = cleaned.replace(/[,\-–]\s*(india|bharat|in|usa|us|united states|uk|united kingdom)\s*$/i, '').trim();
+    const beforeComma = cleaned.split(',')[0].trim();
+    const key = beforeComma.toLowerCase();
+    if (CITY_ALIASES[key])
+        return CITY_ALIASES[key];
+    // Title-case fallback so "bangalore   " never silently survives.
+    return beforeComma.replace(/\b\w/g, (c) => c.toUpperCase());
 }
 function validateLinkedinUrl(url) {
     if (!url)
@@ -177,6 +238,9 @@ class ProfileService {
         if (data.linkedinUrl && (profile.isComplete || !profile.companyName)) {
             linkedinEnrichmentService_1.linkedinEnrichmentService.onNewUserSignup(userId);
         }
+        // Engagement-audit hook: log the field-level change so the activities
+        // feed reflects ongoing profile work (the audit found this table empty).
+        activityService_1.activityService.recordProfileUpdated(userId, Object.keys(data)).catch(() => { });
         if (profile.isComplete) {
             const matchTriggerFields = [
                 'persona', 'industries', 'skills', 'lookingFor', 'companyStage',
@@ -374,6 +438,16 @@ class ProfileService {
             if (typeof sanitized[key] === 'string') {
                 sanitized[key] = normalizeMoneyValue(sanitized[key]) || sanitized[key];
             }
+        }
+        if (typeof sanitized.location === 'string') {
+            const normalized = normalizeLocation(sanitized.location);
+            if (normalized)
+                sanitized.location = normalized;
+        }
+        if (typeof sanitized.cityBased === 'string') {
+            const normalized = normalizeLocation(sanitized.cityBased);
+            if (normalized)
+                sanitized.cityBased = normalized;
         }
         if (typeof sanitized.headline === 'string' && sanitized.headline.length > 150) {
             sanitized.headline = sanitized.headline.substring(0, 150);

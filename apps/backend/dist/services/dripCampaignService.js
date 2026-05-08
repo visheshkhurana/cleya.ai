@@ -4,10 +4,23 @@ exports.dripCampaignService = void 0;
 const db_1 = require("@cleya/db");
 const email_1 = require("./email");
 const matchingService_1 = require("./matchingService");
+const notificationMirror_1 = require("./notificationMirror");
 const ONBOARDING_SEQUENCE = [
     { emailKey: 'profile_nudge', delayDays: 1, sequence: 'ONBOARDING' },
+    // Day-2 partial-onboarding rescue: skipped automatically if the user
+    // completes their profile in the meantime. Different copy + intent
+    // from the day-1 profile_nudge — this one assumes they already saw
+    // the first nudge and still drifted off.
+    { emailKey: 'partial_onboarding_2d', delayDays: 2, sequence: 'ONBOARDING' },
     { emailKey: 'how_matching_works', delayDays: 3, sequence: 'ONBOARDING' },
     { emailKey: 'match_check_in', delayDays: 7, sequence: 'ONBOARDING' },
+    // Day-10 social-proof pull. Skipped if the user has logged in since
+    // signup OR if there are no new candidates we could surface.
+    { emailKey: 'new_founders_10d', delayDays: 10, sequence: 'ONBOARDING' },
+    // Dormant comeback: 30d after signup, send a magic-login email
+    // (no password required) — the cheapest possible path back to active.
+    // shouldSkip() will fast-path this if the user has logged in since.
+    { emailKey: 'dormant_magic_30d', delayDays: 30, sequence: 'ONBOARDING' },
 ];
 const MATCH_FOLLOWUP_SEQUENCE = [
     { emailKey: 'post_intro_followup', delayDays: 3, sequence: 'MATCH_FOLLOWUP' },
@@ -21,6 +34,72 @@ const FEEDBACK_REQUEST_SEQUENCE = [
 // need a schema migration; the emailKey prefix is what disambiguates.
 const NON_RESPONSE_DELAY_HOURS = 72;
 class DripCampaignService {
+    /**
+     * Backfill: enroll all existing users (created within the last `lookbackDays`)
+     * who have *no* drip rows yet. Anchors the schedule on the user's
+     * `createdAt` so a user who signed up 5 days ago will have profile_nudge
+     * sent immediately on the next drip tick.
+     *
+     * Idempotent thanks to the unique (userId, sequence, emailKey) constraint.
+     * Run this once at boot to recover the cohort that pre-dated drip enrollment.
+     */
+    async backfillOnboarding(lookbackDays = 60) {
+        const since = new Date(Date.now() - lookbackDays * 24 * 60 * 60 * 1000);
+        const candidates = await db_1.prisma.user.findMany({
+            where: { createdAt: { gte: since }, isActive: true },
+            select: { id: true, createdAt: true },
+        });
+        if (candidates.length === 0) {
+            console.log(`[DripCampaign] Backfill: 0 candidates`);
+            return { enrolled: 0, skipped: 0, rowsCreated: 0 };
+        }
+        // Bulk-fetch existing onboarding rows in one query, group by userId.
+        const existingRows = await db_1.prisma.dripEmail.findMany({
+            where: { sequence: 'ONBOARDING', userId: { in: candidates.map(c => c.id) } },
+            select: { userId: true, emailKey: true },
+        });
+        const existingByUser = new Map();
+        for (const r of existingRows) {
+            let set = existingByUser.get(r.userId);
+            if (!set) {
+                set = new Set();
+                existingByUser.set(r.userId, set);
+            }
+            set.add(r.emailKey);
+        }
+        const toCreate = [];
+        let enrolled = 0;
+        let skipped = 0;
+        for (const u of candidates) {
+            const existingKeys = existingByUser.get(u.id);
+            let added = 0;
+            for (const step of ONBOARDING_SEQUENCE) {
+                if (existingKeys?.has(step.emailKey))
+                    continue;
+                toCreate.push({
+                    userId: u.id,
+                    sequence: 'ONBOARDING',
+                    emailKey: step.emailKey,
+                    scheduledFor: new Date(u.createdAt.getTime() + step.delayDays * 24 * 60 * 60 * 1000),
+                });
+                added++;
+            }
+            if (added > 0)
+                enrolled++;
+            else
+                skipped++;
+        }
+        let rowsCreated = 0;
+        if (toCreate.length > 0) {
+            const result = await db_1.prisma.dripEmail.createMany({
+                data: toCreate,
+                skipDuplicates: true,
+            });
+            rowsCreated = result.count;
+        }
+        console.log(`[DripCampaign] Backfill complete — ${enrolled} users newly enrolled (${rowsCreated} rows), ${skipped} fully enrolled already`);
+        return { enrolled, skipped, rowsCreated };
+    }
     async enrollOnboarding(userId) {
         const user = await db_1.prisma.user.findUnique({ where: { id: userId } });
         if (!user)
@@ -226,6 +305,45 @@ class DripCampaignService {
         if (drip.emailKey === 'how_matching_works') {
             return profile?.isComplete === true && await this.hasMatches(user.id);
         }
+        if (drip.emailKey === 'partial_onboarding_2d') {
+            // Pure profile-completion check. If they finished it after the
+            // day-1 profile_nudge, we have nothing to nudge them about.
+            return profile?.isComplete === true;
+        }
+        if (drip.emailKey === 'new_founders_10d') {
+            // Skip if the user has already logged in since signing up
+            // (re-engaged on their own — leave them alone for now).
+            const recentLogin = await db_1.prisma.securityLog.findFirst({
+                where: { userId: user.id, action: 'LOGIN_SUCCESS', timestamp: { gte: user.createdAt } },
+                select: { id: true },
+            });
+            if (recentLogin)
+                return true;
+            // Skip if there's nothing fresh to actually show them — the
+            // email's whole pitch is "new people joined", so silently dropping
+            // it when there *aren't* any beats sending a hollow nudge.
+            const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+            const newJoiners = await db_1.prisma.user.count({
+                where: { createdAt: { gte: since }, isActive: true, NOT: { id: user.id } },
+            });
+            return newJoiners === 0;
+        }
+        if (drip.emailKey === 'dormant_magic_30d') {
+            // Skip if the user has logged in any time after they signed up
+            // (i.e. they're not actually dormant). Anchor on user.createdAt
+            // rather than drip.createdAt — for backfilled rows the drip
+            // record was inserted at boot time, so using drip.createdAt would
+            // ignore every legitimate prior login and false-positive everyone.
+            const recentLogin = await db_1.prisma.securityLog.findFirst({
+                where: {
+                    userId: user.id,
+                    action: 'LOGIN_SUCCESS',
+                    timestamp: { gte: user.createdAt },
+                },
+                select: { id: true },
+            });
+            return !!recentLogin;
+        }
         if (drip.emailKey.startsWith('post_intro_followup_') || drip.emailKey.startsWith('feedback_request_')) {
             if (drip.matchId) {
                 const feedback = await db_1.prisma.matchFeedback.findUnique({
@@ -269,15 +387,47 @@ class DripCampaignService {
         const user = drip.user;
         const email = user.email;
         const name = user.name || user.profile?.currentRole;
+        const mirror = (subject) => (0, notificationMirror_1.recordEmailSent)({ userId: user.id, emailKey: drip.emailKey, subject, metadata: { matchId: drip.matchId ?? undefined } }).catch(() => { });
         if (drip.emailKey === 'profile_nudge') {
             const teasers = await (0, matchingService_1.getProfileNudgeTeasers)(user.id, 3).catch(() => []);
-            return email_1.emailService.sendProfileNudge(email, name, teasers);
+            const ok = await email_1.emailService.sendProfileNudge(email, name, teasers);
+            if (ok)
+                mirror(`${(name?.split(' ')[0]) || 'You'} — finish setting up Cleya`);
+            return ok;
         }
         if (drip.emailKey === 'how_matching_works') {
-            return email_1.emailService.sendHowMatchingWorks(email, name);
+            const ok = await email_1.emailService.sendHowMatchingWorks(email, name);
+            if (ok)
+                mirror('How your AI Networker works');
+            return ok;
         }
         if (drip.emailKey === 'match_check_in') {
-            return email_1.emailService.sendMatchCheckIn(email, name);
+            const ok = await email_1.emailService.sendMatchCheckIn(email, name);
+            if (ok)
+                mirror('Your introductions are waiting');
+            return ok;
+        }
+        if (drip.emailKey === 'partial_onboarding_2d') {
+            const ok = await email_1.emailService.sendPartialOnboardingNudge(user.id, email, name);
+            if (ok)
+                mirror('Two questions away from your first introductions');
+            return ok;
+        }
+        if (drip.emailKey === 'new_founders_10d') {
+            const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+            const joinedCount = await db_1.prisma.user.count({
+                where: { createdAt: { gte: since }, isActive: true, NOT: { id: user.id } },
+            });
+            const ok = await email_1.emailService.sendNewFoundersNudge(user.id, email, name, joinedCount);
+            if (ok)
+                mirror('New people in your network worth a look');
+            return ok;
+        }
+        if (drip.emailKey === 'dormant_magic_30d') {
+            const ok = await email_1.emailService.sendDormantMagicLink(user.id, email, name);
+            if (ok)
+                mirror('Your network grew while you were away');
+            return ok;
         }
         if (drip.emailKey.startsWith('post_intro_followup_') && drip.matchId) {
             const matchName = await this.getOtherUserName(drip.matchId, user.id);
