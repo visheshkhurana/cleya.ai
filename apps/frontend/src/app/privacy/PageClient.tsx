@@ -9,7 +9,7 @@ export default function PrivacyPage() {
 
       <main className="max-w-4xl mx-auto px-6 lg:px-8 py-16">
         <h1 className="font-sans text-3xl sm:text-4xl font-bold text-white mb-2">Privacy Policy</h1>
-        <p className="text-sm mb-12" style={{ color: '#94A3B8' }}>Last updated: March 18, 2026</p>
+        <p className="text-sm mb-12" style={{ color: '#94A3B8' }}>Last updated: May 10, 2026</p>
 
         <div className="space-y-8 text-sm leading-relaxed" style={{ color: '#94A3B8' }}>
           <section>
@@ -109,8 +109,20 @@ export default function PrivacyPage() {
             <p>We retain your data for as long as your account is active. If you deactivate your account, we retain your data for 30 days before permanent deletion, unless required by law to retain it longer. Anonymized and aggregated data may be retained indefinitely for analytical purposes. You may request immediate data deletion at any time by contacting our Data Protection Officer.</p>
           </section>
 
+          <section id="data-deletion">
+            <h2 className="text-lg font-semibold text-white mb-3">10. Data Deletion</h2>
+            <p className="mb-3">You can delete your Cleya.ai account and all associated personal data at any time. Choose whichever path is easier:</p>
+            <ul className="list-disc pl-5 space-y-1 mt-2">
+              <li><strong className="text-white">In-app:</strong> Sign in &rarr; Settings &rarr; Account &rarr; <em>Delete account</em>.</li>
+              <li><strong className="text-white">Email:</strong> Send a request to <a href="mailto:privacy@cleya.ai?subject=Delete%20my%20account" className="underline" style={{ color: '#93C5FD' }}>privacy@cleya.ai</a> with subject &quot;Delete my account&quot; from the email address linked to your Cleya.ai account.</li>
+              <li><strong className="text-white">Connected platforms:</strong> If you connected your Meta, Google, or other third-party account to Cleya.ai, removing the Cleya.ai app on that platform also revokes our access tokens. Cleya.ai then queues your associated data for deletion within 24 hours.</li>
+            </ul>
+            <p className="mt-3">Within <strong className="text-white">30 days</strong> of receiving your deletion request, we permanently remove your profile, conversation history, matches, messages, profile embeddings, and any data we hold from connected platforms (including Meta ads data, Google Analytics identifiers, and similar). Operational backups containing residual data are purged on the next scheduled rotation, no later than 90 days after deletion.</p>
+            <p className="mt-3">A small set of records may be retained beyond this window only when legally required (e.g. tax or fraud-prevention records) or in fully-anonymized form for aggregate analytics. We will confirm completion of the deletion via email.</p>
+          </section>
+
           <section>
-            <h2 className="text-lg font-semibold text-white mb-3">10. Your Rights</h2>
+            <h2 className="text-lg font-semibold text-white mb-3">11. Your Rights</h2>
             <p className="mb-2">Depending on your jurisdiction, you may have the following rights:</p>
             <ul className="list-disc pl-5 space-y-1 mt-2">
               <li><strong className="text-white">Access:</strong> Request a copy of the personal data we hold about you.</li>
@@ -126,7 +138,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-white mb-3">11. California Privacy Rights (CCPA)</h2>
+            <h2 className="text-lg font-semibold text-white mb-3">12. California Privacy Rights (CCPA)</h2>
             <p className="mb-2">If you are a California resident, you have additional rights under the California Consumer Privacy Act (CCPA):</p>
             <ul className="list-disc pl-5 space-y-1 mt-2">
               <li>The right to know what personal information we collect, use, and disclose.</li>
@@ -138,22 +150,22 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-white mb-3">12. Indian Data Protection</h2>
+            <h2 className="text-lg font-semibold text-white mb-3">13. Indian Data Protection</h2>
             <p>Cleya.ai complies with applicable Indian data protection laws, including the Digital Personal Data Protection Act, 2023 (DPDPA). As a data fiduciary, we process your personal data only for legitimate purposes with your consent. You have the right to access, correct, and erase your data, and to nominate a representative to exercise these rights on your behalf. You may file a complaint with the Data Protection Board of India if you believe your rights have been violated.</p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-white mb-3">13. Children&apos;s Privacy</h2>
+            <h2 className="text-lg font-semibold text-white mb-3">14. Children&apos;s Privacy</h2>
             <p>Cleya.ai is not intended for use by anyone under the age of 18. We do not knowingly collect personal information from children. If we become aware that we have collected data from a person under 18, we will take steps to delete such information promptly. If you believe a child has provided us with personal information, please contact us immediately at <a href="mailto:privacy@cleya.ai" className="underline" style={{ color: '#93C5FD' }}>privacy@cleya.ai</a>.</p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-white mb-3">14. Changes to This Policy</h2>
+            <h2 className="text-lg font-semibold text-white mb-3">15. Changes to This Policy</h2>
             <p>We may update this Privacy Policy from time to time. We will notify you of any material changes by posting the new policy on the Platform and updating the &quot;Last updated&quot; date. For significant changes, we will provide additional notice via email or in-app notification. Your continued use of the Platform after such changes constitutes acceptance of the updated policy.</p>
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-white mb-3">15. Data Protection Officer</h2>
+            <h2 className="text-lg font-semibold text-white mb-3">16. Data Protection Officer</h2>
             <p className="mb-2">Our Data Protection Officer can be reached at:</p>
             <p>Email: <a href="mailto:dpo@cleya.ai" className="underline" style={{ color: '#93C5FD' }}>dpo@cleya.ai</a></p>
             <p className="mt-2">For general privacy inquiries: <a href="mailto:privacy@cleya.ai" className="underline" style={{ color: '#93C5FD' }}>privacy@cleya.ai</a></p>
