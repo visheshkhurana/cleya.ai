@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useClerk, useSession } from '@clerk/nextjs';
+import { useClerk, useSession, useUser } from '@clerk/nextjs';
 import { api } from '@/lib/api';
+import { trackSignupComplete } from '@/lib/meta-pixel';
 
 interface Props {
   mode: 'login' | 'signup';
@@ -13,6 +14,7 @@ interface Props {
 export default function ClerkContinueButton({ mode, onSuccess, onError }: Props) {
   const { openSignIn, openSignUp, signOut } = useClerk();
   const { session, isLoaded } = useSession();
+  const { user } = useUser();
   const [waiting, setWaiting] = useState(false);
   const exchangedRef = useRef(false);
 
@@ -26,6 +28,19 @@ export default function ClerkContinueButton({ mode, onSuccess, onError }: Props)
         if (!token) throw new Error('No Clerk session token');
         const result = await api.clerkExchange(token);
         api.setToken(result.token || 'authenticated');
+        // Fire Meta Pixel CompleteRegistration only for genuinely new
+        // signups: mode='signup' AND the Clerk user was created within
+        // the last ~2 minutes. Avoids inflating conversion counts when
+        // existing users hit the signup CTA.
+        if (mode === 'signup' && user?.createdAt) {
+          const ageMs = Date.now() - new Date(user.createdAt).getTime();
+          if (ageMs < 2 * 60_000) {
+            trackSignupComplete({
+              user_id: user.id,
+              email: user.primaryEmailAddress?.emailAddress,
+            });
+          }
+        }
         setWaiting(false);
         onSuccess();
       } catch (err) {
@@ -36,7 +51,7 @@ export default function ClerkContinueButton({ mode, onSuccess, onError }: Props)
         onError(message);
       }
     })();
-  }, [waiting, isLoaded, session, onSuccess, onError, signOut]);
+  }, [waiting, isLoaded, session, user, mode, onSuccess, onError, signOut]);
 
   const handleClick = async () => {
     exchangedRef.current = false;
