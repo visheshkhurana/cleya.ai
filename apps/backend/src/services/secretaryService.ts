@@ -485,8 +485,8 @@ export async function onMatchAccepted(matchId: string, userAId: string, userBId:
     const roleB = userB.profile?.currentRole || '';
     const companyB = userB.profile?.companyName || '';
 
-    const msgForA = `Great news! Your match with ${nameB}${roleB ? ` (${roleB}${companyB ? ` at ${companyB}` : ''})` : ''} has been accepted. Would you like me to schedule an introductory call? I can set up a 30-minute meeting and include a Zoom link if you have Zoom connected.`;
-    const msgForB = `Great news! Your match with ${nameA}${roleA ? ` (${roleA}${companyA ? ` at ${companyA}` : ''})` : ''} has been accepted. Would you like me to schedule an introductory call? I can set up a 30-minute meeting and include a Zoom link if you have Zoom connected.`;
+    const msgForA = `Good news — ${nameB}${roleB ? ` (${roleB}${companyB ? ` at ${companyB}` : ''})` : ''} accepted your introduction. Want me to line up a 30-minute intro call and find a time that works for you both?`;
+    const msgForB = `Good news — ${nameA}${roleA ? ` (${roleA}${companyA ? ` at ${companyA}` : ''})` : ''} accepted your introduction. Want me to line up a 30-minute intro call and find a time that works for you both?`;
 
     await Promise.all([
       prisma.secretaryMessage.create({
